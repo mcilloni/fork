@@ -1,0 +1,82 @@
+program = [module], {import}, { definition }
+
+module = 'module', id
+
+import = 'import', id
+
+definition = entry | function
+
+entry = 'entry', stmtEnd, body, '/entry'
+
+function = 'func', id, '(', argList, ')', [type], stmtEnd, body, '/func'
+
+argList = {argTypeList, ','}, argTypeList
+
+argTypeList = {id, ','}, id, type
+
+body = {stmt}
+
+stmt = (if | while | declaration | expr | return | 'break' | 'continue'), stmtEnd
+
+return = 'return', expr
+
+if = 'if', expr, stmtEnd, body, [elseBlock], '/if'
+
+while = 'while', expr, stmtEnd, breakBody, '/while'
+
+elseBlock = 'else', body
+
+var = 'var', singleVar
+decl = 'decl', declType
+stmtEnd = newLine | ';'
+
+singleVar = assign | declType
+declType = id, type
+
+varDecl = id | assign
+
+assign = id, '=', expr
+
+alias = 'alias', id, type
+
+typeModifier = 'val' | 'ptr' | ('[', number, ']')
+
+funcType = 'func', '(', [type,{',', type}], ')', [type]
+
+structType = 'struct', '(', argList, ')'
+
+type = [typeModifier], (id | funcType | structType)
+
+id = letter, {(letter | cipher)}
+
+membAccess = id, ',', id
+
+arrayAccess = expr, '[', expr, ']'
+
+cast = 'cast', '<', type, '>', '(', expr, ')'
+
+expr = ('(', exprC, ')') | exprC
+
+exprC =  dec | inc | id | (expr, binOp, expr) | (unOp,expr) | assign | const | membAccess | cast | arrayAccess
+
+boolVal = 'true' | 'false'
+
+const = number | string |boolVal
+
+string = '"', {letter}, '"'
+
+number = decNumber | binNumber | hexNumber
+
+binOp = '+' | '-' | '*' | '/' | 'and' | 'or' | '==' | '!='
+unOp = '-' | '!' 
+inc = id, '++'
+dec = id, '--'
+
+decNumber = ? decimal number ?
+hexNumber = ? hexadecimal number like 456h, letters A-F can be both cases, h should be lowcase ?
+binNumber = ? binary number like 10101b, b should be lowcase ?
+
+letter = ? any Unicode letter ?
+cipher = ? any cipher ?
+newLine = ? new line delimiter ?
+
