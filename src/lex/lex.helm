@@ -1,0 +1,50 @@
+#  This file is part of Second Step.
+#  
+#  Second Step is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software 
+#  Foundation, either version 3 of the License, or (at your option) any later version. 
+#
+#  Second Step is distributed in the hope that it will be useful, but 
+#  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with Second Step.  If not, see <http://www.gnu.org/licenses/>
+#
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+
+import lex
+import spring
+
+func lexerClose(lex ptr lex:Lexer)
+  spring:streamClose(lex'file)
+  spring:free(lex'filename)
+  spring:free(lex)
+/func
+
+func lexerError(lexer ptr lex:Lexer) ptr spring:Error
+  return lexer'error
+/func
+
+func lexerFromStream(stream ptr spring:Stream, name ptr uint8) ptr lex:Lexer
+  var ret = cast<ptr lex:Lexer>(spring:zalloc(size(ptr lex:Lexer)))
+
+  ret'file = stream
+  ret'line = 1
+  ret'filename = spring:strclone(name)
+
+  return ret
+/func
+
+func lexerNew(fname ptr uint8, err ptr ptr spring:Error) ptr lex:Lexer
+  var file = spring:fileOpen(fname, err)
+
+  if val err != null
+    return null
+  /if
+
+  return lexerFromStream(file, fname)
+/func
+
+func lexerNext(lexer ptr lex:Lexer) ptr lex:Token
+
+/func

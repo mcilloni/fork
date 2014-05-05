@@ -1,0 +1,40 @@
+#  This file is part of Second Step.
+#  
+#  Second Step is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software 
+#  Foundation, either version 3 of the License, or (at your option) any later version. 
+#
+#  Second Step is distributed in the hope that it will be useful, but 
+#  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with Second Step.  If not, see <http://www.gnu.org/licenses/>
+#
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+
+module lex
+
+import spring
+
+alias Lexer struct (
+  file ptr spring:Stream,
+  line uintptr,
+  pos uintptr,
+  error ptr spring:Error,
+  filename ptr uint8,
+  peek uint8
+)
+
+alias Token struct (
+  type uint8,
+  beginPos, endPos uintptr,
+  lineno uintptr,
+  value ptr uint8
+)
+
+decl lexerClose func(ptr Lexer)
+decl lexerError func(ptr Lexer) ptr spring:Error
+decl lexerFromStream func(ptr spring:Stream, ptr uint8) ptr Lexer
+decl lexerNew func(ptr uint8, ptr ptr spring:Error) ptr Lexer
+decl lexerNext func(ptr Lexer) ptr Token
+
