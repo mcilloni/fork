@@ -1,4 +1,4 @@
 second-step
 ===========
 
-Definitely not prevedible.
+Definitely not foreseeable.
