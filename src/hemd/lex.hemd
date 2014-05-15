@@ -22,19 +22,27 @@ alias Lexer struct (
   pos uintptr,
   error ptr spring:Error,
   filename ptr uint8,
-  peek uint8
+  stateVar uint8,
+  saved ptr uint8,
+  peek uint8,
+  newline bool
 )
 
 alias Token struct (
   type uint8,
   beginPos, endPos uintptr,
   lineno uintptr,
-  value ptr uint8
+  value uintptr
 )
 
 decl lexerClose func(ptr Lexer)
+decl lexerEof func(ptr Lexer) bool
 decl lexerError func(ptr Lexer) ptr spring:Error
-decl lexerFromStream func(ptr spring:Stream, ptr uint8) ptr Lexer
+decl lexerFromStream func(ptr spring:Stream, ptr uint8, ptr ptr spring:Error) ptr Lexer
 decl lexerNew func(ptr uint8, ptr ptr spring:Error) ptr Lexer
 decl lexerNext func(ptr Lexer) ptr Token
 
+decl tokenFree func(ptr Token)
+decl tokenNew func(uint8, uintptr, uintptr, uintptr, uintptr) ptr Token
+
+decl LEX_EOF uint8

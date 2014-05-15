@@ -14,6 +14,90 @@
 
 import lex
 import spring
+import utils
+
+func nextChar(lex ptr lex:Lexer) uint8
+  var ret = lex'peek
+
+  spring:streamRead(lex'file, ptr lex'peek, 1)
+  if (lex'error = spring:streamError(lex'file)) != null
+    return 0
+  /if
+
+  if spring:streamEnded(lex'file)
+    lex'peek = 4 #EOT
+  /if
+
+  if ret == 12 #carriage return
+    if lex'peek != 10 #new line (Windows format case)
+      lex'error = spring:errorNew("Inconsistent end of line - no newline after carriage return")
+      return 0
+    /if
+    return nextChar(lex)
+  /if
+
+  return ret
+/func
+
+func lexDiscardComment(lex ptr lex:Lexer)
+  while lex'peek != 0 and lex'peek != 10
+    nextChar(lex) #discard
+  /while
+/func
+
+func lexExtractString(lex ptr lex:Lexer) ptr uint8
+  
+/func
+
+func lexExtractSym(lex ptr lex:Lexer) ptr uint8
+
+/func
+
+func lexHandlePar(lex ptr lex:Lexer) ptr uint8
+
+/func
+
+func lexHandleId(lex ptr lex:Lexer) ptr uint8
+
+/func
+
+func extractNextToken(lex ptr lex:Lexer) ptr uint8
+  if lex'newline
+    lex'newline = false
+    return "\n"
+  /if
+
+  if spring:streamEnded(lex'file)
+    return null
+  /if
+
+  var ch uint8
+  while (ch = nextChar(lex)) != 0 and utils:charIsWhite(ch)
+    #discard spaces, tabs and newlines
+  /while
+  if ch == 0
+    return null
+  /if
+
+  if lex'peek == 35 # character `#` - means the beginning of a single line comment 
+    lexDiscardComment(lex)
+    return extractNextToken(lex)
+  /if
+
+  if lex'peek == 34 # character `"` - means the beginning of a string 
+    return lexExtractString(lex)
+  /if
+
+  if utils:charIsSym(lex'peek)
+    return lexExtractSym(lex)
+  /if
+
+  if utils:charIsPar(lex'peek)
+    return lexHandlePar(lex)
+  /if
+
+  return lexHandleId(lex)
+/func
 
 func lexerClose(lex ptr lex:Lexer)
   spring:streamClose(lex'file)
@@ -25,12 +109,17 @@ func lexerError(lexer ptr lex:Lexer) ptr spring:Error
   return lexer'error
 /func
 
-func lexerFromStream(stream ptr spring:Stream, name ptr uint8) ptr lex:Lexer
+func lexerFromStream(stream ptr spring:Stream, name ptr uint8, err ptr ptr spring:Error) ptr lex:Lexer
   var ret = cast<ptr lex:Lexer>(spring:zalloc(size(ptr lex:Lexer)))
 
   ret'file = stream
   ret'line = 1
   ret'filename = spring:strclone(name)
+
+  spring:streamRead(stream, ptr ret'peek, 1)
+  if (val err = spring:streamError(stream)) != null
+    return null
+  /if
 
   return ret
 /func
@@ -42,9 +131,35 @@ func lexerNew(fname ptr uint8, err ptr ptr spring:Error) ptr lex:Lexer
     return null
   /if
 
-  return lexerFromStream(file, fname)
+  return lexerFromStream(file, fname, err)
 /func
 
 func lexerNext(lexer ptr lex:Lexer) ptr lex:Token
+  var begLine = lexer'line
+  var begPos = lexer'pos
 
+  var next = extractNextToken(lexer)
 /func
+
+func lexerEof(lexer ptr lex:Lexer) bool
+  return spring:streamEnded(lexer'file)
+/func
+
+func tokenFree(tok ptr lex:Token)
+  if tok != null
+    spring:free(tok)
+  /if
+/func
+
+func tokenNew(type uint8, value, begin, end, lineno uintptr) ptr lex:Token
+  var ret = cast<ptr lex:Token>(spring:alloc(size(lex:Token)))
+  ret'type = type
+  ret'beginPos = begin
+  ret'endPos = end
+  ret'lineno = lineno
+  ret'value = value
+  return ret
+/func
+
+var LEX_EOF uint8 = 0
+
