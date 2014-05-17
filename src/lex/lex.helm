@@ -25,7 +25,7 @@ func nextChar(lex ptr lex:Lexer) uint8
 
   if ret == 12 #carriage return
     if lex'peek != 10 #new line (Windows format case)
-      lex'error = spring:errorNew("Inconsistent end of line - no newline after carriage return")
+      lex'error = utils:errorLex(lex, "inconsistent end of line - no newline after carriage return")
       return 0
     /if
     return nextChar(lex)
@@ -35,21 +35,80 @@ func nextChar(lex ptr lex:Lexer) uint8
 /func
 
 func lexDiscardComment(lex ptr lex:Lexer)
-  while !lex:lexerEOF(lex) and lex'peek != 10
-    nextChar(lex) #discard
+  while !lex:lexerEof(lex) and lex'peek != 10
+    if nextChar(lex) == 0 #discard
+      return #exit on error
+    /if
   /while
+/func
+
+var STX = 2 # There is no reason for using 2 and not another reserved character.
+
+func applyEscape(ch uint8, escape bool) uint8
+
+  if !escape
+    return ch
+  /if
+
+  if ch == 97 # `a`
+    return 7 # BEL
+  /if
+
+  if ch == 98 # `b` 
+    return 8 # BS
+  /if
+
+  if ch == 110 # `n`
+    return 10 # NL
+  /if
+
+  if ch == 114 # `r`
+    return 13
+  /if
+
+  if ch == 116 # `t`
+    return 9
+  /if
+
+  return ch
+
 /func
 
 func lexExtractString(lex ptr lex:Lexer) ptr uint8
   nextChar(lex) #discard the `"`
   var cs = spring:csNew(10) #just a magic number here
-  while !lex:lexerEOF(lex) and utils:charIsValidStr(lex'peek)
-    spring:csAppend(cs, nextChar(lex))
+  #an STX is added at the beginning, indicating that the content is not a token but a whole string.
+  spring:csAppend(cs, STX)
+  var ch uint8
+  var escape = false
+
+  while !lex:lexerEof(lex) and utils:charCanBeInString(lex'peek, escape)
+    ch = nextChar(lex)
+    if ch == 0
+      return null
+    /if
+
+    if !escape and ch == 92 # `\\`
+      escape = true
+    else
+      spring:csAppend(cs, applyEscape(ch, escape))
+    /if
   /while
 
-  if lex:lexerEOF(lex) 
-    lex'error = spring:errorNew("Unexpected EOF in string body")
+  if lex:lexerEof(lex)
+    lex'error = utils:errorLex(lex, "unexpected EOF in string body")
+    return null
   /if
+
+  if lex'peek != 34 # `"`
+    var got [2] uint8
+    got[0] = lex'peek
+    got[1] = 0 # `\0` c string terminator
+
+    lex'error = utils:errorMism(lex, "\"", got)
+    return null
+  /if
+
 /func
 
 func lexExtractSym(lex ptr lex:Lexer) ptr uint8
