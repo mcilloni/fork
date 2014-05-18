@@ -4,7 +4,7 @@
 #  This Source Code Form is subject to the terms of the Mozilla Public
 #  License, v. 2.0. If a copy of the MPL was not distributed with this
 #  file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#  Except B is not attached; this software is compatible with the 
+#  Exhibit B is not attached; this software is compatible with the 
 #  licenses expressed under Section 1.12 of the MPL v2. 
 
 import lex
@@ -85,6 +85,7 @@ func lexExtractString(lex ptr lex:Lexer) ptr uint8
   while !lex:lexerEof(lex) and utils:charCanBeInString(lex'peek, escape)
     ch = nextChar(lex)
     if ch == 0
+      spring:csFree(cs)
       return null
     /if
 
@@ -96,11 +97,13 @@ func lexExtractString(lex ptr lex:Lexer) ptr uint8
   /while
 
   if lex:lexerEof(lex)
+    spring:csFree(cs)
     lex'error = utils:errorLex(lex, "unexpected EOF in string body")
     return null
   /if
 
   if lex'peek != 34 # `"`
+    spring:csFree(cs)
     var got [2] uint8
     got[0] = lex'peek
     got[1] = 0 # `\0` c string terminator
@@ -109,18 +112,41 @@ func lexExtractString(lex ptr lex:Lexer) ptr uint8
     return null
   /if
 
+  return spring:csUnleash(cs)
 /func
 
 func lexExtractSym(lex ptr lex:Lexer) ptr uint8
+  var cs = spring:csNew(10) #magic number
+  var i uintptr = 0
+  var ch uint8
+  while !lex:lexerEof(lex) and utils:charIsSym(lex'peek) and i < 2
+    ch = nextChar(lex)
+    if ch == 0
+      spring:csFree(cs)
+      return null
+    /if
 
-/func
+    spring:csAppend(cs, ch)
+  /while
 
-func lexHandlePar(lex ptr lex:Lexer) ptr uint8
-
+  return spring:csUnleash(cs)
 /func
 
 func lexHandleId(lex ptr lex:Lexer) ptr uint8
+  var cs = spring:csNew(10) #magic number
+  var ch uint8
 
+  while utils:charIsIdVal(lex'peek)
+    ch = nextChar(lex)
+    if ch == 0
+      spring:csFree(cs)
+      return null
+    /if
+
+    spring:csAppend(cs, ch)
+  /while
+
+  return spring:csUnleash(cs)
 /func
 
 func extractNextToken(lex ptr lex:Lexer) ptr uint8
@@ -155,7 +181,9 @@ func extractNextToken(lex ptr lex:Lexer) ptr uint8
   /if
 
   if utils:charIsPar(lex'peek)
-    return lexHandlePar(lex)
+    var str = cast<ptr uint8>(spring:zalloc(2 * size(uint8)))
+    str[0] = nextChar(lex)
+    return str
   /if
 
   return lexHandleId(lex)
