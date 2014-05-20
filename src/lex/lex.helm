@@ -19,6 +19,8 @@ func nextChar(lex ptr lex:Lexer) uint8
     return 0
   /if
 
+  lex'pos++
+
   if spring:streamEnded(lex'file)
     lex'peek = 4 #EOT
   /if
@@ -150,10 +152,6 @@ func lexHandleId(lex ptr lex:Lexer) ptr uint8
 /func
 
 func extractNextToken(lex ptr lex:Lexer) ptr uint8
-  if lex'newline
-    lex'newline = false
-    return "\n"
-  /if
 
   if spring:streamEnded(lex'file)
     return null
@@ -165,6 +163,12 @@ func extractNextToken(lex ptr lex:Lexer) ptr uint8
   /while
   if ch == 0
     return null
+  /if
+
+  if lex'peek == 10 #character `\n` 
+    nextChar(lex) #discard the `\n`
+    lex'first = true
+    return spring:strclone("\n")
   /if
 
   if lex'peek == 35 # character `#` - means the beginning of a single line comment 
@@ -224,13 +228,6 @@ func lexerNew(fname ptr uint8, err ptr ptr spring:Error) ptr lex:Lexer
   return lexerFromStream(file, fname, err)
 /func
 
-func lexerNext(lexer ptr lex:Lexer) ptr lex:Token
-  var begLine = lexer'line
-  var begPos = lexer'pos
-
-  var next = extractNextToken(lexer)
-/func
-
 func lexerEof(lexer ptr lex:Lexer) bool
   return spring:streamEnded(lexer'file)
 /func
@@ -241,7 +238,7 @@ func tokenFree(tok ptr lex:Token)
   /if
 /func
 
-func tokenNew(type uint8, value, begin, end, lineno uintptr) ptr lex:Token
+func tokenNew(type uint16, value, begin, end, lineno uintptr) ptr lex:Token
   var ret = cast<ptr lex:Token>(spring:alloc(size(lex:Token)))
   ret'type = type
   ret'beginPos = begin
@@ -251,5 +248,304 @@ func tokenNew(type uint8, value, begin, end, lineno uintptr) ptr lex:Token
   return ret
 /func
 
-var LEX_EOF uint8 = 0
+var EOF uint16 = 0
+var NEWLINE uint16 = 10
+var ALIAS uint16 = 20
+var AMPER uint16 = 30
+var AND uint16 = 40
+var APOS uint16 = 50
+var ASSIGN uint16 = 60
+var BREAK uint16 = 70
+var CAST uint16 = 80
+var CBRAC uint16 = 90
+var COLON uint16 = 100
+var COMMA uint16 = 110
+var CONTINUE uint16 = 120
+var CPAR uint16 = 130
+var DEC uint16 = 140
+var DECL uint16 = 150
+var DIFFERENT uint16 = 160
+var DIV uint16 = 170
+var ELSE uint16 = 180
+var ENDENTRY uint16 = 190
+var ENDFUNC uint16 = 200
+var ENDIF uint16 = 210
+var ENDWHILE uint16 = 220
+var ENTRY uint16 = 230
+var EQUAL uint16 = 240
+var FUNC uint16 = 250
+var ID uint16 = 260
+var IF uint16 = 270
+var IMPORT uint16 = 280
+var INC uint16 = 290
+var MAJEQ uint16 = 300
+var MAJOR uint16 = 310
+var MINEQ uint16 = 320
+var MINOR uint16 = 330
+var MINUS uint16 = 340
+var MOD uint16 = 350
+var MODULE uint16 = 360
+var NOT uint16 = 380
+var NUMBER uint16 = 390
+var OBRAC uint16 = 400
+var OPAR uint16 = 410
+var OR uint16 = 420
+var PIPE uint16 = 430
+var PLUS uint16 = 440
+var POW uint16 = 450
+var PTR uint16 = 460
+var RETURN uint16 = 470
+var SIZE uint16 = 480
+var STRING uint16 = 490
+var STRUCT uint16 = 500
+var TIMES uint16 = 510
+var VAL uint16 = 520
+var VAR uint16 = 530
+var WHILE uint16 = 540
+var XOR uint16 = 550
+
+func lexerNext(lex ptr lex:Lexer) ptr lex:Token
+  if lexerError(lex) != null
+    return null
+  /if
+
+  if lexerEof(lex)
+    return tokenNew(EOF, 0, lex'pos, lex'pos, lex'line)
+  /if
+
+  if lex'first
+    lex'line++
+    lex'pos = 0
+  /if
+
+  var strToken = lex'saved
+  var begin = lex'pos
+
+  if lex'saved == null
+    strToken = extractNextToken(lex)
+    if lexerError(lex) != null
+      return null
+    /if
+  /if
+
+  var type uint16 = 0
+  var value uintptr = 0
+
+  if spring:strequals(strToken, "\n")
+    return tokenNew(NEWLINE, 0, begin, lex'pos, lex'line)
+  /if
+
+  if val strToken == STX # is a constant string
+    type = STRING
+    value = cast<uintptr>(spring:strclone(strToken + 1))
+  /if
+
+  if spring:strequals(strToken, "alias")
+    type = ALIAS
+  /if
+
+  if spring:strequals(strToken, "and")
+    type = AND
+  /if
+
+  if spring:strequals(strToken, "'")
+    type = APOS
+  /if
+
+  if spring:strequals(strToken, "=")
+    type = ASSIGN
+  /if
+
+  if spring:strequals(strToken, "break")
+    type = BREAK
+  /if
+
+  if spring:strequals(strToken, "cast")
+    type = CAST
+  /if
+
+  if spring:strequals(strToken, "]")
+    type = CBRAC
+  /if
+
+  if spring:strequals(strToken, ":")
+    type = COLON
+  /if
+
+  if spring:strequals(strToken, "continue")
+    type = CONTINUE
+  /if
+
+  if spring:strequals(strToken, ")")
+    type = CPAR
+  /if
+
+  if spring:strequals(strToken, "--")
+    type = DEC
+  /if
+
+  if spring:strequals(strToken, "decl")
+    type = DECL
+  /if
+
+  if spring:strequals(strToken, "!=")
+    type = DIFFERENT
+  /if
+
+  if spring:strequals(strToken, "/")
+    if lex'first and utils:charIsIdVal(lex'peek)
+      spring:free(strToken) #discard the /
+      lex'saved = extractNextToken(lex)
+      if lexerError(lex) != null
+        return null
+      /if
+
+      if spring:strequals(lex'saved, "equals")
+        type = ENDENTRY
+      /if
+
+      if spring:strequals(lex'saved, "func")
+        type = ENDFUNC
+      /if
+
+      if spring:strequals(lex'saved, "if")
+        type = ENDIF
+      /if
+
+      if spring:strequals(lex'saved, "while")
+        type = ENDWHILE
+      /if
+
+      if type == 0 # nothing has been matched, so it is a `/`
+        type = DIV
+      else
+        spring:free(lex'saved)
+        lex'saved = null
+      /if
+    /if
+  /if
+
+  if spring:strequals(strToken, "else")
+    type = ELSE
+  /if
+
+  if spring:strequals(strToken, "entry")
+    type = ENTRY
+  /if
+
+  if spring:strequals(strToken, "==")
+    type = EQUAL
+  /if
+
+  if spring:strequals(strToken, "func")
+    type = FUNC
+  /if
+
+  if spring:strequals(strToken, "if")
+    type = IF
+  /if
+
+  if spring:strequals(strToken, "import")
+    type = IMPORT
+  /if
+
+  if spring:strequals(strToken, "++")
+    type = INC
+  /if
+
+  if spring:strequals(strToken, ">=")
+    type = MAJEQ
+  /if
+
+  if spring:strequals(strToken, ">")
+    type = MAJOR
+  /if
+
+  if spring:strequals(strToken, "<=")
+    type = MINEQ
+  /if
+
+  if spring:strequals(strToken, "<")
+    type = MINOR
+  /if
+
+  if spring:strequals(strToken, "-")
+    type = MINUS
+  /if
+
+  if spring:strequals(strToken, "mod")
+    type = MOD
+  /if
+
+  if spring:strequals(strToken, "module")
+    type = MODULE
+  /if
+
+  if spring:strequals(strToken, "!")
+    type = NOT
+  /if
+
+  if spring:strequals(strToken, "[")
+    type = OBRAC
+  /if
+
+  if spring:strequals(strToken, "(")
+    type = OPAR
+  /if
+
+  if spring:strequals(strToken, "or")
+    type = OR
+  /if
+
+  if spring:strequals(strToken, "|")
+    type = PIPE
+  /if
+
+  if spring:strequals(strToken, "+")
+    type = PLUS
+  /if
+
+  if spring:strequals(strToken, "^")
+    type = POW
+  /if
+
+  if spring:strequals(strToken, "ptr")
+    type = PTR
+  /if
+
+  if spring:strequals(strToken, "return")
+    type = RETURN
+  /if
+
+  if spring:strequals(strToken, "size")
+    type = SIZE
+  /if
+
+  if spring:strequals(strToken, "struct")
+    type = STRUCT
+  /if
+
+  if spring:strequals(strToken, "*")
+    type = TIMES
+  /if
+
+  if spring:strequals(strToken, "val")
+    type = VAL
+  /if
+
+  if spring:strequals(strToken, "var")
+    type = VAR
+  /if
+
+  if spring:strequals(strToken, "while")
+    type = WHILE
+  /if
+
+  if spring:strequals(strToken, "xor")
+    type = XOR
+  /if
+
+  lex'first = false
+  return tokenNew(type, value, begin, lex'pos, lex'line)
+/func
 
