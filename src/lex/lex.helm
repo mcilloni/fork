@@ -33,12 +33,23 @@ func nextChar(lex ptr lex:Lexer) uint8
     return nextChar(lex)
   /if
 
+  if lex'first
+    lex'first = false
+    lex'line++
+    lex'pos = 1
+  /if
+
+  if ret == 10 # newline
+    lex'first = true
+  /if
+
   return ret
 /func
 
 func lexDiscardComment(lex ptr lex:Lexer)
-  while !lex:lexerEof(lex) and lex'peek != 10
-    if nextChar(lex) == 0 #discard
+  var ch uint8 = 0
+  while !lex:lexerEof(lex) and ch != 10
+    if (ch = nextChar(lex)) == 0 #discard
       return #exit on error
     /if
   /while
@@ -104,10 +115,10 @@ func lexExtractString(lex ptr lex:Lexer) ptr uint8
     return null
   /if
 
-  if lex'peek != 34 # `"`
+  if (ch = nextChar(lex)) != 34 # `"`
     spring:csFree(cs)
     var got [2] uint8
-    got[0] = lex'peek
+    got[0] = ch
     got[1] = 0 # `\0` c string terminator
 
     lex'error = utils:errorMism(lex, "\"", got)
@@ -157,12 +168,14 @@ func extractNextToken(lex ptr lex:Lexer) ptr uint8
     return null
   /if
 
-  var ch uint8
-  while (ch = nextChar(lex)) != 0 and utils:charIsWhite(ch)
-    #discard spaces, tabs and newlines
-  /while
-  if ch == 0
-    return null
+  if utils:charIsWhite(lex'peek)
+    var ch uint8
+    while (ch = nextChar(lex)) != 0 and utils:charIsWhite(lex'peek)
+      #discard spaces, tabs and newlines at the beginning of lines
+    /while
+    if ch == 0
+      return null
+    /if
   /if
 
   if lex'peek == 10 #character `\n` 
@@ -204,7 +217,7 @@ func lexerError(lexer ptr lex:Lexer) ptr spring:Error
 /func
 
 func lexerFromStream(stream ptr spring:Stream, name ptr uint8, err ptr ptr spring:Error) ptr lex:Lexer
-  var ret = cast<ptr lex:Lexer>(spring:zalloc(size(ptr lex:Lexer)))
+  var ret = cast<ptr lex:Lexer>(spring:zalloc(size(lex:Lexer)))
 
   ret'file = stream
   ret'line = 1
@@ -394,7 +407,6 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 
   if spring:strequals(strToken, "/")
     if lex'first and utils:charIsIdVal(lex'peek)
-      spring:free(strToken) #discard the /
       lex'saved = extractNextToken(lex)
       if lexerError(lex) != null
         return null
@@ -545,7 +557,239 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     type = XOR
   /if
 
+  if utils:strIsUInt(strToken)
+    type = NUMBER
+    value = spring:strtonum(strToken)
+  /if
+
+  if type == 0 # if it's still unmodified, then it's an identifier
+    type = ID
+    value = cast<uintptr>(strToken)
+  else
+    spring:free(strToken)
+  /if
+
   lex'first = false
   return tokenNew(type, value, begin, lex'pos, lex'line)
 /func
 
+func tokenStr(tok ptr lex:Token) ptr uint8
+  if tok'type == EOF
+    return "Eof"
+  /if
+
+  if tok'type == NEWLINE
+    return "Newline"
+  /if
+
+  if tok'type == ALIAS
+    return "alias"
+  /if
+
+  if tok'type == AMPER
+    return "&"
+  /if
+
+  if tok'type == AND
+    return "and"
+  /if
+
+  if tok'type == APOS
+    return "'"
+  /if
+
+  if tok'type == ASSIGN
+    return "="
+  /if
+
+  if tok'type == BREAK
+    return "break"
+  /if
+
+  if tok'type == CAST
+    return "cast"
+  /if
+
+  if tok'type == CBRAC
+    return "]"
+  /if
+
+  if tok'type == COLON
+    return ":"
+  /if
+
+  if tok'type == COMMA
+    return ","
+  /if
+
+  if tok'type == CONTINUE
+    return "continue"
+  /if
+
+  if tok'type == CPAR
+    return ")"
+  /if
+
+  if tok'type == DEC
+    return "--"
+  /if
+
+  if tok'type == DECL
+    return "decl"
+  /if
+
+  if tok'type == DIFFERENT
+    return "!="
+  /if
+
+  if tok'type == DIV
+    return "/"
+  /if
+
+  if tok'type == ELSE
+    return "else"
+  /if
+
+  if tok'type == ENDENTRY
+    return "/entry"
+  /if
+
+  if tok'type == ENDFUNC
+    return "/func"
+  /if
+
+  if tok'type == ENDIF
+    return "/if"
+  /if
+
+  if tok'type == ENDWHILE
+    return "/while"
+  /if
+
+  if tok'type == ENTRY
+    return "entry"
+  /if
+
+  if tok'type == EQUAL
+    return "=="
+  /if
+
+  if tok'type == FUNC
+    return "func"
+  /if
+
+  if tok'type == ID
+    return "an identifier"
+  /if
+
+  if tok'type == IF
+    return "if"
+  /if
+
+  if tok'type == IMPORT
+    return "import"
+  /if
+
+  if tok'type == INC
+    return "++"
+  /if
+
+  if tok'type == MAJEQ
+    return ">="
+  /if
+
+  if tok'type == MAJOR
+    return ">"
+  /if
+
+  if tok'type == MINEQ
+    return "<="
+  /if
+
+  if tok'type == MINOR
+    return "<"
+  /if
+
+  if tok'type == MINUS
+    return "-"
+  /if
+
+  if tok'type == MOD
+    return "mod"
+  /if
+
+  if tok'type == MODULE
+    return "module"
+  /if
+
+  if tok'type == NOT
+    return "!"
+  /if
+
+  if tok'type == NUMBER
+    return "a number"
+  /if
+
+  if tok'type == OBRAC
+    return "["
+  /if
+
+  if tok'type == OPAR
+    return "("
+  /if
+
+  if tok'type == OR
+    return "or"
+  /if
+
+  if tok'type == PIPE
+    return "|"
+  /if
+
+  if tok'type == PLUS
+    return "+"
+  /if
+
+  if tok'type == POW
+    return "^"
+  /if
+
+  if tok'type == PTR
+    return "ptr"
+  /if
+
+  if tok'type == RETURN
+    return "return"
+  /if
+
+  if tok'type == SIZE
+    return "size"
+  /if
+
+  if tok'type == STRING
+    return "a string"
+  /if
+
+  if tok'type == STRUCT
+    return "struct"
+  /if
+
+  if tok'type == TIMES
+    return "*"
+  /if
+
+  if tok'type == VAL
+    return "val"
+  /if
+
+  if tok'type == VAR
+    return "var"
+  /if
+
+  if tok'type == WHILE
+    return "while"
+  /if
+
+  return "xor"
+
+/func

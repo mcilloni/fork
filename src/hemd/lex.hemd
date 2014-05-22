@@ -18,7 +18,6 @@ alias Lexer struct (
   error ptr spring:Error,
   filename ptr uint8,
   saved ptr uint8,
-  stateVar uint8,
   peek uint8,
   newline, first bool
 )
@@ -39,6 +38,7 @@ decl lexerNext func(ptr Lexer) ptr Token
 
 decl tokenFree func(ptr Token)
 decl tokenNew func(uint16, uintptr, uintptr, uintptr, uintptr) ptr Token
+decl tokenStr func(ptr Token) ptr uint8
 
 decl EOF uint16
 decl NEWLINE uint16
