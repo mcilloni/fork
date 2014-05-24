@@ -53,6 +53,7 @@ func lexDiscardComment(lex ptr lex:Lexer)
       return #exit on error
     /if
   /while
+
 /func
 
 var STX = 2 # There is no reason for using 2 and not another reserved character.
@@ -106,6 +107,7 @@ func lexExtractString(lex ptr lex:Lexer) ptr uint8
       escape = true
     else
       spring:csAppend(cs, applyEscape(ch, escape))
+      escape = false
     /if
   /while
 
@@ -182,6 +184,11 @@ func extractNextToken(lex ptr lex:Lexer) ptr uint8
 
   if lex'peek == 35 # character `#` - means the beginning of a single line comment 
     lexDiscardComment(lex)
+    if !lex:lexerEof(lex) and !lex'firstLineTok
+      lex'newline = true
+      lex'firstLineTok = true
+    /if
+
     return extractNextToken(lex)
   /if
 
