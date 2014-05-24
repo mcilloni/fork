@@ -22,7 +22,7 @@ func nextChar(lex ptr lex:Lexer) uint8
   lex'pos++
 
   if spring:streamEnded(lex'file)
-    lex'peek = 4 #EOT
+    lex'peek = 0
   /if
 
   if ret == 12 #carriage return
@@ -33,14 +33,14 @@ func nextChar(lex ptr lex:Lexer) uint8
     return nextChar(lex)
   /if
 
-  if lex'first
-    lex'first = false
+  if lex'firstLineLetter
+    lex'firstLineLetter = false
     lex'line++
     lex'pos = 1
   /if
 
   if ret == 10 # newline
-    lex'first = true
+    lex'firstLineLetter = true
   /if
 
   return ret
@@ -168,20 +168,16 @@ func extractNextToken(lex ptr lex:Lexer) ptr uint8
     return null
   /if
 
-  if utils:charIsWhite(lex'peek)
-    var ch uint8
-    while (ch = nextChar(lex)) != 0 and utils:charIsWhite(lex'peek)
-      #discard spaces, tabs and newlines at the beginning of lines
-    /while
-    if ch == 0
-      return null
+  var ch uint8
+  while utils:charIsWhite(lex'peek)
+    ch = nextChar(lex)
+    if ch == 10 and !lex'firstLineTok #character `\n` 
+      lex'firstLineTok = true
+      lex'newline = true
     /if
-  /if
-
-  if lex'peek == 10 #character `\n` 
-    nextChar(lex) #discard the `\n`
-    lex'first = true
-    return spring:strclone("\n")
+  /while
+  if lex'peek == 0
+    return null
   /if
 
   if lex'peek == 35 # character `#` - means the beginning of a single line comment 
@@ -203,6 +199,8 @@ func extractNextToken(lex ptr lex:Lexer) ptr uint8
     return str
   /if
 
+  lex'firstLineTok = false
+
   return lexHandleId(lex)
 /func
 
@@ -222,6 +220,7 @@ func lexerFromStream(stream ptr spring:Stream, name ptr uint8, err ptr ptr sprin
   ret'file = stream
   ret'line = 1
   ret'filename = spring:strclone(name)
+  ret'firstLineTok = true
 
   spring:streamRead(stream, ptr ret'peek, 1)
   if (val err = spring:streamError(stream)) != null
@@ -326,11 +325,6 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     return tokenNew(EOF, 0, lex'pos, lex'pos, lex'line)
   /if
 
-  if lex'first
-    lex'line++
-    lex'pos = 0
-  /if
-
   var strToken = lex'saved
   var begin = lex'pos
 
@@ -339,12 +333,20 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     if lexerError(lex) != null
       return null
     /if
+  else
+    lex'saved = null
+  /if
+
+  if strToken == null
+    return null
   /if
 
   var type uint16 = 0
   var value uintptr = 0
 
-  if spring:strequals(strToken, "\n")
+  if lex'newline
+    lex'saved = strToken
+    lex'newline = false
     return tokenNew(NEWLINE, 0, begin, lex'pos, lex'line)
   /if
 
@@ -385,6 +387,10 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     type = COLON
   /if
 
+  if spring:strequals(strToken, ",")
+    type = COMMA
+  /if
+
   if spring:strequals(strToken, "continue")
     type = CONTINUE
   /if
@@ -406,13 +412,13 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
   /if
 
   if spring:strequals(strToken, "/")
-    if lex'first and utils:charIsIdVal(lex'peek)
+    if utils:charIsIdVal(lex'peek)
       lex'saved = extractNextToken(lex)
       if lexerError(lex) != null
         return null
       /if
 
-      if spring:strequals(lex'saved, "equals")
+      if spring:strequals(lex'saved, "entry")
         type = ENDENTRY
       /if
 
@@ -569,7 +575,6 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     spring:free(strToken)
   /if
 
-  lex'first = false
   return tokenNew(type, value, begin, lex'pos, lex'line)
 /func
 
@@ -579,7 +584,7 @@ func tokenStr(tok ptr lex:Token) ptr uint8
   /if
 
   if tok'type == NEWLINE
-    return "Newline"
+    return "a newline"
   /if
 
   if tok'type == ALIAS

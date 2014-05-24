@@ -19,7 +19,7 @@ alias Lexer struct (
   filename ptr uint8,
   saved ptr uint8,
   peek uint8,
-  newline, first bool
+  newline, firstLineTok, firstLineLetter bool
 )
 
 alias Token struct (
