@@ -1,0 +1,27 @@
+#  Second Step - Experimental Helm Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the 
+#  licenses expressed under Section 1.12 of the MPL v2. 
+
+import lex
+import spring
+import synt
+
+func parserNew() ptr synt:Parser
+  return cast<ptr synt:Parser>(spring:zalloc(size(synt:Parser)))
+/func
+
+func parserClose(parser ptr synt:Parser)
+  if parser != null
+    spring:free(parser)
+  /if
+/func
+
+func parserParse(parser ptr synt:Parser, filename ptr uint8) ptr synt:PNode
+
+/func
+

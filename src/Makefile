@@ -7,6 +7,7 @@ endif
 all:
 	$(MAKE) -C utils
 	$(MAKE) -C lex
+	$(MAKE) -C synt
 
 clean:
 	$(MAKE) -C utils clean
