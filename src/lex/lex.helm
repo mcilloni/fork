@@ -251,12 +251,6 @@ func lexerEof(lexer ptr lex:Lexer) bool
   return spring:streamEnded(lexer'file)
 /func
 
-func tokenFree(tok ptr lex:Token)
-  if tok != null
-    spring:free(tok)
-  /if
-/func
-
 func tokenNew(type uint16, value, begin, end, lineno uintptr) ptr lex:Token
   var ret = cast<ptr lex:Token>(spring:alloc(size(lex:Token)))
   ret'type = type
@@ -322,6 +316,15 @@ var VAL uint16 = 520
 var VAR uint16 = 530
 var WHILE uint16 = 540
 var XOR uint16 = 550
+
+func tokenFree(tok ptr lex:Token)
+  if tok != null
+    if tok'type == ID or tok'type == STRING
+      spring:free(cast<data>(tok'value))
+    /if
+    spring:free(tok)
+  /if
+/func
 
 func lexerNext(lex ptr lex:Lexer) ptr lex:Token
   if lexerError(lex) != null
