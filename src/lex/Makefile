@@ -1,8 +1,6 @@
 BUILDPATH = ../../build/lex/
 LIBPATH = ../../build/liblex.a
 
-
-
 ifndef HELMC
 	HELMC = helmc
 endif
@@ -34,5 +32,5 @@ $(BUILDPATH)/%.o: %.helm dir
 
 clean:
 	rm -rf $(BUILDPATH)
-	rm $(LIBPATH)
+	rm -f $(LIBPATH)
 

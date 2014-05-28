@@ -32,5 +32,5 @@ $(BUILDPATH)/%.o: %.helm dir
 
 clean:
 	rm -rf $(BUILDPATH)
-	rm $(LIBPATH)
+	rm -f $(LIBPATH)
 

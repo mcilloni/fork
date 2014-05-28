@@ -1,0 +1,24 @@
+#  Second Step - Experimental Helm Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the 
+#  licenses expressed under Section 1.12 of the MPL v2. 
+
+module utils
+
+import lex
+import spring
+
+decl charCanBeInString func(uint8, bool) bool
+decl charIsIdVal func(uint8) bool
+decl charIsPar func(uint8) bool
+decl charIsSym func(uint8) bool
+decl charIsWhite func(uint8) bool
+
+decl errorLex func(ptr lex:Lexer, ptr uint8) ptr spring:Error
+decl errorMism func(ptr lex:Lexer, ptr uint8, ptr uint8) ptr spring:Error
+
+decl strIsUInt func(ptr uint8) bool
