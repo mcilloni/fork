@@ -23,5 +23,15 @@ alias PNode struct(
   leaves ptr spring:Vector
 )
 
+alias Module struct(
+  name ptr uint8
+)
+
+alias PProgram struct(
+  node PNode,
+  moduleName ptr uint8,
+  imports ptr spring:Vector
+)
+
 decl parserNew func() ptr Parser
 decl parserParse func(ptr Parser, ptr uint8) ptr PNode

@@ -1,82 +1,121 @@
-program = [module], {import}, { definition }
+program ::= [module], {import}, { definition }
 
-module = 'module', id
+module ::= 'module', id
 
-import = 'import', id
+import ::= 'import', id
 
-definition = entry | function
+definition ::= entry | function
 
-entry = 'entry', stmtEnd, body, '/entry'
+entry ::= 'entry', stmtEnd, body, '/entry'
 
-function = 'func', id, '(', argList, ')', [type], stmtEnd, body, '/func'
+function ::= 'func', id, '(', argList, ')', [type], stmtEnd, body, '/func'
 
-argList = {argTypeList, ','}, argTypeList
+argList ::= {argTypeList, ','}, argTypeList
 
-argTypeList = {id, ','}, id, type
+argTypeList ::= {id, ','}, id, type
 
-body = {stmt}
+body ::= {stmt}
 
-stmt = (if | while | declaration | expr | return | 'break' | 'continue'), stmtEnd
+stmt ::= (if | while | declaration | expr | return | 'break' | 'continue'), stmtEnd
 
-return = 'return', expr
+return ::= 'return', expr
 
-if = 'if', expr, stmtEnd, body, [elseBlock], '/if'
+if ::= 'if', expr, stmtEnd, body, [elseBlock], '/if'
 
-while = 'while', expr, stmtEnd, breakBody, '/while'
+while ::= 'while', expr, stmtEnd, breakBody, '/while'
 
-elseBlock = 'else', body
+elseBlock ::= 'else', body
 
-var = 'var', singleVar
-decl = 'decl', declType
-stmtEnd = newLine | ';'
+var ::= 'var', singleVar
+decl ::= 'decl', declType
+stmtEnd ::= newLine | ';'
 
-singleVar = assign | declType
-declType = id, type
+singleVar ::= assign | declType
+declType ::= id, type
 
-varDecl = id | assign
+varDecl ::= id | assign
 
-assign = id, '=', expr
+alias ::= 'alias', id, type
 
-alias = 'alias', id, type
+typeModifier ::= 'val' | 'ptr' | ('[', number, ']')
 
-typeModifier = 'val' | 'ptr' | ('[', number, ']')
+funcType ::= 'func', '(', [type,{',', type}], ')', [type]
 
-funcType = 'func', '(', [type,{',', type}], ')', [type]
+structType ::= 'struct', '(', argList, ')'
 
-structType = 'struct', '(', argList, ')'
+type ::= [typeModifier], (id | funcType | structType)
 
-type = [typeModifier], (id | funcType | structType)
+idname ::= id | ( idname, ':', id)
 
-id = letter, {(letter | cipher)}
+id ::= letter, {(letter | cipher)}
 
-membAccess = id, ',', id
+expr ::= assignExpr
 
-arrayAccess = expr, '[', expr, ']'
+assignExpr ::= assign | or
 
-cast = 'cast', '<', type, '>', '(', expr, ')'
+assign ::= lha, assignOp, expr
 
-expr = ('(', exprC, ')') | exprC
+assignOp ::= '=' | '+=' | '-=' | '*=' | '/=' | '&=' | '|=' | '^=' | '**='
 
-exprC =  dec | inc | id | (expr, binOp, expr) | (unOp,expr) | assign | const | membAccess | cast | arrayAccess
+lha ::= idname | access | field | ( '(', lha, ')' )
 
-boolVal = 'true' | 'false'
+idname ::= id, { ':', id }
 
-const = number | string |boolVal
+or ::= ( or, 'or', and ) | and
 
-string = '"', {letter}, '"'
+and ::= ( and, 'and', binOr ) | binOr
 
-number = decNumber | binNumber | hexNumber
+binOr ::= ( binOr, '|', binAnd ) | binAnd
 
-binOp = '+' | '-' | '*' | '/' | 'and' | 'or' | '==' | '!='
-unOp = '-' | '!' 
-inc = id, '++'
-dec = id, '--'
+binAnd ::= ( binAnd, '&', equality ) | equality
 
-decNumber = ? decimal number ?
-hexNumber = ? hexadecimal number like 456h, letters A-F can be both cases, h should be lowcase ?
-binNumber = ? binary number like 10101b, b should be lowcase ?
+equality ::= ( equality, ( '==' | '!=' ), comparison) | comparison
 
-letter = ? any Unicode letter ?
-cipher = ? any cipher ?
-newLine = ? new line delimiter ?
+comparison ::= ( comparison, compOp, shift ) | shift
+
+compOp ::= '>' | '<' | '>=' | '<='
+
+shift ::= addiction
+
+addition ::= ( addition, '+', multiplication ) | multiplication
+
+multiplication ::= ( multiplication, ( '*', '/', 'mod' ), cast ) | cast
+
+cast ::= ( 'cast', '<', type, '>', '(', expr, ')' ) | unary
+
+unary ::= postfix | (unaryOp, cast) | size
+
+unaryOp ::= '-' | '!' | 'ptr' | 'val'
+
+size ::= 'size', '(', type, ')'
+
+postfix ::= primary | access | call | field | inc
+
+primary ::= idname | constant | string | ( '(', expr, ')' )
+
+access ::= postfix, '[', expr, ']'
+
+call ::= postfix, '(', [ arglist ], ')'
+
+arglist := assignExpr | ( arglist, ',', assignExpr )
+
+field ::= postfix, ''', id
+
+inc ::= postfix, ('++' | '--')
+
+constant ::= number | boolVal
+
+boolVal ::= 'true' | 'false'
+
+string ::= '"', {letter}, '"'
+
+number ::= decNumber | binNumber | hexNumber
+
+decNumber ::= ? decimal number ?
+hexNumber ::= ? hexadecimal number like 456h, letters A-F can be both cases, h should be lowcase ?
+binNumber ::= ? binary number like 10101b, b should be lowcase ?
+
+letter ::= ? any Unicode letter ?
+cipher ::= ? any cipher ?
+newLine ::= ? new line delimiter ?
 

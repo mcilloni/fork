@@ -1,0 +1,114 @@
+#  Second Step - Experimental Helm Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the 
+#  licenses expressed under Section 1.12 of the MPL v2. 
+
+import lex
+import spring
+
+func charIsIdVal(ch uint8) bool
+  if (ch >= 48) and (ch <= 57) #is a number
+    return true
+  /if
+
+  if (ch >= 65) and (ch <= 90) #is an uppercase letter
+    return true
+  /if
+
+  if (ch >= 97) and (ch <= 122) #is a lowcase letter
+    return true
+  /if
+
+  if ch == 95 #is a `_`
+    return true
+  /if
+
+  return false
+/func
+
+func charIsControl(ch uint8) bool
+  return ch < 20 or ch > 126
+/func
+
+func charIsPar(ch uint8) bool
+  #40 == `(`, 41 == `)`, 91 == `[`, 93 == `]`
+  return ch == 40 or ch == 41 or ch == 91 or ch == 93
+/func
+
+func charIsWhite(ch uint8) bool
+  #32 == ` `, 10 == `\n`, 13 == `\r`, 12 == `\f`, 11 == `\v`
+  return ch == 32 or ch == 10 or ch == 13 or ch == 12 or ch == 11
+/func
+
+func charIsSym(ch uint8) bool
+  return !charIsIdVal(ch) and !charIsPar(ch) and !charIsWhite(ch)
+/func
+
+func errorMism(lex ptr lex:Lexer, exp ptr uint8, got ptr uint8) ptr spring:Error
+  var lineno [21] uint8
+  var pos [21] uint8
+
+  spring:numtostr(lex'line, lineno, 21)
+  spring:numtostr(lex'pos, pos, 21)
+
+  var toglue [12] ptr uint8
+  toglue[0] = "In "
+  toglue[1] = lex'filename
+  toglue[2] = ", line "
+  toglue[3] = lineno
+  toglue[4] = ", pos "
+  toglue[5] = pos
+  toglue[6] = ": expected \""
+  toglue[7] = exp
+  toglue[8] = "\", got \""
+  toglue[9] = got
+  toglue[10] = "\""
+  toglue[11] = null
+
+  return spring:errorGlue(toglue)
+/func
+
+func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr spring:Error
+  var lineno [21] uint8
+  var pos [21] uint8
+
+  spring:numtostr(lex'line, lineno, 21)
+  spring:numtostr(lex'pos, pos, 21)
+
+  var toglue [9] ptr uint8
+  toglue[0] = "In "
+  toglue[1] = lex'filename
+  toglue[2] = ", line "
+  toglue[3] = lineno
+  toglue[4] = ", pos "
+  toglue[5] = pos
+  toglue[6] = ": "
+  toglue[7] = msg
+  toglue[8] = null
+
+  return spring:errorGlue(toglue)
+/func
+
+func charCanBeInString(ch uint8, escape bool) bool
+  if !escape and ch == 34 # `"`
+    return false #if the matching " is found, then stop
+  /if
+
+  return !charIsControl(ch)
+/func
+
+func strIsUInt(str ptr uint8) bool
+  while val str != 0
+    if (val str < 48) or (val str > 57) # current letter is not an ASCII number
+      return false
+    /if
+
+    str++
+  /while
+
+  return true
+/func

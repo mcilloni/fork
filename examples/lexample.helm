@@ -1,0 +1,55 @@
+#  Second Step - Experimental Helm Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the 
+#  licenses expressed under Section 1.12 of the MPL v2. 
+
+import lex
+import spring
+
+entry
+  var argv = spring:args()
+  if argv'len != 1
+    spring:errln("Wrong number of arguments, required: 1")
+    spring:exit(1)
+  /if
+
+  var err ptr spring:Error
+
+  var lex = lex:lexerNew(val argv'args, ptr err)
+  if err != null
+    spring:errln(spring:errorMsg(err))
+    spring:exit(1)
+  /if
+
+  var tok ptr lex:Token
+
+  while (tok = lex:lexerNext(lex)) != null
+
+    if (err = lex:lexerError(lex)) != null
+      spring:errln(spring:errorMsg(err))
+      spring:exit(2)
+    /if
+
+    spring:out(lex:tokenStr(tok))
+    if tok'type == lex:ID or tok'type == lex:STRING
+      spring:out(": ")
+      spring:outln(cast<ptr uint8>(tok'value))
+    else
+      if tok'type == lex:NUMBER
+        spring:out(": ")
+        spring:outint(tok'value)
+      /if
+      spring:outch(10)
+    /if
+
+    lex:tokenFree(tok)
+  /while
+
+  lex:lexerClose(lex)
+
+/entry
+

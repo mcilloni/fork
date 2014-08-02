@@ -10,6 +10,7 @@
 import lex
 import spring
 import synt
+import utils
 
 func parserNew() ptr synt:Parser
   return cast<ptr synt:Parser>(spring:zalloc(size(synt:Parser)))
@@ -21,7 +22,94 @@ func parserClose(parser ptr synt:Parser)
   /if
 /func
 
-func parserParse(parser ptr synt:Parser, filename ptr uint8) ptr synt:PNode
+alias Context struct (
+  prs ptr synt:Parser,
+  lex ptr lex:Lexer,
+  next ptr lex:Token
+)
 
+func theresError(ctx ptr Context) bool
+  return ctx'prs'err != null
+/func
+
+func nextTok(ctx ptr Context) ptr lex:Token
+  var tok = ctx'next
+  ctx'next = lex:lexerNext(ctx'lex)
+  ctx'prs'err = lex:lexerError(ctx'lex)
+  if ctx'prs'err != null
+    return null
+  /if
+
+  return tok
+/func
+
+# if the expected token is not given, then the Parser gets its error set
+func expectError(ctx ptr Context, expected, got uint16)
+  var tok1 lex:Token
+  tok1'type = expected
+  var tok2 lex:Token
+  tok2'type = got
+  ctx'prs'err = utils:errorMism(ctx'lex, lex:tokenStr(ptr tok1), lex:tokenStr(ptr tok2))
+/func
+
+# get the expected token or null for error.
+func expect(ctx ptr Context, ttype uint16) ptr lex:Token
+  var tok = nextTok(ctx)
+  if theresError(ctx) or tok == null
+    return null
+  /if
+
+  if tok'type != ttype
+    expectError(ctx, ttype, tok'type)
+    return null
+  /if
+
+  return tok
+/func
+
+func parserParseModuleName(ctx ptr Context) ptr uint8
+  var tok = nextTok(ctx)
+
+  if tok'type == lex:MODULE
+    var name = nextTok(ctx)
+
+    lex:tokenFree(name)
+  /if
+
+  lex:tokenFree(tok)
+  return null
+/func
+
+# parser root node
+func parserParseProgram(ctx ptr Context) ptr synt:PNode
+  var prog = cast<ptr synt:PProgram>(spring:zalloc(size(synt:PProgram)))
+
+  prog'moduleName = parserParseModuleName(ctx)
+
+  if theresError(ctx)
+    return null
+  /if
+
+  
+
+/func
+
+func parserParse(parser ptr synt:Parser, filename ptr uint8) ptr synt:PNode
+  var lex = lex:lexerNew(filename, ptr parser'err)
+  if parser'err != null
+    return null
+  /if
+
+  # init Context
+  var ctx Context
+  ctx'prs = parser
+  ctx'lex = lex
+  ctx'next = lex:lexerNext(lex)
+
+  if (parser'err = lex:lexerError(lex)) != null
+    return null
+  /if
+
+  return parserParseProgram(ptr ctx)
 /func
 

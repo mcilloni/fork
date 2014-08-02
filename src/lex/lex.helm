@@ -327,12 +327,12 @@ func tokenFree(tok ptr lex:Token)
 /func
 
 func lexerNext(lex ptr lex:Lexer) ptr lex:Token
-  if lexerError(lex) != null
-    return null
-  /if
-
   if lexerEof(lex)
     return tokenNew(EOF, 0, lex'pos, lex'pos, lex'line)
+  /if
+
+  if lexerError(lex) != null
+    return null
   /if
 
   var strToken = lex'saved
@@ -345,6 +345,13 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     /if
   else
     lex'saved = null
+
+    # this is needed because this field is set to false only by extractNextToken.
+    # if the saved one is the firstLineTok, then the next extractNextToken will still think 
+    # we're at the beginning of the line. This fixes it.
+    if lex'firstLineTok
+      lex'firstLineTok = false
+    /if
   /if
 
   if strToken == null
