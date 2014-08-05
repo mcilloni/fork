@@ -7,7 +7,6 @@ ifndef HELML
 endif
 
 SRCS = $(wildcard *.helm)
-LIBS = $(wildcard $(shell pwd)/../build/*.a)
 OBJS = $(patsubst %.helm,%.o,$(SRCS))
 BINS = $(patsubst %.helm,%,$(SRCS))
 
@@ -17,7 +16,7 @@ all: $(BINS)
 
 %: %.o
 	@echo [HELML] $<
-	@ $(HELML) -o $@ $< $(LIBS)
+	@ $(HELML) -o $@ $< ../build/libsynt.a ../build/liblex.a ../build/libutils.a
 
 %.o: %.helm 
 	@echo [HELMC] $<

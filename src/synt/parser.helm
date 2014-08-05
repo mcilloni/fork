@@ -12,12 +12,16 @@ import spring
 import synt
 import utils
 
-func parserNew() ptr synt:Parser
-  return cast<ptr synt:Parser>(spring:zalloc(size(synt:Parser)))
+func parserNew(filename ptr uint8) ptr synt:Parser
+  var ret = cast<ptr synt:Parser>(spring:zalloc(size(synt:Parser)))
+  ret'filename = spring:strclone(filename)
+
+  return ret
 /func
 
-func parserClose(parser ptr synt:Parser)
+func parserFree(parser ptr synt:Parser)
   if parser != null
+    spring:free(parser'filename)
     spring:free(parser)
   /if
 /func
@@ -67,35 +71,92 @@ func expect(ctx ptr Context, ttype uint16) ptr lex:Token
   return tok
 /func
 
+# parses, if present, the module name. Returns null if none or error
 func parserParseModuleName(ctx ptr Context) ptr uint8
-  var tok = nextTok(ctx)
+  if ctx'next'type == lex:MODULE
+    lex:tokenFree(nextTok(ctx)) # discard 'module'
 
-  if tok'type == lex:MODULE
-    var name = nextTok(ctx)
+    var name = expect(ctx, lex:ID)
+    if name != null
+      var temp = expect(ctx, lex:NEWLINE)
+      if temp == null
+        return null
+      /if
+      lex:tokenFree(temp)
 
-    lex:tokenFree(name)
+      var ret = spring:strclone(cast<ptr uint8>(name'value))
+      lex:tokenFree(name)
+
+      return ret
+    /if
   /if
 
-  lex:tokenFree(tok)
   return null
 /func
 
-# parser root node
-func parserParseProgram(ctx ptr Context) ptr synt:PNode
-  var prog = cast<ptr synt:PProgram>(spring:zalloc(size(synt:PProgram)))
+func parserParseImport(ctx ptr Context) ptr uint8
+  if ctx'next'type == lex:IMPORT
+    lex:tokenFree(nextTok(ctx)) # discard 'import'
 
-  prog'moduleName = parserParseModuleName(ctx)
+    var name = expect(ctx, lex:ID)
+    if name != null
+      var temp = expect(ctx, lex:NEWLINE)
+      if temp == null
+        return null
+      /if
+      lex:tokenFree(temp)
+
+      var ret = spring:strclone(cast<ptr uint8>(name'value))
+      lex:tokenFree(name)
+
+      return ret
+    /if
+  /if
+
+  return null
+/func
+
+# parses the 'import' statements, or returns a null pointer if empty
+func parserParseImports(ctx ptr Context) ptr spring:Vector
+  var ret = spring:vectNew(5)
+  var importLine ptr uint8
+
+  while (importLine = parserParseImport(ctx)) != null
+    spring:vectAppend(ret, importLine)
+  /while
+
+  return ret
+/func
+
+# parses the root node
+func parserParseProgram(ctx ptr Context) ptr synt:PNode
+
+  # parse module name
+  var moduleName = parserParseModuleName(ctx)
 
   if theresError(ctx)
     return null
   /if
 
-  
+  # parse imports
+  var imports = parserParseImports(ctx)
+
+  if theresError(ctx)
+    return null
+  /if
+
+  var prog = cast<ptr synt:PProgram>(spring:zalloc(size(synt:PProgram)))
+
+  prog'node'type = synt:PROGRAM
+  prog'moduleName = moduleName
+  prog'imports = imports
+
+  return cast<ptr synt:PNode>(prog)
 
 /func
 
-func parserParse(parser ptr synt:Parser, filename ptr uint8) ptr synt:PNode
-  var lex = lex:lexerNew(filename, ptr parser'err)
+func parserParse(parser ptr synt:Parser) ptr synt:PNode
+  var lex = lex:lexerNew(parser'filename, ptr parser'err)
   if parser'err != null
     return null
   /if
@@ -110,6 +171,24 @@ func parserParse(parser ptr synt:Parser, filename ptr uint8) ptr synt:PNode
     return null
   /if
 
-  return parserParseProgram(ptr ctx)
+  var ret = parserParseProgram(ptr ctx)
+
+  lex:lexerClose(lex)
+
+  return ret
 /func
 
+func pnodeFree(pnode ptr synt:PNode)
+  if pnode'type == synt:PROGRAM
+    var pprog = cast<ptr synt:PProgram>(pnode)
+    spring:free(pprog'moduleName)
+    spring:vectFreeAll(pprog'imports, ptr spring:free)
+  /if
+
+  spring:vectFreeAll(pnode'leaves, ptr pnodeFree)
+  spring:free(pnode)
+/func
+
+var PROGRAM  uint16 = 10
+var ENTRY    uint16 = 20
+var FUNCTION uint16 = 30

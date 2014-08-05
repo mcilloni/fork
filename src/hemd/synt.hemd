@@ -13,7 +13,7 @@ import lex
 import spring
 
 alias Parser struct(
-  lex ptr lex:Lexer,
+  filename ptr uint8,
   err ptr spring:Error
 )
 
@@ -23,15 +23,66 @@ alias PNode struct(
   leaves ptr spring:Vector
 )
 
-alias Module struct(
-  name ptr uint8
-)
-
 alias PProgram struct(
   node PNode,
   moduleName ptr uint8,
   imports ptr spring:Vector
 )
 
-decl parserNew func() ptr Parser
-decl parserParse func(ptr Parser, ptr uint8) ptr PNode
+decl TYPE_FUNC   uint16
+decl TYPE_NUM    uint16
+decl TYPE_PTR    uint16
+decl TYPE_STRUCT uint16
+
+alias Type struct (
+  name ptr uint8,
+  # anonymous because of first-step parser limitations; actually a TypeDescr
+  descr data
+)
+
+alias TypeDescr struct (
+  type uint16,
+  # if type is TYPE_PTR, this is the type returned by dereferencing.
+  # if type is TYPE_FUNC, this is the return type of the function
+  retType ptr Type,
+  # if type is TYPE_FUNC, this is the arguments list
+  # if type is TYPE_STRUCT, this is the fields list
+  arguments ptr spring:List
+)
+
+decl typeFree func(ptr Type)
+decl typeNew func(ptr uint8, ptr TypeDescr) ptr Type
+
+decl typeDescrFree func(ptr TypeDescr)
+decl typeDescrNew func(uint16, ptr Type, ptr spring:List) ptr TypeDescr
+
+alias Symbol struct (
+  name ptr uint8,
+  type ptr Type
+)
+
+alias Alias Symbol
+
+decl symbolFree func(ptr Symbol)
+decl symbolNew func(ptr uint8, ptr Type) ptr Symbol
+
+decl aliasFree ptr func(ptr Alias)
+decl aliasNew ptr func(ptr uint8, ptr Type) ptr Alias
+
+alias PFunction struct(
+  node PNode,
+  funcName ptr uint8,
+  type ptr TypeDescr
+)
+
+decl parserFree func(ptr Parser)
+decl parserNew func(ptr uint8) ptr Parser
+decl parserParse func(ptr Parser) ptr PNode
+
+decl pnodeFree func(ptr PNode)
+
+
+decl PROGRAM  uint16
+decl ENTRY    uint16
+decl FUNCTION uint16
+

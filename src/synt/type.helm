@@ -1,0 +1,81 @@
+#  Second Step - Experimental Helm Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the 
+#  licenses expressed under Section 1.12 of the MPL v2. 
+
+import spring
+import synt
+
+func typeFree(type ptr synt:Type)
+  if type != null
+    if type'descr != null
+      synt:typeDescrFree(cast<ptr synt:TypeDescr>(type'descr))
+    /if
+
+    if type'name != null
+      spring:free(type'name)
+    /if
+
+    spring:free(type)
+  /if
+/func
+
+func typeNew(name ptr uint8, descr ptr synt:TypeDescr) ptr synt:Type
+  var type = cast<ptr synt:Type>(spring:zalloc(size(synt:Type)))
+
+  type'name = name
+  type'descr = descr
+
+  return type
+/func
+
+func typeDescrFree(descr ptr synt:TypeDescr)
+  if descr != null
+    if descr'retType != null
+      synt:typeFree(descr'retType)
+    /if
+
+    if descr'arguments != null
+      spring:listFreeAll(descr'arguments, ptr synt:symbolFree)
+    /if
+  /if
+/func
+
+func typeDescrNew(type uint16, retType ptr synt:Type, params ptr spring:List) ptr synt:TypeDescr
+  var descr = cast<ptr synt:TypeDescr>(spring:zalloc(size(synt:TypeDescr)))
+
+  descr'type = type
+  descr'retType = retType
+  descr'arguments = params
+
+  return descr
+/func
+
+func symbolFree(sym ptr synt:Symbol)
+  if sym != null
+    spring:free(sym'name)
+    synt:typeFree(sym'type)
+    spring:free(sym)
+  /if
+/func
+
+func symbolNew(name ptr uint8, type ptr synt:Type) ptr synt:Symbol
+  var sym = cast<ptr synt:Symbol>(spring:zalloc(size(synt:Symbol)))
+
+  sym'name = name
+  sym'type = type
+
+  return sym
+/func
+
+var aliasFree = cast<ptr func(ptr synt:Alias)>(symbolFree)
+var aliasNew  = cast<ptr func(ptr uint8, ptr synt:Type) ptr synt:Alias>(symbolNew)
+
+var TYPE_FUNC   uint16 = 10
+var TYPE_NUM    uint16 = 20
+var TYPE_PTR    uint16 = 30
+var TYPE_STRUCT uint16 = 40
