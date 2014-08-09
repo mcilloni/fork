@@ -128,6 +128,288 @@ func parserParseImports(ctx ptr Context) ptr spring:Vector
   return ret
 /func
 
+func parserParseIdType(ctx ptr Context, name ptr uint8) ptr synt:Type
+  var moduleName ptr uint8 = null
+
+  if ctx'next != null and ctx'next'type == lex:COLON
+    # discard ':'
+    lex:tokenFree(nextTok(ctx))
+
+    var tok = expect(ctx, lex:ID)
+    if tok == null
+      return null
+    /if
+
+    moduleName = name
+    name = spring:strclone(cast<ptr uint8>(tok'value))
+
+    lex:tokenFree(tok)
+  /if
+
+  return synt:typeNew(name, moduleName, null)
+/func
+
+func tokenIsTypeStart(tok ptr lex:Token) bool
+  var ttype = tok'type
+  return ttype == lex:STRUCT or ttype == lex:FUNC or ttype == lex:PTR or ttype == lex:VAL or ttype == lex:ID
+/func
+
+decl parserParseType func(ptr Context) ptr synt:Type
+
+# if the next token exists and it's a lex:NEWLINE, then discards it
+func parserDiscardNewLine(ctx ptr Context)
+  if ctx'next != null and ctx'next'type == lex:NEWLINE
+    lex:tokenFree(nextTok(ctx))
+  /if
+/func
+
+func parserParseStructBodyVarsList(ctx ptr Context) ptr spring:List
+  var tok ptr lex:Token
+  var ret = spring:listNew()
+  while true
+    tok = expect(ctx, lex:ID)
+    if theresError(ctx)
+      break
+    /if
+
+    spring:listAppend(ret, spring:strclone(cast<ptr uint8>(tok'value)))
+
+    if ctx'next == null
+      ctx'prs'err = utils:errorMism(ctx'lex, "a ',' or an identifier", "end of file")
+      break
+    /if
+
+    if ctx'next'type != lex:COMMA
+      return ret
+    /if
+
+    # discard comma
+    lex:tokenFree(nextTok(ctx))
+  /while
+
+  spring:listFreeAll(ret, ptr spring:free)
+  return null
+/func
+
+func makeSymsAndInsertInList(syms ptr spring:List, ids ptr spring:List, type ptr synt:Type)
+  var len = spring:listLen(ids)
+  var i uintptr = 0
+  var elem ptr uint8
+  var sym ptr synt:Symbol
+
+  while i < len
+    elem = cast<ptr uint8>(val spring:listGet(ids, i))
+    sym = synt:symbolNew(elem, type)
+    spring:listAppend(syms, sym)
+    i++
+  /while
+
+  spring:listFree(ids)
+/func
+
+func parserParseStructBodyVars(ctx ptr Context, syms ptr spring:List, isFuncHeader bool) bool
+
+  # allow multiline struct/function header declarations
+  parserDiscardNewLine(ctx)
+
+  if ctx'next == null
+    ctx'prs'err = utils:errorMism(ctx'lex, "an identifier or a ')'", "end of file")
+    return false
+  /if
+
+  if ctx'next'type == lex:CPAR
+    return false
+  /if
+
+  var ids = parserParseStructBodyVarsList(ctx)
+  if theresError(ctx)
+    return false
+  /if
+
+  if ctx'next == null
+    ctx'prs'err = utils:errorMism(ctx'lex, "an identifier or a ')'", "end of file")
+    spring:listFreeAll(ids, ptr spring:free)
+    return false
+  /if
+
+  if ctx'next'type != lex:CPAR and !tokenIsTypeStart(ctx'next)
+    ctx'prs'err = utils:errorMism(ctx'lex, "a type or a ')'", lex:tokenStr(ctx'next))
+    return false
+  /if
+
+  if ctx'next'type == lex:CPAR
+    if !isFuncHeader
+      ctx'prs'err = utils:errorMism(ctx'lex, "a type", "a ')' - struct types must have field names")
+      spring:listFreeAll(ids, ptr spring:free)
+      return false
+    /if
+
+    makeSymsAndInsertInList(syms, ids, null)
+  /if
+
+
+  var type = parserParseType(ctx)
+  if theresError(ctx)
+    spring:listFreeAll(ids, ptr spring:free)
+    return false
+  /if
+
+  makeSymsAndInsertInList(syms, ids, type)
+
+  return true
+/func
+
+func parserParseStructBody(ctx ptr Context, isFuncHeader bool) ptr spring:List
+  lex:tokenFree(expect(ctx, lex:OPAR))
+  if theresError(ctx)
+    return null
+  /if
+
+  var strBody = spring:listNew()
+
+  # each iteration parses a sequence of 'a,b,c,d type' or a full list (if this is a function header)
+  while parserParseStructBodyVars(ctx, strBody, isFuncHeader)
+    if ctx'next != null and ctx'next'type == lex:CPAR
+      break
+    /if
+
+    lex:tokenFree(expect(ctx, lex:COMMA))
+    if theresError(ctx)
+      spring:listFreeAll(strBody, cast<ptr func(data)>(ptr synt:symbolNew))
+      return null
+    /if
+  /while
+
+  if theresError(ctx)
+    spring:listFreeAll(strBody, cast<ptr func(data)>(ptr synt:symbolNew))
+    return null
+  /if
+
+  lex:tokenFree(expect(ctx, lex:CPAR))
+  if theresError(ctx)
+    spring:listFreeAll(strBody, cast<ptr func(data)>(ptr synt:symbolNew))
+    return null
+  /if
+
+  return strBody
+/func
+
+func parserParseFunctionType(ctx ptr Context) ptr synt:Type
+  var args = parserParseStructBody(ctx, true)
+  if theresError(ctx)
+    return null
+  /if
+
+  var retType ptr synt:Type = null
+
+  if ctx'next != null and tokenIsTypeStart(ctx'next)
+    retType = parserParseType(ctx)
+  /if
+
+  return synt:typeNew(null, null, synt:typeDescrNew(synt:TYPE_FUNC, retType, args))
+/func
+
+func parserParseStruct(ctx ptr Context) ptr synt:Type
+  var args = parserParseStructBody(ctx, false)
+  if theresError(ctx)
+    return null
+  /if
+
+  return synt:typeNew(null, null, synt:typeDescrNew(synt:TYPE_STRUCT, null, args))
+/func
+
+func parserParseType(ctx ptr Context) ptr synt:Type
+  if ctx'next == null
+    ctx'prs'err = utils:errorMism(ctx'lex, "a valid type", "end of file")
+    return null
+  /if
+
+  var tok = nextTok(ctx)
+  var ret ptr synt:Type = null
+
+  if tok'type == lex:FUNC
+    ret = parserParseFunctionType(ctx)
+  /if
+
+  if tok'type == lex:ID
+    ret = parserParseIdType(ctx, spring:strclone(cast<ptr uint8>(tok'value)))
+  /if
+
+  if tok'type == lex:PTR
+    # parses the real type (after ptr)
+    var realType = parserParseType(ctx)
+    ret = synt:typeNew(null, null, synt:typeDescrNew(synt:TYPE_PTR, realType, null))
+  /if
+
+  if tok'type == lex:STRUCT
+    ret = parserParseStruct(ctx)
+  /if
+
+  if tok'type == lex:VAL
+    # parses the real type (after val)
+    ret = parserParseType(ctx)
+  /if
+
+  if ret == null and !theresError(ctx)
+    ctx'prs'err = utils:errorMism(ctx'lex, "a valid type", lex:tokenStr(tok))
+  /if
+
+  lex:tokenFree(tok)
+  return ret
+/func
+
+func parserParseAlias(ctx ptr Context) ptr synt:PNode
+  # discard 'alias'
+  lex:tokenFree(nextTok(ctx))
+
+  var name = expect(ctx, lex:ID)
+  if name != null
+    var type = parserParseType(ctx)
+    if theresError(ctx)
+      return null
+    /if
+
+    var node = cast<ptr synt:PDecl>(spring:zalloc(size(synt:PDecl)))
+    node'node'type = lex:ALIAS
+    node'name = spring:strclone(cast<ptr uint8>(name'value))
+    node'type = type
+
+    return ptr node'node
+  /if
+
+  return null
+/func
+
+func parserParseDefinition(ctx ptr Context) ptr synt:PNode
+  if ctx'next == null
+    return null
+  /if
+
+  if ctx'next'type == lex:ALIAS
+    return parserParseAlias(ctx)
+  /if
+
+  if ctx'next'type == lex:DECL
+    return null
+  /if
+
+  if ctx'next'type == lex:ENTRY
+    return null
+  /if
+
+  if ctx'next'type == lex:FUNC
+    return null
+  /if
+
+  if ctx'next'type == lex:VAR
+    return null
+  /if
+
+  ctx'prs'err = utils:errorMism(ctx'lex, "'alias', 'decl', 'entry', 'function' or 'var'", lex:tokenStr(ctx'next))
+
+  return null
+/func
+
 # parses the root node
 func parserParseProgram(ctx ptr Context) ptr synt:PNode
 
@@ -185,6 +467,12 @@ func pnodeFree(pnode ptr synt:PNode)
     spring:vectFreeAll(pprog'imports, ptr spring:free)
   /if
 
+  if pnode'type == synt:ALIAS or pnode'type == synt:DECL or pnode'type == synt:VAR or pnode'type == synt:ENTRY or pnode'type == synt:FUNCTION
+    var pdecl = cast<ptr synt:PDecl>(pnode)
+    spring:free(pdecl'name)
+    utils:decRef(pdecl'type)
+  /if
+
   spring:vectFreeAll(pnode'leaves, ptr pnodeFree)
   spring:free(pnode)
 /func
@@ -192,3 +480,7 @@ func pnodeFree(pnode ptr synt:PNode)
 var PROGRAM  uint16 = 10
 var ENTRY    uint16 = 20
 var FUNCTION uint16 = 30
+var ALIAS    uint16 = 40
+var DECL     uint16 = 50
+var VAR      uint16 = 60
+

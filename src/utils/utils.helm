@@ -9,6 +9,7 @@
 
 import lex
 import spring
+import utils
 
 func charIsIdVal(ch uint8) bool
   if (ch >= 48) and (ch <= 57) #is a number
@@ -112,3 +113,20 @@ func strIsUInt(str ptr uint8) bool
 
   return true
 /func
+
+func incRef(refc data)
+  if refc != null
+    cast<ptr utils:Ref>(refc)'count++
+  /if
+/func
+
+func decRef(refc data)
+  if refc != null
+    var ref = cast<ptr utils:Ref>(refc)
+    ref'count--
+    if ref'count < 1
+      ref'freeFunc(refc)
+    /if
+  /if
+/func
+

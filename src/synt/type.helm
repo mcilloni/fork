@@ -9,11 +9,16 @@
 
 import spring
 import synt
+import utils
 
 func typeFree(type ptr synt:Type)
   if type != null
     if type'descr != null
-      synt:typeDescrFree(cast<ptr synt:TypeDescr>(type'descr))
+      utils:decRef(type'descr)
+    /if
+
+    if type'moduleName != null
+      spring:free(type'moduleName)
     /if
 
     if type'name != null
@@ -24,10 +29,14 @@ func typeFree(type ptr synt:Type)
   /if
 /func
 
-func typeNew(name ptr uint8, descr ptr synt:TypeDescr) ptr synt:Type
+func typeNew(name, moduleName ptr uint8, descr ptr synt:TypeDescr) ptr synt:Type
   var type = cast<ptr synt:Type>(spring:zalloc(size(synt:Type)))
 
+  type'refc'freeFunc = ptr synt:typeFree
+
   type'name = name
+  type'moduleName = moduleName
+  utils:incRef(descr)
   type'descr = descr
 
   return type
@@ -36,7 +45,7 @@ func typeNew(name ptr uint8, descr ptr synt:TypeDescr) ptr synt:Type
 func typeDescrFree(descr ptr synt:TypeDescr)
   if descr != null
     if descr'retType != null
-      synt:typeFree(descr'retType)
+      utils:decRef(descr'retType)
     /if
 
     if descr'arguments != null
@@ -48,6 +57,9 @@ func typeDescrFree(descr ptr synt:TypeDescr)
 func typeDescrNew(type uint16, retType ptr synt:Type, params ptr spring:List) ptr synt:TypeDescr
   var descr = cast<ptr synt:TypeDescr>(spring:zalloc(size(synt:TypeDescr)))
 
+  descr'refc'freeFunc = ptr synt:typeDescrFree
+
+  utils:incRef(retType)
   descr'type = type
   descr'retType = retType
   descr'arguments = params

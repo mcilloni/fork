@@ -22,3 +22,13 @@ decl errorLex func(ptr lex:Lexer, ptr uint8) ptr spring:Error
 decl errorMism func(ptr lex:Lexer, ptr uint8, ptr uint8) ptr spring:Error
 
 decl strIsUInt func(ptr uint8) bool
+
+alias Ref struct (
+  count uintptr,
+  freeFunc ptr func(data)
+)
+
+decl incRef func(data)
+decl decRef func(data)
+
+
