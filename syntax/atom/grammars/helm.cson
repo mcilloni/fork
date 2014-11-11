@@ -1,0 +1,131 @@
+'scopeName': 'source.helm'
+'fileTypes': [
+  'helm',
+  'hemd'
+]
+'name': 'Helm',
+'patterns': [
+  {
+    'include': '#comments'
+  }
+  {
+    'include': '#helm_function_call'
+  }
+  {
+    'match': '\\b(alias|break|continue|else|entry|/entry|func|/func|if|/if|import|module|return|while|/while)\\b'
+    "name": "keyword.control.c"
+  }
+  {
+    "match": "\\b(decl|var)\\b"
+    "name": "keyword.go"
+  }
+  {
+    "match": "\\b(bool|int8|int16|int32|int64|intptr|uint8|uint16|uint32|uint64|uintptr)\\b"
+    "name": "storage.type.c"
+  }
+  {
+    "match": "\\b(ptr|val)\\b"
+    "name": "storage.modifier.c"
+  }
+  {
+    "match": "\\b(and|cast|mod|or|size)\\b"
+    "name": "keyword.control.c"
+  }
+  {
+    "match": "\\b(null|true|false)\\b"
+    "name": "constant.language.c++"
+  }
+  {
+    "match": "\\b(([0-9a-fA-F]*h)|(([0-9]+\\.?[0-9]*)|(\\.[0-9]+))((e|E)(\\+|-)?[0-9]+)?)(L|l|UL|ul|u|U|F|f|ll|LL|ull|ULL)?\\b"
+    "name": "constant.numeric.c"
+  }
+  {
+    "match": "^func\\s+([a-zA-Z0-9]*)\\s*\\("
+    "name": "meta.function.c"
+  }
+  {
+    "begin": "\""
+    "beginCaptures": {
+      "0": {
+        "name": "punctuation.definition.string.begin.c"
+      }
+    }
+    "end": "\""
+    "endCaptures": {
+      "0": {
+        "name": "punctuation.definition.string.end.c"
+      }
+    },
+    "name": "string.quoted.double.c"
+    "patterns": [
+      {
+        "include": "#string_escaped_char"
+      }
+    ]
+  }
+]
+"repository": {
+  "comments": {
+    "patterns": [
+      {
+        "captures": {
+          "1": {
+            "name": "meta.toc-list.banner.line.c"
+          }
+        }
+        "match": "^# =(\\s*.*?)\\s*=\\s*$\\n?"
+        "name": "comment.line.banner.c++"
+      }
+      {
+        'begin': '(^[ \\t]+)?(?=#)'
+        'beginCaptures':
+          '1':
+            'name': 'punctuation.whitespace.comment.leading.c++'
+        'end': '(?!\\G)'
+        'patterns': [
+          {
+            'begin': '#'
+            'beginCaptures':
+              '0':
+                'name': 'punctuation.definition.comment.c++'
+            'end': '\\n'
+            'name': 'comment.line.double-slash.c++'
+            'patterns': [
+              {
+                'match': '(?>\\\\\\s*\\n)'
+                'name': 'punctuation.separator.continuation.c++'
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+  "string_escaped_char": {
+    "patterns": [
+      {
+        "match": "\\\\(\\\\|[abefnprtv'\"?]|[0-3]\\d{,2}|[4-7]\\d?|x[a-fA-F0-9]{,2}|u[a-fA-F0-9]{,4}|U[a-fA-F0-9]{,8})",
+        "name": "constant.character.escape.c"
+      },
+      {
+        "match": "\\\\.",
+        "name": "invalid.illegal.unknown-escape.c"
+      }
+    ]
+  }
+  "helm_function_call": {
+    "captures": {
+      "1": {
+        "name": "punctuation.whitespace.function-call.leading.c"
+      },
+      "2": {
+        "name": "support.function.any-method.c"
+      },
+      "3": {
+        "name": "punctuation.definition.parameters.c"
+      }
+    },
+    "match": "(?x) (?: (?= \\s )  (?:(?<=else|return) | (?<!\\w)) (\\s+))?\n\t\t\t(\\b \n\t\t\t\t(?!(and|mod|or|size|struct|func|while|if)\\s*\\()(?:(?!NS)[A-Za-z_][A-Za-z0-9_]*+\\b | :: )++                  # actual name\n\t\t\t)\n\t\t\t \\s*(\\()",
+    "name": "meta.function-call.c"
+  }
+}

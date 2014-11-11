@@ -1,0 +1,43 @@
+import synt
+import spring
+
+entry
+  var argv = spring:args()
+  if argv'len != 1
+    spring:errln("Wrong number of arguments, required: 1")
+    spring:exit(1)
+  /if
+
+  var prs = synt:parserNew(argv'args[0])
+  var root = synt:parserParse(prs)
+
+  if prs'err != null
+    spring:errln(spring:errorMsg(prs'err))
+    spring:exit(1)
+  /if
+
+  var prog = cast<ptr synt:PProgram>(root)
+
+  spring:out("Module name: ")
+  if prog'moduleName == null
+    spring:outln("<main module>")
+  else
+    spring:outln(prog'moduleName)
+  /if
+
+  if prog'imports != null
+    var len = spring:vectLen(prog'imports)
+    var i = 0
+    var elem ptr uint8
+
+    while i < len
+      elem = cast<ptr uint8>(val spring:vectGet(prog'imports, i))
+      spring:out("import ")
+      spring:outln(elem)
+      i++
+    /while
+  /if
+
+  synt:parserFree(prs)
+  synt:pnodeFree(root)
+/entry

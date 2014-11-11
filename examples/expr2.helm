@@ -1,0 +1,409 @@
+import lex
+import spring
+import utils
+
+var next ptr lex:Token
+
+var TYPE_BINARY uint8 = 0
+var TYPE_UNARY uint8 = 2
+
+var ASSOC_LEFT uint8 = 0
+var ASSOC_RIGHT uint8 = 1
+
+func isBinary(tok ptr lex:Token) bool
+  return tok != null and (tok'type mod 10) < 2
+/func
+
+func isUnary(tok ptr lex:Token) bool
+  return tok != null and !isBinary(tok)
+/func
+
+func assocRight(tok ptr lex:Token) bool
+  return tok != null and ((tok'type & 1) != 0)
+/func
+
+func assocLeft(tok ptr lex:Token) bool
+  return tok != null and !assocRight(tok)
+/func
+
+func tokTypePrec(ttype uint16) int16
+  return ttype / 1000
+/func
+
+func opPrec(tok ptr lex:Token) int16
+  if tok != null
+    return tokTypePrec(tok'type)
+  /if
+
+  return 0
+/func
+
+func isOp(tok ptr lex:Token) bool
+  return opPrec(tok) != 0
+/func
+
+func isValidInExpr(tok ptr lex:Token) bool
+  return tok != null and (isOp(tok) or tok'type == lex:ID or tok'type == lex:NUMBER)
+/func
+
+func nextTok(lex ptr lex:Lexer) ptr lex:Token
+  if next == null
+    next = lex:lexerNext(lex)
+  /if
+
+  if lex:lexerError(lex) != null
+    return null
+  /if
+
+  var ret = next
+  next = lex:lexerNext(lex)
+
+  if lex:lexerError(lex) != null
+    return null
+  /if
+
+  return ret
+/func
+
+func discardTok(lex ptr lex:Lexer)
+  lex:tokenFree(nextTok(lex))
+/func
+
+alias Op struct(
+    tok ptr lex:Token,
+    lhs ptr Op,
+    rhs ptr Op
+)
+
+func opFree(op ptr Op)
+  if op != null
+    lex:tokenFree(op'tok)
+    spring:free(op)
+  /if
+/func
+
+func opNew(tok ptr lex:Token, lhs,rhs ptr Op) ptr Op
+  var op = cast<ptr Op>(spring:zalloc(size(Op)))
+  op'tok = tok
+  op'lhs = lhs
+  op'rhs = rhs
+
+  return op
+/func
+
+func exprParseBinaryRhs(lex ptr lex:Lexer, lhs ptr Op, minPri uint16, err ptr ptr spring:Error) ptr Op
+
+/func
+
+func exprParseCastTag(lex ptr lex:Lexer,err ptr ptr spring:Error) ptr Op
+  var castTok = nextTok(lex)
+
+  ## begins stub
+  discardTok(lex)
+
+  var tok ptr lex:Token
+  while (tok = nextTok(lex))'type != lex:MINOR
+    lex:tokenFree(tok)
+  /while
+
+  lex:tokenFree(tok)
+  discardTok(lex) #`(`
+  ## end stub
+
+  decl exprParse func(ptr lex:Lexer,ptr ptr spring:Error) ptr Op
+
+  var expr = exprParse(lex,err)
+
+  ## begins stub
+  discardTok(lex) #`)`
+  ## end stub
+
+  return opNew(castTok, expr, null)
+/func
+
+func exprParseSizeOp(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
+  var sizeTok = nextTok(lex)
+  ## begins stub
+  discardTok(lex)
+
+  var tok ptr lex:Token
+  while (tok = nextTok(lex))'type != lex:CPAR
+    lex:tokenFree(tok)
+  /while
+
+  lex:tokenFree(tok)
+  ## end stub
+
+  return opNew(sizeTok, null, null)
+/func
+
+func tokIsPostfixExpressionSuffixStart(tok ptr lex:Token) bool
+  return tok != null and (tok'type == lex:OPAR or tok'type == lex:OBRAC or tok'type == lex:INC or tok'type == lex:DEC)
+/func
+
+func exprParseId(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
+  var ret = opNew(nextTok(lex), null, null)
+  if next != null and next'type == lex:COLON
+    var colon = nextTok(lex)
+    if next == null
+      val err = spring:errorNew("unexpected eof in exprParseId")
+      return null
+    /if
+
+    if next'type != lex:ID
+      val err = utils:errorMism(next'lineno, "an identifier", lex:tokenStr(next))
+      return null
+    /if
+
+    ret = opNew(colon, ret, opNew(nextTok(lex), null, null))
+  /if
+
+  return ret
+/func
+
+func exprParseParens(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
+  discardTok(lex)
+
+  decl exprParseAssign func(ptr lex:Lexer, ptr ptr spring:Error) ptr Op
+  var expression = exprParseAssign(lex, err)
+
+  if expression == null
+    return null
+  /if
+
+  if next == null
+    val err = spring:errorNew("Unexpected EOF in exprParseParens")
+    return null
+  /if
+
+  if next'type != lex:CPAR
+    val err = utils:errorMism(next'lineno, "a ')'", lex:tokenStr(next))
+    return null
+  /if
+
+  discardTok(lex)
+
+  return expression
+/func
+
+func exprParsePrimary(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
+  if next == null
+    val err = spring:errorNew("eof in exprParsePrimary")
+    return null
+  /if
+
+  if next'type == lex:FALSE or next'type == lex:TRUE or next'type == lex:STRING or next'type == lex:NUMBER
+    return opNew(nextTok(lex), null, null)
+  /if
+
+  if next'type == lex:ID
+    return exprParseId(lex, err)
+  /if
+
+  if next'type != lex:OPAR
+    val err = utils:errorMism(next'lineno, "an identifier, a costant or an expression between ()", lex:tokenStr(next))
+    return null
+  /if
+
+  return exprParseParens(lex, err)
+/func
+
+func exprParseAccess(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) ptr Op
+
+/func
+
+func exprParseCall(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) ptr Op
+
+/func
+
+func exprParseField(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) ptr Op
+
+/func
+
+func exprParsePostfixSuffix(lex ptr lex:Lexer, primaryLhs ptr Op, err ptr ptr spring:Error) ptr Op
+  if next == null
+    val err = spring:errorNew("Unexpected EOF in exprParsePostfixSuffix")
+    return null
+  /if
+
+  var lhs = primaryLhs
+
+  while true
+    if next'type == lex:OBRAC
+      lhs = exprParseAccess(lex, lhs, err)
+    else
+      if next'type == lex:OPAR
+        lhs = exprParseCall(lex, lhs, err)
+      else
+        if next'type == lex:INC or next'type == lex:DEC
+          lhs = opNew(nextTok(lex), lhs, null)
+        else
+          if next'type == lex:APOS
+            lhs = exprParseField(lex, lhs, err)
+          else
+            break
+          /if
+        /if
+      /if
+    /if
+
+    if lhs == null
+      return null
+    /if
+  /while
+
+  return lhs
+/func
+
+func exprParsePostfix(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
+  var primary = exprParsePrimary(lex, err)
+
+  if primary == null
+    return null
+  /if
+
+  return exprParsePostfixSuffix(lex, primary, err)
+/func
+
+func exprParseUnaryOp(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
+  var operator = nextTok(lex)
+
+  var result ptr Op
+
+  decl exprParseCast func(ptr lex:Lexer, ptr ptr spring:Error) ptr Op
+  if (result = exprParseCast(lex, err)) == null
+    return null
+  /if
+
+  return opNew(operator, result, null)
+/func
+
+func exprParseUnary(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
+  if next'type == lex:SIZE
+    return exprParseSizeOp(lex, err)
+  /if
+
+  if isUnary(next)
+    return exprParseUnaryOp(lex, err)
+  /if
+
+  return exprParsePostfix(lex, err)
+/func
+
+func exprParseCast(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
+  if next == null
+    val err = spring:errorNew("Null next exprParseCast")
+    return null
+  /if
+
+  if next'type == lex:CAST
+    return exprParseCastTag(lex,err)
+  /if
+
+  return exprParseUnary(lex,err)
+/func
+
+func exprParseAssign(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
+  var lhs = exprParseCast(lex, err)
+
+  return exprParseBinaryRhs(lex, lhs, tokTypePrec(lex:ASSIGN), err)
+/func
+
+func exprParse(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
+  val err = null
+
+  return exprParseAssign(lex, err)
+/func
+
+func opDump(op ptr Op)
+  if op != null
+    if op'tok'type == lex:ID
+      spring:out(cast<ptr uint8>(op'tok'value))
+    else
+      if op'tok'type == lex:NUMBER
+        spring:outint(op'tok'value)
+      else
+        spring:out(lex:tokenStr(op'tok))
+      /if
+    /if
+
+    spring:outch(32)
+    opDump(op'lhs)
+    opDump(op'rhs)
+  /if
+/func
+
+func opDump2(op ptr Op, depth uintptr)
+  if op != null
+    var i uintptr = 0
+    while i < depth
+      spring:out("| ")
+      i++
+    /while
+
+    spring:out("Type: ")
+    spring:out(lex:tokenStr(op'tok))
+    if op'tok'type == lex:ID
+      spring:out(", value: ")
+      spring:out(cast<ptr uint8>(op'tok'value))
+    /if
+
+    if op'tok'type == lex:NUMBER
+      spring:out(", value: ")
+      spring:outint(op'tok'value)
+    /if
+
+    if isOp(op'tok)
+      spring:out(", prec ")
+      spring:outint(opPrec(op'tok))
+      spring:out(", ")
+      if isBinary(op'tok)
+        spring:out("binary")
+      else
+        spring:out("unary")
+      /if
+
+      spring:out(", associates ")
+
+      if assocLeft(op'tok)
+        spring:out("left")
+      else
+        spring:out("right")
+      /if
+    /if
+
+    spring:outch(10)
+    opDump2(op'lhs, depth + 1)
+    opDump2(op'rhs, depth + 1)
+  /if
+/func
+
+entry
+  next = null
+  var argv = spring:args()
+
+  if argv'len != 1
+
+    spring:failln("Wrong number of args")
+  /if
+
+  var error ptr spring:Error
+  var lexer = lex:lexerNew(argv'args[0], ptr error)
+
+  if error != null
+    spring:err(argv'args[0])
+    spring:err(": ")
+    spring:failln(error'msg)
+  /if
+
+  var op = exprParse(lexer, ptr error)
+  if error != null
+    spring:failln(error'msg)
+  /if
+  opDump(op)
+  spring:outch(10)
+  opDump2(op, 0)
+
+  lex:lexerClose(lexer)
+
+/entry

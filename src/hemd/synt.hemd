@@ -85,10 +85,10 @@ decl parserParse func(ptr Parser) ptr PNode
 
 decl pnodeFree func(ptr PNode)
 
-decl PROGRAM  uint16
-decl ENTRY    uint16
-decl FUNCTION uint16
-decl ALIAS    uint16
-decl DECL     uint16
-decl VAR      uint16
+decl PPROGRAM  uint16
+decl PENTRY    uint16
+decl PFUNCTION uint16
+decl PALIAS    uint16
+decl PDECL     uint16
+decl PVAR      uint16
 

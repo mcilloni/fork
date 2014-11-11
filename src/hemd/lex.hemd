@@ -4,19 +4,22 @@
 #  This Source Code Form is subject to the terms of the Mozilla Public
 #  License, v. 2.0. If a copy of the MPL was not distributed with this
 #  file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#  Exhibit B is not attached; this software is compatible with the 
-#  licenses expressed under Section 1.12 of the MPL v2. 
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
 
 module lex
 
 import spring
 
+alias Lineno struct(
+  filename ptr uint8,
+  lineno,pos uintptr
+)
+
 alias Lexer struct (
   file ptr spring:Stream,
-  line uintptr,
-  pos uintptr,
+  lineno ptr Lineno,
   error ptr spring:Error,
-  filename ptr uint8,
   saved ptr uint8,
   peek uint8,
   newline, firstLineTok, firstLineLetter bool
@@ -24,9 +27,9 @@ alias Lexer struct (
 
 alias Token struct (
   type uint16,
-  beginPos, endPos uintptr,
-  lineno uintptr,
-  value uintptr
+  endPos uintptr,
+  value uintptr,
+  lineno ptr Lineno
 )
 
 decl lexerClose func(ptr Lexer)
@@ -37,8 +40,12 @@ decl lexerNew func(ptr uint8, ptr ptr spring:Error) ptr Lexer
 decl lexerNext func(ptr Lexer) ptr Token
 
 decl tokenFree func(ptr Token)
-decl tokenNew func(uint16, uintptr, uintptr, uintptr, uintptr) ptr Token
+decl tokenNew func(uint16, uintptr, ptr Lineno, uintptr) ptr Token
 decl tokenStr func(ptr Token) ptr uint8
+
+decl linenoClone func(ptr Lineno) ptr Lineno
+decl linenoFree func(ptr Lineno)
+decl linenoNew func(ptr uint8, uint16, uint16) ptr Lineno
 
 decl EOF uint16
 decl NEWLINE uint16
@@ -65,6 +72,7 @@ decl ENDIF uint16
 decl ENDWHILE uint16
 decl ENTRY uint16
 decl EQUAL uint16
+decl FALSE uint16
 decl FUNC uint16
 decl ID uint16
 decl IF uint16
@@ -91,6 +99,7 @@ decl SIZE uint16
 decl STRING uint16
 decl STRUCT uint16
 decl TIMES uint16
+decl TRUE uint16
 decl VAL uint16
 decl VAR uint16
 decl WHILE uint16

@@ -49,16 +49,16 @@ func charIsSym(ch uint8) bool
   return !charIsIdVal(ch) and !charIsPar(ch) and !charIsWhite(ch)
 /func
 
-func errorMism(lex ptr lex:Lexer, exp ptr uint8, got ptr uint8) ptr spring:Error
+func errorMism(line ptr lex:Lineno, exp ptr uint8, got ptr uint8) ptr spring:Error
   var lineno [21] uint8
   var pos [21] uint8
 
-  spring:numtostr(lex'line, lineno, 21)
-  spring:numtostr(lex'pos, pos, 21)
+  spring:numtostr(line'lineno, lineno, 21)
+  spring:numtostr(line'pos, pos, 21)
 
   var toglue [12] ptr uint8
   toglue[0] = "In "
-  toglue[1] = lex'filename
+  toglue[1] = line'filename
   toglue[2] = ", line "
   toglue[3] = lineno
   toglue[4] = ", pos "
@@ -77,12 +77,12 @@ func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr spring:Error
   var lineno [21] uint8
   var pos [21] uint8
 
-  spring:numtostr(lex'line, lineno, 21)
-  spring:numtostr(lex'pos, pos, 21)
+  spring:numtostr(lex'lineno'lineno, lineno, 21)
+  spring:numtostr(lex'lineno'pos, pos, 21)
 
   var toglue [9] ptr uint8
   toglue[0] = "In "
-  toglue[1] = lex'filename
+  toglue[1] = lex'lineno'filename
   toglue[2] = ", line "
   toglue[3] = lineno
   toglue[4] = ", pos "

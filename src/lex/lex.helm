@@ -4,8 +4,8 @@
 #  This Source Code Form is subject to the terms of the Mozilla Public
 #  License, v. 2.0. If a copy of the MPL was not distributed with this
 #  file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#  Exhibit B is not attached; this software is compatible with the 
-#  licenses expressed under Section 1.12 of the MPL v2. 
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
 
 import lex
 import spring
@@ -19,7 +19,7 @@ func nextChar(lex ptr lex:Lexer) uint8
     return 0
   /if
 
-  lex'pos++
+  lex'lineno'pos++
 
   if spring:streamEnded(lex'file)
     lex'peek = 0
@@ -35,13 +35,34 @@ func nextChar(lex ptr lex:Lexer) uint8
 
   if lex'firstLineLetter
     lex'firstLineLetter = false
-    lex'line++
-    lex'pos = 1
+    lex'lineno'lineno++
+    lex'lineno'pos = 1
   /if
 
   if ret == 10 # newline
     lex'firstLineLetter = true
   /if
+
+  return ret
+/func
+
+func linenoClone(lineno ptr lex:Lineno) ptr lex:Lineno
+  return lex:linenoNew(spring:strclone(lineno'filename), lineno'lineno, lineno'pos)
+/func
+
+func linenoFree(lineno ptr lex:Lineno)
+  if lineno != null
+    spring:free(lineno'filename)
+    spring:free(lineno)
+  /if
+/func
+
+func linenoNew(filename ptr uint8, lineno, pos uint16) ptr lex:Lineno
+  var ret = cast<ptr lex:Lineno>(spring:alloc(size(lex:Lineno)))
+
+  ret'filename = filename
+  ret'lineno = lineno
+  ret'pos = pos
 
   return ret
 /func
@@ -68,7 +89,7 @@ func applyEscape(ch uint8, escape bool) uint8
     return 7 # BEL
   /if
 
-  if ch == 98 # `b` 
+  if ch == 98 # `b`
     return 8 # BS
   /if
 
@@ -85,7 +106,6 @@ func applyEscape(ch uint8, escape bool) uint8
   /if
 
   return ch
-
 /func
 
 func lexExtractString(lex ptr lex:Lexer) ptr uint8
@@ -123,7 +143,7 @@ func lexExtractString(lex ptr lex:Lexer) ptr uint8
     got[0] = ch
     got[1] = 0 # `\0` c string terminator
 
-    lex'error = utils:errorMism(lex, "\"", got)
+    lex'error = utils:errorMism(lex'lineno, "\"", got)
     return null
   /if
 
@@ -173,7 +193,7 @@ func extractNextToken(lex ptr lex:Lexer) ptr uint8
   var ch uint8
   while utils:charIsWhite(lex'peek)
     ch = nextChar(lex)
-    if ch == 10 and !lex'firstLineTok #character `\n` 
+    if ch == 10 and !lex'firstLineTok #character `\n`
       lex'firstLineTok = true
       lex'newline = true
     /if
@@ -182,7 +202,7 @@ func extractNextToken(lex ptr lex:Lexer) ptr uint8
     return null
   /if
 
-  if lex'peek == 35 # character `#` - means the beginning of a single line comment 
+  if lex'peek == 35 # character `#` - means the beginning of a single line comment
     lexDiscardComment(lex)
     if !lex:lexerEof(lex) and !lex'firstLineTok
       lex'newline = true
@@ -192,7 +212,7 @@ func extractNextToken(lex ptr lex:Lexer) ptr uint8
     return extractNextToken(lex)
   /if
 
-  if lex'peek == 34 # character `"` - means the beginning of a string 
+  if lex'peek == 34 # character `"` - means the beginning of a string
     return lexExtractString(lex)
   /if
 
@@ -213,7 +233,7 @@ func extractNextToken(lex ptr lex:Lexer) ptr uint8
 
 func lexerClose(lex ptr lex:Lexer)
   spring:streamClose(lex'file)
-  spring:free(lex'filename)
+  lex:linenoFree(lex'lineno)
   spring:free(lex)
 /func
 
@@ -225,8 +245,7 @@ func lexerFromStream(stream ptr spring:Stream, name ptr uint8, err ptr ptr sprin
   var ret = cast<ptr lex:Lexer>(spring:zalloc(size(lex:Lexer)))
 
   ret'file = stream
-  ret'line = 1
-  ret'filename = spring:strclone(name)
+  ret'lineno = lex:linenoNew(spring:strclone(name),0,0)
   ret'firstLineTok = true
 
   spring:streamRead(stream, ptr ret'peek, 1)
@@ -251,84 +270,28 @@ func lexerEof(lexer ptr lex:Lexer) bool
   return spring:streamEnded(lexer'file)
 /func
 
-func tokenNew(type uint16, value, begin, end, lineno uintptr) ptr lex:Token
+func tokenNew(type uint16, value uintptr, lineno ptr lex:Lineno, end uintptr) ptr lex:Token
   var ret = cast<ptr lex:Token>(spring:alloc(size(lex:Token)))
   ret'type = type
-  ret'beginPos = begin
   ret'endPos = end
   ret'lineno = lineno
   ret'value = value
   return ret
 /func
 
-var EOF uint16 = 0
-var NEWLINE uint16 = 10
-var ALIAS uint16 = 20
-var AMPER uint16 = 30
-var AND uint16 = 40
-var APOS uint16 = 50
-var ASSIGN uint16 = 60
-var BREAK uint16 = 70
-var CAST uint16 = 80
-var CBRAC uint16 = 90
-var COLON uint16 = 100
-var COMMA uint16 = 110
-var CONTINUE uint16 = 120
-var CPAR uint16 = 130
-var DEC uint16 = 140
-var DECL uint16 = 150
-var DIFFERENT uint16 = 160
-var DIV uint16 = 170
-var ELSE uint16 = 180
-var ENDENTRY uint16 = 190
-var ENDFUNC uint16 = 200
-var ENDIF uint16 = 210
-var ENDWHILE uint16 = 220
-var ENTRY uint16 = 230
-var EQUAL uint16 = 240
-var FUNC uint16 = 250
-var ID uint16 = 260
-var IF uint16 = 270
-var IMPORT uint16 = 280
-var INC uint16 = 290
-var MAJEQ uint16 = 300
-var MAJOR uint16 = 310
-var MINEQ uint16 = 320
-var MINOR uint16 = 330
-var MINUS uint16 = 340
-var MOD uint16 = 350
-var MODULE uint16 = 360
-var NOT uint16 = 380
-var NUMBER uint16 = 390
-var OBRAC uint16 = 400
-var OPAR uint16 = 410
-var OR uint16 = 420
-var PIPE uint16 = 430
-var PLUS uint16 = 440
-var POW uint16 = 450
-var PTR uint16 = 460
-var RETURN uint16 = 470
-var SIZE uint16 = 480
-var STRING uint16 = 490
-var STRUCT uint16 = 500
-var TIMES uint16 = 510
-var VAL uint16 = 520
-var VAR uint16 = 530
-var WHILE uint16 = 540
-var XOR uint16 = 550
-
 func tokenFree(tok ptr lex:Token)
   if tok != null
-    if tok'type == ID or tok'type == STRING
+    if tok'type == lex:ID or tok'type == lex:STRING
       spring:free(cast<data>(tok'value))
     /if
+    lex:linenoFree(tok'lineno)
     spring:free(tok)
   /if
 /func
 
 func lexerNext(lex ptr lex:Lexer) ptr lex:Token
   if lexerEof(lex)
-    return tokenNew(EOF, 0, lex'pos, lex'pos, lex'line)
+    return tokenNew(lex:EOF, 0, lex:linenoClone(lex'lineno), lex'lineno'pos)
   /if
 
   if lexerError(lex) != null
@@ -336,7 +299,7 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
   /if
 
   var strToken = lex'saved
-  var begin = lex'pos
+  var begin = val lex'lineno
 
   if lex'saved == null
     strToken = extractNextToken(lex)
@@ -347,7 +310,7 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     lex'saved = null
 
     # this is needed because this field is set to false only by extractNextToken.
-    # if the saved one is the firstLineTok, then the next extractNextToken will still think 
+    # if the saved one is the firstLineTok, then the next extractNextToken will still think
     # we're at the beginning of the line. This fixes it.
     if lex'firstLineTok
       lex'firstLineTok = false
@@ -364,68 +327,68 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
   if lex'newline
     lex'saved = strToken
     lex'newline = false
-    return tokenNew(NEWLINE, 0, begin, lex'pos, lex'line)
+    return tokenNew(lex:NEWLINE, 0, lex:linenoClone(ptr begin), lex'lineno'pos)
   /if
 
   if val strToken == STX # is a constant string
-    type = STRING
+    type = lex:STRING
     value = cast<uintptr>(spring:strclone(strToken + 1))
   /if
 
   if spring:strequals(strToken, "alias")
-    type = ALIAS
+    type = lex:ALIAS
   /if
 
   if spring:strequals(strToken, "and")
-    type = AND
+    type = lex:AND
   /if
 
   if spring:strequals(strToken, "'")
-    type = APOS
+    type = lex:APOS
   /if
 
   if spring:strequals(strToken, "=")
-    type = ASSIGN
+    type = lex:ASSIGN
   /if
 
   if spring:strequals(strToken, "break")
-    type = BREAK
+    type = lex:BREAK
   /if
 
   if spring:strequals(strToken, "cast")
-    type = CAST
+    type = lex:CAST
   /if
 
   if spring:strequals(strToken, "]")
-    type = CBRAC
+    type = lex:CBRAC
   /if
 
   if spring:strequals(strToken, ":")
-    type = COLON
+    type = lex:COLON
   /if
 
   if spring:strequals(strToken, ",")
-    type = COMMA
+    type = lex:COMMA
   /if
 
   if spring:strequals(strToken, "continue")
-    type = CONTINUE
+    type = lex:CONTINUE
   /if
 
   if spring:strequals(strToken, ")")
-    type = CPAR
+    type = lex:CPAR
   /if
 
   if spring:strequals(strToken, "--")
-    type = DEC
+    type = lex:DEC
   /if
 
   if spring:strequals(strToken, "decl")
-    type = DECL
+    type = lex:DECL
   /if
 
   if spring:strequals(strToken, "!=")
-    type = DIFFERENT
+    type = lex:DIFFERENT
   /if
 
   if spring:strequals(strToken, "/")
@@ -436,382 +399,391 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
       /if
 
       if spring:strequals(lex'saved, "entry")
-        type = ENDENTRY
+        type = lex:ENDENTRY
       /if
 
       if spring:strequals(lex'saved, "func")
-        type = ENDFUNC
+        type = lex:ENDFUNC
       /if
 
       if spring:strequals(lex'saved, "if")
-        type = ENDIF
+        type = lex:ENDIF
       /if
 
       if spring:strequals(lex'saved, "while")
-        type = ENDWHILE
+        type = lex:ENDWHILE
       /if
 
-      if type == 0 # nothing has been matched, so it is a `/`
-        type = DIV
-      else
+      if type != 0
         spring:free(lex'saved)
         lex'saved = null
       /if
     /if
+    if type == 0 # nothing has been matched, so it is a `/`
+        type = lex:DIV
+    /if
   /if
 
   if spring:strequals(strToken, "else")
-    type = ELSE
+    type = lex:ELSE
   /if
 
   if spring:strequals(strToken, "entry")
-    type = ENTRY
+    type = lex:ENTRY
   /if
 
   if spring:strequals(strToken, "==")
-    type = EQUAL
+    type = lex:EQUAL
+  /if
+
+  if spring:strequals(strToken, "false")
+    type = lex:FALSE
   /if
 
   if spring:strequals(strToken, "func")
-    type = FUNC
+    type = lex:FUNC
   /if
 
   if spring:strequals(strToken, "if")
-    type = IF
+    type = lex:IF
   /if
 
   if spring:strequals(strToken, "import")
-    type = IMPORT
+    type = lex:IMPORT
   /if
 
   if spring:strequals(strToken, "++")
-    type = INC
+    type = lex:INC
   /if
 
   if spring:strequals(strToken, ">=")
-    type = MAJEQ
+    type = lex:MAJEQ
   /if
 
   if spring:strequals(strToken, ">")
-    type = MAJOR
+    type = lex:MAJOR
   /if
 
   if spring:strequals(strToken, "<=")
-    type = MINEQ
+    type = lex:MINEQ
   /if
 
   if spring:strequals(strToken, "<")
-    type = MINOR
+    type = lex:MINOR
   /if
 
   if spring:strequals(strToken, "-")
-    type = MINUS
+    type = lex:MINUS
   /if
 
   if spring:strequals(strToken, "mod")
-    type = MOD
+    type = lex:MOD
   /if
 
   if spring:strequals(strToken, "module")
-    type = MODULE
+    type = lex:MODULE
   /if
 
   if spring:strequals(strToken, "!")
-    type = NOT
+    type = lex:NOT
   /if
 
   if spring:strequals(strToken, "[")
-    type = OBRAC
+    type = lex:OBRAC
   /if
 
   if spring:strequals(strToken, "(")
-    type = OPAR
+    type = lex:OPAR
   /if
 
   if spring:strequals(strToken, "or")
-    type = OR
+    type = lex:OR
   /if
 
   if spring:strequals(strToken, "|")
-    type = PIPE
+    type = lex:PIPE
   /if
 
   if spring:strequals(strToken, "+")
-    type = PLUS
+    type = lex:PLUS
   /if
 
-  if spring:strequals(strToken, "^")
-    type = POW
+  if spring:strequals(strToken, "**")
+    type = lex:POW
   /if
 
   if spring:strequals(strToken, "ptr")
-    type = PTR
+    type = lex:PTR
   /if
 
   if spring:strequals(strToken, "return")
-    type = RETURN
+    type = lex:RETURN
   /if
 
   if spring:strequals(strToken, "size")
-    type = SIZE
+    type = lex:SIZE
   /if
 
   if spring:strequals(strToken, "struct")
-    type = STRUCT
+    type = lex:STRUCT
   /if
 
   if spring:strequals(strToken, "*")
-    type = TIMES
+    type = lex:TIMES
+  /if
+
+  if spring:strequals(strToken, "true")
+    type = lex:TRUE
   /if
 
   if spring:strequals(strToken, "val")
-    type = VAL
+    type = lex:VAL
   /if
 
   if spring:strequals(strToken, "var")
-    type = VAR
+    type = lex:VAR
   /if
 
   if spring:strequals(strToken, "while")
-    type = WHILE
+    type = lex:WHILE
   /if
 
-  if spring:strequals(strToken, "xor")
-    type = XOR
+  if spring:strequals(strToken, "^")
+    type = lex:XOR
   /if
 
   if utils:strIsUInt(strToken)
-    type = NUMBER
+    type = lex:NUMBER
     value = spring:strtonum(strToken)
   /if
 
   if type == 0 # if it's still unmodified, then it's an identifier
-    type = ID
+    type = lex:ID
     value = cast<uintptr>(strToken)
   else
     spring:free(strToken)
   /if
 
-  return tokenNew(type, value, begin, lex'pos, lex'line)
+  return tokenNew(type, value, lex:linenoClone(ptr begin), lex'lineno'pos)
 /func
 
 func tokenStr(tok ptr lex:Token) ptr uint8
-  if tok'type == EOF
+  if tok'type == lex:EOF
     return "Eof"
   /if
 
-  if tok'type == NEWLINE
+  if tok'type == lex:NEWLINE
     return "a newline"
   /if
 
-  if tok'type == ALIAS
+  if tok'type == lex:ALIAS
     return "alias"
   /if
 
-  if tok'type == AMPER
+  if tok'type == lex:AMPER
     return "&"
   /if
 
-  if tok'type == AND
+  if tok'type == lex:AND
     return "and"
   /if
 
-  if tok'type == APOS
+  if tok'type == lex:APOS
     return "'"
   /if
 
-  if tok'type == ASSIGN
+  if tok'type == lex:ASSIGN
     return "="
   /if
 
-  if tok'type == BREAK
+  if tok'type == lex:BREAK
     return "break"
   /if
 
-  if tok'type == CAST
+  if tok'type == lex:CAST
     return "cast"
   /if
 
-  if tok'type == CBRAC
+  if tok'type == lex:CBRAC
     return "]"
   /if
 
-  if tok'type == COLON
+  if tok'type == lex:COLON
     return ":"
   /if
 
-  if tok'type == COMMA
+  if tok'type == lex:COMMA
     return ","
   /if
 
-  if tok'type == CONTINUE
+  if tok'type == lex:CONTINUE
     return "continue"
   /if
 
-  if tok'type == CPAR
+  if tok'type == lex:CPAR
     return ")"
   /if
 
-  if tok'type == DEC
+  if tok'type == lex:DEC
     return "--"
   /if
 
-  if tok'type == DECL
+  if tok'type == lex:DECL
     return "decl"
   /if
 
-  if tok'type == DIFFERENT
+  if tok'type == lex:DIFFERENT
     return "!="
   /if
 
-  if tok'type == DIV
+  if tok'type == lex:DIV
     return "/"
   /if
 
-  if tok'type == ELSE
+  if tok'type == lex:ELSE
     return "else"
   /if
 
-  if tok'type == ENDENTRY
+  if tok'type == lex:ENDENTRY
     return "/entry"
   /if
 
-  if tok'type == ENDFUNC
+  if tok'type == lex:ENDFUNC
     return "/func"
   /if
 
-  if tok'type == ENDIF
+  if tok'type == lex:ENDIF
     return "/if"
   /if
 
-  if tok'type == ENDWHILE
+  if tok'type == lex:ENDWHILE
     return "/while"
   /if
 
-  if tok'type == ENTRY
+  if tok'type == lex:ENTRY
     return "entry"
   /if
 
-  if tok'type == EQUAL
+  if tok'type == lex:EQUAL
     return "=="
   /if
 
-  if tok'type == FUNC
+  if tok'type == lex:FUNC
     return "func"
   /if
 
-  if tok'type == ID
+  if tok'type == lex:ID
     return "an identifier"
   /if
 
-  if tok'type == IF
+  if tok'type == lex:IF
     return "if"
   /if
 
-  if tok'type == IMPORT
+  if tok'type == lex:IMPORT
     return "import"
   /if
 
-  if tok'type == INC
+  if tok'type == lex:INC
     return "++"
   /if
 
-  if tok'type == MAJEQ
+  if tok'type == lex:MAJEQ
     return ">="
   /if
 
-  if tok'type == MAJOR
+  if tok'type == lex:MAJOR
     return ">"
   /if
 
-  if tok'type == MINEQ
+  if tok'type == lex:MINEQ
     return "<="
   /if
 
-  if tok'type == MINOR
+  if tok'type == lex:MINOR
     return "<"
   /if
 
-  if tok'type == MINUS
+  if tok'type == lex:MINUS
     return "-"
   /if
 
-  if tok'type == MOD
+  if tok'type == lex:MOD
     return "mod"
   /if
 
-  if tok'type == MODULE
+  if tok'type == lex:MODULE
     return "module"
   /if
 
-  if tok'type == NOT
+  if tok'type == lex:NOT
     return "!"
   /if
 
-  if tok'type == NUMBER
+  if tok'type == lex:NUMBER
     return "a number"
   /if
 
-  if tok'type == OBRAC
+  if tok'type == lex:OBRAC
     return "["
   /if
 
-  if tok'type == OPAR
+  if tok'type == lex:OPAR
     return "("
   /if
 
-  if tok'type == OR
+  if tok'type == lex:OR
     return "or"
   /if
 
-  if tok'type == PIPE
+  if tok'type == lex:PIPE
     return "|"
   /if
 
-  if tok'type == PLUS
+  if tok'type == lex:PLUS
     return "+"
   /if
 
-  if tok'type == POW
-    return "^"
+  if tok'type == lex:POW
+    return "**"
   /if
 
-  if tok'type == PTR
+  if tok'type == lex:PTR
     return "ptr"
   /if
 
-  if tok'type == RETURN
+  if tok'type == lex:RETURN
     return "return"
   /if
 
-  if tok'type == SIZE
+  if tok'type == lex:SIZE
     return "size"
   /if
 
-  if tok'type == STRING
+  if tok'type == lex:STRING
     return "a string"
   /if
 
-  if tok'type == STRUCT
+  if tok'type == lex:STRUCT
     return "struct"
   /if
 
-  if tok'type == TIMES
+  if tok'type == lex:TIMES
     return "*"
   /if
 
-  if tok'type == VAL
+  if tok'type == lex:VAL
     return "val"
   /if
 
-  if tok'type == VAR
+  if tok'type == lex:VAR
     return "var"
   /if
 
-  if tok'type == WHILE
+  if tok'type == lex:WHILE
     return "while"
   /if
 
-  return "xor"
+  return "^"
 
 /func

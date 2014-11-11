@@ -29,7 +29,8 @@ func parserFree(parser ptr synt:Parser)
 alias Context struct (
   prs ptr synt:Parser,
   lex ptr lex:Lexer,
-  next ptr lex:Token
+  next ptr lex:Token,
+  last lex:Lineno
 )
 
 func theresError(ctx ptr Context) bool
@@ -38,6 +39,13 @@ func theresError(ctx ptr Context) bool
 
 func nextTok(ctx ptr Context) ptr lex:Token
   var tok = ctx'next
+  if ctx'last'filename != null
+    spring:free(ctx'last'filename)
+  /if
+
+  ctx'last = val tok'lineno
+  ctx'last'filename = ctx'lex'lineno'filename # we're sure this isn't going to fade randomly
+
   ctx'next = lex:lexerNext(ctx'lex)
   ctx'prs'err = lex:lexerError(ctx'lex)
   if ctx'prs'err != null
@@ -53,7 +61,7 @@ func expectError(ctx ptr Context, expected, got uint16)
   tok1'type = expected
   var tok2 lex:Token
   tok2'type = got
-  ctx'prs'err = utils:errorMism(ctx'lex, lex:tokenStr(ptr tok1), lex:tokenStr(ptr tok2))
+  ctx'prs'err = utils:errorMism(ptr ctx'last, lex:tokenStr(ptr tok1), lex:tokenStr(ptr tok2))
 /func
 
 # get the expected token or null for error.
@@ -163,7 +171,7 @@ func parserDiscardNewLine(ctx ptr Context)
   /if
 /func
 
-func parserParseStructBodyVarsList(ctx ptr Context) ptr spring:List
+func parserParseIdList(ctx ptr Context) ptr spring:List
   var tok ptr lex:Token
   var ret = spring:listNew()
   while true
@@ -175,7 +183,7 @@ func parserParseStructBodyVarsList(ctx ptr Context) ptr spring:List
     spring:listAppend(ret, spring:strclone(cast<ptr uint8>(tok'value)))
 
     if ctx'next == null
-      ctx'prs'err = utils:errorMism(ctx'lex, "a ',' or an identifier", "end of file")
+      ctx'prs'err = utils:errorMism(ptr ctx'last, "a ',' or an identifier", "end of file")
       break
     /if
 
@@ -213,7 +221,7 @@ func parserParseStructBodyVars(ctx ptr Context, syms ptr spring:List, isFuncHead
   parserDiscardNewLine(ctx)
 
   if ctx'next == null
-    ctx'prs'err = utils:errorMism(ctx'lex, "an identifier or a ')'", "end of file")
+    ctx'prs'err = utils:errorMism(ptr ctx'last, "an identifier or a ')'", "end of file")
     return false
   /if
 
@@ -221,25 +229,25 @@ func parserParseStructBodyVars(ctx ptr Context, syms ptr spring:List, isFuncHead
     return false
   /if
 
-  var ids = parserParseStructBodyVarsList(ctx)
+  var ids = parserParseIdList(ctx)
   if theresError(ctx)
     return false
   /if
 
   if ctx'next == null
-    ctx'prs'err = utils:errorMism(ctx'lex, "an identifier or a ')'", "end of file")
+    ctx'prs'err = utils:errorMism(ptr ctx'last, "an identifier or a ')'", "end of file")
     spring:listFreeAll(ids, ptr spring:free)
     return false
   /if
 
   if ctx'next'type != lex:CPAR and !tokenIsTypeStart(ctx'next)
-    ctx'prs'err = utils:errorMism(ctx'lex, "a type or a ')'", lex:tokenStr(ctx'next))
+    ctx'prs'err = utils:errorMism(ptr ctx'last, "a type or a ')'", lex:tokenStr(ctx'next))
     return false
   /if
 
   if ctx'next'type == lex:CPAR
     if !isFuncHeader
-      ctx'prs'err = utils:errorMism(ctx'lex, "a type", "a ')' - struct types must have field names")
+      ctx'prs'err = utils:errorMism(ptr ctx'last, "a type", "a ')' - struct types must have field names")
       spring:listFreeAll(ids, ptr spring:free)
       return false
     /if
@@ -320,7 +328,7 @@ func parserParseStruct(ctx ptr Context) ptr synt:Type
 
 func parserParseType(ctx ptr Context) ptr synt:Type
   if ctx'next == null
-    ctx'prs'err = utils:errorMism(ctx'lex, "a valid type", "end of file")
+    ctx'prs'err = utils:errorMism(ptr ctx'last, "a valid type", "end of file")
     return null
   /if
 
@@ -351,7 +359,7 @@ func parserParseType(ctx ptr Context) ptr synt:Type
   /if
 
   if ret == null and !theresError(ctx)
-    ctx'prs'err = utils:errorMism(ctx'lex, "a valid type", lex:tokenStr(tok))
+    ctx'prs'err = utils:errorMism(ptr ctx'last, "a valid type", lex:tokenStr(tok))
   /if
 
   lex:tokenFree(tok)
@@ -380,6 +388,15 @@ func parserParseAlias(ctx ptr Context) ptr synt:PNode
   return null
 /func
 
+func parserParseDecl(ctx ptr Context, declType uint16) ptr synt:PNode
+  # discard 'var' or 'decl'
+  lex:tokenFree(nextTok(ctx))
+
+# var node = parserParseIdList(ctx, )
+
+# while 
+/func
+
 func parserParseDefinition(ctx ptr Context) ptr synt:PNode
   if ctx'next == null
     return null
@@ -389,8 +406,8 @@ func parserParseDefinition(ctx ptr Context) ptr synt:PNode
     return parserParseAlias(ctx)
   /if
 
-  if ctx'next'type == lex:DECL
-    return null
+  if ctx'next'type == lex:DECL or ctx'next'type == lex:VAR
+    return parserParseDecl(ctx, ctx'next'type)
   /if
 
   if ctx'next'type == lex:ENTRY
@@ -401,11 +418,7 @@ func parserParseDefinition(ctx ptr Context) ptr synt:PNode
     return null
   /if
 
-  if ctx'next'type == lex:VAR
-    return null
-  /if
-
-  ctx'prs'err = utils:errorMism(ctx'lex, "'alias', 'decl', 'entry', 'function' or 'var'", lex:tokenStr(ctx'next))
+  ctx'prs'err = utils:errorMism(ptr ctx'last, "'alias', 'decl', 'entry', 'function' or 'var'", lex:tokenStr(ctx'next))
 
   return null
 /func
@@ -429,7 +442,7 @@ func parserParseProgram(ctx ptr Context) ptr synt:PNode
 
   var prog = cast<ptr synt:PProgram>(spring:zalloc(size(synt:PProgram)))
 
-  prog'node'type = synt:PROGRAM
+  prog'node'type = synt:PPROGRAM
   prog'moduleName = moduleName
   prog'imports = imports
 
@@ -461,13 +474,13 @@ func parserParse(parser ptr synt:Parser) ptr synt:PNode
 /func
 
 func pnodeFree(pnode ptr synt:PNode)
-  if pnode'type == synt:PROGRAM
+  if pnode'type == synt:PPROGRAM
     var pprog = cast<ptr synt:PProgram>(pnode)
     spring:free(pprog'moduleName)
     spring:vectFreeAll(pprog'imports, ptr spring:free)
   /if
 
-  if pnode'type == synt:ALIAS or pnode'type == synt:DECL or pnode'type == synt:VAR or pnode'type == synt:ENTRY or pnode'type == synt:FUNCTION
+  if pnode'type == synt:PALIAS or pnode'type == synt:PDECL or pnode'type == synt:PVAR or pnode'type == synt:PENTRY or pnode'type == synt:PFUNCTION
     var pdecl = cast<ptr synt:PDecl>(pnode)
     spring:free(pdecl'name)
     utils:decRef(pdecl'type)
@@ -477,10 +490,11 @@ func pnodeFree(pnode ptr synt:PNode)
   spring:free(pnode)
 /func
 
-var PROGRAM  uint16 = 10
-var ENTRY    uint16 = 20
-var FUNCTION uint16 = 30
-var ALIAS    uint16 = 40
-var DECL     uint16 = 50
-var VAR      uint16 = 60
+var PPROGRAM   uint16 = 10
+var PENTRY     uint16 = 20
+var PFUNCTION  uint16 = 30
+var PALIAS     uint16 = 40
+var PDECL      uint16 = 50
+var PVAR       uint16 = 60
+var PDECLBLOCK uint16 = 70
 

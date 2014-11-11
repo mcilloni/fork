@@ -19,7 +19,7 @@ decl charIsSym func(uint8) bool
 decl charIsWhite func(uint8) bool
 
 decl errorLex func(ptr lex:Lexer, ptr uint8) ptr spring:Error
-decl errorMism func(ptr lex:Lexer, ptr uint8, ptr uint8) ptr spring:Error
+decl errorMism func(ptr lex:Lineno, ptr uint8, ptr uint8) ptr spring:Error
 
 decl strIsUInt func(ptr uint8) bool
 

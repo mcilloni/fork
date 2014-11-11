@@ -53,13 +53,11 @@ expr ::= assignExpr
 
 assignExpr ::= assign | or
 
-assign ::= lha, assignOp, expr
+assign ::= cast, assignOp, expr
 
 assignOp ::= '=' | '+=' | '-=' | '*=' | '/=' | '&=' | '|=' | '^=' | '**='
 
-lha ::= idname | access | field | ( '(', lha, ')' )
-
-idname ::= id, { ':', id }
+idname ::= id, [':', id]
 
 or ::= ( or, 'or', and ) | and
 
@@ -77,7 +75,7 @@ compOp ::= '>' | '<' | '>=' | '<='
 
 shift ::= addiction
 
-addition ::= ( addition, '+', multiplication ) | multiplication
+addition ::= ( addition, ('+' | '-'), multiplication ) | multiplication
 
 multiplication ::= ( multiplication, ( '*', '/', 'mod' ), cast ) | cast
 
@@ -118,4 +116,3 @@ binNumber ::= ? binary number like 10101b, b should be lowcase ?
 letter ::= ? any Unicode letter ?
 cipher ::= ? any cipher ?
 newLine ::= ? new line delimiter ?
-
