@@ -8,13 +8,13 @@ endif
 
 SRCS = $(wildcard *.helm)
 OBJS = $(patsubst %.helm,%.o,$(SRCS))
-BINS = $(patsubst %.helm,%,$(SRCS))
+BINS = $(patsubst %.helm,%.elf,$(SRCS))
 
 .PHONY: all clean
 
 all: $(BINS)
 
-%: %.o
+%.elf: %.o
 	@echo [HELML] $<
 	@ $(HELML) -o $@ $< ../build/libsynt.a ../build/liblex.a ../build/libutils.a
 
