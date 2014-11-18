@@ -536,6 +536,10 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     type = lex:TRUE
   /if
 
+  if spring:strequals(strToken, "::")
+    type = lex:TWOCOLONS
+  /if
+
   if spring:strequals(strToken, "val")
     type = lex:VAL
   /if

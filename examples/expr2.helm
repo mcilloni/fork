@@ -27,6 +27,10 @@ func assocLeft(tok ptr lex:Token) bool
 /func
 
 func tokTypePrec(ttype uint16) int16
+  if ttype == lex:MINUS
+    return tokTypePrec(lex:PLUS)
+  /if
+
   return ttype / 1000
 /func
 
@@ -46,10 +50,14 @@ func isValidInExpr(tok ptr lex:Token) bool
   return tok != null and (isOp(tok) or tok'type == lex:ID or tok'type == lex:NUMBER)
 /func
 
-func nextTok(lex ptr lex:Lexer) ptr lex:Token
+func loadNext(lex ptr lex:Lexer)
   if next == null
     next = lex:lexerNext(lex)
   /if
+/func
+
+func nextTok(lex ptr lex:Lexer) ptr lex:Token
+  loadNext(lex)
 
   if lex:lexerError(lex) != null
     return null
@@ -89,10 +97,6 @@ func opNew(tok ptr lex:Token, lhs,rhs ptr Op) ptr Op
   op'rhs = rhs
 
   return op
-/func
-
-func exprParseBinaryRhs(lex ptr lex:Lexer, lhs ptr Op, minPri uint16, err ptr ptr spring:Error) ptr Op
-
 /func
 
 func exprParseCastTag(lex ptr lex:Lexer,err ptr ptr spring:Error) ptr Op
@@ -161,7 +165,7 @@ func exprParseId(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
   return ret
 /func
 
-func exprParseParens(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
+func exprParseGenParens(lex ptr lex:Lexer, err ptr ptr spring:Error, cpar uint16) ptr Op
   discardTok(lex)
 
   decl exprParseAssign func(ptr lex:Lexer, ptr ptr spring:Error) ptr Op
@@ -176,14 +180,18 @@ func exprParseParens(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
     return null
   /if
 
-  if next'type != lex:CPAR
-    val err = utils:errorMism(next'lineno, "a ')'", lex:tokenStr(next))
+  if next'type != cpar
+    val err = utils:errorMism(next'lineno, "a closing parenthesis", lex:tokenStr(next))
     return null
   /if
 
   discardTok(lex)
 
   return expression
+/func
+
+func exprParseParens(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
+  return exprParseGenParens(lex, err, lex:CPAR)
 /func
 
 func exprParsePrimary(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
@@ -209,26 +217,64 @@ func exprParsePrimary(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
 /func
 
 func exprParseAccess(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) ptr Op
+  var obrac = nextTok(lex)
+  var expression = exprParseGenParens(lex, err, lex:CBRAC)
 
+  if expression == null
+      return null
+  /if
+
+  return opNew(obrac, lhs, expression)
 /func
 
 func exprParseCall(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) ptr Op
+  var opar = nextTok(lex)
+  var args = spring:vectNew(3)
+  decl exprParseAssign func(ptr lex:Lexer, ptr ptr spring:Error) ptr Op
 
+  while next != null and next'type != lex:CPAR
+    var arg = exprParseAssign(lex, err)
+    if arg == null
+      return null
+    /if
+
+    spring:vectAppend(args, arg)
+
+    if next == null or next'type != lex:COMMA
+      val err = spring:errorNew("unexpected eof or token not ',' in exprParseCall'")
+      return null
+    /if
+
+    discardTok(lex)
+  /while
+
+  return opNew(opar, lhs, cast<ptr Op>(args))
 /func
 
 func exprParseField(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) ptr Op
+  var apos = nextTok(lex)
 
-/func
-
-func exprParsePostfixSuffix(lex ptr lex:Lexer, primaryLhs ptr Op, err ptr ptr spring:Error) ptr Op
   if next == null
-    val err = spring:errorNew("Unexpected EOF in exprParsePostfixSuffix")
+    val err = spring:errorNew("unexpected eof in exprParseCall'")
     return null
   /if
 
+  if next'type != lex:ID
+    val err = utils:errorMism(next'lineno, "an identifier", lex:tokenStr(next))
+    return null
+  /if
+
+  return opNew(apos, lhs, opNew(nextTok(lex), null, null))
+/func
+
+func exprParsePostfixSuffix(lex ptr lex:Lexer, primaryLhs ptr Op, err ptr ptr spring:Error) ptr Op
   var lhs = primaryLhs
 
   while true
+    if next == null
+      break
+    /if
+    
     if next'type == lex:OBRAC
       lhs = exprParseAccess(lex, lhs, err)
     else
@@ -292,7 +338,7 @@ func exprParseUnary(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
 
 func exprParseCast(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
   if next == null
-    val err = spring:errorNew("Null next exprParseCast")
+    val err = spring:errorNew("Null next in exprParseCast")
     return null
   /if
 
@@ -301,6 +347,32 @@ func exprParseCast(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
   /if
 
   return exprParseUnary(lex,err)
+/func
+
+func exprParseBinaryRhs(lex ptr lex:Lexer, lhs ptr Op, minPri uint16, err ptr ptr spring:Error) ptr Op
+  var curOpPrec uint16
+  var rhs ptr Op = null
+  while next != null and ((curOpPrec = opPrec(next)) >= minPri)
+    var opTok = nextTok(lex)
+    rhs = exprParseCast(lex, err)
+
+    if rhs == null
+      return null
+    /if
+
+    var nextOpPrec = opPrec(next)
+
+    if next != null and (nextOpPrec > curOpPrec or (assocRight(next) and nextOpPrec == curOpPrec))
+      rhs = exprParseBinaryRhs(lex, rhs, nextOpPrec, err)
+      if rhs == null
+        return null
+      /if
+    /if
+
+    lhs = opNew(opTok, lhs, rhs)
+  /while
+
+  return lhs
 /func
 
 func exprParseAssign(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
@@ -395,6 +467,8 @@ entry
     spring:err(": ")
     spring:failln(error'msg)
   /if
+
+  loadNext(lexer)
 
   var op = exprParse(lexer, ptr error)
   if error != null

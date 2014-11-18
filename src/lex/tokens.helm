@@ -46,6 +46,8 @@ var WHILE uint16 = 540
 # - 2 stands for unary, left associative
 # - 3 stands for unary, right associative
 
+var TWOCOLONS uint16 = 16520
+
 var INC uint16 = 15092
 var OPAR uint16 = 15411
 var OBRAC uint16 = 15401

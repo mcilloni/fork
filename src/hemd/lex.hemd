@@ -100,6 +100,7 @@ decl STRING uint16
 decl STRUCT uint16
 decl TIMES uint16
 decl TRUE uint16
+decl TWOCOLONS uint16
 decl VAL uint16
 decl VAR uint16
 decl WHILE uint16
