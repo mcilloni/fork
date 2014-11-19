@@ -274,7 +274,7 @@ func exprParsePostfixSuffix(lex ptr lex:Lexer, primaryLhs ptr Op, err ptr ptr sp
     if next == null
       break
     /if
-    
+
     if next'type == lex:OBRAC
       lhs = exprParseAccess(lex, lhs, err)
     else
@@ -450,6 +450,29 @@ func opDump2(op ptr Op, depth uintptr)
   /if
 /func
 
+func fileDump(path ptr uint8, err ptr ptr spring:Error)
+  var f = spring:fileOpen(path, err)
+  if val err != null
+    return
+  /if
+
+  var rd uintptr = 0
+  var buf [512] uint8
+  while !spring:streamEnded(f)
+    rd = spring:streamRead(f, buf, 511)
+
+    if (val err = spring:streamError(f)) != null
+      break
+    /if
+
+    buf[rd] = 0
+
+    spring:out(buf)
+  /while
+  spring:outch(10)
+  spring:streamClose(f)
+/func
+
 entry
   next = null
   var argv = spring:args()
@@ -474,8 +497,19 @@ entry
   if error != null
     spring:failln(error'msg)
   /if
+
+  spring:outln("File contents: ")
+  fileDump(argv'args[0], ptr error)
+
+  if error != null
+    spring:failln(error'msg)
+  /if
+
+  spring:outln("Polish notation: ")
   opDump(op)
   spring:outch(10)
+  spring:outch(10)
+  spring:outln("Syntax tree: ")
   opDump2(op, 0)
 
   lex:lexerClose(lexer)
