@@ -106,7 +106,7 @@ func exprParseCastTag(lex ptr lex:Lexer,err ptr ptr spring:Error) ptr Op
   discardTok(lex)
 
   var tok ptr lex:Token
-  while (tok = nextTok(lex))'type != lex:MINOR
+  while (tok = nextTok(lex))'type != lex:MAJOR
     lex:tokenFree(tok)
   /while
 
@@ -166,7 +166,6 @@ func exprParseId(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
 /func
 
 func exprParseGenParens(lex ptr lex:Lexer, err ptr ptr spring:Error, cpar uint16) ptr Op
-  discardTok(lex)
 
   decl exprParseAssign func(ptr lex:Lexer, ptr ptr spring:Error) ptr Op
   var expression = exprParseAssign(lex, err)
@@ -191,6 +190,7 @@ func exprParseGenParens(lex ptr lex:Lexer, err ptr ptr spring:Error, cpar uint16
 /func
 
 func exprParseParens(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
+  discardTok(lex)
   return exprParseGenParens(lex, err, lex:CPAR)
 /func
 
@@ -232,7 +232,22 @@ func exprParseCall(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) ptr 
   var args = spring:vectNew(3)
   decl exprParseAssign func(ptr lex:Lexer, ptr ptr spring:Error) ptr Op
 
+  var first = true
+
   while next != null and next'type != lex:CPAR
+
+    if next'type != lex:COMMA and !first
+      val err = spring:errorNew("unexpected eof or token not ',' in exprParseCall'")
+      return null
+    else
+    #if it's not the first argument than it is COMMA
+      if !first
+        discardTok(lex)
+      else
+        first = false
+      /if
+    /if
+
     var arg = exprParseAssign(lex, err)
     if arg == null
       return null
@@ -240,13 +255,11 @@ func exprParseCall(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) ptr 
 
     spring:vectAppend(args, arg)
 
-    if next == null or next'type != lex:COMMA
-      val err = spring:errorNew("unexpected eof or token not ',' in exprParseCall'")
-      return null
-    /if
-
-    discardTok(lex)
   /while
+
+  if next != null
+    discardTok(lex) #this is lex:CPAR
+  /if
 
   return opNew(opar, lhs, cast<ptr Op>(args))
 /func
@@ -389,6 +402,13 @@ func exprParse(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
 
 func opDump(op ptr Op)
   if op != null
+    if op'tok'type == lex:OPAR
+      spring:out("call:")
+      opDump(op'lhs)
+      spring:outch(32)
+      return
+    /if
+
     if op'tok'type == lex:ID
       spring:out(cast<ptr uint8>(op'tok'value))
     else
@@ -405,8 +425,33 @@ func opDump(op ptr Op)
   /if
 /func
 
+func funcDump2(op ptr Op, depth uintptr)
+  decl opDump2 func(ptr Op, uintptr)
+
+  if op != null
+    var i uintptr = 0
+    while i < depth
+      spring:out("| ")
+      i++
+    /while
+
+    spring:out("Function name: ")
+    opDump(op'lhs)
+    spring:outch(10)
+    var argVect = cast<ptr spring:Vector>(op'rhs)
+    var len = spring:vectLen(argVect)
+    i = 0
+
+    while i < len
+      opDump2(cast<ptr Op>(val spring:vectGet(argVect, i)), depth + 1)
+      i++
+    /while
+  /if
+/func
+
 func opDump2(op ptr Op, depth uintptr)
   if op != null
+
     var i uintptr = 0
     while i < depth
       spring:out("| ")
@@ -415,6 +460,13 @@ func opDump2(op ptr Op, depth uintptr)
 
     spring:out("Type: ")
     spring:out(lex:tokenStr(op'tok))
+
+    if op'tok'type == lex:OPAR
+      spring:outch(10)
+      funcDump2(op, depth + 1)
+      return
+    /if
+
     if op'tok'type == lex:ID
       spring:out(", value: ")
       spring:out(cast<ptr uint8>(op'tok'value))
@@ -426,6 +478,7 @@ func opDump2(op ptr Op, depth uintptr)
     /if
 
     if isOp(op'tok)
+
       spring:out(", prec ")
       spring:outint(opPrec(op'tok))
       spring:out(", ")

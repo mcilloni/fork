@@ -672,6 +672,10 @@ func tokenStr(tok ptr lex:Token) ptr uint8
     return "=="
   /if
 
+  if tok'type == lex:FALSE
+    return "false"
+  /if
+  
   if tok'type == lex:FUNC
     return "func"
   /if
@@ -776,6 +780,10 @@ func tokenStr(tok ptr lex:Token) ptr uint8
     return "*"
   /if
 
+  if tok'type == lex:TRUE
+    return "true"
+  /if
+
   if tok'type == lex:VAL
     return "val"
   /if
@@ -788,6 +796,9 @@ func tokenStr(tok ptr lex:Token) ptr uint8
     return "while"
   /if
 
-  return "^"
+  if tok'type == lex:XOR
+    return "^"
+  /if
 
+  return "<unknown, please, report!>"
 /func
