@@ -30,7 +30,7 @@ func typeFree(type ptr synt:Type)
 /func
 
 func typeNew(name, moduleName ptr uint8, descr ptr synt:TypeDescr) ptr synt:Type
-  var type = cast<ptr synt:Type>(spring:zalloc(size(synt:Type)))
+  mut type = cast<ptr synt:Type>(spring:zalloc(size(synt:Type)))
 
   type'refc'freeFunc = ptr synt:typeFree
 
@@ -55,7 +55,7 @@ func typeDescrFree(descr ptr synt:TypeDescr)
 /func
 
 func typeDescrNew(type uint16, retType ptr synt:Type, params ptr spring:List) ptr synt:TypeDescr
-  var descr = cast<ptr synt:TypeDescr>(spring:zalloc(size(synt:TypeDescr)))
+  mut descr = cast<ptr synt:TypeDescr>(spring:zalloc(size(synt:TypeDescr)))
 
   descr'refc'freeFunc = ptr synt:typeDescrFree
 
@@ -76,7 +76,7 @@ func symbolFree(sym ptr synt:Symbol)
 /func
 
 func symbolNew(name ptr uint8, type ptr synt:Type) ptr synt:Symbol
-  var sym = cast<ptr synt:Symbol>(spring:zalloc(size(synt:Symbol)))
+  mut sym = cast<ptr synt:Symbol>(spring:zalloc(size(synt:Symbol)))
 
   sym'name = name
   sym'type = type
@@ -84,10 +84,10 @@ func symbolNew(name ptr uint8, type ptr synt:Type) ptr synt:Symbol
   return sym
 /func
 
-var aliasFree = cast<ptr func(ptr synt:Alias)>(symbolFree)
-var aliasNew  = cast<ptr func(ptr uint8, ptr synt:Type) ptr synt:Alias>(symbolNew)
+mut aliasFree = cast<ptr func(ptr synt:Alias)>(symbolFree)
+mut aliasNew  = cast<ptr func(ptr uint8, ptr synt:Type) ptr synt:Alias>(symbolNew)
 
-var TYPE_FUNC   uint16 = 10
-var TYPE_NUM    uint16 = 20
-var TYPE_PTR    uint16 = 30
-var TYPE_STRUCT uint16 = 40
+mut TYPE_FUNC   uint16 = 10
+mut TYPE_NUM    uint16 = 20
+mut TYPE_PTR    uint16 = 30
+mut TYPE_STRUCT uint16 = 40

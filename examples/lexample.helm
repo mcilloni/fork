@@ -11,21 +11,21 @@ import lex
 import spring
 
 entry
-  var argv = spring:args()
+  mut argv = spring:args()
   if argv'len != 1
     spring:errln("Wrong number of arguments, required: 1")
     spring:exit(1)
   /if
 
-  var err ptr spring:Error
+  mut err ptr spring:Error
 
-  var lex = lex:lexerNew(val argv'args, ptr err)
+  mut lex = lex:lexerNew(val argv'args, ptr err)
   if err != null
     spring:errln(spring:errorMsg(err))
     spring:exit(1)
   /if
 
-  var tok ptr lex:Token
+  mut tok ptr lex:Token
 
   while (tok = lex:lexerNext(lex)) != null
 

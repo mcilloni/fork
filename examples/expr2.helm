@@ -2,13 +2,13 @@ import lex
 import spring
 import utils
 
-var next ptr lex:Token
+mut next ptr lex:Token
 
-var TYPE_BINARY uint8 = 0
-var TYPE_UNARY uint8 = 2
+mut TYPE_BINARY uint8 = 0
+mut TYPE_UNARY uint8 = 2
 
-var ASSOC_LEFT uint8 = 0
-var ASSOC_RIGHT uint8 = 1
+mut ASSOC_LEFT uint8 = 0
+mut ASSOC_RIGHT uint8 = 1
 
 func isBinary(tok ptr lex:Token) bool
   return tok != null and (tok'type mod 10) < 2
@@ -63,7 +63,7 @@ func nextTok(lex ptr lex:Lexer) ptr lex:Token
     return null
   /if
 
-  var ret = next
+  mut ret = next
   next = lex:lexerNext(lex)
 
   if lex:lexerError(lex) != null
@@ -91,7 +91,7 @@ func opFree(op ptr Op)
 /func
 
 func opNew(tok ptr lex:Token, lhs,rhs ptr Op) ptr Op
-  var op = cast<ptr Op>(spring:zalloc(size(Op)))
+  mut op = cast<ptr Op>(spring:zalloc(size(Op)))
   op'tok = tok
   op'lhs = lhs
   op'rhs = rhs
@@ -100,12 +100,12 @@ func opNew(tok ptr lex:Token, lhs,rhs ptr Op) ptr Op
 /func
 
 func exprParseCastTag(lex ptr lex:Lexer,err ptr ptr spring:Error) ptr Op
-  var castTok = nextTok(lex)
+  mut castTok = nextTok(lex)
 
   ## begins stub
   discardTok(lex)
 
-  var tok ptr lex:Token
+  mut tok ptr lex:Token
   while (tok = nextTok(lex))'type != lex:MAJOR
     lex:tokenFree(tok)
   /while
@@ -116,7 +116,7 @@ func exprParseCastTag(lex ptr lex:Lexer,err ptr ptr spring:Error) ptr Op
 
   decl exprParse func(ptr lex:Lexer,ptr ptr spring:Error) ptr Op
 
-  var expr = exprParse(lex,err)
+  mut expr = exprParse(lex,err)
 
   ## begins stub
   discardTok(lex) #`)`
@@ -126,11 +126,11 @@ func exprParseCastTag(lex ptr lex:Lexer,err ptr ptr spring:Error) ptr Op
 /func
 
 func exprParseSizeOp(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
-  var sizeTok = nextTok(lex)
+  mut sizeTok = nextTok(lex)
   ## begins stub
   discardTok(lex)
 
-  var tok ptr lex:Token
+  mut tok ptr lex:Token
   while (tok = nextTok(lex))'type != lex:CPAR
     lex:tokenFree(tok)
   /while
@@ -146,9 +146,9 @@ func tokIsPostfixExpressionSuffixStart(tok ptr lex:Token) bool
 /func
 
 func exprParseId(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
-  var ret = opNew(nextTok(lex), null, null)
+  mut ret = opNew(nextTok(lex), null, null)
   if next != null and next'type == lex:COLON
-    var colon = nextTok(lex)
+    mut colon = nextTok(lex)
     if next == null
       val err = spring:errorNew("unexpected eof in exprParseId")
       return null
@@ -168,7 +168,7 @@ func exprParseId(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
 func exprParseGenParens(lex ptr lex:Lexer, err ptr ptr spring:Error, cpar uint16) ptr Op
 
   decl exprParseAssign func(ptr lex:Lexer, ptr ptr spring:Error) ptr Op
-  var expression = exprParseAssign(lex, err)
+  mut expression = exprParseAssign(lex, err)
 
   if expression == null
     return null
@@ -217,8 +217,8 @@ func exprParsePrimary(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
 /func
 
 func exprParseAccess(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) ptr Op
-  var obrac = nextTok(lex)
-  var expression = exprParseGenParens(lex, err, lex:CBRAC)
+  mut obrac = nextTok(lex)
+  mut expression = exprParseGenParens(lex, err, lex:CBRAC)
 
   if expression == null
       return null
@@ -228,11 +228,11 @@ func exprParseAccess(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) pt
 /func
 
 func exprParseCall(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) ptr Op
-  var opar = nextTok(lex)
-  var args = spring:vectNew(3)
+  mut opar = nextTok(lex)
+  mut args = spring:vectNew(3)
   decl exprParseAssign func(ptr lex:Lexer, ptr ptr spring:Error) ptr Op
 
-  var first = true
+  mut first = true
 
   while next != null and next'type != lex:CPAR
 
@@ -248,7 +248,7 @@ func exprParseCall(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) ptr 
       /if
     /if
 
-    var arg = exprParseAssign(lex, err)
+    mut arg = exprParseAssign(lex, err)
     if arg == null
       return null
     /if
@@ -265,7 +265,7 @@ func exprParseCall(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) ptr 
 /func
 
 func exprParseField(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) ptr Op
-  var apos = nextTok(lex)
+  mut apos = nextTok(lex)
 
   if next == null
     val err = spring:errorNew("unexpected eof in exprParseCall'")
@@ -281,7 +281,7 @@ func exprParseField(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) ptr
 /func
 
 func exprParsePostfixSuffix(lex ptr lex:Lexer, primaryLhs ptr Op, err ptr ptr spring:Error) ptr Op
-  var lhs = primaryLhs
+  mut lhs = primaryLhs
 
   while true
     if next == null
@@ -315,7 +315,7 @@ func exprParsePostfixSuffix(lex ptr lex:Lexer, primaryLhs ptr Op, err ptr ptr sp
 /func
 
 func exprParsePostfix(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
-  var primary = exprParsePrimary(lex, err)
+  mut primary = exprParsePrimary(lex, err)
 
   if primary == null
     return null
@@ -325,9 +325,9 @@ func exprParsePostfix(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
 /func
 
 func exprParseUnaryOp(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
-  var operator = nextTok(lex)
+  mut operator = nextTok(lex)
 
-  var result ptr Op
+  mut result ptr Op
 
   decl exprParseCast func(ptr lex:Lexer, ptr ptr spring:Error) ptr Op
   if (result = exprParseCast(lex, err)) == null
@@ -363,17 +363,17 @@ func exprParseCast(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
 /func
 
 func exprParseBinaryRhs(lex ptr lex:Lexer, lhs ptr Op, minPri uint16, err ptr ptr spring:Error) ptr Op
-  var curOpPrec uint16
-  var rhs ptr Op = null
+  mut curOpPrec uint16
+  mut rhs ptr Op = null
   while next != null and ((curOpPrec = opPrec(next)) >= minPri)
-    var opTok = nextTok(lex)
+    mut opTok = nextTok(lex)
     rhs = exprParseCast(lex, err)
 
     if rhs == null
       return null
     /if
 
-    var nextOpPrec = opPrec(next)
+    mut nextOpPrec = opPrec(next)
 
     if next != null and (nextOpPrec > curOpPrec or (assocRight(next) and nextOpPrec == curOpPrec))
       rhs = exprParseBinaryRhs(lex, rhs, nextOpPrec, err)
@@ -389,7 +389,7 @@ func exprParseBinaryRhs(lex ptr lex:Lexer, lhs ptr Op, minPri uint16, err ptr pt
 /func
 
 func exprParseAssign(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
-  var lhs = exprParseCast(lex, err)
+  mut lhs = exprParseCast(lex, err)
 
   return exprParseBinaryRhs(lex, lhs, tokTypePrec(lex:ASSIGN), err)
 /func
@@ -429,7 +429,7 @@ func funcDump2(op ptr Op, depth uintptr)
   decl opDump2 func(ptr Op, uintptr)
 
   if op != null
-    var i uintptr = 0
+    mut i uintptr = 0
     while i < depth
       spring:out("| ")
       i++
@@ -438,8 +438,8 @@ func funcDump2(op ptr Op, depth uintptr)
     spring:out("Function name: ")
     opDump(op'lhs)
     spring:outch(10)
-    var argVect = cast<ptr spring:Vector>(op'rhs)
-    var len = spring:vectLen(argVect)
+    mut argVect = cast<ptr spring:Vector>(op'rhs)
+    mut len = spring:vectLen(argVect)
     i = 0
 
     while i < len
@@ -452,7 +452,7 @@ func funcDump2(op ptr Op, depth uintptr)
 func opDump2(op ptr Op, depth uintptr)
   if op != null
 
-    var i uintptr = 0
+    mut i uintptr = 0
     while i < depth
       spring:out("| ")
       i++
@@ -504,13 +504,13 @@ func opDump2(op ptr Op, depth uintptr)
 /func
 
 func fileDump(path ptr uint8, err ptr ptr spring:Error)
-  var f = spring:fileOpen(path, err)
+  mut f = spring:fileOpen(path, err)
   if val err != null
     return
   /if
 
-  var rd uintptr = 0
-  var buf [512] uint8
+  mut rd uintptr = 0
+  mut buf [512] uint8
   while !spring:streamEnded(f)
     rd = spring:streamRead(f, buf, 511)
 
@@ -528,15 +528,15 @@ func fileDump(path ptr uint8, err ptr ptr spring:Error)
 
 entry
   next = null
-  var argv = spring:args()
+  mut argv = spring:args()
 
   if argv'len != 1
 
     spring:failln("Wrong number of args")
   /if
 
-  var error ptr spring:Error
-  var lexer = lex:lexerNew(argv'args[0], ptr error)
+  mut error ptr spring:Error
+  mut lexer = lex:lexerNew(argv'args[0], ptr error)
 
   if error != null
     spring:err(argv'args[0])
@@ -546,7 +546,7 @@ entry
 
   loadNext(lexer)
 
-  var op = exprParse(lexer, ptr error)
+  mut op = exprParse(lexer, ptr error)
   if error != null
     spring:failln(error'msg)
   /if

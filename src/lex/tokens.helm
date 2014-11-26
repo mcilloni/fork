@@ -7,35 +7,35 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
-var EOF uint16 = 0
-var NEWLINE uint16 = 10
-var ALIAS uint16 = 20
-var BREAK uint16 = 70
-var CBRAC uint16 = 90
-var COLON uint16 = 100
-var COMMA uint16 = 110
-var CONTINUE uint16 = 120
-var CPAR uint16 = 130
-var DECL uint16 = 150
-var ELSE uint16 = 180
-var ENDENTRY uint16 = 190
-var ENDFUNC uint16 = 200
-var ENDIF uint16 = 210
-var ENDWHILE uint16 = 220
-var ENTRY uint16 = 230
-var FALSE uint16 = 240
-var FUNC uint16 = 250
-var ID uint16 = 260
-var IF uint16 = 270
-var IMPORT uint16 = 280
-var MODULE uint16 = 360
-var NUMBER uint16 = 390
-var RETURN uint16 = 470
-var STRING uint16 = 490
-var STRUCT uint16 = 500
-var TRUE uint16 = 510
-var VAR uint16 = 530
-var WHILE uint16 = 540
+mut EOF uint16 = 0
+mut NEWLINE uint16 = 10
+mut ALIAS uint16 = 20
+mut BREAK uint16 = 70
+mut CBRAC uint16 = 90
+mut COLON uint16 = 100
+mut COMMA uint16 = 110
+mut CONTINUE uint16 = 120
+mut CPAR uint16 = 130
+mut DECL uint16 = 150
+mut ELSE uint16 = 180
+mut ENDENTRY uint16 = 190
+mut ENDFUNC uint16 = 200
+mut ENDIF uint16 = 210
+mut ENDWHILE uint16 = 220
+mut ENTRY uint16 = 230
+mut FALSE uint16 = 240
+mut FUNC uint16 = 250
+mut ID uint16 = 260
+mut IF uint16 = 270
+mut IMPORT uint16 = 280
+mut MODULE uint16 = 360
+mut MUT uint16 = 370
+mut NUMBER uint16 = 390
+mut RETURN uint16 = 470
+mut STRING uint16 = 490
+mut STRUCT uint16 = 500
+mut TRUE uint16 = 510
+mut WHILE uint16 = 540
 
 # Operator tokens.
 # The first two ciphers represent the priority; this can be
@@ -46,45 +46,45 @@ var WHILE uint16 = 540
 # - 2 stands for unary, left associative
 # - 3 stands for unary, right associative
 
-var TWOCOLONS uint16 = 16520
+mut TWOCOLONS uint16 = 16520
 
-var INC uint16 = 15092
-var OPAR uint16 = 15411
-var OBRAC uint16 = 15401
-var APOS uint16 = 15050
-var DEC uint16 = 15042
+mut INC uint16 = 15092
+mut OPAR uint16 = 15411
+mut OBRAC uint16 = 15401
+mut APOS uint16 = 15050
+mut DEC uint16 = 15042
 
-var MINUS uint16 = 14343
-var NOT uint16 = 14383
-var CAST uint16 = 14083
-var PTR uint16 = 14463
-var VAL uint16 = 14523
-var SIZE uint16 = 14483
+mut MINUS uint16 = 14343
+mut NOT uint16 = 14383
+mut CAST uint16 = 14083
+mut PTR uint16 = 14463
+mut VAL uint16 = 14523
+mut SIZE uint16 = 14483
 
-var POW uint16 = 13450
+mut POW uint16 = 13450
 
-var DIV uint16 = 12170
-var MOD uint16 = 12350
-var TIMES uint16 = 12510
+mut DIV uint16 = 12170
+mut MOD uint16 = 12350
+mut TIMES uint16 = 12510
 
-var PLUS uint16 = 11440
+mut PLUS uint16 = 11440
 
-var MAJEQ uint16 = 10300
-var MAJOR uint16 = 10310
-var MINEQ uint16 = 10320
-var MINOR uint16 = 10330
+mut MAJEQ uint16 = 10300
+mut MAJOR uint16 = 10310
+mut MINEQ uint16 = 10320
+mut MINOR uint16 = 10330
 
-var EQUAL uint16 = 9240
-var DIFFERENT uint16 = 9160
+mut EQUAL uint16 = 9240
+mut DIFFERENT uint16 = 9160
 
-var AMPER uint16 = 8040
+mut AMPER uint16 = 8040
 
-var XOR uint16 = 7550
+mut XOR uint16 = 7550
 
-var PIPE uint16 = 6420
+mut PIPE uint16 = 6420
 
-var AND uint16 = 5040
+mut AND uint16 = 5040
 
-var OR uint16 = 4420
+mut OR uint16 = 4420
 
-var ASSIGN uint16 = 3061
+mut ASSIGN uint16 = 3061

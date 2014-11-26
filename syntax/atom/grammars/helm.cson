@@ -16,7 +16,7 @@
     "name": "keyword.control.c"
   }
   {
-    "match": "\\b(decl|var)\\b"
+    "match": "\\b(decl|mut)\\b"
     "name": "keyword.go"
   }
   {

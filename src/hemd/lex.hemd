@@ -85,6 +85,7 @@ decl MINOR uint16
 decl MINUS uint16
 decl MOD uint16
 decl MODULE uint16
+decl MUT uint16
 decl NOT uint16
 decl NUMBER uint16
 decl OBRAC uint16
@@ -102,6 +103,5 @@ decl TIMES uint16
 decl TRUE uint16
 decl TWOCOLONS uint16
 decl VAL uint16
-decl VAR uint16
 decl WHILE uint16
 decl XOR uint16

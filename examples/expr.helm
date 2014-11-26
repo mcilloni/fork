@@ -1,13 +1,13 @@
 import lex
 import spring
 
-var next ptr lex:Token
+mut next ptr lex:Token
 
-var TYPE_BINARY uint8 = 0
-var TYPE_UNARY uint8 = 2
+mut TYPE_BINARY uint8 = 0
+mut TYPE_UNARY uint8 = 2
 
-var ASSOC_LEFT uint8 = 0
-var ASSOC_RIGHT uint8 = 1
+mut ASSOC_LEFT uint8 = 0
+mut ASSOC_RIGHT uint8 = 1
 
 func isBinary(tok ptr lex:Token) bool
   return tok != null and (tok'type mod 10) < 2
@@ -49,7 +49,7 @@ func nextTok(lex ptr lex:Lexer) ptr lex:Token
     return null
   /if
 
-  var ret = next
+  mut ret = next
   next = lex:lexerNext(lex)
 
   if lex:lexerError(lex) != null
@@ -73,7 +73,7 @@ func opFree(op ptr Op)
 /func
 
 func opNew(tok ptr lex:Token, lhs,rhs ptr Op) ptr Op
-  var op = cast<ptr Op>(spring:zalloc(size(Op)))
+  mut op = cast<ptr Op>(spring:zalloc(size(Op)))
   op'tok = tok
   op'lhs = lhs
   op'rhs = rhs
@@ -82,14 +82,14 @@ func opNew(tok ptr lex:Token, lhs,rhs ptr Op) ptr Op
 /func
 
 func exprParse(lex ptr lex:Lexer, lhs ptr Op, minPri uint16, err ptr ptr spring:Error) ptr Op
-  var curPrec uint16
-  var rhs ptr Op = null
+  mut curPrec uint16
+  mut rhs ptr Op = null
   while (curPrec = opPrec(next)) >= minPri
     if next == null
       break
     /if
 
-    var op ptr lex:Token = null
+    mut op ptr lex:Token = null
 
     if isUnary(lhs'tok) and assocRight(lhs'tok)
       op = lhs'tok
@@ -105,7 +105,7 @@ func exprParse(lex ptr lex:Lexer, lhs ptr Op, minPri uint16, err ptr ptr spring:
     /if
 
     if (!(isUnary(op) and assocLeft(op)))
-      var rhsTok = nextTok(lex)
+      mut rhsTok = nextTok(lex)
       if rhsTok == null
         val err = lex:lexerError(lex)
         return null
@@ -146,7 +146,7 @@ func opDump(op ptr Op)
 
 func opDump2(op ptr Op, depth uintptr)
   if op != null
-    var i uintptr = 0
+    mut i uintptr = 0
     while i < depth
       spring:out("| ")
       i++
@@ -184,15 +184,15 @@ func opDump2(op ptr Op, depth uintptr)
 
 entry
   next = null
-  var argv = spring:args()
+  mut argv = spring:args()
 
   if argv'len != 1
 
     spring:failln("Wrong number of args")
   /if
 
-  var error ptr spring:Error
-  var lexer = lex:lexerNew(argv'args[0], ptr error)
+  mut error ptr spring:Error
+  mut lexer = lex:lexerNew(argv'args[0], ptr error)
 
   if error != null
     spring:err(argv'args[0])
@@ -200,7 +200,7 @@ entry
     spring:failln(error'msg)
   /if
 
-  var op = exprParse(lexer, opNew(nextTok(lexer), null, null), 0, ptr error)
+  mut op = exprParse(lexer, opNew(nextTok(lexer), null, null), 0, ptr error)
   if error != null
     spring:failln(error'msg)
   /if

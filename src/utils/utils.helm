@@ -50,13 +50,13 @@ func charIsSym(ch uint8) bool
 /func
 
 func errorMism(line ptr lex:Lineno, exp ptr uint8, got ptr uint8) ptr spring:Error
-  var lineno [21] uint8
-  var pos [21] uint8
+  mut lineno [21] uint8
+  mut pos [21] uint8
 
   spring:numtostr(line'lineno, lineno, 21)
   spring:numtostr(line'pos, pos, 21)
 
-  var toglue [12] ptr uint8
+  mut toglue [12] ptr uint8
   toglue[0] = "In "
   toglue[1] = line'filename
   toglue[2] = ", line "
@@ -74,13 +74,13 @@ func errorMism(line ptr lex:Lineno, exp ptr uint8, got ptr uint8) ptr spring:Err
 /func
 
 func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr spring:Error
-  var lineno [21] uint8
-  var pos [21] uint8
+  mut lineno [21] uint8
+  mut pos [21] uint8
 
   spring:numtostr(lex'lineno'lineno, lineno, 21)
   spring:numtostr(lex'lineno'pos, pos, 21)
 
-  var toglue [9] ptr uint8
+  mut toglue [9] ptr uint8
   toglue[0] = "In "
   toglue[1] = lex'lineno'filename
   toglue[2] = ", line "
@@ -122,7 +122,7 @@ func incRef(refc data)
 
 func decRef(refc data)
   if refc != null
-    var ref = cast<ptr utils:Ref>(refc)
+    mut ref = cast<ptr utils:Ref>(refc)
     ref'count--
     if ref'count < 1
       ref'freeFunc(refc)

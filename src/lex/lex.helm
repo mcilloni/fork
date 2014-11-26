@@ -12,7 +12,7 @@ import spring
 import utils
 
 func nextChar(lex ptr lex:Lexer) uint8
-  var ret = lex'peek
+  mut ret = lex'peek
 
   spring:streamRead(lex'file, ptr lex'peek, 1)
   if (lex'error = spring:streamError(lex'file)) != null
@@ -58,7 +58,7 @@ func linenoFree(lineno ptr lex:Lineno)
 /func
 
 func linenoNew(filename ptr uint8, lineno, pos uint16) ptr lex:Lineno
-  var ret = cast<ptr lex:Lineno>(spring:alloc(size(lex:Lineno)))
+  mut ret = cast<ptr lex:Lineno>(spring:alloc(size(lex:Lineno)))
 
   ret'filename = filename
   ret'lineno = lineno
@@ -68,7 +68,7 @@ func linenoNew(filename ptr uint8, lineno, pos uint16) ptr lex:Lineno
 /func
 
 func lexDiscardComment(lex ptr lex:Lexer)
-  var ch uint8 = 0
+  mut ch uint8 = 0
   while !lex:lexerEof(lex) and ch != 10
     if (ch = nextChar(lex)) == 0 #discard
       return #exit on error
@@ -77,7 +77,7 @@ func lexDiscardComment(lex ptr lex:Lexer)
 
 /func
 
-var STX = 2 # There is no reason for using 2 and not another reserved character.
+mut STX = 2 # There is no reason for using 2 and not another reserved character.
 
 func applyEscape(ch uint8, escape bool) uint8
 
@@ -110,11 +110,11 @@ func applyEscape(ch uint8, escape bool) uint8
 
 func lexExtractString(lex ptr lex:Lexer) ptr uint8
   nextChar(lex) #discard the `"`
-  var cs = spring:csNew(10) #just a magic number here
+  mut cs = spring:csNew(10) #just a magic number here
   #an STX is added at the beginning, indicating that the content is not a token but a whole string.
   spring:csAppend(cs, STX)
-  var ch uint8
-  var escape = false
+  mut ch uint8
+  mut escape = false
 
   while !lex:lexerEof(lex) and utils:charCanBeInString(lex'peek, escape)
     ch = nextChar(lex)
@@ -139,7 +139,7 @@ func lexExtractString(lex ptr lex:Lexer) ptr uint8
 
   if (ch = nextChar(lex)) != 34 # `"`
     spring:csFree(cs)
-    var got [2] uint8
+    mut got [2] uint8
     got[0] = ch
     got[1] = 0 # `\0` c string terminator
 
@@ -151,9 +151,9 @@ func lexExtractString(lex ptr lex:Lexer) ptr uint8
 /func
 
 func lexExtractSym(lex ptr lex:Lexer) ptr uint8
-  var cs = spring:csNew(10) #magic number
-  var i uintptr = 0
-  var ch uint8
+  mut cs = spring:csNew(10) #magic number
+  mut i uintptr = 0
+  mut ch uint8
   while !lex:lexerEof(lex) and utils:charIsSym(lex'peek) and i < 2
     ch = nextChar(lex)
     if ch == 0
@@ -168,8 +168,8 @@ func lexExtractSym(lex ptr lex:Lexer) ptr uint8
 /func
 
 func lexHandleId(lex ptr lex:Lexer) ptr uint8
-  var cs = spring:csNew(10) #magic number
-  var ch uint8
+  mut cs = spring:csNew(10) #magic number
+  mut ch uint8
 
   while utils:charIsIdVal(lex'peek)
     ch = nextChar(lex)
@@ -190,7 +190,7 @@ func extractNextToken(lex ptr lex:Lexer) ptr uint8
     return null
   /if
 
-  var ch uint8
+  mut ch uint8
   while utils:charIsWhite(lex'peek)
     ch = nextChar(lex)
     if ch == 10 and !lex'firstLineTok #character `\n`
@@ -221,7 +221,7 @@ func extractNextToken(lex ptr lex:Lexer) ptr uint8
   /if
 
   if utils:charIsPar(lex'peek)
-    var str = cast<ptr uint8>(spring:zalloc(2 * size(uint8)))
+    mut str = cast<ptr uint8>(spring:zalloc(2 * size(uint8)))
     str[0] = nextChar(lex)
     return str
   /if
@@ -242,7 +242,7 @@ func lexerError(lexer ptr lex:Lexer) ptr spring:Error
 /func
 
 func lexerFromStream(stream ptr spring:Stream, name ptr uint8, err ptr ptr spring:Error) ptr lex:Lexer
-  var ret = cast<ptr lex:Lexer>(spring:zalloc(size(lex:Lexer)))
+  mut ret = cast<ptr lex:Lexer>(spring:zalloc(size(lex:Lexer)))
 
   ret'file = stream
   ret'lineno = lex:linenoNew(spring:strclone(name),0,0)
@@ -257,7 +257,7 @@ func lexerFromStream(stream ptr spring:Stream, name ptr uint8, err ptr ptr sprin
 /func
 
 func lexerNew(fname ptr uint8, err ptr ptr spring:Error) ptr lex:Lexer
-  var file = spring:fileOpen(fname, err)
+  mut file = spring:fileOpen(fname, err)
 
   if val err != null
     return null
@@ -271,7 +271,7 @@ func lexerEof(lexer ptr lex:Lexer) bool
 /func
 
 func tokenNew(type uint16, value uintptr, lineno ptr lex:Lineno, end uintptr) ptr lex:Token
-  var ret = cast<ptr lex:Token>(spring:alloc(size(lex:Token)))
+  mut ret = cast<ptr lex:Token>(spring:alloc(size(lex:Token)))
   ret'type = type
   ret'endPos = end
   ret'lineno = lineno
@@ -298,8 +298,8 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     return null
   /if
 
-  var strToken = lex'saved
-  var begin = val lex'lineno
+  mut strToken = lex'saved
+  mut begin = val lex'lineno
 
   if lex'saved == null
     strToken = extractNextToken(lex)
@@ -321,8 +321,8 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     return null
   /if
 
-  var type uint16 = 0
-  var value uintptr = 0
+  mut type uint16 = 0
+  mut value uintptr = 0
 
   if lex'newline
     lex'saved = strToken
@@ -484,6 +484,10 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     type = lex:MODULE
   /if
 
+  if spring:strequals(strToken, "mut")
+    type = lex:MUT
+  /if
+
   if spring:strequals(strToken, "!")
     type = lex:NOT
   /if
@@ -542,10 +546,6 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 
   if spring:strequals(strToken, "val")
     type = lex:VAL
-  /if
-
-  if spring:strequals(strToken, "var")
-    type = lex:VAR
   /if
 
   if spring:strequals(strToken, "while")
@@ -675,7 +675,7 @@ func tokenStr(tok ptr lex:Token) ptr uint8
   if tok'type == lex:FALSE
     return "false"
   /if
-  
+
   if tok'type == lex:FUNC
     return "func"
   /if
@@ -722,6 +722,10 @@ func tokenStr(tok ptr lex:Token) ptr uint8
 
   if tok'type == lex:MODULE
     return "module"
+  /if
+
+  if tok'type == lex:MUT
+    return "mut"
   /if
 
   if tok'type == lex:NOT
@@ -786,10 +790,6 @@ func tokenStr(tok ptr lex:Token) ptr uint8
 
   if tok'type == lex:VAL
     return "val"
-  /if
-
-  if tok'type == lex:VAR
-    return "var"
   /if
 
   if tok'type == lex:WHILE

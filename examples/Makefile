@@ -23,5 +23,5 @@ all: $(BINS)
 	@ HELM_MODULES="$(shell pwd)/../src/hemd/" $(HELMC) -o $@ $<
 
 clean:
-	rm $(BINS)
+	rm -f $(BINS)
 
