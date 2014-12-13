@@ -12,7 +12,7 @@
     'include': '#helm_function_call'
   }
   {
-    'match': '\\b(alias|break|continue|else|entry|/entry|func|/func|if|/if|import|module|return|while|/while)\\b'
+    'match': '\\b(alias|break|continue|else|entry|func|if|import|module|return|while)\\b|(\\/entry|\\/func|\\/if|\\/while)\\b'
     "name": "keyword.control.c"
   }
   {
@@ -20,7 +20,7 @@
     "name": "keyword.go"
   }
   {
-    "match": "\\b(bool|int8|int16|int32|int64|intptr|uint8|uint16|uint32|uint64|uintptr)\\b"
+    "match": "\\b(bool|int8|int16|int32|int64|intptr|uint8|uint16|uint32|uint64|uintptr|struct)\\b"
     "name": "storage.type.c"
   }
   {
