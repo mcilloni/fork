@@ -4,12 +4,13 @@
 #  This Source Code Form is subject to the terms of the Mozilla Public
 #  License, v. 2.0. If a copy of the MPL was not distributed with this
 #  file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#  Exhibit B is not attached; this software is compatible with the 
-#  licenses expressed under Section 1.12 of the MPL v2. 
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
 
 import lex
 import spring
 import utils
+
 
 func charIsIdVal(ch uint8) bool
   if (ch >= 48) and (ch <= 57) #is a number
@@ -31,23 +32,28 @@ func charIsIdVal(ch uint8) bool
   return false
 /func
 
+
 func charIsControl(ch uint8) bool
   return ch < 20 or ch > 126
 /func
+
 
 func charIsPar(ch uint8) bool
   #40 == `(`, 41 == `)`, 91 == `[`, 93 == `]`
   return ch == 40 or ch == 41 or ch == 91 or ch == 93
 /func
 
+
 func charIsWhite(ch uint8) bool
   #32 == ` `, 10 == `\n`, 13 == `\r`, 12 == `\f`, 11 == `\v`
   return ch == 32 or ch == 10 or ch == 13 or ch == 12 or ch == 11
 /func
 
+
 func charIsSym(ch uint8) bool
   return !charIsIdVal(ch) and !charIsPar(ch) and !charIsWhite(ch)
 /func
+
 
 func errorMism(line ptr lex:Lineno, exp ptr uint8, got ptr uint8) ptr spring:Error
   mut lineno [21] uint8
@@ -73,16 +79,18 @@ func errorMism(line ptr lex:Lineno, exp ptr uint8, got ptr uint8) ptr spring:Err
   return spring:errorGlue(toglue)
 /func
 
-func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr spring:Error
+
+func error(line ptr lex:Lineno, msg ptr uint8) ptr spring:Error
+
   mut lineno [21] uint8
   mut pos [21] uint8
 
-  spring:numtostr(lex'lineno'lineno, lineno, 21)
-  spring:numtostr(lex'lineno'pos, pos, 21)
+  spring:numtostr(line'lineno, lineno, 21)
+  spring:numtostr(line'pos, pos, 21)
 
   mut toglue [9] ptr uint8
   toglue[0] = "In "
-  toglue[1] = lex'lineno'filename
+  toglue[1] = line'filename
   toglue[2] = ", line "
   toglue[3] = lineno
   toglue[4] = ", pos "
@@ -93,6 +101,12 @@ func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr spring:Error
 
   return spring:errorGlue(toglue)
 /func
+
+
+func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr spring:Error
+  return error(lex'lineno, msg)
+/func
+
 
 func charCanBeInString(ch uint8, escape bool) bool
   if !escape and ch == 34 # `"`
@@ -129,4 +143,3 @@ func decRef(refc data)
     /if
   /if
 /func
-

@@ -572,7 +572,7 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 /func
 
 func tokenStr(tok ptr lex:Token) ptr uint8
-  if tok'type == lex:EOF
+  if tok == null or tok'type == lex:EOF
     return "Eof"
   /if
 

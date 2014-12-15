@@ -93,6 +93,8 @@ alias Context struct (
   last lex:Lineno
 )
 
+decl parserParseExpr func(ptr Context, ptr ptr spring:Error) ptr PExpr
+
 decl nextTok func(ptr Context) ptr lex:Token
 decl discardTok func(ptr Context)
 

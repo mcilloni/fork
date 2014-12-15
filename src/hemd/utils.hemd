@@ -4,8 +4,8 @@
 #  This Source Code Form is subject to the terms of the Mozilla Public
 #  License, v. 2.0. If a copy of the MPL was not distributed with this
 #  file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#  Exhibit B is not attached; this software is compatible with the 
-#  licenses expressed under Section 1.12 of the MPL v2. 
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
 
 module utils
 
@@ -18,6 +18,7 @@ decl charIsPar func(uint8) bool
 decl charIsSym func(uint8) bool
 decl charIsWhite func(uint8) bool
 
+decl error func(ptr lex:Lineno, ptr uint8) ptr spring:Error
 decl errorLex func(ptr lex:Lexer, ptr uint8) ptr spring:Error
 decl errorMism func(ptr lex:Lineno, ptr uint8, ptr uint8) ptr spring:Error
 
@@ -30,5 +31,3 @@ alias Ref struct (
 
 decl incRef func(data)
 decl decRef func(data)
-
-
