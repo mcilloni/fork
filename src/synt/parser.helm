@@ -59,28 +59,26 @@ func discardTok(ctx ptr synt:Context)
 
 
 # if the expected token is not given, then the Parser gets its error set
-func getExpectedOrSetError(ctx ptr synt:Context, expected, got uint16)
-  mut tok1 lex:Token
-  tok1'type = expected
-  mut tok2 lex:Token
-  tok2'type = got
-  ctx'prs'err = utils:errorMism(ptr ctx'last, lex:tokenStr(ptr tok1), lex:tokenStr(ptr tok2))
+func createExpectedError(ctx ptr synt:Context, expected, got ptr lex:Token)
+  ctx'prs'err = utils:errorMism(ptr ctx'last, lex:tokenStr(expected), lex:tokenStr(got))
 /func
 
 
 # get the expected token or null for error.
 func expect(ctx ptr synt:Context, ttype uint16) ptr lex:Token
-  mut tok = nextTok(ctx)
-  if theresError(ctx) or tok == null
+  mut got = nextTok(ctx)
+  if theresError(ctx)
     return null
   /if
 
-  if tok'type != ttype
-    getExpectedOrSetError(ctx, ttype, tok'type)
+  mut expected lex:Token
+  expected'type = ttype
+  if (got == null and ttype != lex:EOF) or got'type != ttype
+    createExpectedError(ctx, ptr expected, got)
     return null
   /if
 
-  return tok
+  return got
 /func
 
 
@@ -425,6 +423,83 @@ func parserParseMut(ctx ptr synt:Context) ptr synt:PNode
 /func
 
 
+func parserParseFunctionBody(ctx ptr synt:Context) ptr synt:PNode
+
+/func
+
+
+func parserMakeFunction(ctx ptr synt:Context, type uint16, name ptr uint8, header ptr synt:PExpr, endToken uint16) ptr synt:PNode
+
+  mut newLine = expect(ctx, lex:NEWLINE)
+  if newLine == null
+    return null
+  /if
+
+  lex:tokenFree(newLine)
+
+  mut body = parserParseFunctionBody(ctx)
+  if body == null
+    return null
+  /if
+
+
+  mut funcNode = synt:pnodeNew(type, cast<uintptr>(name), null)
+
+  synt:pnodeAppendChild(funcNode, cast<ptr synt:PNode>(header))
+  synt:pnodeAppendChild(funcNode, body)
+
+  mut endTok = expect(ctx, endToken)
+  if endTok == null
+    synt:pnodeFree(funcNode)
+    return null
+  /if
+
+  return funcNode
+
+/func
+
+
+func parserParseEntry(ctx ptr synt:Context) ptr synt:PNode
+  discardTok(ctx) #discard "entry"
+
+  return parserMakeFunction(ctx, synt:PENTRY, "_helm_entry", ptr synt:emptyExpr, lex:ENDENTRY)
+/func
+
+
+func parserParseFuncName(ctx ptr synt:Context) ptr uint8
+  mut nameTok = expect(ctx, lex:ID)
+  if nameTok == null
+    return null
+  /if
+
+  mut name = spring:strclone(cast<ptr uint8>(nameTok'value))
+
+  lex:tokenFree(nameTok)
+
+  return name
+
+/func
+
+
+func parserParseFunc(ctx ptr synt:Context) ptr synt:PNode
+  discardTok(ctx) #discard "func"
+
+  mut name = parserParseFuncName(ctx)
+  if name == null
+    return null
+  /if
+
+  mut header = parserParseStructBody(ctx, true)
+
+  if header == null
+    spring:free(name)
+    return null
+  /if
+
+  return parserMakeFunction(ctx, synt:PFUNCTION, name, ptr synt:emptyExpr, lex:ENDENTRY)
+/func
+
+
 func parserParseDefinition(ctx ptr synt:Context) ptr synt:PNode
 
   if ctx'next == null
@@ -522,6 +597,10 @@ func pnodeAppendChild(pnode, child ptr synt:PNode)
 
   if pnode != null
     spring:vectAppend(pnode'leaves, child)
+
+    if child != null
+      child'parent = pnode
+    /if
   /if
 
 /func
@@ -550,6 +629,17 @@ func pnodeFree(pnode ptr synt:PNode)
   spring:vectFreeAll(pnode'leaves, ptr pnodeFree)
   spring:free(pnode)
 
+/func
+
+
+func pnodeNew(type uint16, value uintptr, parent ptr synt:PNode) ptr synt:PNode
+
+  mut pnode = cast<ptr synt:PNode>(spring:zalloc(size(synt:PNode)))
+  pnode'type = type
+  pnode'value = value
+  pnode'parent = parent
+
+  return pnode
 /func
 
 

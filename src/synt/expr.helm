@@ -9,6 +9,8 @@ mut TYPE_UNARY uint8 = 2
 mut ASSOC_LEFT uint8 = 0
 mut ASSOC_RIGHT uint8 = 1
 
+mut emptyExpr synt:PExpr
+
 
 func isBinary(tok ptr lex:Token) bool
   return tok != null and (tok'type mod 10) < 2
@@ -51,6 +53,7 @@ func opPrec(tok ptr lex:Token) int16
 func isOp(tok ptr lex:Token) bool
   return opPrec(tok) != 0
 /func
+
 
 func isValidInExpr(tok ptr lex:Token) bool
   return tok != null and (isOp(tok) or tok'type == lex:ID or tok'type == lex:NUMBER)
@@ -130,19 +133,18 @@ func tokIsPostfixExpressionSuffixStart(tok ptr lex:Token) bool
 func exprParseId(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PExpr
 
   mut ret = pexprNew(synt:nextTok(ctx), null, null)
+
   if ctx'next != null and ctx'next'type == lex:COLON
     mut colon = synt:nextTok(ctx)
-    if ctx'next == null
-      val err = utils:errorMism(ptr ctx'last, "an identifier", "EOF")
+
+    mut id = synt:expect(ctx, lex:ID)
+    if id == null
+      lex:tokenFree(colon)
+      synt:pnodeFree(cast<ptr synt:PNode>(ret))
       return null
     /if
 
-    if ctx'next'type != lex:ID
-      val err = utils:errorMism(ctx'next'lineno, "an identifier", lex:tokenStr(ctx'next))
-      return null
-    /if
-
-    ret = pexprNew(colon, ret, pexprNew(synt:nextTok(ctx), null, null))
+    ret = pexprNew(colon, ret, pexprNew(id, null, null))
   /if
 
   return ret
@@ -153,23 +155,20 @@ func exprParseId(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PExpr
 func exprParseGenParens(ctx ptr synt:Context, err ptr ptr spring:Error, cpar uint16) ptr synt:PExpr
 
   decl exprParseAssign func(ptr synt:Context, ptr ptr spring:Error) ptr synt:PExpr
+
   mut expression = exprParseAssign(ctx, err)
 
   if expression == null
     return null
   /if
 
-  if ctx'next == null
-    val err = utils:error(ptr ctx'last, "unexpected EOF")
+  mut cparTok = synt:expect(ctx, cpar)
+  if cparTok == null
+    synt:pnodeFree(cast<ptr synt:PNode>(expression))
     return null
   /if
 
-  if ctx'next'type != cpar
-    val err = utils:errorMism(ctx'next'lineno, "a closing parenthesis", lex:tokenStr(ctx'next))
-    return null
-  /if
-
-  synt:discardTok(ctx)
+  lex:tokenFree(cparTok)
 
   return expression
 
@@ -187,7 +186,7 @@ func exprParseParens(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PE
 func exprParsePrimary(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PExpr
 
   if ctx'next == null
-    val err = spring:errorNew("eof in exprParsePrimary")
+    val err = utils:error(ptr ctx'last, "expected a primary expression, got an EOF")
     return null
   /if
 
@@ -226,11 +225,13 @@ func exprParseAccess(ctx ptr synt:Context, lhs ptr synt:PExpr, err ptr ptr sprin
 func exprParseCall(ctx ptr synt:Context, lhs ptr synt:PExpr, err ptr ptr spring:Error) ptr synt:PExpr
 
   mut opar = synt:nextTok(ctx)
-  mut args = spring:vectNew(3)
+  mut args = spring:vectNew(4)
+
+  spring:vectAppend(args, lhs) #function expression to be called
+
   decl exprParseAssign func(ptr synt:Context, ptr ptr spring:Error) ptr synt:PExpr
 
   mut next = ctx'next
-
   mut first = true
 
   while ctx'next != null and ctx'next'type != lex:CPAR
@@ -253,6 +254,7 @@ func exprParseCall(ctx ptr synt:Context, lhs ptr synt:PExpr, err ptr ptr spring:
 
     mut arg = exprParseAssign(ctx, err)
     if arg == null
+      spring:vectFreeAll(args, cast<ptr func(data)>(ptr synt:pnodeFree))
       return null
     /if
 
@@ -264,25 +266,22 @@ func exprParseCall(ctx ptr synt:Context, lhs ptr synt:PExpr, err ptr ptr spring:
     synt:discardTok(ctx) #this is lex:CPAR
   /if
 
-  return pexprNew(opar, lhs, cast<ptr synt:PExpr>(args))
+  mut callExpr =  pexprNew(opar, lhs, cast<ptr synt:PExpr>(args))
+
 /func
 
 
 func exprParseField(ctx ptr synt:Context, lhs ptr synt:PExpr, err ptr ptr spring:Error) ptr synt:PExpr
 
   mut apos = synt:nextTok(ctx)
+  mut id = synt:expect(ctx, lex:ID)
 
-  if ctx'next == null
-  val err = utils:errorMism(ctx'next'lineno, "an identifier", "EOF")
+  if id == null
+    lex:tokenFree(apos)
     return null
   /if
 
-  if ctx'next'type != lex:ID
-    val err = utils:errorMism(ctx'next'lineno, "an identifier", lex:tokenStr(ctx'next))
-    return null
-  /if
-
-  return pexprNew(apos, lhs, pexprNew(synt:nextTok(ctx), null, null))
+  return pexprNew(apos, lhs, pexprNew(id, null, null))
 /func
 
 
@@ -335,10 +334,10 @@ func exprParsePostfix(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:P
 
 func exprParseUnaryOp(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PExpr
   mut operator = synt:nextTok(ctx)
-
   mut result ptr synt:PExpr
 
   decl exprParseCast func(ptr synt:Context, ptr ptr spring:Error) ptr synt:PExpr
+
   if (result = exprParseCast(ctx, err)) == null
     return null
   /if

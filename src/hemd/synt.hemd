@@ -31,6 +31,7 @@ alias PProgram struct(
   imports ptr spring:Vector
 )
 
+decl pnodeNew func(uint16, uintptr, ptr PNode) ptr PNode
 decl pprogramNew func(ptr uint8, ptr spring:Vector) ptr PProgram
 
 decl TYPE_FUNC   uint16
@@ -104,6 +105,10 @@ decl parserParse func(ptr Parser) ptr PNode
 
 decl pnodeAppendChild func(ptr PNode, ptr PNode)
 decl pnodeFree func(ptr PNode)
+
+decl expect func(ptr Context, uint16) ptr lex:Token
+
+decl emptyExpr PExpr
 
 decl PPROGRAM  uint16
 decl PENTRY    uint16
