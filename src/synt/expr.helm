@@ -77,7 +77,7 @@ func pexprNew(tok ptr lex:Token, lhs,rhs ptr synt:PExpr) ptr synt:PExpr
 /func
 
 
-func exprParseCastTag(ctx ptr synt:Context,err ptr ptr spring:Error) ptr synt:PExpr
+func parserParseCastTag(ctx ptr synt:Context) ptr synt:PExpr
 
   mut castTok = synt:nextTok(ctx)
 
@@ -93,9 +93,9 @@ func exprParseCastTag(ctx ptr synt:Context,err ptr ptr spring:Error) ptr synt:PE
   synt:discardTok(ctx) #`(`
   ## end stub
 
-  decl exprParse func(ptr synt:Context,ptr ptr spring:Error) ptr synt:PExpr
+  decl parserParseExpr func(ptr synt:Context) ptr synt:PExpr
 
-  mut expr = exprParse(ctx,err)
+  mut expr = parserParseExpr(ctx)
 
   ## begins stub
   synt:discardTok(ctx) #`)`
@@ -106,7 +106,7 @@ func exprParseCastTag(ctx ptr synt:Context,err ptr ptr spring:Error) ptr synt:PE
 /func
 
 
-func exprParseSizeOp(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PExpr
+func parserParseSizeOp(ctx ptr synt:Context) ptr synt:PExpr
 
   mut sizeTok = synt:nextTok(ctx)
   ## begins stub
@@ -130,7 +130,7 @@ func tokIsPostfixExpressionSuffixStart(tok ptr lex:Token) bool
 /func
 
 
-func exprParseId(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PExpr
+func parserParseId(ctx ptr synt:Context) ptr synt:PExpr
 
   mut ret = pexprNew(synt:nextTok(ctx), null, null)
 
@@ -152,11 +152,11 @@ func exprParseId(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PExpr
 /func
 
 
-func exprParseGenParens(ctx ptr synt:Context, err ptr ptr spring:Error, cpar uint16) ptr synt:PExpr
+func parserParseGenParens(ctx ptr synt:Context, cpar uint16) ptr synt:PExpr
 
-  decl exprParseAssign func(ptr synt:Context, ptr ptr spring:Error) ptr synt:PExpr
+  decl parserParseAssignExpr func(ptr synt:Context) ptr synt:PExpr
 
-  mut expression = exprParseAssign(ctx, err)
+  mut expression = parserParseAssignExpr(ctx)
 
   if expression == null
     return null
@@ -175,18 +175,18 @@ func exprParseGenParens(ctx ptr synt:Context, err ptr ptr spring:Error, cpar uin
 /func
 
 
-func exprParseParens(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PExpr
+func parserParseParens(ctx ptr synt:Context) ptr synt:PExpr
 
   synt:discardTok(ctx)
-  return exprParseGenParens(ctx, err, lex:CPAR)
+  return parserParseGenParens(ctx, lex:CPAR)
 
 /func
 
 
-func exprParsePrimary(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PExpr
+func parserParsePrimaryExpr(ctx ptr synt:Context) ptr synt:PExpr
 
   if ctx'next == null
-    val err = utils:error(ptr ctx'last, "expected a primary expression, got an EOF")
+    ctx'prs'err = utils:error(ptr ctx'last, "expected a primary expression, got an EOF")
     return null
   /if
 
@@ -195,23 +195,23 @@ func exprParsePrimary(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:P
   /if
 
   if ctx'next'type == lex:ID
-    return exprParseId(ctx, err)
+    return parserParseId(ctx)
   /if
 
   if ctx'next'type != lex:OPAR
-    val err = utils:errorMism(ctx'next'lineno, "an identifier, a costant or an expression between ()", lex:tokenStr(ctx'next))
+    ctx'prs'err = utils:errorMism(ctx'next'lineno, "an identifier, a costant or an expression between ()", lex:tokenStr(ctx'next))
     return null
   /if
 
-  return exprParseParens(ctx, err)
+  return parserParseParens(ctx)
 
 /func
 
 
-func exprParseAccess(ctx ptr synt:Context, lhs ptr synt:PExpr, err ptr ptr spring:Error) ptr synt:PExpr
+func parserParseAccessExpr(ctx ptr synt:Context, lhs ptr synt:PExpr) ptr synt:PExpr
 
   mut obrac = synt:nextTok(ctx)
-  mut expression = exprParseGenParens(ctx, err, lex:CBRAC)
+  mut expression = parserParseGenParens(ctx, lex:CBRAC)
 
   if expression == null
       return null
@@ -222,14 +222,14 @@ func exprParseAccess(ctx ptr synt:Context, lhs ptr synt:PExpr, err ptr ptr sprin
 /func
 
 
-func exprParseCall(ctx ptr synt:Context, lhs ptr synt:PExpr, err ptr ptr spring:Error) ptr synt:PExpr
+func parserParseCallExpr(ctx ptr synt:Context, lhs ptr synt:PExpr) ptr synt:PExpr
 
   mut opar = synt:nextTok(ctx)
   mut args = spring:vectNew(4)
 
   spring:vectAppend(args, lhs) #function expression to be called
 
-  decl exprParseAssign func(ptr synt:Context, ptr ptr spring:Error) ptr synt:PExpr
+  decl parserParseAssignExpr func(ptr synt:Context) ptr synt:PExpr
 
   mut next = ctx'next
   mut first = true
@@ -238,7 +238,7 @@ func exprParseCall(ctx ptr synt:Context, lhs ptr synt:PExpr, err ptr ptr spring:
 
     if ctx'next'type != lex:COMMA and !first
 
-      val err = utils:errorMism(ptr ctx'last, "a comma ','", lex:tokenStr(ctx'next))
+      ctx'prs'err = utils:errorMism(ptr ctx'last, "a comma ','", lex:tokenStr(ctx'next))
       return null
 
     else
@@ -252,7 +252,7 @@ func exprParseCall(ctx ptr synt:Context, lhs ptr synt:PExpr, err ptr ptr spring:
 
     /if
 
-    mut arg = exprParseAssign(ctx, err)
+    mut arg = parserParseAssignExpr(ctx)
     if arg == null
       spring:vectFreeAll(args, cast<ptr func(data)>(ptr synt:pnodeFree))
       return null
@@ -271,7 +271,7 @@ func exprParseCall(ctx ptr synt:Context, lhs ptr synt:PExpr, err ptr ptr spring:
 /func
 
 
-func exprParseField(ctx ptr synt:Context, lhs ptr synt:PExpr, err ptr ptr spring:Error) ptr synt:PExpr
+func parserParseFieldExpr(ctx ptr synt:Context, lhs ptr synt:PExpr) ptr synt:PExpr
 
   mut apos = synt:nextTok(ctx)
   mut id = synt:expect(ctx, lex:ID)
@@ -285,7 +285,7 @@ func exprParseField(ctx ptr synt:Context, lhs ptr synt:PExpr, err ptr ptr spring
 /func
 
 
-func exprParsePostfixSuffix(ctx ptr synt:Context, primaryLhs ptr synt:PExpr, err ptr ptr spring:Error) ptr synt:PExpr
+func parserParsePostfixSuffix(ctx ptr synt:Context, primaryLhs ptr synt:PExpr) ptr synt:PExpr
 
   mut lhs = primaryLhs
 
@@ -295,16 +295,16 @@ func exprParsePostfixSuffix(ctx ptr synt:Context, primaryLhs ptr synt:PExpr, err
     /if
 
     if ctx'next'type == lex:OBRAC
-      lhs = exprParseAccess(ctx, lhs, err)
+      lhs = parserParseAccessExpr(ctx, lhs)
     else
       if ctx'next'type == lex:OPAR
-        lhs = exprParseCall(ctx, lhs, err)
+        lhs = parserParseCallExpr(ctx, lhs)
       else
         if ctx'next'type == lex:INC or ctx'next'type == lex:DEC
           lhs = pexprNew(synt:nextTok(ctx), lhs, null)
         else
           if ctx'next'type == lex:APOS
-            lhs = exprParseField(ctx, lhs, err)
+            lhs = parserParseFieldExpr(ctx, lhs)
           else
             break
           /if
@@ -321,24 +321,24 @@ func exprParsePostfixSuffix(ctx ptr synt:Context, primaryLhs ptr synt:PExpr, err
 /func
 
 
-func exprParsePostfix(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PExpr
-  mut primary = exprParsePrimary(ctx, err)
+func parserParsePostfixExpr(ctx ptr synt:Context) ptr synt:PExpr
+  mut primary = parserParsePrimaryExpr(ctx)
 
   if primary == null
     return null
   /if
 
-  return exprParsePostfixSuffix(ctx, primary, err)
+  return parserParsePostfixSuffix(ctx, primary)
 /func
 
 
-func exprParseUnaryOp(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PExpr
+func parserParseUnaryExprOp(ctx ptr synt:Context) ptr synt:PExpr
   mut operator = synt:nextTok(ctx)
   mut result ptr synt:PExpr
 
-  decl exprParseCast func(ptr synt:Context, ptr ptr spring:Error) ptr synt:PExpr
+  decl parserParseCastExpr func(ptr synt:Context) ptr synt:PExpr
 
-  if (result = exprParseCast(ctx, err)) == null
+  if (result = parserParseCastExpr(ctx)) == null
     return null
   /if
 
@@ -346,39 +346,39 @@ func exprParseUnaryOp(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:P
 /func
 
 
-func exprParseUnary(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PExpr
+func parserParseUnaryExpr(ctx ptr synt:Context) ptr synt:PExpr
   if ctx'next'type == lex:SIZE
-    return exprParseSizeOp(ctx, err)
+    return parserParseSizeOp(ctx)
   /if
 
   if isUnary(ctx'next)
-    return exprParseUnaryOp(ctx, err)
+    return parserParseUnaryExprOp(ctx)
   /if
 
-  return exprParsePostfix(ctx, err)
+  return parserParsePostfixExpr(ctx)
 /func
 
 
-func exprParseCast(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PExpr
+func parserParseCastExpr(ctx ptr synt:Context) ptr synt:PExpr
   if ctx'next == null
-    val err = utils:error(ptr ctx'last, "unexpected EOF")
+    ctx'prs'err = utils:error(ptr ctx'last, "unexpected EOF")
     return null
   /if
 
   if ctx'next'type == lex:CAST
-    return exprParseCastTag(ctx,err)
+    return parserParseCastTag(ctx)
   /if
 
-  return exprParseUnary(ctx,err)
+  return parserParseUnaryExpr(ctx)
 /func
 
 
-func exprParseBinaryRhs(ctx ptr synt:Context, lhs ptr synt:PExpr, minPri uint16, err ptr ptr spring:Error) ptr synt:PExpr
+func parserParseBinaryRhs(ctx ptr synt:Context, lhs ptr synt:PExpr, minPri uint16) ptr synt:PExpr
   mut curOpPrec uint16
   mut rhs ptr synt:PExpr = null
   while ctx'next != null and ((curOpPrec = opPrec(ctx'next)) >= minPri)
     mut opTok = synt:nextTok(ctx)
-    rhs = exprParseCast(ctx, err)
+    rhs = parserParseCastExpr(ctx)
 
     if rhs == null
       return null
@@ -387,7 +387,7 @@ func exprParseBinaryRhs(ctx ptr synt:Context, lhs ptr synt:PExpr, minPri uint16,
     mut nextOpPrec = opPrec(ctx'next)
 
     if ctx'next != null and (nextOpPrec > curOpPrec or (assocRight(ctx'next) and nextOpPrec == curOpPrec))
-      rhs = exprParseBinaryRhs(ctx, rhs, nextOpPrec, err)
+      rhs = parserParseBinaryRhs(ctx, rhs, nextOpPrec)
       if rhs == null
         return null
       /if
@@ -400,15 +400,13 @@ func exprParseBinaryRhs(ctx ptr synt:Context, lhs ptr synt:PExpr, minPri uint16,
 /func
 
 
-func exprParseAssign(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PExpr
-  mut lhs = exprParseCast(ctx, err)
+func parserParseAssignExpr(ctx ptr synt:Context) ptr synt:PExpr
+  mut lhs = parserParseCastExpr(ctx)
 
-  return exprParseBinaryRhs(ctx, lhs, tokTypePrec(lex:ASSIGN), err)
+  return parserParseBinaryRhs(ctx, lhs, tokTypePrec(lex:ASSIGN))
 /func
 
 
-func parserParseExpr(ctx ptr synt:Context, err ptr ptr spring:Error) ptr synt:PExpr
-  val err = null
-
-  return exprParseAssign(ctx, err)
+func parserParseExpr(ctx ptr synt:Context) ptr synt:PExpr
+  return parserParseAssignExpr(ctx)
 /func

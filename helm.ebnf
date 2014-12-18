@@ -4,7 +4,7 @@ module ::= 'module', id
 
 import ::= 'import', id
 
-definition ::= entry | function
+definition ::= entry | function | declaration
 
 entry ::= 'entry', stmtEnd, body, '/entry'
 
@@ -26,7 +26,9 @@ while ::= 'while', expr, stmtEnd, breakBody, '/while'
 
 elseBlock ::= 'else', body
 
-var ::= 'var', singleVar
+declaration ::= mut | decl | alias
+
+mut ::= 'mut', singleVar
 decl ::= 'decl', declType
 stmtEnd ::= newLine | ';'
 

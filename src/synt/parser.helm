@@ -392,7 +392,7 @@ func parserParseAlias(ctx ptr synt:Context) ptr synt:PNode
     /if
 
     mut node = cast<ptr synt:PDecl>(spring:zalloc(size(synt:PDecl)))
-    node'node'type = lex:ALIAS
+    node'node'type = synt:PALIAS
     node'name = spring:strclone(cast<ptr uint8>(name'value))
     node'type = type
 
@@ -418,13 +418,125 @@ func parserParseDecl(ctx ptr synt:Context) ptr synt:PNode
 /func
 
 
+decl parserParseBody func(ptr synt:Context,ptr synt:PNode,uint16) bool
+
+
+func parserParseConditional(ctx ptr synt:Context, condType, endTokType uint16) ptr synt:PNode
+  synt:discardTok(ctx) #discard begin token
+
+  mut expr = cast<ptr synt:PNode>(synt:parserParseExpr(ctx))
+  if expr == null
+    return null
+  /if
+
+  mut newLine = synt:expect(ctx, lex:NEWLINE)
+  if newLine == null
+    synt:pnodeFree(expr)
+    return null
+  /if
+
+  lex:tokenFree(newLine)
+
+  mut condBlock = synt:pnodeNew(condType, 0)
+  synt:pnodeAppendChild(condBlock, expr)
+
+  if !parserParseBody(ctx, condBlock, endTokType)
+    synt:pnodeFree(condBlock)
+    return null
+  /if
+
+  synt:discardTok(ctx) #discard endTokType
+
+  return condBlock
+/func
+
+
+func parserParseIf(ctx ptr synt:Context) ptr synt:PNode
+  return parserParseConditional(ctx, synt:PIF, lex:ENDIF)
+/func
+
 func parserParseMut(ctx ptr synt:Context) ptr synt:PNode
   return parserParseDeclaration(ctx, lex:MUT)
 /func
 
 
-func parserParseFunctionBody(ctx ptr synt:Context) ptr synt:PNode
+func parserParseReturn(ctx ptr synt:Context) ptr synt:PNode
+  synt:discardTok(ctx) # discard "return"
 
+  mut returnNode = synt:pnodeNew(synt:PRETURN, 0)
+  if ctx'next == null and ctx'next'type != lex:NEWLINE
+    mut expr = synt:parserParseExpr(ctx)
+    if expr == null
+      synt:pnodeFree(returnNode)
+      return null
+    /if
+    synt:pnodeAppendChild(returnNode, cast<ptr synt:PNode>(expr))
+  /if
+
+  return returnNode
+/func
+
+
+func parserParseWhile(ctx ptr synt:Context) ptr synt:PNode
+  return parserParseConditional(ctx, synt:PWHILE, lex:ENDWHILE)
+/func
+
+
+func parserParseStatement(ctx ptr synt:Context) ptr synt:PNode
+  if ctx'next == null
+    ctx'prs'err = utils:errorMism(ptr ctx'last, "a statement or an expression", "EOF")
+  /if
+
+  if ctx'next'type == lex:BREAK
+    return synt:pnodeNew(synt:PBREAK, 0)
+  /if
+
+  if ctx'next'type == lex:CONTINUE
+    return synt:pnodeNew(synt:PCONTINUE, 0)
+  /if
+
+  if ctx'next'type == lex:DECL
+    return parserParseDecl(ctx)
+  /if
+
+  if ctx'next'type == lex:IF
+    return parserParseIf(ctx)
+  /if
+
+  if ctx'next'type == lex:MUT
+    return parserParseMut(ctx)
+  /if
+
+  if ctx'next'type == lex:RETURN
+    return parserParseReturn(ctx)
+  /if
+
+  if ctx'next'type == lex:WHILE
+    return parserParseWhile(ctx)
+  /if
+
+/func
+
+
+func parserParseBody(ctx ptr synt:Context, block ptr synt:PNode, endToken uint16) bool
+
+  while ctx'next != null and ctx'next'type != endToken
+    mut statement = parserParseStatement(ctx)
+    if statement == null
+      return false
+    /if
+
+    synt:pnodeAppendChild(block, statement)
+  /while
+
+  if ctx'next == null
+    return false
+  /if
+
+  # if ctx'next is not null, then the while above quitted because
+  # ctx'next'type == endToken.
+
+  return true
 /func
 
 
@@ -437,16 +549,13 @@ func parserMakeFunction(ctx ptr synt:Context, type uint16, name ptr uint8, heade
 
   lex:tokenFree(newLine)
 
-  mut body = parserParseFunctionBody(ctx)
-  if body == null
+  mut funcNode = synt:pnodeNew(type, cast<uintptr>(name))
+  synt:pnodeAppendChild(funcNode, cast<ptr synt:PNode>(header))
+
+  if !parserParseBody(ctx, funcNode, endToken)
+    synt:pnodeFree(funcNode)
     return null
   /if
-
-
-  mut funcNode = synt:pnodeNew(type, cast<uintptr>(name), null)
-
-  synt:pnodeAppendChild(funcNode, cast<ptr synt:PNode>(header))
-  synt:pnodeAppendChild(funcNode, body)
 
   mut endTok = expect(ctx, endToken)
   if endTok == null
@@ -632,12 +741,11 @@ func pnodeFree(pnode ptr synt:PNode)
 /func
 
 
-func pnodeNew(type uint16, value uintptr, parent ptr synt:PNode) ptr synt:PNode
+func pnodeNew(type uint16, value uintptr) ptr synt:PNode
 
   mut pnode = cast<ptr synt:PNode>(spring:zalloc(size(synt:PNode)))
   pnode'type = type
   pnode'value = value
-  pnode'parent = parent
 
   return pnode
 /func
@@ -661,5 +769,9 @@ mut PFUNCTION  uint16 = 30
 mut PALIAS     uint16 = 40
 mut PDECL      uint16 = 50
 mut PVAR       uint16 = 60
-mut PDECLBLOCK uint16 = 70
+mut PIF        uint16 = 70
 mut PEXPR      uint16 = 80
+mut PBREAK     uint16 = 90
+mut PCONTINUE  uint16 = 100
+mut PRETURN    uint16 = 110
+mut PWHILE     uint16 = 120
