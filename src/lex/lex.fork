@@ -281,7 +281,7 @@ func tokenNew(type uint16, value uintptr, lineno ptr lex:Lineno, end uintptr) pt
 
 func tokenFree(tok ptr lex:Token)
   if tok != null
-    if tok'type == lex:ID or tok'type == lex:STRING
+    if (tok'type == lex:ID or tok'type == lex:STRING) and tok'value != 0
       spring:free(cast<data>(tok'value))
     /if
     lex:linenoFree(tok'lineno)

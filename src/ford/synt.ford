@@ -18,12 +18,23 @@ alias Parser struct(
   err ptr spring:Error
 )
 
+alias Context struct (
+  prs ptr Parser,
+  lex ptr lex:Lexer,
+  next ptr lex:Token,
+  last lex:Lineno
+)
+
 alias PNode struct(
   type uint16,
   value uintptr,
   parent ptr PNode,
   leaves ptr spring:Vector
 )
+
+decl pnodeNew func(uint16, uintptr) ptr PNode
+decl pnodeAppendChild func(ptr PNode, ptr PNode) ptr PNode
+decl pnodeFree func(ptr PNode)
 
 alias PProgram struct(
   node PNode,
@@ -62,6 +73,8 @@ decl typeNew func(ptr uint8, ptr uint8, ptr TypeDescr) ptr Type
 decl typeDescrFree func(ptr TypeDescr)
 decl typeDescrNew func(uint16, ptr Type, ptr spring:List) ptr TypeDescr
 
+decl parserParseType func(ptr Context) ptr Type
+
 alias Symbol struct(
   name ptr uint8,
   type ptr Type
@@ -81,16 +94,12 @@ alias PDecl struct(
   type ptr Type
 )
 
+decl pdeclNew func(uint16, ptr uint8, ptr Type) ptr PDecl
+
 alias PExpr struct(
   node PNode,
-  opType uint16
-)
-
-alias Context struct (
-  prs ptr Parser,
-  lex ptr lex:Lexer,
-  next ptr lex:Token,
-  last lex:Lineno
+  opType uint16,
+  type ptr Type
 )
 
 decl parserParseExpr func(ptr Context) ptr PExpr
@@ -102,11 +111,8 @@ decl parserFree func(ptr Parser)
 decl parserNew func(ptr uint8) ptr Parser
 decl parserParse func(ptr Parser) ptr PNode
 
-decl pnodeNew func(uint16, uintptr) ptr PNode
-decl pnodeAppendChild func(ptr PNode, ptr PNode)
-decl pnodeFree func(ptr PNode)
-
 decl expect func(ptr Context, uint16) ptr lex:Token
+decl expectDiscard func(ptr Context, uint16) bool
 
 decl emptyExpr PExpr
 

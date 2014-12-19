@@ -82,6 +82,14 @@ func expect(ctx ptr synt:Context, ttype uint16) ptr lex:Token
 /func
 
 
+func expectDiscard(ctx ptr synt:Context, ttype uint16) bool
+  mut tok = expect(ctx, ttype)
+  lex:tokenFree(tok)
+
+  return tok == null
+/func
+
+
 # parses, if present, the module name. Returns null if none or error
 func parserParseModuleName(ctx ptr synt:Context) ptr uint8
   if ctx'next'type == lex:MODULE
@@ -176,7 +184,7 @@ decl parserParseType func(ptr synt:Context) ptr synt:Type
 # if the next token exists and it's a lex:NEWLINE, then discards it
 func parserDiscardNewLine(ctx ptr synt:Context)
   if ctx'next != null and ctx'next'type == lex:NEWLINE
-    lex:tokenFree(nextTok(ctx))
+    synt:discardTok(ctx)
   /if
 /func
 
@@ -380,29 +388,6 @@ func parserParseType(ctx ptr synt:Context) ptr synt:Type
 /func
 
 
-func parserParseAlias(ctx ptr synt:Context) ptr synt:PNode
-  # discard 'alias'
-  lex:tokenFree(nextTok(ctx))
-
-  mut name = expect(ctx, lex:ID)
-  if name != null
-    mut type = parserParseType(ctx)
-    if theresError(ctx)
-      return null
-    /if
-
-    mut node = cast<ptr synt:PDecl>(spring:zalloc(size(synt:PDecl)))
-    node'node'type = synt:PALIAS
-    node'name = spring:strclone(cast<ptr uint8>(name'value))
-    node'type = type
-
-    return ptr node'node
-  /if
-
-  return null
-/func
-
-
 func parserParseDeclaration(ctx ptr synt:Context, declType uint16) ptr synt:PNode
   # discard 'var' or 'decl'
   lex:tokenFree(nextTok(ctx))
@@ -415,6 +400,26 @@ func parserParseDeclaration(ctx ptr synt:Context, declType uint16) ptr synt:PNod
 
 func parserParseDecl(ctx ptr synt:Context) ptr synt:PNode
   return parserParseDeclaration(ctx, lex:DECL)
+/func
+
+
+func parserParseAlias(ctx ptr synt:Context) ptr synt:PNode
+  # discard 'alias'
+  lex:tokenFree(nextTok(ctx))
+
+  mut name = expect(ctx, lex:ID)
+  if name != null
+    mut type = parserParseType(ctx)
+    if type == null
+      return null
+    /if
+
+    mut palias = synt:pdeclNew(synt:PALIAS, cast<ptr uint8>(name'value), type)
+
+    return ptr palias'node
+  /if
+
+  return null
 /func
 
 
@@ -702,7 +707,7 @@ func parserParse(parser ptr synt:Parser) ptr synt:PNode
 /func
 
 
-func pnodeAppendChild(pnode, child ptr synt:PNode)
+func pnodeAppendChild(pnode, child ptr synt:PNode) ptr synt:PNode
 
   if pnode != null
     spring:vectAppend(pnode'leaves, child)
@@ -712,6 +717,7 @@ func pnodeAppendChild(pnode, child ptr synt:PNode)
     /if
   /if
 
+  return pnode
 /func
 
 
@@ -748,6 +754,17 @@ func pnodeNew(type uint16, value uintptr) ptr synt:PNode
   pnode'value = value
 
   return pnode
+/func
+
+
+func pdeclNew(nodeType uint16, name ptr uint8, type ptr synt:Type) ptr synt:PDecl
+
+  mut pdecl = cast<ptr synt:PDecl>(spring:zalloc(size(synt:PDecl)))
+  pdecl'node'type = nodeType
+  pdecl'name = spring:strclone(name)
+  pdecl'type = type
+
+  return pdecl
 /func
 
 

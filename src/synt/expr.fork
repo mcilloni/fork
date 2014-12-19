@@ -1,3 +1,12 @@
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
 import lex
 import spring
 import synt
@@ -72,6 +81,8 @@ func pexprNew(tok ptr lex:Token, lhs,rhs ptr synt:PExpr) ptr synt:PExpr
   synt:pnodeAppendChild(pnode, ptr lhs'node)
   synt:pnodeAppendChild(pnode, ptr rhs'node)
 
+  lex:tokenFree(tok)
+
   return pexpr
 
 /func
@@ -81,28 +92,41 @@ func parserParseCastTag(ctx ptr synt:Context) ptr synt:PExpr
 
   mut castTok = synt:nextTok(ctx)
 
-  ## begins stub
-  synt:discardTok(ctx)
+  if !synt:expectDiscard(ctx, lex:MINOR)
+    lex:tokenFree(castTok)
+    return null
+  /if
 
-  mut tok ptr lex:Token
-  while (tok = synt:nextTok(ctx))'type != lex:MAJOR
-    lex:tokenFree(tok)
-  /while
+  mut type = synt:parserParseType(ctx)
+  if type == null
+    lex:tokenFree(castTok)
+    return null
+  /if
 
-  lex:tokenFree(tok)
-  synt:discardTok(ctx) #`(`
-  ## end stub
+  if !synt:expectDiscard(ctx, lex:MAJOR) or !synt:expectDiscard(ctx, lex:OPAR)
+    lex:tokenFree(castTok)
+    synt:typeFree(type)
+    return null
+  /if
 
   decl parserParseExpr func(ptr synt:Context) ptr synt:PExpr
 
   mut expr = parserParseExpr(ctx)
+  if expr == null
+    lex:tokenFree(castTok)
+    synt:typeFree(type)
+  /if
 
-  ## begins stub
-  synt:discardTok(ctx) #`)`
-  ## end stub
+  if !synt:expectDiscard(ctx, lex:CPAR)
+    lex:tokenFree(castTok)
+    synt:typeFree(type)
+    return null
+  /if
 
-  return pexprNew(castTok, expr, null)
+  mut pexpr = pexprNew(castTok, expr, null)
+  pexpr'type = type
 
+  return pexpr
 /func
 
 
