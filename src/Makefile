@@ -1,5 +1,5 @@
-ifndef HELMC
-	HELMC = helmc
+ifndef FORKC
+	FORKC = forkc
 endif
 
 .PHONY: all clean

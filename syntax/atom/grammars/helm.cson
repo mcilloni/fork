@@ -1,15 +1,15 @@
-'scopeName': 'source.helm'
+'scopeName': 'source.fork'
 'fileTypes': [
-  'helm',
-  'hemd'
+  'fork',
+  'ford'
 ]
-'name': 'Helm',
+'name': 'Fork',
 'patterns': [
   {
     'include': '#comments'
   }
   {
-    'include': '#helm_function_call'
+    'include': '#fork_function_call'
   }
   {
     'match': '\\b(alias|break|continue|else|entry|func|if|import|module|return|while)\\b|(\\/entry|\\/func|\\/if|\\/while)\\b'
@@ -113,7 +113,7 @@
       }
     ]
   }
-  "helm_function_call": {
+  "fork_function_call": {
     "captures": {
       "1": {
         "name": "punctuation.whitespace.function-call.leading.c"

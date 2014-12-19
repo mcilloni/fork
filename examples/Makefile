@@ -1,26 +1,26 @@
-ifndef HELMC
-	HELMC = helmc
+ifndef FORKC
+	FORKC = forkc
 endif
 
-ifndef HELML
-	HELML = helml
+ifndef FORKL
+	FORKL = forkl
 endif
 
-SRCS = $(wildcard *.helm)
-OBJS = $(patsubst %.helm,%.o,$(SRCS))
-BINS = $(patsubst %.helm,%.elf,$(SRCS))
+SRCS = $(wildcard *.fork)
+OBJS = $(patsubst %.fork,%.o,$(SRCS))
+BINS = $(patsubst %.fork,%.elf,$(SRCS))
 
 .PHONY: all clean
 
 all: $(BINS)
 
 %.elf: %.o
-	@echo [HELML] $<
-	@ $(HELML) -o $@ $< ../build/libsynt.a ../build/liblex.a ../build/libutils.a
+	@echo [FORKL] $<
+	@ $(FORKL) -o $@ $< ../build/libsynt.a ../build/liblex.a ../build/libutils.a
 
-%.o: %.helm 
-	@echo [HELMC] $<
-	@ HELM_MODULES="$(shell pwd)/../src/hemd/" $(HELMC) -o $@ $<
+%.o: %.fork 
+	@echo [FORKC] $<
+	@ FORK_MODULES="$(shell pwd)/../src/ford/" $(FORKC) -o $@ $<
 
 clean:
 	rm -f $(BINS)

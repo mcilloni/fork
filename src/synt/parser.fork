@@ -1,4 +1,4 @@
-#  Second Step - Experimental Helm Compiler
+#  Second Step - Experimental Fork Compiler
 #  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
 #
 #  This Source Code Form is subject to the terms of the Mozilla Public
@@ -571,7 +571,7 @@ func parserMakeFunction(ctx ptr synt:Context, type uint16, name ptr uint8, heade
 func parserParseEntry(ctx ptr synt:Context) ptr synt:PNode
   discardTok(ctx) #discard "entry"
 
-  return parserMakeFunction(ctx, synt:PENTRY, "_helm_entry", ptr synt:emptyExpr, lex:ENDENTRY)
+  return parserMakeFunction(ctx, synt:PENTRY, "_fork_entry", ptr synt:emptyExpr, lex:ENDENTRY)
 /func
 
 

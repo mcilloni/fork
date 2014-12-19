@@ -1,8 +1,8 @@
 BUILDPATH = ../../build/synt/
 LIBPATH = ../../build/libsynt.a
 
-ifndef HELMC
-	HELMC = helmc
+ifndef FORKC
+	FORKC = forkc
 endif
 
 ifndef AR
@@ -13,8 +13,8 @@ ifndef RANLIB
 	RANLIB=ranlib
 endif
 
-SRCS = $(wildcard *.helm)
-OBJS = $(patsubst %.helm,%.o,$(SRCS))
+SRCS = $(wildcard *.fork)
+OBJS = $(patsubst %.fork,%.o,$(SRCS))
 OPATHS = $(foreach obj, $(OBJS), $(BUILDPATH)/$(obj))
 
 .PHONY: all clean
@@ -26,9 +26,9 @@ all: $(OPATHS)
 dir:
 	install -d $(BUILDPATH)	
 
-$(BUILDPATH)/%.o: %.helm dir
-	@echo [HELMC] $<
-	@ HELM_MODULES="$(shell pwd)/../hemd/" $(HELMC) -o $@ $<
+$(BUILDPATH)/%.o: %.fork dir
+	@echo [FORKC] $<
+	@ FORK_MODULES="$(shell pwd)/../ford/" $(FORKC) -o $@ $<
 
 clean:
 	rm -rf $(BUILDPATH)

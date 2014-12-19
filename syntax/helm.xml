@@ -2,10 +2,10 @@
 <!DOCTYPE language SYSTEM "language.dtd">
 
 <!--
-Helm syntax for Kate
+Fork syntax for Kate
 -->
 
-<language name="Helm" version="1.0" kateversion="2.4" section="Sources" indenter="cstyle" extensions="*.helm" author="Marco Cilloni" license="MPL">
+<language name="Fork" version="1.0" kateversion="2.4" section="Sources" indenter="cstyle" extensions="*.fork" author="Marco Cilloni" license="MPL">
     <highlighting>
     <list name="keywords">
       <item>alias</item>
