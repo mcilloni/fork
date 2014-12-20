@@ -20,7 +20,7 @@
     "name": "keyword.go"
   }
   {
-    "match": "\\b(bool|int8|int16|int32|int64|intptr|uint8|uint16|uint32|uint64|uintptr|struct)\\b"
+    "match": "\\b(bool|data|int8|int16|int32|int64|intptr|uint8|uint16|uint32|uint64|uintptr|struct)\\b"
     "name": "storage.type.c"
   }
   {
@@ -119,7 +119,7 @@
         "name": "punctuation.whitespace.function-call.leading.c"
       },
       "2": {
-        "name": "support.function.any-method.c"
+        "name": "entity.name.function.c"
       },
       "3": {
         "name": "punctuation.definition.parameters.c"

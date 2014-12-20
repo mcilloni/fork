@@ -109,7 +109,7 @@ func parserParseCastTag(ctx ptr synt:Context) ptr synt:PExpr
     return null
   /if
 
-  decl parserParseExpr func(ptr synt:Context) ptr synt:PExpr
+  decl parserParseExpr func(ctx ptr synt:Context) ptr synt:PExpr
 
   mut expr = parserParseExpr(ctx)
   if expr == null
@@ -133,19 +133,28 @@ func parserParseCastTag(ctx ptr synt:Context) ptr synt:PExpr
 func parserParseSizeOp(ctx ptr synt:Context) ptr synt:PExpr
 
   mut sizeTok = synt:nextTok(ctx)
-  ## begins stub
-  synt:discardTok(ctx)
 
-  mut tok ptr lex:Token
-  while (tok = synt:nextTok(ctx))'type != lex:CPAR
-    lex:tokenFree(tok)
-  /while
 
-  lex:tokenFree(tok)
-  ## end stub
+  if !synt:expectDiscard(ctx, lex:OPAR)
+    lex:tokenFree(sizeTok)
+    return null
+  /if
 
-  return pexprNew(sizeTok, null, null)
+  mut type = synt:parserParseType(ctx)
+  if type == null
+    lex:tokenFree(sizeTok)
+    return null
+  /if
 
+  if !synt:expectDiscard(ctx, lex:CPAR)
+    lex:tokenFree(sizeTok)
+    return null
+  /if
+
+  mut sizeop = pexprNew(sizeTok, null, null)
+  sizeop'type = type
+
+  return sizeop
 /func
 
 
@@ -178,7 +187,7 @@ func parserParseId(ctx ptr synt:Context) ptr synt:PExpr
 
 func parserParseGenParens(ctx ptr synt:Context, cpar uint16) ptr synt:PExpr
 
-  decl parserParseAssignExpr func(ptr synt:Context) ptr synt:PExpr
+  decl parserParseAssignExpr func(ctx ptr synt:Context) ptr synt:PExpr
 
   mut expression = parserParseAssignExpr(ctx)
 
@@ -253,7 +262,7 @@ func parserParseCallExpr(ctx ptr synt:Context, lhs ptr synt:PExpr) ptr synt:PExp
 
   spring:vectAppend(args, lhs) #function expression to be called
 
-  decl parserParseAssignExpr func(ptr synt:Context) ptr synt:PExpr
+  decl parserParseAssignExpr func(ctx ptr synt:Context) ptr synt:PExpr
 
   mut next = ctx'next
   mut first = true
@@ -278,7 +287,7 @@ func parserParseCallExpr(ctx ptr synt:Context, lhs ptr synt:PExpr) ptr synt:PExp
 
     mut arg = parserParseAssignExpr(ctx)
     if arg == null
-      spring:vectFreeAll(args, cast<ptr func(data)>(ptr synt:pnodeFree))
+      spring:vectFreeAll(args, cast<ptr func(item data)>(ptr synt:pnodeFree))
       return null
     /if
 
@@ -360,7 +369,7 @@ func parserParseUnaryExprOp(ctx ptr synt:Context) ptr synt:PExpr
   mut operator = synt:nextTok(ctx)
   mut result ptr synt:PExpr
 
-  decl parserParseCastExpr func(ptr synt:Context) ptr synt:PExpr
+  decl parserParseCastExpr func(ctx ptr synt:Context) ptr synt:PExpr
 
   if (result = parserParseCastExpr(ctx)) == null
     return null

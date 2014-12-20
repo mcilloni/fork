@@ -4,8 +4,8 @@
 #  This Source Code Form is subject to the terms of the Mozilla Public
 #  License, v. 2.0. If a copy of the MPL was not distributed with this
 #  file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#  Exhibit B is not attached; this software is compatible with the 
-#  licenses expressed under Section 1.12 of the MPL v2. 
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
 
 import spring
 import synt
@@ -84,8 +84,8 @@ func symbolNew(name ptr uint8, type ptr synt:Type) ptr synt:Symbol
   return sym
 /func
 
-mut aliasFree = cast<ptr func(ptr synt:Alias)>(symbolFree)
-mut aliasNew  = cast<ptr func(ptr uint8, ptr synt:Type) ptr synt:Alias>(symbolNew)
+mut aliasFree = cast<ptr func(item ptr synt:Alias)>(symbolFree)
+mut aliasNew  = cast<ptr func(name ptr uint8, type ptr synt:Type) ptr synt:Alias>(symbolNew)
 
 mut TYPE_FUNC   uint16 = 10
 mut TYPE_NUM    uint16 = 20

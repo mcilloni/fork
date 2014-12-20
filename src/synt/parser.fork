@@ -178,7 +178,7 @@ func tokenIsTypeStart(tok ptr lex:Token) bool
 /func
 
 
-decl parserParseType func(ptr synt:Context) ptr synt:Type
+decl parserParseType func(ctx ptr synt:Context) ptr synt:Type
 
 
 # if the next token exists and it's a lex:NEWLINE, then discards it
@@ -248,18 +248,13 @@ func parserParseStructBodyVars(ctx ptr synt:Context, syms ptr spring:List, isFun
   /if
 
   mut ids = parserParseIdList(ctx)
-  if theresError(ctx)
+  if ids == null
     return false
   /if
 
   if ctx'next == null
     ctx'prs'err = utils:errorMism(ptr ctx'last, "an identifier or a ')'", "end of file")
     spring:listFreeAll(ids, ptr spring:free)
-    return false
-  /if
-
-  if ctx'next'type != lex:CPAR and !tokenIsTypeStart(ctx'next)
-    ctx'prs'err = utils:errorMism(ptr ctx'last, "a type or a ')'", lex:tokenStr(ctx'next))
     return false
   /if
 
@@ -273,9 +268,13 @@ func parserParseStructBodyVars(ctx ptr synt:Context, syms ptr spring:List, isFun
     makeSymsAndInsertInList(syms, ids, null)
   /if
 
+  if ctx'next'type != lex:CPAR and !tokenIsTypeStart(ctx'next)
+    ctx'prs'err = utils:errorMism(ptr ctx'last, "a type or a ')'", lex:tokenStr(ctx'next))
+    return false
+  /if
 
   mut type = parserParseType(ctx)
-  if theresError(ctx)
+  if type == null
     spring:listFreeAll(ids, ptr spring:free)
     return false
   /if
@@ -300,21 +299,19 @@ func parserParseStructBody(ctx ptr synt:Context, isFuncHeader bool) ptr spring:L
       break
     /if
 
-    lex:tokenFree(expect(ctx, lex:COMMA))
-    if theresError(ctx)
-      spring:listFreeAll(strBody, cast<ptr func(data)>(ptr synt:symbolNew))
+    if !synt:expectDiscard(ctx, lex:COMMA)
+      spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr synt:symbolNew))
       return null
     /if
   /while
 
   if theresError(ctx)
-    spring:listFreeAll(strBody, cast<ptr func(data)>(ptr synt:symbolNew))
+    spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr synt:symbolNew))
     return null
   /if
 
-  lex:tokenFree(expect(ctx, lex:CPAR))
-  if theresError(ctx)
-    spring:listFreeAll(strBody, cast<ptr func(data)>(ptr synt:symbolNew))
+  if !synt:expectDiscard(ctx, lex:CPAR)
+    spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr synt:symbolNew))
     return null
   /if
 
@@ -423,7 +420,7 @@ func parserParseAlias(ctx ptr synt:Context) ptr synt:PNode
 /func
 
 
-decl parserParseBody func(ptr synt:Context,ptr synt:PNode,uint16) bool
+decl parserParseBody func(ctx ptr synt:Context, pnode ptr synt:PNode, endToken uint16) bool
 
 
 func parserParseConditional(ctx ptr synt:Context, condType, endTokType uint16) ptr synt:PNode

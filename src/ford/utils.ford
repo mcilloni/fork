@@ -12,22 +12,22 @@ module utils
 import lex
 import spring
 
-decl charCanBeInString func(uint8, bool) bool
-decl charIsIdVal func(uint8) bool
-decl charIsPar func(uint8) bool
-decl charIsSym func(uint8) bool
-decl charIsWhite func(uint8) bool
+decl charCanBeInString func(ch uint8, escape bool) bool
+decl charIsIdVal func(ch uint8) bool
+decl charIsPar func(ch uint8) bool
+decl charIsSym func(ch uint8) bool
+decl charIsWhite func(ch uint8) bool
 
-decl error func(ptr lex:Lineno, ptr uint8) ptr spring:Error
-decl errorLex func(ptr lex:Lexer, ptr uint8) ptr spring:Error
-decl errorMism func(ptr lex:Lineno, ptr uint8, ptr uint8) ptr spring:Error
+decl error func(line ptr lex:Lineno, msg ptr uint8) ptr spring:Error
+decl errorLex func(lex ptr lex:Lexer, msg ptr uint8) ptr spring:Error
+decl errorMism func(line ptr lex:Lineno, got ptr uint8, expected ptr uint8) ptr spring:Error
 
-decl strIsUInt func(ptr uint8) bool
+decl strIsUInt func(str ptr uint8) bool
 
 alias Ref struct (
   count uintptr,
-  freeFunc ptr func(data)
+  freeFunc ptr func(item data)
 )
 
-decl incRef func(data)
-decl decRef func(data)
+decl incRef func(item data)
+decl decRef func(item data)

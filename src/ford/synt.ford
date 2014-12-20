@@ -32,9 +32,9 @@ alias PNode struct(
   leaves ptr spring:Vector
 )
 
-decl pnodeNew func(uint16, uintptr) ptr PNode
-decl pnodeAppendChild func(ptr PNode, ptr PNode) ptr PNode
-decl pnodeFree func(ptr PNode)
+decl pnodeNew func(ptype uint16, value uintptr) ptr PNode
+decl pnodeAppendChild func(parent ptr PNode, child ptr PNode) ptr PNode
+decl pnodeFree func(pnode ptr PNode)
 
 alias PProgram struct(
   node PNode,
@@ -42,7 +42,7 @@ alias PProgram struct(
   imports ptr spring:Vector
 )
 
-decl pprogramNew func(ptr uint8, ptr spring:Vector) ptr PProgram
+decl pprogramNew func(modName ptr uint8, imports ptr spring:Vector) ptr PProgram
 
 decl TYPE_FUNC   uint16
 decl TYPE_NUM    uint16
@@ -67,26 +67,26 @@ alias TypeDescr struct (
   arguments ptr spring:List
 )
 
-decl typeFree func(ptr Type)
-decl typeNew func(ptr uint8, ptr uint8, ptr TypeDescr) ptr Type
+decl typeFree func(type ptr Type)
+decl typeNew func(name,moduleName ptr uint8, descr ptr TypeDescr) ptr Type
 
-decl typeDescrFree func(ptr TypeDescr)
-decl typeDescrNew func(uint16, ptr Type, ptr spring:List) ptr TypeDescr
+decl typeDescrFree func(descr ptr TypeDescr)
+decl typeDescrNew func(type uint16, retType ptr Type, params ptr spring:List) ptr TypeDescr
 
-decl parserParseType func(ptr Context) ptr Type
+decl parserParseType func(ctx ptr Context) ptr Type
 
 alias Symbol struct(
   name ptr uint8,
   type ptr Type
 )
 
-decl symbolFree func(ptr Symbol)
-decl symbolNew func(ptr uint8, ptr Type) ptr Symbol
+decl symbolFree func(sym ptr Symbol)
+decl symbolNew func(name ptr uint8, type ptr Type) ptr Symbol
 
 alias Alias Symbol
 
-decl aliasFree ptr func(ptr Alias)
-decl aliasNew ptr func(ptr uint8, ptr Type) ptr Alias
+decl aliasFree ptr func(item ptr Alias)
+decl aliasNew ptr func(name ptr uint8, type ptr Type) ptr Alias
 
 alias PDecl struct(
   node PNode,
@@ -94,7 +94,7 @@ alias PDecl struct(
   type ptr Type
 )
 
-decl pdeclNew func(uint16, ptr uint8, ptr Type) ptr PDecl
+decl pdeclNew func(ptype uint16, name ptr uint8, type ptr Type) ptr PDecl
 
 alias PExpr struct(
   node PNode,
@@ -102,17 +102,17 @@ alias PExpr struct(
   type ptr Type
 )
 
-decl parserParseExpr func(ptr Context) ptr PExpr
+decl parserParseExpr func(ctx ptr Context) ptr PExpr
 
-decl nextTok func(ptr Context) ptr lex:Token
-decl discardTok func(ptr Context)
+decl nextTok func(ctx ptr Context) ptr lex:Token
+decl discardTok func(ctx ptr Context)
 
-decl parserFree func(ptr Parser)
-decl parserNew func(ptr uint8) ptr Parser
-decl parserParse func(ptr Parser) ptr PNode
+decl parserFree func(prs ptr Parser)
+decl parserNew func(file ptr uint8) ptr Parser
+decl parserParse func(prs ptr Parser) ptr PNode
 
-decl expect func(ptr Context, uint16) ptr lex:Token
-decl expectDiscard func(ptr Context, uint16) bool
+decl expect func(ctx ptr Context, tokType uint16) ptr lex:Token
+decl expectDiscard func(ctx ptr Context, tokType uint16) bool
 
 decl emptyExpr PExpr
 

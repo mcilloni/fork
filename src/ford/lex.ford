@@ -32,20 +32,20 @@ alias Token struct (
   lineno ptr Lineno
 )
 
-decl lexerClose func(ptr Lexer)
-decl lexerEof func(ptr Lexer) bool
-decl lexerError func(ptr Lexer) ptr spring:Error
-decl lexerFromStream func(ptr spring:Stream, ptr uint8, ptr ptr spring:Error) ptr Lexer
-decl lexerNew func(ptr uint8, ptr ptr spring:Error) ptr Lexer
-decl lexerNext func(ptr Lexer) ptr Token
+decl lexerClose func(lex ptr Lexer)
+decl lexerEof func(lex ptr Lexer) bool
+decl lexerError func(lex ptr Lexer) ptr spring:Error
+decl lexerFromStream func(stream ptr spring:Stream, name ptr uint8, err ptr ptr spring:Error) ptr Lexer
+decl lexerNew func(name ptr uint8, err ptr ptr spring:Error) ptr Lexer
+decl lexerNext func(lex ptr Lexer) ptr Token
 
-decl tokenFree func(ptr Token)
-decl tokenNew func(uint16, uintptr, ptr Lineno, uintptr) ptr Token
-decl tokenStr func(ptr Token) ptr uint8
+decl tokenFree func(tok ptr Token)
+decl tokenNew func(type uint16, value uintptr, line ptr Lineno, end uintptr) ptr Token
+decl tokenStr func(tok ptr Token) ptr uint8
 
-decl linenoClone func(ptr Lineno) ptr Lineno
-decl linenoFree func(ptr Lineno)
-decl linenoNew func(ptr uint8, uint16, uint16) ptr Lineno
+decl linenoClone func(line ptr Lineno) ptr Lineno
+decl linenoFree func(line ptr Lineno)
+decl linenoNew func(file ptr uint8, line,pos uint16) ptr Lineno
 
 decl EOF uint16
 decl NEWLINE uint16
