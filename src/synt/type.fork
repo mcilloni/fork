@@ -8,10 +8,33 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 import spring
-import synt
+import syms
 import utils
 
-func typeFree(type ptr synt:Type)
+
+func symbolFree(sym ptr syms:Symbol)
+  if sym != null
+    spring:free(sym'name)
+    utils:decRef(sym'type)
+    spring:free(sym)
+  /if
+/func
+
+
+func symbolNew(name ptr uint8, type ptr syms:Type) ptr syms:Symbol
+  mut sym = cast<ptr syms:Symbol>(spring:zalloc(size(syms:Symbol)))
+
+  sym'refc'freeFunc = ptr symbolFree
+
+  utils:incRef(type)
+  sym'name = name
+  sym'type = type
+
+  return sym
+/func
+
+
+func typeFree(type ptr syms:Type)
   if type != null
     if type'descr != null
       utils:decRef(type'descr)
@@ -29,10 +52,11 @@ func typeFree(type ptr synt:Type)
   /if
 /func
 
-func typeNew(name, moduleName ptr uint8, descr ptr synt:TypeDescr) ptr synt:Type
-  mut type = cast<ptr synt:Type>(spring:zalloc(size(synt:Type)))
 
-  type'refc'freeFunc = ptr synt:typeFree
+func typeNew(name, moduleName ptr uint8, descr ptr syms:TypeDescr) ptr syms:Type
+  mut type = cast<ptr syms:Type>(spring:zalloc(size(syms:Type)))
+
+  type'refc'freeFunc = ptr typeFree
 
   type'name = name
   type'moduleName = moduleName
@@ -42,24 +66,27 @@ func typeNew(name, moduleName ptr uint8, descr ptr synt:TypeDescr) ptr synt:Type
   return type
 /func
 
-func typeDescrFree(descr ptr synt:TypeDescr)
+
+func typeDescrFree(descr ptr syms:TypeDescr)
   if descr != null
     if descr'retType != null
       utils:decRef(descr'retType)
     /if
 
     if descr'arguments != null
-      spring:listFreeAll(descr'arguments, ptr synt:symbolFree)
+      spring:listFreeAll(descr'arguments, ptr symbolFree)
     /if
   /if
 /func
 
-func typeDescrNew(type uint16, retType ptr synt:Type, params ptr spring:List) ptr synt:TypeDescr
-  mut descr = cast<ptr synt:TypeDescr>(spring:zalloc(size(synt:TypeDescr)))
 
-  descr'refc'freeFunc = ptr synt:typeDescrFree
+func typeDescrNew(type uint16, retType ptr syms:Type, params ptr spring:List) ptr syms:TypeDescr
+  mut descr = cast<ptr syms:TypeDescr>(spring:zalloc(size(syms:TypeDescr)))
+
+  descr'refc'freeFunc = ptr typeDescrFree
 
   utils:incRef(retType)
+
   descr'type = type
   descr'retType = retType
   descr'arguments = params
@@ -67,25 +94,9 @@ func typeDescrNew(type uint16, retType ptr synt:Type, params ptr spring:List) pt
   return descr
 /func
 
-func symbolFree(sym ptr synt:Symbol)
-  if sym != null
-    spring:free(sym'name)
-    synt:typeFree(sym'type)
-    spring:free(sym)
-  /if
-/func
 
-func symbolNew(name ptr uint8, type ptr synt:Type) ptr synt:Symbol
-  mut sym = cast<ptr synt:Symbol>(spring:zalloc(size(synt:Symbol)))
-
-  sym'name = name
-  sym'type = type
-
-  return sym
-/func
-
-mut aliasFree = cast<ptr func(item ptr synt:Alias)>(symbolFree)
-mut aliasNew  = cast<ptr func(name ptr uint8, type ptr synt:Type) ptr synt:Alias>(symbolNew)
+mut aliasFree = cast<ptr func(item ptr syms:Alias)>(symbolFree)
+mut aliasNew  = cast<ptr func(name ptr uint8, type ptr syms:Type) ptr syms:Alias>(symbolNew)
 
 mut TYPE_FUNC   uint16 = 10
 mut TYPE_NUM    uint16 = 20

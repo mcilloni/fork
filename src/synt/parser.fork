@@ -9,6 +9,7 @@
 
 import lex
 import spring
+import syms
 import synt
 import utils
 
@@ -150,7 +151,7 @@ func parserParseImports(ctx ptr synt:Context) ptr spring:Vector
 /func
 
 
-func parserParseIdType(ctx ptr synt:Context, name ptr uint8) ptr synt:Type
+func parserParseIdType(ctx ptr synt:Context, name ptr uint8) ptr syms:Type
   mut moduleName ptr uint8 = null
 
   if ctx'next != null and ctx'next'type == lex:COLON
@@ -168,7 +169,7 @@ func parserParseIdType(ctx ptr synt:Context, name ptr uint8) ptr synt:Type
     lex:tokenFree(tok)
   /if
 
-  return synt:typeNew(name, moduleName, null)
+  return syms:typeNew(name, moduleName, null)
 /func
 
 
@@ -178,7 +179,7 @@ func tokenIsTypeStart(tok ptr lex:Token) bool
 /func
 
 
-decl parserParseType func(ctx ptr synt:Context) ptr synt:Type
+decl parserParseType func(ctx ptr synt:Context) ptr syms:Type
 
 
 # if the next token exists and it's a lex:NEWLINE, then discards it
@@ -193,11 +194,12 @@ func parserParseIdList(ctx ptr synt:Context) ptr spring:List
   mut ret = spring:listNew()
   while true
     tok = expect(ctx, lex:ID)
-    if theresError(ctx)
+    if tok == null
       break
     /if
 
     spring:listAppend(ret, spring:strclone(cast<ptr uint8>(tok'value)))
+    lex:tokenFree(tok)
 
     if ctx'next == null
       ctx'prs'err = utils:errorMism(ptr ctx'last, "a ',' or an identifier", "end of file")
@@ -209,31 +211,32 @@ func parserParseIdList(ctx ptr synt:Context) ptr spring:List
     /if
 
     # discard comma
-    lex:tokenFree(nextTok(ctx))
+    synt:discardTok(ctx)
   /while
 
   spring:listFreeAll(ret, ptr spring:free)
   return null
 /func
 
-func makeSymsAndInsertInList(syms ptr spring:List, ids ptr spring:List, type ptr synt:Type)
+
+func makeSymsAndInsertInList(syms ptr spring:List, ids ptr spring:List, type ptr syms:Type)
   mut len = spring:listLen(ids)
   mut i uintptr = 0
   mut elem ptr uint8
-  mut sym ptr synt:Symbol
+  mut sym ptr syms:Symbol
 
   while i < len
     elem = cast<ptr uint8>(val spring:listGet(ids, i))
-    sym = synt:symbolNew(elem, type)
+    sym = syms:symbolNew(elem, type)
     spring:listAppend(syms, sym)
     i++
   /while
 
-  spring:listFree(ids)
+  spring:listFreeAll(ids, ptr spring:free)
 /func
 
 
-func parserParseStructBodyVars(ctx ptr synt:Context, syms ptr spring:List, isFuncHeader bool) bool
+func parserParseStructBodyVars(ctx ptr synt:Context, syms ptr spring:List) bool
 
   # allow multiline struct/function header declarations
   parserDiscardNewLine(ctx)
@@ -252,27 +255,6 @@ func parserParseStructBodyVars(ctx ptr synt:Context, syms ptr spring:List, isFun
     return false
   /if
 
-  if ctx'next == null
-    ctx'prs'err = utils:errorMism(ptr ctx'last, "an identifier or a ')'", "end of file")
-    spring:listFreeAll(ids, ptr spring:free)
-    return false
-  /if
-
-  if ctx'next'type == lex:CPAR
-    if !isFuncHeader
-      ctx'prs'err = utils:errorMism(ptr ctx'last, "a type", "a ')' - struct types must have field names")
-      spring:listFreeAll(ids, ptr spring:free)
-      return false
-    /if
-
-    makeSymsAndInsertInList(syms, ids, null)
-  /if
-
-  if ctx'next'type != lex:CPAR and !tokenIsTypeStart(ctx'next)
-    ctx'prs'err = utils:errorMism(ptr ctx'last, "a type or a ')'", lex:tokenStr(ctx'next))
-    return false
-  /if
-
   mut type = parserParseType(ctx)
   if type == null
     spring:listFreeAll(ids, ptr spring:free)
@@ -285,7 +267,7 @@ func parserParseStructBodyVars(ctx ptr synt:Context, syms ptr spring:List, isFun
 /func
 
 
-func parserParseStructBody(ctx ptr synt:Context, isFuncHeader bool) ptr spring:List
+func parserParseStructBody(ctx ptr synt:Context) ptr spring:List
   lex:tokenFree(expect(ctx, lex:OPAR))
   if theresError(ctx)
     return null
@@ -294,24 +276,24 @@ func parserParseStructBody(ctx ptr synt:Context, isFuncHeader bool) ptr spring:L
   mut strBody = spring:listNew()
 
   # each iteration parses a sequence of 'a,b,c,d type' or a full list (if this is a function header)
-  while parserParseStructBodyVars(ctx, strBody, isFuncHeader)
+  while parserParseStructBodyVars(ctx, strBody)
     if ctx'next != null and ctx'next'type == lex:CPAR
       break
     /if
 
     if !synt:expectDiscard(ctx, lex:COMMA)
-      spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr synt:symbolNew))
+      spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr syms:symbolNew))
       return null
     /if
   /while
 
   if theresError(ctx)
-    spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr synt:symbolNew))
+    spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr syms:symbolNew))
     return null
   /if
 
   if !synt:expectDiscard(ctx, lex:CPAR)
-    spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr synt:symbolNew))
+    spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr syms:symbolNew))
     return null
   /if
 
@@ -319,39 +301,39 @@ func parserParseStructBody(ctx ptr synt:Context, isFuncHeader bool) ptr spring:L
 /func
 
 
-func parserParseFunctionType(ctx ptr synt:Context) ptr synt:Type
-  mut args = parserParseStructBody(ctx, true)
+func parserParseFunctionType(ctx ptr synt:Context) ptr syms:Type
+  mut args = parserParseStructBody(ctx)
   if theresError(ctx)
     return null
   /if
 
-  mut retType ptr synt:Type = null
+  mut retType ptr syms:Type = null
 
   if ctx'next != null and tokenIsTypeStart(ctx'next)
     retType = parserParseType(ctx)
   /if
 
-  return synt:typeNew(null, null, synt:typeDescrNew(synt:TYPE_FUNC, retType, args))
+  return syms:typeNew(null, null, syms:typeDescrNew(syms:TYPE_FUNC, retType, args))
 /func
 
-func parserParseStruct(ctx ptr synt:Context) ptr synt:Type
-  mut args = parserParseStructBody(ctx, false)
+func parserParseStruct(ctx ptr synt:Context) ptr syms:Type
+  mut args = parserParseStructBody(ctx)
   if theresError(ctx)
     return null
   /if
 
-  return synt:typeNew(null, null, synt:typeDescrNew(synt:TYPE_STRUCT, null, args))
+  return syms:typeNew(null, null, syms:typeDescrNew(syms:TYPE_STRUCT, null, args))
 /func
 
 
-func parserParseType(ctx ptr synt:Context) ptr synt:Type
+func parserParseType(ctx ptr synt:Context) ptr syms:Type
   if ctx'next == null
     ctx'prs'err = utils:errorMism(ptr ctx'last, "a valid type", "end of file")
     return null
   /if
 
   mut tok = nextTok(ctx)
-  mut ret ptr synt:Type = null
+  mut ret ptr syms:Type = null
 
   if tok'type == lex:FUNC
     ret = parserParseFunctionType(ctx)
@@ -364,7 +346,7 @@ func parserParseType(ctx ptr synt:Context) ptr synt:Type
   if tok'type == lex:PTR
     # parses the real type (after ptr)
     mut realType = parserParseType(ctx)
-    ret = synt:typeNew(null, null, synt:typeDescrNew(synt:TYPE_PTR, realType, null))
+    ret = syms:typeNew(null, null, syms:typeDescrNew(syms:TYPE_PTR, realType, null))
   /if
 
   if tok'type == lex:STRUCT
@@ -387,16 +369,65 @@ func parserParseType(ctx ptr synt:Context) ptr synt:Type
 
 func parserParseDeclaration(ctx ptr synt:Context, declType uint16) ptr synt:PNode
   # discard 'var' or 'decl'
-  lex:tokenFree(nextTok(ctx))
+  synt:discardTok(ctx)
 
-# mut node = parserParseIdList(ctx, )
+  mut idTok = expect(ctx, lex:ID)
+  if idTok == null
+    return null
+  /if
 
-# while
+  mut id = spring:strclone(cast<ptr uint8>(idTok'value))
+
+  lex:tokenFree(idTok)
+
+  if ctx'next == null
+    ctx'prs'err = utils:errorMism(ptr ctx'last, "a type or an '='", "EOF")
+    spring:free(id)
+    return null
+  /if
+
+  mut type ptr syms:Type = null
+
+  if ctx'next'type != lex:EQUAL
+    type = parserParseType(ctx)
+    if type == null
+      spring:free(id)
+      return null
+    /if
+  /if
+
+  mut pdecl = synt:pdeclNew(declType, syms:symbolNew(id, type))
+
+  if ctx'next == null
+    ctx'prs'err = utils:errorMism(ptr ctx'last, "a type or an '='", "EOF")
+    synt:pnodeFree(cast<ptr synt:PNode>(pdecl))
+    return null
+  /if
+
+
+  if ctx'next'type == lex:EQUAL
+    synt:discardTok(ctx)
+
+    mut expr = synt:parserParseExpr(ctx)
+    if expr == null
+      synt:pnodeFree(cast<ptr synt:PNode>(pdecl))
+      return null
+    /if
+
+    synt:pnodeAppendChild(cast<ptr synt:PNode>(pdecl), cast<ptr synt:PNode>(expr))
+  /if
+
+  return cast<ptr synt:PNode>(pdecl)
 /func
 
 
 func parserParseDecl(ctx ptr synt:Context) ptr synt:PNode
-  return parserParseDeclaration(ctx, lex:DECL)
+  return parserParseDeclaration(ctx, synt:PDECL)
+/func
+
+
+func parserParseMut(ctx ptr synt:Context) ptr synt:PNode
+  return parserParseDeclaration(ctx, synt:PMUT)
 /func
 
 
@@ -411,7 +442,7 @@ func parserParseAlias(ctx ptr synt:Context) ptr synt:PNode
       return null
     /if
 
-    mut palias = synt:pdeclNew(synt:PALIAS, cast<ptr uint8>(name'value), type)
+    mut palias = synt:pdeclNew(synt:PALIAS, syms:symbolNew(cast<ptr uint8>(name'value), type))
 
     return ptr palias'node
   /if
@@ -420,45 +451,91 @@ func parserParseAlias(ctx ptr synt:Context) ptr synt:PNode
 /func
 
 
-decl parserParseBody func(ctx ptr synt:Context, pnode ptr synt:PNode, endToken uint16) bool
+decl parserParseBody func(ctx ptr synt:Context, pnode ptr synt:PNode, isEndToken ptr func(tok ptr lex:Token) bool) bool
 
 
-func parserParseConditional(ctx ptr synt:Context, condType, endTokType uint16) ptr synt:PNode
-  synt:discardTok(ctx) #discard begin token
+func matchWhileEndTok(tok ptr lex:Token) bool
+  return tok'type == lex:ENDWHILE
+/func
+
+
+func parserParseWhile(ctx ptr synt:Context) ptr synt:PNode
+  synt:discardTok(ctx) #discard while token
 
   mut expr = cast<ptr synt:PNode>(synt:parserParseExpr(ctx))
   if expr == null
     return null
   /if
 
-  mut newLine = synt:expect(ctx, lex:NEWLINE)
-  if newLine == null
+  if !synt:expectDiscard(ctx, lex:NEWLINE)
     synt:pnodeFree(expr)
     return null
   /if
 
-  lex:tokenFree(newLine)
+  mut whileBlock = synt:pnodeNew(synt:PWHILE, 0)
+  synt:pnodeAppendChild(whileBlock, expr)
 
-  mut condBlock = synt:pnodeNew(condType, 0)
-  synt:pnodeAppendChild(condBlock, expr)
-
-  if !parserParseBody(ctx, condBlock, endTokType)
-    synt:pnodeFree(condBlock)
+  if !parserParseBody(ctx, whileBlock, ptr matchWhileEndTok)
+    synt:pnodeFree(whileBlock)
     return null
   /if
 
   synt:discardTok(ctx) #discard endTokType
 
-  return condBlock
+  return whileBlock
+/func
+
+
+func matchIfElseEndTok(tok ptr lex:Token) bool
+  return tok'type == lex:ENDIF or tok'type == lex:ELSE
+/func
+
+func matchIfEndTok(tok ptr lex:Token) bool
+  return tok'type == lex:ENDIF
 /func
 
 
 func parserParseIf(ctx ptr synt:Context) ptr synt:PNode
-  return parserParseConditional(ctx, synt:PIF, lex:ENDIF)
-/func
+  synt:discardTok(ctx) #discard if token
 
-func parserParseMut(ctx ptr synt:Context) ptr synt:PNode
-  return parserParseDeclaration(ctx, lex:MUT)
+  mut expr = cast<ptr synt:PNode>(synt:parserParseExpr(ctx))
+  if expr == null
+    return null
+  /if
+
+  if !synt:expectDiscard(ctx, lex:NEWLINE)
+    synt:pnodeFree(expr)
+    return null
+  /if
+
+  mut block = synt:pnodeNew(synt:PIF, 0)
+  synt:pnodeAppendChild(block, expr)
+
+  mut mainBlock = synt:pnodeNew(synt:PBLOCK, 0)
+  synt:pnodeAppendChild(block, mainBlock)
+
+  if !parserParseBody(ctx, mainBlock, ptr matchIfElseEndTok)
+    synt:pnodeFree(block)
+    return null
+  /if
+
+  if ctx'next'type == lex:ELSE
+    mut elseBlock = synt:pnodeNew(synt:PBLOCK, 0)
+    synt:pnodeAppendChild(block, elseBlock)
+
+    synt:discardTok(ctx) #discard else
+    if !synt:expectDiscard(ctx, lex:NEWLINE)
+      synt:pnodeFree(block)
+      return null
+    /if
+
+    if !parserParseBody(ctx, elseBlock, ptr matchIfEndTok)
+      synt:pnodeFree(block)
+      return null
+    /if
+  /if
+
+  return block
 /func
 
 
@@ -479,12 +556,8 @@ func parserParseReturn(ctx ptr synt:Context) ptr synt:PNode
 /func
 
 
-func parserParseWhile(ctx ptr synt:Context) ptr synt:PNode
-  return parserParseConditional(ctx, synt:PWHILE, lex:ENDWHILE)
-/func
-
-
 func parserParseStatement(ctx ptr synt:Context) ptr synt:PNode
+
   if ctx'next == null
     ctx'prs'err = utils:errorMism(ptr ctx'last, "a statement or an expression", "EOF")
   /if
@@ -520,15 +593,19 @@ func parserParseStatement(ctx ptr synt:Context) ptr synt:PNode
 /func
 
 
-func parserParseBody(ctx ptr synt:Context, block ptr synt:PNode, endToken uint16) bool
+func parserParseBody(ctx ptr synt:Context, block ptr synt:PNode, isEndToken ptr func(tok ptr lex:Token) bool) bool
 
-  while ctx'next != null and ctx'next'type != endToken
+  while ctx'next != null and !isEndToken(ctx'next)
     mut statement = parserParseStatement(ctx)
     if statement == null
       return false
     /if
 
     synt:pnodeAppendChild(block, statement)
+
+    if !synt:expectDiscard(ctx, lex:NEWLINE)
+      return false
+    /if
   /while
 
   if ctx'next == null
@@ -536,13 +613,17 @@ func parserParseBody(ctx ptr synt:Context, block ptr synt:PNode, endToken uint16
   /if
 
   # if ctx'next is not null, then the while above quitted because
-  # ctx'next'type == endToken.
+  # isEndToken(ctx'next) == true.
 
   return true
 /func
 
 
-func parserMakeFunction(ctx ptr synt:Context, type uint16, name ptr uint8, header ptr synt:PExpr, endToken uint16) ptr synt:PNode
+func parserMakeFunction(ctx ptr synt:Context,
+                        type uint16, name ptr uint8,
+                        header ptr synt:PExpr,
+                        endTType uint16,
+                        isEndToken ptr func(tok ptr lex:Token) bool) ptr synt:PNode
 
   mut newLine = expect(ctx, lex:NEWLINE)
   if newLine == null
@@ -554,13 +635,12 @@ func parserMakeFunction(ctx ptr synt:Context, type uint16, name ptr uint8, heade
   mut funcNode = synt:pnodeNew(type, cast<uintptr>(name))
   synt:pnodeAppendChild(funcNode, cast<ptr synt:PNode>(header))
 
-  if !parserParseBody(ctx, funcNode, endToken)
+  if !parserParseBody(ctx, funcNode, isEndToken)
     synt:pnodeFree(funcNode)
     return null
   /if
 
-  mut endTok = expect(ctx, endToken)
-  if endTok == null
+  if !synt:expectDiscard(ctx, endTType)
     synt:pnodeFree(funcNode)
     return null
   /if
@@ -570,10 +650,15 @@ func parserMakeFunction(ctx ptr synt:Context, type uint16, name ptr uint8, heade
 /func
 
 
+func matchEntryEndTok(tok ptr lex:Token) bool
+  return tok'type == lex:ENDENTRY
+/func
+
+
 func parserParseEntry(ctx ptr synt:Context) ptr synt:PNode
   discardTok(ctx) #discard "entry"
 
-  return parserMakeFunction(ctx, synt:PENTRY, "_fork_entry", ptr synt:emptyExpr, lex:ENDENTRY)
+  return parserMakeFunction(ctx, synt:PENTRY, "_fork_entry", ptr synt:emptyExpr, lex:ENDENTRY, ptr matchEntryEndTok)
 /func
 
 
@@ -592,6 +677,11 @@ func parserParseFuncName(ctx ptr synt:Context) ptr uint8
 /func
 
 
+func matchFuncEndTok(tok ptr lex:Token) bool
+  return tok'type == lex:ENDFUNC
+/func
+
+
 func parserParseFunc(ctx ptr synt:Context) ptr synt:PNode
   discardTok(ctx) #discard "func"
 
@@ -600,14 +690,14 @@ func parserParseFunc(ctx ptr synt:Context) ptr synt:PNode
     return null
   /if
 
-  mut header = parserParseStructBody(ctx, true)
+  mut header = parserParseStructBody(ctx)
 
   if header == null
     spring:free(name)
     return null
   /if
 
-  return parserMakeFunction(ctx, synt:PFUNCTION, name, ptr synt:emptyExpr, lex:ENDENTRY)
+  return parserMakeFunction(ctx, synt:PFUNCTION, name, ptr synt:emptyExpr, lex:ENDFUNC, ptr matchFuncEndTok)
 /func
 
 
@@ -728,11 +818,10 @@ func pnodeFree(pnode ptr synt:PNode)
 
   /if
 
-  if pnode'type == synt:PALIAS or pnode'type == synt:PDECL or pnode'type == synt:PVAR or pnode'type == synt:PENTRY or pnode'type == synt:PFUNCTION
+  if pnode'type == synt:PALIAS or pnode'type == synt:PDECL or pnode'type == synt:PMUT or pnode'type == synt:PENTRY or pnode'type == synt:PFUNCTION
 
     mut pdecl = cast<ptr synt:PDecl>(pnode)
-    spring:free(pdecl'name)
-    utils:decRef(pdecl'type)
+    utils:decRef(pdecl'sym)
 
   /if
 
@@ -754,12 +843,14 @@ func pnodeNew(type uint16, value uintptr) ptr synt:PNode
 /func
 
 
-func pdeclNew(nodeType uint16, name ptr uint8, type ptr synt:Type) ptr synt:PDecl
+func pdeclNew(nodeType uint16, sym ptr syms:Symbol) ptr synt:PDecl
 
   mut pdecl = cast<ptr synt:PDecl>(spring:zalloc(size(synt:PDecl)))
   pdecl'node'type = nodeType
-  pdecl'name = spring:strclone(name)
-  pdecl'type = type
+
+  utils:incRef(sym)
+
+  pdecl'sym = sym
 
   return pdecl
 /func
@@ -782,10 +873,12 @@ mut PENTRY     uint16 = 20
 mut PFUNCTION  uint16 = 30
 mut PALIAS     uint16 = 40
 mut PDECL      uint16 = 50
-mut PVAR       uint16 = 60
+mut PMUT       uint16 = 60
 mut PIF        uint16 = 70
 mut PEXPR      uint16 = 80
 mut PBREAK     uint16 = 90
 mut PCONTINUE  uint16 = 100
 mut PRETURN    uint16 = 110
-mut PWHILE     uint16 = 120
+mut PIFELSE    uint16 = 120
+mut PWHILE     uint16 = 130
+mut PBLOCK     uint16 = 140

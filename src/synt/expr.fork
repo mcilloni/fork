@@ -9,6 +9,7 @@
 
 import lex
 import spring
+import syms
 import synt
 import utils
 
@@ -105,7 +106,7 @@ func parserParseCastTag(ctx ptr synt:Context) ptr synt:PExpr
 
   if !synt:expectDiscard(ctx, lex:MAJOR) or !synt:expectDiscard(ctx, lex:OPAR)
     lex:tokenFree(castTok)
-    synt:typeFree(type)
+    utils:decRef(type)
     return null
   /if
 
@@ -114,12 +115,12 @@ func parserParseCastTag(ctx ptr synt:Context) ptr synt:PExpr
   mut expr = parserParseExpr(ctx)
   if expr == null
     lex:tokenFree(castTok)
-    synt:typeFree(type)
+    utils:decRef(type)
   /if
 
   if !synt:expectDiscard(ctx, lex:CPAR)
     lex:tokenFree(castTok)
-    synt:typeFree(type)
+    utils:decRef(type)
     return null
   /if
 

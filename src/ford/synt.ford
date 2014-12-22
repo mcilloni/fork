@@ -11,6 +11,7 @@ module synt
 
 import lex
 import spring
+import syms
 import utils
 
 alias Parser struct(
@@ -36,6 +37,10 @@ decl pnodeNew func(ptype uint16, value uintptr) ptr PNode
 decl pnodeAppendChild func(parent ptr PNode, child ptr PNode) ptr PNode
 decl pnodeFree func(pnode ptr PNode)
 
+alias PScope struct(
+  node PNode
+)
+
 alias PProgram struct(
   node PNode,
   moduleName ptr uint8,
@@ -44,65 +49,22 @@ alias PProgram struct(
 
 decl pprogramNew func(modName ptr uint8, imports ptr spring:Vector) ptr PProgram
 
-decl TYPE_FUNC   uint16
-decl TYPE_NUM    uint16
-decl TYPE_PTR    uint16
-decl TYPE_STRUCT uint16
-
-alias Type struct (
-  refc utils:Ref,
-  name, moduleName ptr uint8,
-  # anonymous because of first-step parser limitations; actually a TypeDescr
-  descr data
-)
-
-alias TypeDescr struct (
-  refc utils:Ref,
-  type uint16,
-  # if type is TYPE_PTR, this is the type returned by dereferencing.
-  # if type is TYPE_FUNC, this is the return type of the function
-  retType ptr Type,
-  # if type is TYPE_FUNC, this is the arguments list
-  # if type is TYPE_STRUCT, this is the fields list
-  arguments ptr spring:List
-)
-
-decl typeFree func(type ptr Type)
-decl typeNew func(name,moduleName ptr uint8, descr ptr TypeDescr) ptr Type
-
-decl typeDescrFree func(descr ptr TypeDescr)
-decl typeDescrNew func(type uint16, retType ptr Type, params ptr spring:List) ptr TypeDescr
-
-decl parserParseType func(ctx ptr Context) ptr Type
-
-alias Symbol struct(
-  name ptr uint8,
-  type ptr Type
-)
-
-decl symbolFree func(sym ptr Symbol)
-decl symbolNew func(name ptr uint8, type ptr Type) ptr Symbol
-
-alias Alias Symbol
-
-decl aliasFree ptr func(item ptr Alias)
-decl aliasNew ptr func(name ptr uint8, type ptr Type) ptr Alias
-
 alias PDecl struct(
   node PNode,
-  name ptr uint8,
-  type ptr Type
+  sym ptr syms:Symbol
 )
 
-decl pdeclNew func(ptype uint16, name ptr uint8, type ptr Type) ptr PDecl
+decl pdeclNew func(ptype uint16, sym ptr syms:Symbol) ptr PDecl
 
 alias PExpr struct(
   node PNode,
   opType uint16,
-  type ptr Type
+  type ptr syms:Type
 )
 
 decl parserParseExpr func(ctx ptr Context) ptr PExpr
+
+decl parserParseType func(ctx ptr Context) ptr syms:Type
 
 decl nextTok func(ctx ptr Context) ptr lex:Token
 decl discardTok func(ctx ptr Context)
@@ -122,9 +84,11 @@ decl PEXPR      uint16
 decl PFUNCTION  uint16
 decl PALIAS     uint16
 decl PDECL      uint16
-decl PVAR       uint16
+decl PMUT       uint16
 decl PBREAK     uint16
 decl PCONTINUE  uint16
 decl PRETURN    uint16
 decl PIF        uint16
+decl PIFELSE    uint16
 decl PWHILE     uint16
+decl PBLOCK     uint16
