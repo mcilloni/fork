@@ -33,13 +33,10 @@ alias PNode struct(
   leaves ptr spring:Vector
 )
 
+decl pnodeDump func(node ptr PNode)
 decl pnodeNew func(ptype uint16, value uintptr) ptr PNode
 decl pnodeAppendChild func(parent ptr PNode, child ptr PNode) ptr PNode
 decl pnodeFree func(pnode ptr PNode)
-
-alias PScope struct(
-  node PNode
-)
 
 alias PProgram struct(
   node PNode,
@@ -47,6 +44,7 @@ alias PProgram struct(
   imports ptr spring:Vector
 )
 
+decl isPProgram func(node ptr PNode) bool
 decl pprogramNew func(modName ptr uint8, imports ptr spring:Vector) ptr PProgram
 
 alias PDecl struct(
@@ -54,6 +52,7 @@ alias PDecl struct(
   sym ptr syms:Symbol
 )
 
+decl isPDecl func(node ptr PNode) bool
 decl pdeclNew func(ptype uint16, sym ptr syms:Symbol) ptr PDecl
 
 alias PExpr struct(
@@ -62,6 +61,7 @@ alias PExpr struct(
   type ptr syms:Type
 )
 
+decl isPExpr func(node ptr PNode) bool
 decl parserParseExpr func(ctx ptr Context) ptr PExpr
 
 decl parserParseType func(ctx ptr Context) ptr syms:Type

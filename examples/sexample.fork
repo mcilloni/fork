@@ -16,27 +16,7 @@ entry
     spring:exit(1)
   /if
 
-  mut prog = cast<ptr synt:PProgram>(root)
-
-  spring:out("Module name: ")
-  if prog'moduleName == null
-    spring:outln("<main module>")
-  else
-    spring:outln(prog'moduleName)
-  /if
-
-  if prog'imports != null
-    mut len = spring:vectLen(prog'imports)
-    mut i = 0
-    mut elem ptr uint8
-
-    while i < len
-      elem = cast<ptr uint8>(val spring:vectGet(prog'imports, i))
-      spring:out("import ")
-      spring:outln(elem)
-      i++
-    /while
-  /if
+  synt:pnodeDump(root)
 
   synt:parserFree(prs)
   synt:pnodeFree(root)

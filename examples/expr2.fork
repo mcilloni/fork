@@ -114,7 +114,7 @@ func exprParseCastTag(lex ptr lex:Lexer,err ptr ptr spring:Error) ptr Op
   discardTok(lex) #`(`
   ## end stub
 
-  decl exprParse func(ptr lex:Lexer,ptr ptr spring:Error) ptr Op
+  decl exprParse func(lex ptr lex:Lexer,err ptr ptr spring:Error) ptr Op
 
   mut expr = exprParse(lex,err)
 
@@ -167,7 +167,7 @@ func exprParseId(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
 
 func exprParseGenParens(lex ptr lex:Lexer, err ptr ptr spring:Error, cpar uint16) ptr Op
 
-  decl exprParseAssign func(ptr lex:Lexer, ptr ptr spring:Error) ptr Op
+  decl exprParseAssign func(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
   mut expression = exprParseAssign(lex, err)
 
   if expression == null
@@ -230,7 +230,7 @@ func exprParseAccess(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) pt
 func exprParseCall(lex ptr lex:Lexer, lhs ptr Op, err ptr ptr spring:Error) ptr Op
   mut opar = nextTok(lex)
   mut args = spring:vectNew(3)
-  decl exprParseAssign func(ptr lex:Lexer, ptr ptr spring:Error) ptr Op
+  decl exprParseAssign func(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
 
   mut first = true
 
@@ -329,7 +329,7 @@ func exprParseUnaryOp(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
 
   mut result ptr Op
 
-  decl exprParseCast func(ptr lex:Lexer, ptr ptr spring:Error) ptr Op
+  decl exprParseCast func(lex ptr lex:Lexer, err ptr ptr spring:Error) ptr Op
   if (result = exprParseCast(lex, err)) == null
     return null
   /if
@@ -426,7 +426,7 @@ func opDump(op ptr Op)
 /func
 
 func funcDump2(op ptr Op, depth uintptr)
-  decl opDump2 func(ptr Op, uintptr)
+  decl opDump2 func(op ptr Op, depth uintptr)
 
   if op != null
     mut i uintptr = 0

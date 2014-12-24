@@ -169,7 +169,7 @@ func parserParseIdType(ctx ptr synt:Context, name ptr uint8) ptr syms:Type
     lex:tokenFree(tok)
   /if
 
-  return syms:typeNew(name, moduleName, null)
+  return syms:typeNew(name, moduleName, syms:typeDescrNew(syms:TYPE_ID, null, null))
 /func
 
 
@@ -282,18 +282,18 @@ func parserParseStructBody(ctx ptr synt:Context) ptr spring:List
     /if
 
     if !synt:expectDiscard(ctx, lex:COMMA)
-      spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr syms:symbolNew))
+      spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
       return null
     /if
   /while
 
   if theresError(ctx)
-    spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr syms:symbolNew))
+    spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
     return null
   /if
 
   if !synt:expectDiscard(ctx, lex:CPAR)
-    spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr syms:symbolNew))
+    spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
     return null
   /if
 
@@ -620,8 +620,9 @@ func parserParseBody(ctx ptr synt:Context, block ptr synt:PNode, isEndToken ptr 
 
 
 func parserMakeFunction(ctx ptr synt:Context,
-                        type uint16, name ptr uint8,
-                        header ptr synt:PExpr,
+                        pType uint16,
+                        name ptr uint8,
+                        type ptr syms:Type,
                         endTType uint16,
                         isEndToken ptr func(tok ptr lex:Token) bool) ptr synt:PNode
 
@@ -632,8 +633,7 @@ func parserMakeFunction(ctx ptr synt:Context,
 
   lex:tokenFree(newLine)
 
-  mut funcNode = synt:pnodeNew(type, cast<uintptr>(name))
-  synt:pnodeAppendChild(funcNode, cast<ptr synt:PNode>(header))
+  mut funcNode = cast<ptr synt:PNode>(synt:pdeclNew(pType, syms:symbolNew(name, type)))
 
   if !parserParseBody(ctx, funcNode, isEndToken)
     synt:pnodeFree(funcNode)
@@ -650,6 +650,11 @@ func parserMakeFunction(ctx ptr synt:Context,
 /func
 
 
+func makeEntryType() ptr syms:Type
+  return syms:typeNew(null, null,syms:typeDescrNew(syms:TYPE_FUNC, null, null))
+/func
+
+
 func matchEntryEndTok(tok ptr lex:Token) bool
   return tok'type == lex:ENDENTRY
 /func
@@ -658,7 +663,7 @@ func matchEntryEndTok(tok ptr lex:Token) bool
 func parserParseEntry(ctx ptr synt:Context) ptr synt:PNode
   discardTok(ctx) #discard "entry"
 
-  return parserMakeFunction(ctx, synt:PENTRY, "_fork_entry", ptr synt:emptyExpr, lex:ENDENTRY, ptr matchEntryEndTok)
+  return parserMakeFunction(ctx, synt:PENTRY, "_fork_entry", makeEntryType(), lex:ENDENTRY, ptr matchEntryEndTok)
 /func
 
 
@@ -690,14 +695,14 @@ func parserParseFunc(ctx ptr synt:Context) ptr synt:PNode
     return null
   /if
 
-  mut header = parserParseStructBody(ctx)
+  mut type = parserParseFunctionType(ctx)
 
-  if header == null
+  if type == null
     spring:free(name)
     return null
   /if
 
-  return parserMakeFunction(ctx, synt:PFUNCTION, name, ptr synt:emptyExpr, lex:ENDFUNC, ptr matchFuncEndTok)
+  return parserMakeFunction(ctx, synt:PFUNCTION, name, type, lex:ENDFUNC, ptr matchFuncEndTok)
 /func
 
 
@@ -809,27 +814,27 @@ func pnodeAppendChild(pnode, child ptr synt:PNode) ptr synt:PNode
 
 
 func pnodeFree(pnode ptr synt:PNode)
+  if pnode != null
+    if synt:isPProgram(pnode)
 
-  if pnode'type == synt:PPROGRAM
+      mut pprog = cast<ptr synt:PProgram>(pnode)
+      spring:free(pprog'moduleName)
+      spring:vectFreeAll(pprog'imports, ptr spring:free)
 
-    mut pprog = cast<ptr synt:PProgram>(pnode)
-    spring:free(pprog'moduleName)
-    spring:vectFreeAll(pprog'imports, ptr spring:free)
+    /if
 
+    if synt:isPDecl(pnode)
+
+      mut pdecl = cast<ptr synt:PDecl>(pnode)
+      utils:decRef(pdecl'sym)
+
+    /if
+
+    # remember to fix PEXPR leaks.
+
+    spring:vectFreeAll(pnode'leaves, ptr pnodeFree)
+    spring:free(pnode)
   /if
-
-  if pnode'type == synt:PALIAS or pnode'type == synt:PDECL or pnode'type == synt:PMUT or pnode'type == synt:PENTRY or pnode'type == synt:PFUNCTION
-
-    mut pdecl = cast<ptr synt:PDecl>(pnode)
-    utils:decRef(pdecl'sym)
-
-  /if
-
-  # remember to fix PEXPR leaks.
-
-  spring:vectFreeAll(pnode'leaves, ptr pnodeFree)
-  spring:free(pnode)
-
 /func
 
 
@@ -867,6 +872,22 @@ func pprogramNew(moduleName ptr uint8, imports ptr spring:Vector) ptr synt:PProg
   return pprog
 
 /func
+
+
+func isPDecl(pnode ptr synt:PNode) bool
+  return pnode != null and pnode'type == synt:PALIAS or pnode'type == synt:PDECL or pnode'type == synt:PMUT or pnode'type == synt:PENTRY or pnode'type == synt:PFUNCTION
+/func
+
+
+func isPExpr(pnode ptr synt:PNode) bool
+  return pnode != null and pnode'type == synt:PEXPR
+/func
+
+
+func isPProgram(pnode ptr synt:PNode) bool
+  return pnode != null and pnode'type == synt:PPROGRAM
+/func
+
 
 mut PPROGRAM   uint16 = 10
 mut PENTRY     uint16 = 20

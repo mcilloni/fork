@@ -1,0 +1,230 @@
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+import spring
+import syms
+import synt
+
+
+func printPadding(depth uintptr)
+  mut i uintptr = 0
+
+  while i < depth
+    spring:out("| ")
+    i++
+  /while
+
+/func
+
+
+func symbolDump(sym ptr syms:Symbol)
+  if sym == null
+    return
+  /if
+
+  spring:out(sym'name)
+  spring:out(" :: ")
+  syms:typeDump(sym'type)
+/func
+
+
+func typeDescrDumpStructuredDataArgs(args ptr spring:List)
+  if args == null
+    spring:out("<null>")
+    return
+  /if
+
+  mut len = spring:listLen(args)
+  mut first = true
+  mut i uintptr = 0
+
+  spring:out("(")
+
+  while i < len
+    if first
+      first = false
+    else
+      spring:out(", ")
+    /if
+
+    mut sym = cast<ptr syms:Symbol>(val spring:listGet(args, i))
+    symbolDump(sym)
+
+    i++
+  /while
+
+  spring:out(")")
+/func
+
+
+func typeDescrDump(typeDescr ptr syms:TypeDescr)
+  if typeDescr == null
+    spring:out("<null>")
+    return
+  /if
+
+  mut type = typeDescr'type
+
+  if type == syms:TYPE_FUNC
+    spring:out("func ")
+    typeDescrDumpStructuredDataArgs(typeDescr'arguments)
+
+    if typeDescr'retType != null
+      syms:typeDump(typeDescr'retType)
+    /if
+  /if
+
+  if type == syms:TYPE_ID
+    return
+  /if
+
+  if type == syms:TYPE_PTR
+    spring:out("ptr ")
+    syms:typeDump(typeDescr'retType)
+  /if
+
+  if type == syms:TYPE_STRUCT
+    spring:out("struct ")
+    typeDescrDumpStructuredDataArgs(typeDescr'arguments)
+  /if
+/func
+
+
+func typeDump(type ptr syms:Type)
+  if type == null
+    spring:out("<null>")
+    return
+  /if
+
+  if type'name != null
+    spring:out(type'name)
+  else
+    spring:out("<unnamed>")
+  /if
+
+  if type'descr != null
+    spring:out(": ")
+
+    typeDescrDump(cast<ptr syms:TypeDescr>(type'descr))
+  /if
+/func
+
+
+func pnodeTypeToString(ptype uint16) ptr uint8
+
+  if ptype == synt:PPROGRAM
+    return "Program"
+  /if
+
+  if ptype == synt:PENTRY
+    return "Entry"
+  /if
+
+  if ptype == synt:PEXPR
+    return "Expression"
+  /if
+
+  if ptype == synt:PFUNCTION
+    return "Function"
+  /if
+
+  if ptype == synt:PALIAS
+    return "Alias"
+  /if
+
+  if ptype == synt:PDECL
+    return "Decl"
+  /if
+
+  if ptype == synt:PMUT
+    return "Mut"
+  /if
+
+  if ptype == synt:PBREAK
+    return "Break"
+  /if
+
+  if ptype == synt:PCONTINUE
+    return "Continue"
+  /if
+
+  if ptype == synt:PRETURN
+    return "Return"
+  /if
+
+  if ptype == synt:PIF
+    return "If"
+  /if
+
+  if ptype == synt:PIFELSE
+    return "IfElse"
+  /if
+
+  if ptype == synt:PWHILE
+    return "While"
+  /if
+
+  if ptype == synt:PBLOCK
+    return "Block"
+  /if
+
+  return "<UNKNOWN BLOCK>"
+/func
+
+
+func pprogramDumpInfo(pprog ptr synt:PProgram, depth uintptr)
+
+/func
+
+
+func pdeclDumpInfo(pdecl ptr synt:PDecl, depth uintptr)
+
+/func
+
+
+func pexprDumpInfo(pexpr ptr synt:PExpr, depth uintptr)
+
+/func
+
+
+func pnodeDumpRec(pnode ptr synt:PNode, depth uintptr)
+
+  printPadding(depth)
+
+  if synt:isPProgram(pnode)
+    pprogramDumpInfo(cast<ptr synt:PProgram>(pnode), depth)
+  /if
+
+  if synt:isPDecl(pnode)
+    pdeclDumpInfo(cast<ptr synt:PDecl>(pnode), depth)
+  /if
+
+  if synt:isPExpr(pnode)
+    pexprDumpInfo(cast<ptr synt:PExpr>(pnode), depth)
+  /if
+
+  spring:outch(10)
+
+  mut len = spring:vectLen(pnode'leaves)
+  mut i uintptr = 0
+
+  while i < len
+    mut child = cast<ptr synt:PNode>(val spring:vectGet(pnode'leaves, i))
+
+    pnodeDumpRec(child, depth + 1)
+
+    i++
+  /while
+
+/func
+
+
+func pnodeDump(pnode ptr synt:PNode)
+  pnodeDumpRec(pnode, 0)
+/func

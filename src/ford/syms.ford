@@ -1,0 +1,55 @@
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+module syms
+
+import spring
+import utils
+
+decl TYPE_FUNC   uint16
+decl TYPE_ID     uint16
+decl TYPE_PTR    uint16
+decl TYPE_STRUCT uint16
+
+alias Type struct (
+  refc utils:Ref,
+  name, moduleName ptr uint8,
+  # anonymous because of first-step parser limitations; actually a TypeDescr
+  descr data
+)
+
+alias TypeDescr struct (
+  refc utils:Ref,
+  type uint16,
+  # if type is TYPE_PTR, this is the type returned by dereferencing.
+  # if type is TYPE_FUNC, this is the return type of the function
+  retType ptr Type,
+  # if type is TYPE_FUNC, this is the arguments list
+  # if type is TYPE_STRUCT, this is the fields list
+  arguments ptr spring:List
+)
+
+decl typeDump func(type ptr Type)
+decl typeNew func(name,moduleName ptr uint8, descr ptr TypeDescr) ptr Type
+
+decl typeDescrDump func(type ptr TypeDescr)
+decl typeDescrNew func(type uint16, retType ptr Type, params ptr spring:List) ptr TypeDescr
+
+alias Symbol struct(
+  refc utils:Ref,
+  name ptr uint8,
+  type ptr Type
+)
+
+decl symbolNew func(name ptr uint8, type ptr Type) ptr Symbol
+
+alias Alias Symbol
+
+decl aliasFree ptr func(item ptr Alias)
+decl aliasNew ptr func(name ptr uint8, type ptr Type) ptr Alias
