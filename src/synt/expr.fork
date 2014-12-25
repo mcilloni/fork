@@ -75,6 +75,7 @@ func pexprNew(tok ptr lex:Token, lhs,rhs ptr synt:PExpr) ptr synt:PExpr
   mut pexpr = cast<ptr synt:PExpr>(spring:zalloc(size(synt:PExpr)))
   pexpr'node'type = synt:PEXPR
   pexpr'node'value = tok'value
+  pexpr'node'leaves = spring:vectNew(2)
   tok'value = 0 # now the value belongs to this PExpr
 
   mut pnode = ptr pexpr'node
@@ -220,7 +221,7 @@ func parserParseParens(ctx ptr synt:Context) ptr synt:PExpr
 func parserParsePrimaryExpr(ctx ptr synt:Context) ptr synt:PExpr
 
   if ctx'next == null
-    ctx'prs'err = utils:error(ptr ctx'last, "expected a primary expression, got an EOF")
+    ctx'prs'err = utils:error(ctx'last, "expected a primary expression, got an EOF")
     return null
   /if
 
@@ -272,7 +273,7 @@ func parserParseCallExpr(ctx ptr synt:Context, lhs ptr synt:PExpr) ptr synt:PExp
 
     if ctx'next'type != lex:COMMA and !first
 
-      ctx'prs'err = utils:errorMism(ptr ctx'last, "a comma ','", lex:tokenStr(ctx'next))
+      ctx'prs'err = utils:errorMism(ctx'last, "a comma ','", lex:tokenStr(ctx'next))
       return null
 
     else
@@ -395,7 +396,7 @@ func parserParseUnaryExpr(ctx ptr synt:Context) ptr synt:PExpr
 
 func parserParseCastExpr(ctx ptr synt:Context) ptr synt:PExpr
   if ctx'next == null
-    ctx'prs'err = utils:error(ptr ctx'last, "unexpected EOF")
+    ctx'prs'err = utils:error(ctx'last, "unexpected EOF")
     return null
   /if
 

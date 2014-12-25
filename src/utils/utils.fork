@@ -62,19 +62,18 @@ func errorMism(line ptr lex:Lineno, exp ptr uint8, got ptr uint8) ptr spring:Err
   spring:numtostr(line'lineno, lineno, 21)
   spring:numtostr(line'pos, pos, 21)
 
-  mut toglue [12] ptr uint8
+  mut toglue [11] ptr uint8
   toglue[0] = "In "
   toglue[1] = line'filename
   toglue[2] = ", line "
   toglue[3] = lineno
   toglue[4] = ", pos "
   toglue[5] = pos
-  toglue[6] = ": expected \""
+  toglue[6] = ": expected "
   toglue[7] = exp
-  toglue[8] = "\", got \""
+  toglue[8] = ", got "
   toglue[9] = got
-  toglue[10] = "\""
-  toglue[11] = null
+  toglue[10] = null
 
   return spring:errorGlue(toglue)
 /func

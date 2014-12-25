@@ -37,12 +37,11 @@ func theresError(ctx ptr synt:Context) bool
 
 func nextTok(ctx ptr synt:Context) ptr lex:Token
   mut tok = ctx'next
-  if ctx'last'filename != null
-    spring:free(ctx'last'filename)
+  if ctx'last != null
+    lex:linenoFree(ctx'last)
   /if
 
-  ctx'last = val tok'lineno
-  ctx'last'filename = ctx'lex'lineno'filename # we're sure this isn't going to fade randomly
+  ctx'last = lex:linenoClone(tok'lineno)
 
   ctx'next = lex:lexerNext(ctx'lex)
   ctx'prs'err = lex:lexerError(ctx'lex)
@@ -61,7 +60,7 @@ func discardTok(ctx ptr synt:Context)
 
 # if the expected token is not given, then the Parser gets its error set
 func createExpectedError(ctx ptr synt:Context, expected, got ptr lex:Token)
-  ctx'prs'err = utils:errorMism(ptr ctx'last, lex:tokenStr(expected), lex:tokenStr(got))
+  ctx'prs'err = utils:errorMism(ctx'last, lex:tokenStr(expected), lex:tokenStr(got))
 /func
 
 
@@ -87,7 +86,7 @@ func expectDiscard(ctx ptr synt:Context, ttype uint16) bool
   mut tok = expect(ctx, ttype)
   lex:tokenFree(tok)
 
-  return tok == null
+  return tok != null
 /func
 
 
@@ -202,7 +201,7 @@ func parserParseIdList(ctx ptr synt:Context) ptr spring:List
     lex:tokenFree(tok)
 
     if ctx'next == null
-      ctx'prs'err = utils:errorMism(ptr ctx'last, "a ',' or an identifier", "end of file")
+      ctx'prs'err = utils:errorMism(ctx'last, "a ',' or an identifier", "end of file")
       break
     /if
 
@@ -242,7 +241,7 @@ func parserParseStructBodyVars(ctx ptr synt:Context, syms ptr spring:List) bool
   parserDiscardNewLine(ctx)
 
   if ctx'next == null
-    ctx'prs'err = utils:errorMism(ptr ctx'last, "an identifier or a ')'", "end of file")
+    ctx'prs'err = utils:errorMism(ctx'last, "an identifier or a ')'", "end of file")
     return false
   /if
 
@@ -328,7 +327,7 @@ func parserParseStruct(ctx ptr synt:Context) ptr syms:Type
 
 func parserParseType(ctx ptr synt:Context) ptr syms:Type
   if ctx'next == null
-    ctx'prs'err = utils:errorMism(ptr ctx'last, "a valid type", "end of file")
+    ctx'prs'err = utils:errorMism(ctx'last, "a valid type", "end of file")
     return null
   /if
 
@@ -359,7 +358,7 @@ func parserParseType(ctx ptr synt:Context) ptr syms:Type
   /if
 
   if ret == null and !theresError(ctx)
-    ctx'prs'err = utils:errorMism(ptr ctx'last, "a valid type", lex:tokenStr(tok))
+    ctx'prs'err = utils:errorMism(ctx'last, "a valid type", lex:tokenStr(tok))
   /if
 
   lex:tokenFree(tok)
@@ -381,14 +380,14 @@ func parserParseDeclaration(ctx ptr synt:Context, declType uint16) ptr synt:PNod
   lex:tokenFree(idTok)
 
   if ctx'next == null
-    ctx'prs'err = utils:errorMism(ptr ctx'last, "a type or an '='", "EOF")
+    ctx'prs'err = utils:errorMism(ctx'last, "a type or an '='", "EOF")
     spring:free(id)
     return null
   /if
 
   mut type ptr syms:Type = null
 
-  if ctx'next'type != lex:EQUAL
+  if ctx'next'type != lex:ASSIGN
     type = parserParseType(ctx)
     if type == null
       spring:free(id)
@@ -399,13 +398,13 @@ func parserParseDeclaration(ctx ptr synt:Context, declType uint16) ptr synt:PNod
   mut pdecl = synt:pdeclNew(declType, syms:symbolNew(id, type))
 
   if ctx'next == null
-    ctx'prs'err = utils:errorMism(ptr ctx'last, "a type or an '='", "EOF")
+    ctx'prs'err = utils:errorMism(ctx'last, "a type or an '='", "EOF")
     synt:pnodeFree(cast<ptr synt:PNode>(pdecl))
     return null
   /if
 
 
-  if ctx'next'type == lex:EQUAL
+  if ctx'next'type == lex:ASSIGN
     synt:discardTok(ctx)
 
     mut expr = synt:parserParseExpr(ctx)
@@ -559,7 +558,7 @@ func parserParseReturn(ctx ptr synt:Context) ptr synt:PNode
 func parserParseStatement(ctx ptr synt:Context) ptr synt:PNode
 
   if ctx'next == null
-    ctx'prs'err = utils:errorMism(ptr ctx'last, "a statement or an expression", "EOF")
+    ctx'prs'err = utils:errorMism(ctx'last, "a statement or an expression", "EOF")
   /if
 
   if ctx'next'type == lex:BREAK
@@ -626,12 +625,9 @@ func parserMakeFunction(ctx ptr synt:Context,
                         endTType uint16,
                         isEndToken ptr func(tok ptr lex:Token) bool) ptr synt:PNode
 
-  mut newLine = expect(ctx, lex:NEWLINE)
-  if newLine == null
+  if !expectDiscard(ctx, lex:NEWLINE)
     return null
   /if
-
-  lex:tokenFree(newLine)
 
   mut funcNode = cast<ptr synt:PNode>(synt:pdeclNew(pType, syms:symbolNew(name, type)))
 
@@ -663,7 +659,7 @@ func matchEntryEndTok(tok ptr lex:Token) bool
 func parserParseEntry(ctx ptr synt:Context) ptr synt:PNode
   discardTok(ctx) #discard "entry"
 
-  return parserMakeFunction(ctx, synt:PENTRY, "_fork_entry", makeEntryType(), lex:ENDENTRY, ptr matchEntryEndTok)
+  return parserMakeFunction(ctx, synt:PENTRY, spring:strclone("_fork_entry"), makeEntryType(), lex:ENDENTRY, ptr matchEntryEndTok)
 /func
 
 
@@ -732,7 +728,7 @@ func parserParseDefinition(ctx ptr synt:Context) ptr synt:PNode
     return  parserParseMut(ctx)
   /if
 
-  ctx'prs'err = utils:errorMism(ptr ctx'last, "'alias', 'decl', 'entry', 'function' or 'var'", lex:tokenStr(ctx'next))
+  ctx'prs'err = utils:errorMism(ctx'last, "'alias', 'decl', 'entry', 'function' or 'var'", lex:tokenStr(ctx'next))
 
   return null
 
@@ -785,6 +781,7 @@ func parserParse(parser ptr synt:Parser) ptr synt:PNode
   ctx'prs = parser
   ctx'lex = lex
   ctx'next = lex:lexerNext(lex)
+  ctx'last = null
 
   if (parser'err = lex:lexerError(lex)) != null
     return null
@@ -801,12 +798,10 @@ func parserParse(parser ptr synt:Parser) ptr synt:PNode
 
 func pnodeAppendChild(pnode, child ptr synt:PNode) ptr synt:PNode
 
-  if pnode != null
+  if pnode != null and child != null
     spring:vectAppend(pnode'leaves, child)
 
-    if child != null
-      child'parent = pnode
-    /if
+    child'parent = pnode
   /if
 
   return pnode
@@ -843,6 +838,7 @@ func pnodeNew(type uint16, value uintptr) ptr synt:PNode
   mut pnode = cast<ptr synt:PNode>(spring:zalloc(size(synt:PNode)))
   pnode'type = type
   pnode'value = value
+  pnode'leaves = spring:vectNew(2)
 
   return pnode
 /func
@@ -852,6 +848,7 @@ func pdeclNew(nodeType uint16, sym ptr syms:Symbol) ptr synt:PDecl
 
   mut pdecl = cast<ptr synt:PDecl>(spring:zalloc(size(synt:PDecl)))
   pdecl'node'type = nodeType
+  pdecl'node'leaves = spring:vectNew(2)
 
   utils:incRef(sym)
 
@@ -865,6 +862,7 @@ func pprogramNew(moduleName ptr uint8, imports ptr spring:Vector) ptr synt:PProg
 
   mut pprog = cast<ptr synt:PProgram>(spring:zalloc(size(synt:PProgram)))
   pprog'node'type = synt:PPROGRAM
+  pprog'node'leaves = spring:vectNew(5)
   pprog'moduleName = moduleName
   pprog'imports = imports
   pprog'node'parent = null

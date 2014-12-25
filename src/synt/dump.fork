@@ -179,7 +179,30 @@ func pnodeTypeToString(ptype uint16) ptr uint8
 
 
 func pprogramDumpInfo(pprog ptr synt:PProgram, depth uintptr)
+  if pprog'moduleName != null
+    spring:out("[ module: ")
+    spring:out(pprog'moduleName)
+    spring:out("]")
+  /if
 
+  spring:outch(10)
+
+  mut len = spring:vectLen(pprog'imports)
+  if len > 0
+    printPadding(depth)
+    spring:outln("Imports: ")
+
+    mut i uintptr = 0
+
+    while i < len
+      printPadding(depth + 1)
+      mut imp = cast<ptr uint8>(val spring:vectGet(pprog'imports, i))
+
+      spring:outln(imp)
+
+      i++
+    /while
+  /if
 /func
 
 
@@ -196,6 +219,8 @@ func pexprDumpInfo(pexpr ptr synt:PExpr, depth uintptr)
 func pnodeDumpRec(pnode ptr synt:PNode, depth uintptr)
 
   printPadding(depth)
+
+  spring:out(pnodeTypeToString(pnode'type))
 
   if synt:isPProgram(pnode)
     pprogramDumpInfo(cast<ptr synt:PProgram>(pnode), depth)

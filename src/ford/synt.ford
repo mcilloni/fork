@@ -23,7 +23,7 @@ alias Context struct (
   prs ptr Parser,
   lex ptr lex:Lexer,
   next ptr lex:Token,
-  last lex:Lineno
+  last ptr lex:Lineno
 )
 
 alias PNode struct(

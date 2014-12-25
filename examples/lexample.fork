@@ -1,12 +1,3 @@
-#  Second Step - Experimental Fork Compiler
-#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
-#
-#  This Source Code Form is subject to the terms of the Mozilla Public
-#  License, v. 2.0. If a copy of the MPL was not distributed with this
-#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#  Exhibit B is not attached; this software is compatible with the 
-#  licenses expressed under Section 1.12 of the MPL v2. 
-
 import lex
 import spring
 
@@ -37,14 +28,15 @@ entry
     spring:out(lex:tokenStr(tok))
     if tok'type == lex:ID or tok'type == lex:STRING
       spring:out(": ")
-      spring:outln(cast<ptr uint8>(tok'value))
+      spring:out(cast<ptr uint8>(tok'value))
     else
       if tok'type == lex:NUMBER
         spring:out(": ")
         spring:outint(tok'value)
       /if
-      spring:outch(10)
     /if
+    
+    spring:outch(10)
 
     lex:tokenFree(tok)
   /while
@@ -52,4 +44,3 @@ entry
   lex:lexerClose(lex)
 
 /entry
-

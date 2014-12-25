@@ -16,11 +16,16 @@ alias Lineno struct(
   lineno,pos uintptr
 )
 
+alias StringTok struct(
+  str ptr uint8,
+  begin,end,line uintptr
+)
+
 alias Lexer struct (
   file ptr spring:Stream,
   lineno ptr Lineno,
   error ptr spring:Error,
-  saved ptr uint8,
+  saved ptr StringTok,
   peek uint8,
   newline, firstLineTok, firstLineLetter bool
 )
