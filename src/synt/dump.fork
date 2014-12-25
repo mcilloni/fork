@@ -7,6 +7,7 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+import lex
 import spring
 import syms
 import synt
@@ -30,7 +31,11 @@ func symbolDump(sym ptr syms:Symbol)
 
   spring:out(sym'name)
   spring:out(" :: ")
-  syms:typeDump(sym'type)
+  if sym'type != null
+    syms:typeDump(sym'type)
+  else
+    spring:out("<inferred>")
+  /if
 /func
 
 
@@ -72,8 +77,14 @@ func typeDescrDump(typeDescr ptr syms:TypeDescr)
   mut type = typeDescr'type
 
   if type == syms:TYPE_FUNC
-    spring:out("func ")
-    typeDescrDumpStructuredDataArgs(typeDescr'arguments)
+    spring:out("func")
+
+    if typeDescr'arguments != null
+      spring:outch(32)
+      typeDescrDumpStructuredDataArgs(typeDescr'arguments)
+    else
+      spring:out("()")
+    /if
 
     if typeDescr'retType != null
       syms:typeDump(typeDescr'retType)
@@ -103,13 +114,14 @@ func typeDump(type ptr syms:Type)
   /if
 
   if type'name != null
+    if type'moduleName != null
+      spring:out(type'moduleName)
+      spring:outch(58)
+    /if
     spring:out(type'name)
-  else
-    spring:out("<unnamed>")
   /if
 
   if type'descr != null
-    spring:out(": ")
 
     typeDescrDump(cast<ptr syms:TypeDescr>(type'descr))
   /if
@@ -207,12 +219,35 @@ func pprogramDumpInfo(pprog ptr synt:PProgram, depth uintptr)
 
 
 func pdeclDumpInfo(pdecl ptr synt:PDecl, depth uintptr)
+  spring:outch(10)
+  printPadding(depth + 1)
 
+  symbolDump(pdecl'sym)
 /func
 
 
 func pexprDumpInfo(pexpr ptr synt:PExpr, depth uintptr)
+  mut tok lex:Token
+  tok'type = pexpr'opType
 
+  spring:out(": ")
+
+  if pexpr'opType == lex:ID
+    spring:out("an id \"")
+    spring:out(cast<ptr uint8>(pexpr'node'value))
+    spring:out("\"")
+  else
+    if pexpr'opType == lex:NUMBER
+      spring:outint(pexpr'node'value)
+    else
+      spring:out(lex:tokenStr(ptr tok))
+    /if
+  /if
+  if pexpr'type != null
+    spring:out(", type ")
+
+    typeDump(pexpr'type)
+  /if
 /func
 
 

@@ -231,7 +231,7 @@ func makeSymsAndInsertInList(syms ptr spring:List, ids ptr spring:List, type ptr
     i++
   /while
 
-  spring:listFreeAll(ids, ptr spring:free)
+  spring:listFree(ids)
 /func
 
 
@@ -479,7 +479,7 @@ func parserParseWhile(ctx ptr synt:Context) ptr synt:PNode
     return null
   /if
 
-  synt:discardTok(ctx) #discard endTokType
+  synt:discardTok(ctx) #discard /while
 
   return whileBlock
 /func
@@ -534,6 +534,8 @@ func parserParseIf(ctx ptr synt:Context) ptr synt:PNode
     /if
   /if
 
+  synt:discardTok(ctx) #discard /if
+
   return block
 /func
 
@@ -542,7 +544,7 @@ func parserParseReturn(ctx ptr synt:Context) ptr synt:PNode
   synt:discardTok(ctx) # discard "return"
 
   mut returnNode = synt:pnodeNew(synt:PRETURN, 0)
-  if ctx'next == null and ctx'next'type != lex:NEWLINE
+  if ctx'next != null and ctx'next'type != lex:NEWLINE
     mut expr = synt:parserParseExpr(ctx)
     if expr == null
       synt:pnodeFree(returnNode)
@@ -589,6 +591,7 @@ func parserParseStatement(ctx ptr synt:Context) ptr synt:PNode
     return parserParseWhile(ctx)
   /if
 
+  return cast<ptr synt:PNode>(synt:parserParseExpr(ctx))
 /func
 
 
@@ -640,6 +643,8 @@ func parserMakeFunction(ctx ptr synt:Context,
     synt:pnodeFree(funcNode)
     return null
   /if
+
+
 
   return funcNode
 
@@ -728,7 +733,7 @@ func parserParseDefinition(ctx ptr synt:Context) ptr synt:PNode
     return  parserParseMut(ctx)
   /if
 
-  ctx'prs'err = utils:errorMism(ctx'last, "'alias', 'decl', 'entry', 'function' or 'var'", lex:tokenStr(ctx'next))
+  ctx'prs'err = utils:errorMism(ctx'last, "'alias', 'decl', 'entry', 'func' or 'var'", lex:tokenStr(ctx'next))
 
   return null
 
@@ -757,6 +762,11 @@ func parserParseProgram(ctx ptr synt:Context) ptr synt:PNode
 
   while (definition = parserParseDefinition(ctx)) != null
     synt:pnodeAppendChild(pnode, definition)
+
+    if ctx'next != null and !synt:expectDiscard(ctx, lex:NEWLINE)
+      synt:pnodeFree(pnode)
+      return null
+    /if
   /while
 
   if theresError(ctx)

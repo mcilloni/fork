@@ -76,6 +76,7 @@ func pexprNew(tok ptr lex:Token, lhs,rhs ptr synt:PExpr) ptr synt:PExpr
   pexpr'node'type = synt:PEXPR
   pexpr'node'value = tok'value
   pexpr'node'leaves = spring:vectNew(2)
+  pexpr'opType = tok'type
   tok'value = 0 # now the value belongs to this PExpr
 
   mut pnode = ptr pexpr'node
