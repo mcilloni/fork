@@ -261,20 +261,21 @@ func parserParseAccessExpr(ctx ptr synt:Context, lhs ptr synt:PExpr) ptr synt:PE
 func parserParseCallExpr(ctx ptr synt:Context, lhs ptr synt:PExpr) ptr synt:PExpr
 
   mut opar = synt:nextTok(ctx)
-  mut args = spring:vectNew(4)
-
-  spring:vectAppend(args, lhs) #function expression to be called
+  mut callExpr =  pexprNew(opar, lhs, null)
+  mut callPNode = cast<ptr synt:PNode>(callExpr)
 
   decl parserParseAssignExpr func(ctx ptr synt:Context) ptr synt:PExpr
 
   mut next = ctx'next
   mut first = true
 
+
   while ctx'next != null and ctx'next'type != lex:CPAR
 
     if ctx'next'type != lex:COMMA and !first
 
       ctx'prs'err = utils:errorMism(ctx'last, "a comma ','", lex:tokenStr(ctx'next))
+      synt:pnodeFree(callPNode)
       return null
 
     else
@@ -290,11 +291,11 @@ func parserParseCallExpr(ctx ptr synt:Context, lhs ptr synt:PExpr) ptr synt:PExp
 
     mut arg = parserParseAssignExpr(ctx)
     if arg == null
-      spring:vectFreeAll(args, cast<ptr func(item data)>(ptr synt:pnodeFree))
+      synt:pnodeFree(callPNode)
       return null
     /if
 
-    spring:vectAppend(args, arg)
+    synt:pnodeAppendChild(callPNode, cast<ptr synt:PNode>(arg))
 
   /while
 
@@ -302,7 +303,7 @@ func parserParseCallExpr(ctx ptr synt:Context, lhs ptr synt:PExpr) ptr synt:PExp
     synt:discardTok(ctx) #this is lex:CPAR
   /if
 
-  mut callExpr =  pexprNew(opar, lhs, cast<ptr synt:PExpr>(args))
+  return callExpr
 
 /func
 
