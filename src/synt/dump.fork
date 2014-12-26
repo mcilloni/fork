@@ -80,8 +80,9 @@ func typeDescrDump(typeDescr ptr syms:TypeDescr)
     spring:out("func")
 
     if typeDescr'arguments != null
-      spring:outch(32)
+      
       typeDescrDumpStructuredDataArgs(typeDescr'arguments)
+      spring:outch(32)
     else
       spring:out("()")
     /if

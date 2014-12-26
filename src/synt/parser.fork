@@ -532,6 +532,8 @@ func parserParseIf(ctx ptr synt:Context) ptr synt:PNode
       synt:pnodeFree(block)
       return null
     /if
+
+    block'type = synt:PIFELSE
   /if
 
   synt:discardTok(ctx) #discard /if
@@ -564,10 +566,12 @@ func parserParseStatement(ctx ptr synt:Context) ptr synt:PNode
   /if
 
   if ctx'next'type == lex:BREAK
+    synt:discardTok(ctx)
     return synt:pnodeNew(synt:PBREAK, 0)
   /if
 
   if ctx'next'type == lex:CONTINUE
+    synt:discardTok(ctx)
     return synt:pnodeNew(synt:PCONTINUE, 0)
   /if
 

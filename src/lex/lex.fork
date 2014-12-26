@@ -395,7 +395,7 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 
     begin'lineno--
     begin'pos = 0
-    
+
     return tokenNew(lex:NEWLINE, 0, begin, 0)
   /if
 
@@ -408,6 +408,10 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 
   if spring:strequals(strToken, "alias")
     type = lex:ALIAS
+  /if
+
+  if spring:strequals(strToken, "&")
+    type = lex:AMPER
   /if
 
   if spring:strequals(strToken, "and")
