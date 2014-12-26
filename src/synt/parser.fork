@@ -428,7 +428,7 @@ func parserParseDeclaration(ctx ptr synt:Context, declType uint16, external bool
   mut pdecl = synt:pdeclNew(declType, syms:symbolNew(id, type))
 
   if ctx'next != null and ctx'next'type == lex:ASSIGN
-    if !external
+    if external
       ctx'prs'err = utils:error(ctx'last, "decl values can't have initializers")
       synt:pnodeFree(cast<ptr synt:PNode>(pdecl))
       return null
