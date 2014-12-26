@@ -302,7 +302,7 @@ func parserParseStructBody(ctx ptr synt:Context) ptr spring:List
 
 func parserParseFunctionType(ctx ptr synt:Context) ptr syms:Type
   mut args = parserParseStructBody(ctx)
-  if theresError(ctx)
+  if args == null
     return null
   /if
 
@@ -315,9 +315,33 @@ func parserParseFunctionType(ctx ptr synt:Context) ptr syms:Type
   return syms:typeNew(null, null, syms:typeDescrNew(syms:TYPE_FUNC, retType, args))
 /func
 
-func parserParseStruct(ctx ptr synt:Context) ptr syms:Type
+
+func parserParseLocType(ctx ptr synt:Context) ptr syms:Type
+  mut locLengthTok = expect(ctx, lex:NUMBER)
+  if locLengthTok == null
+    return null
+  /if
+
+  mut locLength = locLengthTok'value
+
+  lex:tokenFree(locLengthTok)
+
+  if !expectDiscard(ctx, lex:CBRAC)
+    return null
+  /if
+
+  mut realType = parserParseType(ctx)
+  if realType == null
+    return null
+  /if
+
+  return syms:typeNew(null, null, syms:typeDescrNewLoc(realType, locLength))
+/func
+
+
+func parserParseStructType(ctx ptr synt:Context) ptr syms:Type
   mut args = parserParseStructBody(ctx)
-  if theresError(ctx)
+  if args == null
     return null
   /if
 
@@ -342,6 +366,10 @@ func parserParseType(ctx ptr synt:Context) ptr syms:Type
     ret = parserParseIdType(ctx, spring:strclone(cast<ptr uint8>(tok'value)))
   /if
 
+  if tok'type == lex:OBRAC
+    ret = parserParseLocType(ctx)
+  /if
+
   if tok'type == lex:PTR
     # parses the real type (after ptr)
     mut realType = parserParseType(ctx)
@@ -349,7 +377,7 @@ func parserParseType(ctx ptr synt:Context) ptr syms:Type
   /if
 
   if tok'type == lex:STRUCT
-    ret = parserParseStruct(ctx)
+    ret = parserParseStructType(ctx)
   /if
 
   if tok'type == lex:VAL

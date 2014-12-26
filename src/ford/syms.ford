@@ -15,6 +15,7 @@ import utils
 decl TYPE_FUNC   uint16
 decl TYPE_ID     uint16
 decl TYPE_PTR    uint16
+decl TYPE_LOC    uint16
 decl TYPE_STRUCT uint16
 
 alias Type struct (
@@ -27,12 +28,14 @@ alias Type struct (
 alias TypeDescr struct (
   refc utils:Ref,
   type uint16,
-  # if type is TYPE_PTR, this is the type returned by dereferencing.
+  # if type is TYPE_PTR or TYPE_LOC, this is the type returned by dereferencing.
   # if type is TYPE_FUNC, this is the return type of the function
   retType ptr Type,
   # if type is TYPE_FUNC, this is the arguments list
   # if type is TYPE_STRUCT, this is the fields list
-  arguments ptr spring:List
+  arguments ptr spring:List,
+  #if type is TYPE_LOC, this is the number of items allocated
+  length uintptr
 )
 
 decl typeDump func(type ptr Type)
@@ -40,6 +43,7 @@ decl typeNew func(name,moduleName ptr uint8, descr ptr TypeDescr) ptr Type
 
 decl typeDescrDump func(type ptr TypeDescr)
 decl typeDescrNew func(type uint16, retType ptr Type, params ptr spring:List) ptr TypeDescr
+decl typeDescrNewLoc func(innerType ptr Type, length uintptr) ptr TypeDescr
 
 alias Symbol struct(
   refc utils:Ref,

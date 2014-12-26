@@ -80,7 +80,7 @@ func typeDescrDump(typeDescr ptr syms:TypeDescr)
     spring:out("func")
 
     if typeDescr'arguments != null
-      
+
       typeDescrDumpStructuredDataArgs(typeDescr'arguments)
       spring:outch(32)
     else
@@ -94,6 +94,13 @@ func typeDescrDump(typeDescr ptr syms:TypeDescr)
 
   if type == syms:TYPE_ID
     return
+  /if
+
+  if type == syms:TYPE_LOC
+    spring:out("[")
+    spring:outint(typeDescr'length)
+    spring:out("] ")
+    syms:typeDump(typeDescr'retType)
   /if
 
   if type == syms:TYPE_PTR

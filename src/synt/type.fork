@@ -95,6 +95,14 @@ func typeDescrNew(type uint16, retType ptr syms:Type, params ptr spring:List) pt
 /func
 
 
+func typeDescrNewLoc(innerType ptr syms:Type, length uintptr) ptr syms:TypeDescr
+  mut typeDescr = typeDescrNew(syms:TYPE_LOC, innerType, null)
+  typeDescr'length = length
+
+  return typeDescr
+/func
+
+
 mut aliasFree = cast<ptr func(item ptr syms:Alias)>(symbolFree)
 mut aliasNew  = cast<ptr func(name ptr uint8, type ptr syms:Type) ptr syms:Alias>(symbolNew)
 
@@ -102,3 +110,4 @@ mut TYPE_FUNC   uint16 = 10
 mut TYPE_ID     uint16 = 20
 mut TYPE_PTR    uint16 = 30
 mut TYPE_STRUCT uint16 = 40
+mut TYPE_LOC    uint16 = 50
