@@ -200,7 +200,7 @@ func pnodeTypeToString(ptype uint16) ptr uint8
 
 func pprogramDumpInfo(pprog ptr synt:PProgram, depth uintptr)
   if pprog'moduleName != null
-    spring:out("[ module: ")
+    spring:out(" [module: ")
     spring:out(pprog'moduleName)
     spring:out("]")
   /if

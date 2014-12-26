@@ -267,8 +267,7 @@ func parserParseStructBodyVars(ctx ptr synt:Context, syms ptr spring:List) bool
 
 
 func parserParseStructBody(ctx ptr synt:Context) ptr spring:List
-  lex:tokenFree(expect(ctx, lex:OPAR))
-  if theresError(ctx)
+  if !expectDiscard(ctx, lex:OPAR)
     return null
   /if
 
@@ -276,6 +275,9 @@ func parserParseStructBody(ctx ptr synt:Context) ptr spring:List
 
   # each iteration parses a sequence of 'a,b,c,d type' or a full list (if this is a function header)
   while parserParseStructBodyVars(ctx, strBody)
+
+    parserDiscardNewLine(ctx)
+
     if ctx'next != null and ctx'next'type == lex:CPAR
       break
     /if
@@ -394,7 +396,7 @@ func parserParseType(ctx ptr synt:Context) ptr syms:Type
 /func
 
 
-func parserParseDeclaration(ctx ptr synt:Context, declType uint16) ptr synt:PNode
+func parserParseDeclaration(ctx ptr synt:Context, declType uint16, external bool) ptr synt:PNode
   # discard 'var' or 'decl'
   synt:discardTok(ctx)
 
@@ -425,14 +427,13 @@ func parserParseDeclaration(ctx ptr synt:Context, declType uint16) ptr synt:PNod
 
   mut pdecl = synt:pdeclNew(declType, syms:symbolNew(id, type))
 
-  if ctx'next == null
-    ctx'prs'err = utils:errorMism(ctx'last, "a type or an '='", "EOF")
-    synt:pnodeFree(cast<ptr synt:PNode>(pdecl))
-    return null
-  /if
+  if ctx'next != null and ctx'next'type == lex:ASSIGN
+    if !external
+      ctx'prs'err = utils:error(ctx'last, "decl values can't have initializers")
+      synt:pnodeFree(cast<ptr synt:PNode>(pdecl))
+      return null
+    /if
 
-
-  if ctx'next'type == lex:ASSIGN
     synt:discardTok(ctx)
 
     mut expr = synt:parserParseExpr(ctx)
@@ -449,12 +450,12 @@ func parserParseDeclaration(ctx ptr synt:Context, declType uint16) ptr synt:PNod
 
 
 func parserParseDecl(ctx ptr synt:Context) ptr synt:PNode
-  return parserParseDeclaration(ctx, synt:PDECL)
+  return parserParseDeclaration(ctx, synt:PDECL, true)
 /func
 
 
 func parserParseMut(ctx ptr synt:Context) ptr synt:PNode
-  return parserParseDeclaration(ctx, synt:PMUT)
+  return parserParseDeclaration(ctx, synt:PMUT, false)
 /func
 
 
