@@ -22,7 +22,8 @@ alias Type struct (
   refc utils:Ref,
   name, moduleName ptr uint8,
   # anonymous because of first-step parser limitations; actually a TypeDescr
-  descr data
+  descr data,
+  begin, end utils:Line
 )
 
 alias TypeDescr struct (

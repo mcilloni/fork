@@ -29,5 +29,9 @@ alias Ref struct (
   freeFunc ptr func(item data)
 )
 
+alias Line struct(
+  line, pos uintptr
+)
+
 decl incRef func(item data)
 decl decRef func(item data)

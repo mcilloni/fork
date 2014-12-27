@@ -11,7 +11,7 @@ import lex
 import spring
 import syms
 import synt
-
+import utils
 
 func printPadding(depth uintptr)
   mut i uintptr = 0
@@ -21,6 +21,25 @@ func printPadding(depth uintptr)
     i++
   /while
 
+/func
+
+
+func lineDump(line utils:Line)
+  spring:outint(line'line)
+  spring:out(":")
+  spring:outint(line'pos)
+/func
+
+func linesDump(begin,end utils:Line)
+  spring:out("(at ")
+  lineDump(begin)
+  spring:out("-")
+  if begin'line == end'line
+    spring:outint(end'pos)
+  else
+    lineDump(end)
+  /if
+  spring:out(")")
 /func
 
 
@@ -201,7 +220,9 @@ func pnodeTypeToString(ptype uint16) ptr uint8
 func pprogramDumpInfo(pprog ptr synt:PProgram, depth uintptr)
   if pprog'moduleName != null
     spring:out(" [module: ")
-    spring:out(pprog'moduleName)
+    spring:out(pprog'moduleName'name)
+    spring:outch(32)
+    linesDump(pprog'moduleName'begin, pprog'moduleName'end)
     spring:out("]")
   /if
 
@@ -216,9 +237,12 @@ func pprogramDumpInfo(pprog ptr synt:PProgram, depth uintptr)
 
     while i < len
       printPadding(depth + 1)
-      mut imp = cast<ptr uint8>(val spring:vectGet(pprog'imports, i))
+      mut imp = cast<ptr synt:StringDef>(val spring:vectGet(pprog'imports, i))
 
-      spring:outln(imp)
+      spring:out(imp'name)
+      spring:outch(32)
+      linesDump(imp'begin, imp'end)
+      spring:outch(10)
 
       i++
     /while
@@ -264,6 +288,9 @@ func pnodeDumpRec(pnode ptr synt:PNode, depth uintptr)
   printPadding(depth)
 
   spring:out(pnodeTypeToString(pnode'type))
+
+  spring:outch(32)
+  linesDump(pnode'begin, pnode'end)
 
   if synt:isPProgram(pnode)
     pprogramDumpInfo(cast<ptr synt:PProgram>(pnode), depth)

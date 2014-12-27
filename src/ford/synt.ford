@@ -26,11 +26,14 @@ alias Context struct (
   last ptr lex:Lineno
 )
 
+decl lineMake func(lexl ptr lex:Lineno) utils:Line
+
 alias PNode struct(
   type uint16,
   value uintptr,
   parent ptr PNode,
-  leaves ptr spring:Vector
+  leaves ptr spring:Vector,
+  begin, end utils:Line
 )
 
 decl pnodeDump func(node ptr PNode)
@@ -38,14 +41,22 @@ decl pnodeNew func(ptype uint16, value uintptr) ptr PNode
 decl pnodeAppendChild func(parent ptr PNode, child ptr PNode) ptr PNode
 decl pnodeFree func(pnode ptr PNode)
 
+alias StringDef struct(
+  name ptr uint8,
+  begin,end utils:Line
+)
+
+decl strdefFree func(strdef ptr StringDef)
+decl strdefNew func(name ptr uint8, begin,end utils:Line) ptr StringDef
+
 alias PProgram struct(
   node PNode,
-  moduleName ptr uint8,
+  moduleName ptr StringDef,
   imports ptr spring:Vector
 )
 
 decl isPProgram func(node ptr PNode) bool
-decl pprogramNew func(modName ptr uint8, imports ptr spring:Vector) ptr PProgram
+decl pprogramNew func(modName ptr StringDef, imports ptr spring:Vector) ptr PProgram
 
 alias PDecl struct(
   node PNode,
@@ -68,6 +79,12 @@ decl parserParseType func(ctx ptr Context) ptr syms:Type
 
 decl nextTok func(ctx ptr Context) ptr lex:Token
 decl discardTok func(ctx ptr Context)
+
+decl tokExtractBegin func(tok ptr lex:Token) utils:Line
+decl tokExtractEnd func(tok ptr lex:Token) utils:Line
+
+decl tokDiscardEnd func(tok ptr lex:Token) utils:Line
+decl tokDiscardBegin func(tok ptr lex:Token) utils:Line
 
 decl parserFree func(prs ptr Parser)
 decl parserNew func(file ptr uint8) ptr Parser
