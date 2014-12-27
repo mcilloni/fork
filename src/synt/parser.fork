@@ -824,7 +824,7 @@ func parserParse(parser ptr synt:Parser) ptr synt:PNode
   ctx'prs = parser
   ctx'lex = lex
   ctx'next = lex:lexerNext(lex)
-  ctx'last = null
+  ctx'last = lex:linenoNew(spring:strclone(parser'filename), 1, 1)
 
   if (parser'err = lex:lexerError(lex)) != null
     return null
