@@ -16,24 +16,26 @@ import utils
 
 alias Parser struct(
   filename ptr uint8,
-  err ptr spring:Error
+  err ptr utils:Issue
 )
 
-alias Context struct (
+alias ParserContext struct (
   prs ptr Parser,
   lex ptr lex:Lexer,
   next ptr lex:Token,
-  last ptr lex:Lineno
+  last ptr utils:LexLineno
 )
 
-decl lineMake func(lexl ptr lex:Lineno) utils:Line
+decl lineMake func(lexl ptr utils:LexLineno) utils:Line
 
 alias PNode struct(
   type uint16,
   value uintptr,
   parent ptr PNode,
   leaves ptr spring:Vector,
-  begin, end utils:Line
+  begin, end utils:Line,
+  semaData data,
+  semaDataFinalize ptr func(semaData data)
 )
 
 decl pnodeDump func(node ptr PNode)
@@ -73,12 +75,12 @@ alias PExpr struct(
 )
 
 decl isPExpr func(node ptr PNode) bool
-decl parserParseExpr func(ctx ptr Context) ptr PExpr
+decl parserParseExpr func(ctx ptr ParserContext) ptr PExpr
 
-decl parserParseType func(ctx ptr Context) ptr syms:Type
+decl parserParseType func(ctx ptr ParserContext) ptr syms:Type
 
-decl nextTok func(ctx ptr Context) ptr lex:Token
-decl discardTok func(ctx ptr Context)
+decl nextTok func(ctx ptr ParserContext) ptr lex:Token
+decl discardTok func(ctx ptr ParserContext)
 
 decl tokExtractBegin func(tok ptr lex:Token) utils:Line
 decl tokExtractEnd func(tok ptr lex:Token) utils:Line
@@ -90,8 +92,8 @@ decl parserFree func(prs ptr Parser)
 decl parserNew func(file ptr uint8) ptr Parser
 decl parserParse func(prs ptr Parser) ptr PNode
 
-decl expect func(ctx ptr Context, tokType uint16) ptr lex:Token
-decl expectDiscard func(ctx ptr Context, tokType uint16) bool
+decl expect func(ctx ptr ParserContext, tokType uint16) ptr lex:Token
+decl expectDiscard func(ctx ptr ParserContext, tokType uint16) bool
 
 decl emptyExpr PExpr
 

@@ -56,7 +56,7 @@ func nextChar(lex ptr lex:Lexer) Char
 
   if ret'ch == 12 #carriage return
     if lex'peek != 10 #new line (Windows format case)
-      lex'error = utils:errorLex(lex, "inconsistent end of line - no newline after carriage return")
+      lex'error = lex:errorLex(lex, "inconsistent end of line - no newline after carriage return")
       ret'ch = 0
       return ret
     /if
@@ -72,30 +72,6 @@ func nextChar(lex ptr lex:Lexer) Char
   if ret'ch == 10 # newline
     lex'firstLineLetter = true
   /if
-
-  return ret
-/func
-
-
-func linenoClone(lineno ptr lex:Lineno) ptr lex:Lineno
-  return lex:linenoNew(spring:strclone(lineno'filename), lineno'lineno, lineno'pos)
-/func
-
-
-func linenoFree(lineno ptr lex:Lineno)
-  if lineno != null
-    spring:free(lineno'filename)
-    spring:free(lineno)
-  /if
-/func
-
-
-func linenoNew(filename ptr uint8, lineno, pos uint16) ptr lex:Lineno
-  mut ret = cast<ptr lex:Lineno>(spring:alloc(size(lex:Lineno)))
-
-  ret'filename = filename
-  ret'lineno = lineno
-  ret'pos = pos
 
   return ret
 /func
@@ -173,7 +149,7 @@ func lexExtractString(lex ptr lex:Lexer) ptr lex:StringTok
 
   if lex:lexerEof(lex)
     spring:csFree(cs)
-    lex'error = utils:errorLex(lex, "unexpected EOF in string body")
+    lex'error = lex:errorLex(lex, "unexpected EOF in string body")
     return null
   /if
 
@@ -183,7 +159,7 @@ func lexExtractString(lex ptr lex:Lexer) ptr lex:StringTok
     got[0] = ch'ch
     got[1] = 0 # `\0` c string terminator
 
-    lex'error = utils:errorMism(lex'lineno, "\"", got)
+    lex'error = utils:issueToError(utils:errorMism(lex'lineno, "\"", got))
     return null
   /if
 
@@ -292,7 +268,7 @@ func extractNextToken(lex ptr lex:Lexer) ptr lex:StringTok
 
 func lexerClose(lex ptr lex:Lexer)
   spring:streamClose(lex'file)
-  lex:linenoFree(lex'lineno)
+  utils:linenoFree(lex'lineno)
   spring:free(lex)
 /func
 
@@ -306,7 +282,7 @@ func lexerFromStream(stream ptr spring:Stream, name ptr uint8, err ptr ptr sprin
   mut ret = cast<ptr lex:Lexer>(spring:zalloc(size(lex:Lexer)))
 
   ret'file = stream
-  ret'lineno = lex:linenoNew(spring:strclone(name),0,0)
+  ret'lineno = utils:linenoNew(spring:strclone(name),0,0)
   ret'firstLineTok = true
   ret'firstLineLetter = true
 
@@ -332,7 +308,7 @@ func lexerEof(lexer ptr lex:Lexer) bool
   return spring:streamEnded(lexer'file)
 /func
 
-func tokenNew(type uint16, value uintptr, lineno ptr lex:Lineno, end uintptr) ptr lex:Token
+func tokenNew(type uint16, value uintptr, lineno ptr utils:LexLineno, end uintptr) ptr lex:Token
   mut ret = cast<ptr lex:Token>(spring:alloc(size(lex:Token)))
   ret'type = type
   ret'endPos = end
@@ -346,14 +322,27 @@ func tokenFree(tok ptr lex:Token)
     if (tok'type == lex:ID or tok'type == lex:STRING) and tok'value != 0
       spring:free(cast<data>(tok'value))
     /if
-    lex:linenoFree(tok'lineno)
+    utils:linenoFree(tok'lineno)
     spring:free(tok)
   /if
 /func
 
+
+func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr spring:Error
+  mut toglue [4] ptr uint8
+
+  toglue[0] = lex'lineno'filename
+  toglue[1] = ": "
+  toglue[2] = msg
+  toglue[3] = null
+
+  return spring:errorGlue(toglue)
+/func
+
+
 func lexerNext(lex ptr lex:Lexer) ptr lex:Token
   if lexerEof(lex)
-    return tokenNew(lex:EOF, 0, lex:linenoClone(lex'lineno), lex'lineno'pos)
+    return tokenNew(lex:EOF, 0, utils:linenoClone(lex'lineno), lex'lineno'pos)
   /if
 
   if lexerError(lex) != null
@@ -382,7 +371,7 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     return null
   /if
 
-  mut begin = lex:linenoClone(lex'lineno)
+  mut begin = utils:linenoClone(lex'lineno)
   begin'pos = stringToken'begin
   mut endPos = stringToken'end
 

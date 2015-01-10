@@ -1,5 +1,6 @@
 import synt
 import spring
+import utils
 
 entry
   mut argv = spring:args()
@@ -12,7 +13,7 @@ entry
   mut root = synt:parserParse(prs)
 
   if prs'err != null
-    spring:errln(spring:errorMsg(prs'err))
+    utils:issueWriteOut(prs'err, ptr spring:err)
     spring:exit(1)
   /if
 

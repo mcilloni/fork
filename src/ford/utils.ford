@@ -9,7 +9,6 @@
 
 module utils
 
-import lex
 import spring
 
 decl charCanBeInString func(ch uint8, escape bool) bool
@@ -18,9 +17,39 @@ decl charIsPar func(ch uint8) bool
 decl charIsSym func(ch uint8) bool
 decl charIsWhite func(ch uint8) bool
 
-decl error func(line ptr lex:Lineno, msg ptr uint8) ptr spring:Error
-decl errorLex func(lex ptr lex:Lexer, msg ptr uint8) ptr spring:Error
-decl errorMism func(line ptr lex:Lineno, got ptr uint8, expected ptr uint8) ptr spring:Error
+
+alias LexLineno struct(
+  filename ptr uint8,
+  lineno,pos uintptr
+)
+
+
+decl linenoClone func(line ptr LexLineno) ptr LexLineno
+decl linenoFree func(line ptr LexLineno)
+decl linenoNew func(file ptr uint8, line,pos uint16) ptr LexLineno
+
+
+alias Line struct(
+  line, pos uintptr
+)
+
+
+alias Issue struct (
+  gravity uint8,
+  where Line,
+  filename,message ptr uint8
+)
+
+
+decl issueFree func(issue ptr Issue)
+decl issueNew func(gravity uint8, where Line, filename, message ptr uint8) ptr Issue
+decl issueWriteOut func(issue ptr Issue, out ptr func(err ptr uint8))
+decl issueToError func(issue ptr Issue) ptr spring:Error
+decl issueFromLexError func(err ptr spring:Error, lineno ptr LexLineno) ptr Issue
+
+
+decl error func(line ptr LexLineno, msg ptr uint8) ptr Issue
+decl errorMism func(line ptr LexLineno, got ptr uint8, expected ptr uint8) ptr Issue
 
 decl strIsUInt func(str ptr uint8) bool
 
@@ -29,9 +58,21 @@ alias Ref struct (
   freeFunc ptr func(item data)
 )
 
-alias Line struct(
-  line, pos uintptr
-)
-
 decl incRef func(item data)
 decl decRef func(item data)
+
+alias Tokenizer struct (
+  str ptr uint8,
+  strlen uintptr,
+  begin intptr,
+  splitChar uint8
+)
+
+decl tokenizerFree func(tkz ptr Tokenizer)
+decl tokenizerNew func(str ptr uint8, ch uint8) ptr Tokenizer
+decl tokenizerNext func(tkz ptr Tokenizer) ptr uint8
+
+
+decl ISSUE_ERR uint8
+decl ISSUE_WARN uint8
+decl ISSUE_INFO uint8

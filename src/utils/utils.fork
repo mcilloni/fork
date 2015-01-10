@@ -55,55 +55,117 @@ func charIsSym(ch uint8) bool
 /func
 
 
-func errorMism(line ptr lex:Lineno, exp ptr uint8, got ptr uint8) ptr spring:Error
-  mut lineno [21] uint8
-  mut pos [21] uint8
-
-  spring:numtostr(line'lineno, lineno, 21)
-  spring:numtostr(line'pos, pos, 21)
-
-  mut toglue [11] ptr uint8
-  toglue[0] = "In "
-  toglue[1] = line'filename
-  toglue[2] = ", line "
-  toglue[3] = lineno
-  toglue[4] = ", pos "
-  toglue[5] = pos
-  toglue[6] = ": expected "
-  toglue[7] = exp
-  toglue[8] = ", got "
-  toglue[9] = got
-  toglue[10] = null
-
-  return spring:errorGlue(toglue)
+func issueFree(issue ptr utils:Issue)
+  if issue != null
+    spring:free(issue'filename)
+    spring:free(issue'message)
+  /if
 /func
 
 
-func error(line ptr lex:Lineno, msg ptr uint8) ptr spring:Error
+func issueNew(gravity uint8, where utils:Line, filename, message ptr uint8)  ptr utils:Issue
+  mut issue = cast<ptr utils:Issue>(spring:zalloc(size(utils:Issue)))
 
-  mut lineno [21] uint8
-  mut pos [21] uint8
+  issue'gravity = gravity
+  issue'where = where
+  issue'filename = spring:strclone(filename)
+  issue'message = spring:strclone(message)
 
-  spring:numtostr(line'lineno, lineno, 21)
-  spring:numtostr(line'pos, pos, 21)
-
-  mut toglue [9] ptr uint8
-  toglue[0] = "In "
-  toglue[1] = line'filename
-  toglue[2] = ", line "
-  toglue[3] = lineno
-  toglue[4] = ", pos "
-  toglue[5] = pos
-  toglue[6] = ": "
-  toglue[7] = msg
-  toglue[8] = null
-
-  return spring:errorGlue(toglue)
+  return issue
 /func
 
 
-func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr spring:Error
-  return error(lex'lineno, msg)
+func issueGravityToStr(issueGravity uint8) ptr uint8
+  if issueGravity == utils:ISSUE_ERR
+    return "error"
+  /if
+
+  if issueGravity == utils:ISSUE_WARN
+    return "warning"
+  /if
+
+  if issueGravity == utils:ISSUE_INFO
+    return "info"
+  /if
+
+  return "<UNKNOWN_ISSUE_LEVEL>"
+/func
+
+
+func issueToError(issue ptr utils:Issue) ptr spring:Error
+  mut lineno [21] uint8
+  mut pos [21] uint8
+
+  spring:numtostr(issue'where'line, lineno, 21)
+  spring:numtostr(issue'where'pos, pos, 21)
+
+  mut toglue [10] ptr uint8
+  toglue[0] = issue'filename
+  toglue[1] = ":"
+  toglue[2] = lineno
+  toglue[3] = ":"
+  toglue[4] = pos
+  toglue[5] = ": "
+  toglue[6] = issueGravityToStr(issue'gravity)
+  toglue[7] = ": "
+  toglue[8] = issue'message
+  toglue[9] = null
+
+  mut ret = spring:errorGlue(toglue)
+
+  utils:issueFree(issue)
+
+  return ret
+/func
+
+
+func issueWriteOut(issue ptr utils:Issue, outFn ptr func(err ptr uint8))
+  outFn(issue'filename)
+  outFn(":")
+
+
+  mut buf [21] uint8
+  spring:numtostr(issue'where'line, buf, 21)
+
+  outFn(buf)
+  outFn(":")
+
+  spring:numtostr(issue'where'pos, buf, 21)
+
+  outFn(buf)
+  outFn(": ")
+
+  outFn(issueGravityToStr(issue'gravity))
+  outFn(": ")
+  outFn(issue'message)
+  outFn("\n")
+/func
+
+
+func error(lineno ptr utils:LexLineno, msg ptr uint8) ptr utils:Issue
+  mut line utils:Line
+  line'line = lineno'lineno
+  line'pos = lineno'pos
+
+  return utils:issueNew(utils:ISSUE_ERR, line, lineno'filename, msg)
+/func
+
+
+func errorMism(lineno ptr utils:LexLineno, exp ptr uint8, got ptr uint8) ptr utils:Issue
+
+  mut toglue [5] ptr uint8
+  toglue[0] = "expected "
+  toglue[1] = exp
+  toglue[2] = ", got "
+  toglue[3] = got
+  toglue[4] = null
+
+  mut glued = spring:strglue(toglue)
+  mut ret =  utils:error(lineno, glued)
+
+  spring:free(glued)
+
+  return ret
 /func
 
 
@@ -114,6 +176,7 @@ func charCanBeInString(ch uint8, escape bool) bool
 
   return !charIsControl(ch)
 /func
+
 
 func strIsUInt(str ptr uint8) bool
   while val str != 0
@@ -127,11 +190,13 @@ func strIsUInt(str ptr uint8) bool
   return true
 /func
 
+
 func incRef(refc data)
   if refc != null
     cast<ptr utils:Ref>(refc)'count++
   /if
 /func
+
 
 func decRef(refc data)
   if refc != null
@@ -142,3 +207,87 @@ func decRef(refc data)
     /if
   /if
 /func
+
+
+func tokenizerFree(tkz ptr utils:Tokenizer)
+  if tkz != null
+    spring:free(tkz'str)
+    spring:free(tkz)
+  /if
+/func
+
+
+func tokenizerNew(str ptr uint8, ch uint8) ptr utils:Tokenizer
+  mut tkz = cast<ptr utils:Tokenizer>(spring:zalloc(size(utils:Tokenizer)))
+  tkz'str = spring:strclone(str)
+  tkz'strlen = spring:strlen(str)
+  tkz'splitChar = ch
+
+  return tkz
+/func
+
+
+func tokenizerNext(tkz ptr utils:Tokenizer) ptr uint8
+  if tkz'begin == tkz'strlen
+    return null
+  /if
+
+  mut initialBegin = tkz'begin
+
+  while tkz'str[tkz'begin] != tkz'splitChar and tkz'begin < tkz'strlen
+    tkz'begin++
+  /while
+
+  mut nextLen = tkz'begin - initialBegin
+  mut ret = cast<ptr uint8>(spring:zalloc(nextLen))
+
+  spring:strncpy(ret, tkz'str + initialBegin, nextLen)
+
+  return ret
+/func
+
+
+func linenoClone(lineno ptr utils:LexLineno) ptr utils:LexLineno
+  return utils:linenoNew(spring:strclone(lineno'filename), lineno'lineno, lineno'pos)
+/func
+
+
+func linenoFree(lineno ptr utils:LexLineno)
+  if lineno != null
+    spring:free(lineno'filename)
+    spring:free(lineno)
+  /if
+/func
+
+
+func linenoNew(filename ptr uint8, lineno, pos uint16) ptr utils:LexLineno
+  mut ret = cast<ptr utils:LexLineno>(spring:alloc(size(utils:LexLineno)))
+
+  ret'filename = filename
+  ret'lineno = lineno
+  ret'pos = pos
+
+  return ret
+/func
+
+
+func issueFromLexError(err ptr spring:Error, lineno ptr utils:LexLineno) ptr utils:Issue
+  if err == null
+    return null
+  /if
+
+  mut where utils:Line
+  where'line = lineno'lineno
+  where'pos = lineno'pos
+
+  mut ret = utils:issueNew(utils:ISSUE_ERR, where, lineno'filename, err'msg)
+
+  spring:errorFree(err)
+
+  return ret
+/func
+
+
+mut ISSUE_ERR  uint8 = 10
+mut ISSUE_WARN uint8 = 20
+mut ISSUE_INFO uint8 = 30

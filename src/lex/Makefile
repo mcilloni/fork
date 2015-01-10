@@ -28,7 +28,7 @@ dir:
 
 $(BUILDPATH)/%.o: %.fork dir
 	@echo [FORKC] $<
-	@ FORK_MODULES="$(shell pwd)/../ford/" $(FORKC) -o $@ $<
+	@ FORDPATHS="$(shell pwd)/../ford/" $(FORKC) -o $@ $<
 
 clean:
 	rm -rf $(BUILDPATH)

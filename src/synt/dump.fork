@@ -17,7 +17,7 @@ func printPadding(depth uintptr)
   mut i uintptr = 0
 
   while i < depth
-    spring:out("| ")
+    spring:out("    ")
     i++
   /while
 
@@ -288,6 +288,7 @@ func pnodeDumpRec(pnode ptr synt:PNode, depth uintptr)
   printPadding(depth)
 
   spring:out(pnodeTypeToString(pnode'type))
+  spring:out(":")
 
   spring:outch(32)
   linesDump(pnode'begin, pnode'end)

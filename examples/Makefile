@@ -20,7 +20,7 @@ all: $(BINS)
 
 %.o: %.fork 
 	@echo [FORKC] $<
-	@ FORK_MODULES="$(shell pwd)/../src/ford/" $(FORKC) -o $@ $<
+	@ FORDPATHS="$(shell pwd)/../src/ford/" $(FORKC) -o $@ $<
 
 clean:
 	rm -f $(BINS)
