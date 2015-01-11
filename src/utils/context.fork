@@ -1,0 +1,91 @@
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+import ctx
+import sema
+import spring
+import synt
+import utils
+
+
+func findImport(ctx ptr ctx:Context, importName ptr uint8, importAst ptr ptr synt:PNode) ptr spring:Vector
+  mut fordName = spring:strappend(importName, ".ford")
+
+  mut len = spring:vectLen(ctx'fordPaths)
+
+  mut i uintptr = 0
+
+  while i < len
+    mut path = cast<ptr uint8>(val spring:vectGet(ctx'fordPaths, i))
+
+    if spring:pathContains(path, fordName)
+
+    /if
+  /while
+
+
+/func
+
+
+func contextImport(ctx ptr ctx:Context, importName ptr uint8, value ptr ptr synt:PNode) ptr spring:Vector
+
+  if !spring:mapGet(ctx'imports, importName, value)
+    mut errors = findImport(ctx, importName, value)
+    if spring:vectLen(errors) == 0
+      spring:mapPut(ctx'imports, spring:strclone(importName), val value, spring:FREE_KEY | spring:FREE_VALUE)
+    /if
+
+    return errors
+  else
+    return null
+  /if
+
+/func
+
+
+func envExtractFordPaths() ptr spring:Vector
+  mut vect = spring:vectNew(3)
+
+  mut paths = spring:getenv("FORKPATHS")
+  if paths != null
+    mut tkz = utils:tokenizerNew(paths, 58) #`:`
+    mut path ptr uint8
+
+    while (path = utils:tokenizerNext(tkz)) != null
+      spring:vectAppend(vect, path)
+    /while
+
+  /if
+
+  return vect
+/func
+
+
+func contextFree(ctx ptr ctx:Context)
+  if ctx != null
+    if ctx'imports != null
+      spring:mapFreeSpec(ctx'imports, ptr spring:free, cast<ptr func(item data)>(synt:pnodeFree))
+    /if
+
+    if ctx'fordPaths != null
+      spring:vectFreeAll(ctx'fordPaths, ptr spring:free)
+    /if
+
+    spring:free(ctx)
+  /if
+/func
+
+
+func contextNew() ptr ctx:Context
+  mut ctx = cast<ptr ctx:Context>(spring:zalloc(size(ctx:Context)))
+  ctx'imports = spring:strmapNew()
+
+  ctx'fordPaths = envExtractFordPaths()
+  return ctx
+/func

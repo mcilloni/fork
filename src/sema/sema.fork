@@ -1,0 +1,48 @@
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+import ctx
+import sema
+import spring
+import synt
+
+
+
+
+func semaValidateAst(context ptr ctx:Context, root ptr synt:PNode) ptr spring:Vector
+  if root'type != synt:PPROGRAM
+    return null
+  /if
+
+  mut errors = spring:vectNew(1)
+
+
+
+  return errors
+/func
+
+
+func semaParse(context ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr synt:PNode) ptr spring:Vector
+  mut parser = synt:parserNew(fileName)
+
+  val newRoot = synt:parserParse(parser)
+
+  mut error = parser'err
+
+  synt:parserFree(parser)
+
+  if val newRoot == null
+    mut vect = spring:vectNew(1)
+    spring:vectAppend(vect, error)
+
+    return vect
+  /if
+
+  return sema:semaValidateAst(context, val newRoot)
+/func
