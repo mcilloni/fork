@@ -23,13 +23,20 @@ func findImport(ctx ptr ctx:Context, importName ptr uint8, importAst ptr ptr syn
 
   while i < len
     mut path = cast<ptr uint8>(val spring:vectGet(ctx'fordPaths, i))
+    mut joinedPath = spring:pathJoin(path, fordName)
 
-    if spring:pathContains(path, fordName)
+    if spring:pathExists(joinedPath)
+      mut imported ptr synt:PNode = null
 
+      spring:free(joinedPath)
+
+      return sema:semaParse(ctx, joinedPath, ptr imported)
     /if
+
+    spring:free(joinedPath)
   /while
 
-
+  return spring:vectNew(0)
 /func
 
 
