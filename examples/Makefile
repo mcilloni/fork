@@ -16,7 +16,7 @@ all: $(BINS)
 
 %.elf: %.o
 	@echo [FORKL] $<
-	@ $(FORKL) -o $@ $< ../build/libsynt.a ../build/liblex.a ../build/libutils.a
+	@ $(FORKL) -o $@ $< ../build/libsema.a ../build/libsynt.a ../build/liblex.a ../build/libutils.a 
 
 %.o: %.fork 
 	@echo [FORKC] $<

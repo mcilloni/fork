@@ -13,16 +13,18 @@ import spring
 import synt
 
 
-
-
 func semaValidateAst(context ptr ctx:Context, root ptr synt:PNode) ptr spring:Vector
   if root'type != synt:PPROGRAM
     return null
   /if
 
-  mut errors = spring:vectNew(1)
+  mut pprog = cast<ptr synt:PProgram>(root)
 
+  ctx:contextSetCurrentFile(context, pprog'fileName)
 
+  mut errors = ctx:contextImportAll(context, pprog'imports)
+
+  ctx:contextSetCurrentFile(context, pprog'fileName)
 
   return errors
 /func

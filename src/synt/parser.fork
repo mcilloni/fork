@@ -857,7 +857,7 @@ func parserParseProgram(ctx ptr synt:ParserContext) ptr synt:PNode
     return null
   /if
 
-  mut pnode = cast<ptr synt:PNode>(synt:pprogramNew(moduleName, imports))
+  mut pnode = cast<ptr synt:PNode>(synt:pprogramNew(moduleName, imports, ctx'prs'filename))
 
   mut definition ptr synt:PNode = null
   mut first = true
@@ -943,6 +943,7 @@ func pnodeFree(pnode ptr synt:PNode)
 
       mut pprog = cast<ptr synt:PProgram>(pnode)
       synt:strdefFree(pprog'moduleName)
+      spring:free(pprog'fileName)
       spring:vectFreeAll(pprog'imports, cast<ptr func(inst data)>(ptr synt:strdefFree))
 
     /if
@@ -992,13 +993,14 @@ func pdeclNew(nodeType uint16, sym ptr syms:Symbol) ptr synt:PDecl
 /func
 
 
-func pprogramNew(moduleName ptr synt:StringDef, imports ptr spring:Vector) ptr synt:PProgram
+func pprogramNew(moduleName ptr synt:StringDef, imports ptr spring:Vector, fileName ptr uint8) ptr synt:PProgram
 
   mut pprog = cast<ptr synt:PProgram>(spring:zalloc(size(synt:PProgram)))
   pprog'node'type = synt:PPROGRAM
   pprog'node'leaves = spring:vectNew(5)
   pprog'moduleName = moduleName
   pprog'imports = imports
+  pprog'fileName = spring:strclone(fileName)
   pprog'node'parent = null
 
   return pprog

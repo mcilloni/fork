@@ -54,11 +54,12 @@ decl strdefNew func(name ptr uint8, begin,end utils:Line) ptr StringDef
 alias PProgram struct(
   node PNode,
   moduleName ptr StringDef,
+  fileName ptr uint8,
   imports ptr spring:Vector
 )
 
 decl isPProgram func(node ptr PNode) bool
-decl pprogramNew func(modName ptr StringDef, imports ptr spring:Vector) ptr PProgram
+decl pprogramNew func(modName ptr StringDef, imports ptr spring:Vector, fileName ptr uint8) ptr PProgram
 
 alias PDecl struct(
   node PNode,
