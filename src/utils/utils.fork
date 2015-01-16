@@ -142,33 +142,6 @@ func issueWriteOut(issue ptr utils:Issue, outFn ptr func(err ptr uint8))
 /func
 
 
-func error(lineno ptr utils:LexLineno, msg ptr uint8) ptr utils:Issue
-  mut line utils:Line
-  line'line = lineno'lineno
-  line'pos = lineno'pos
-
-  return utils:issueNew(utils:ISSUE_ERR, line, lineno'filename, msg)
-/func
-
-
-func errorMism(lineno ptr utils:LexLineno, exp ptr uint8, got ptr uint8) ptr utils:Issue
-
-  mut toglue [5] ptr uint8
-  toglue[0] = "expected "
-  toglue[1] = exp
-  toglue[2] = ", got "
-  toglue[3] = got
-  toglue[4] = null
-
-  mut glued = spring:strglue(toglue)
-  mut ret =  utils:error(lineno, glued)
-
-  spring:free(glued)
-
-  return ret
-/func
-
-
 func charCanBeInString(ch uint8, escape bool) bool
   if !escape and ch == 34 # `"`
     return false #if the matching " is found, then stop
@@ -246,47 +219,6 @@ func tokenizerNext(tkz ptr utils:Tokenizer) ptr uint8
   if tkz'str[tkz'begin] == tkz'splitChar
     tkz'begin++
   /if
-
-  return ret
-/func
-
-
-func linenoClone(lineno ptr utils:LexLineno) ptr utils:LexLineno
-  return utils:linenoNew(spring:strclone(lineno'filename), lineno'lineno, lineno'pos)
-/func
-
-
-func linenoFree(lineno ptr utils:LexLineno)
-  if lineno != null
-    spring:free(lineno'filename)
-    spring:free(lineno)
-  /if
-/func
-
-
-func linenoNew(filename ptr uint8, lineno, pos uint16) ptr utils:LexLineno
-  mut ret = cast<ptr utils:LexLineno>(spring:alloc(size(utils:LexLineno)))
-
-  ret'filename = filename
-  ret'lineno = lineno
-  ret'pos = pos
-
-  return ret
-/func
-
-
-func issueFromLexError(err ptr spring:Error, lineno ptr utils:LexLineno) ptr utils:Issue
-  if err == null
-    return null
-  /if
-
-  mut where utils:Line
-  where'line = lineno'lineno
-  where'pos = lineno'pos
-
-  mut ret = utils:issueNew(utils:ISSUE_ERR, where, lineno'filename, err'msg)
-
-  spring:errorFree(err)
 
   return ret
 /func

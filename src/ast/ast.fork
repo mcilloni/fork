@@ -1,0 +1,171 @@
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+import ast
+import lex
+import spring
+import utils
+
+func pnodeAppendChild(pnode, child ptr ast:PNode) ptr ast:PNode
+
+  if pnode != null and child != null
+    spring:vectAppend(pnode'leaves, child)
+
+    child'parent = pnode
+  /if
+
+  return pnode
+/func
+
+
+func pnodeFree(pnode ptr ast:PNode)
+  if pnode != null
+    if ast:isPProgram(pnode)
+
+      mut pprog = cast<ptr ast:PProgram>(pnode)
+      ast:strdefFree(pprog'moduleName)
+      spring:free(pprog'fileName)
+      spring:vectFreeAll(pprog'imports, cast<ptr func(inst data)>(ptr ast:strdefFree))
+
+    /if
+
+    if ast:isPDecl(pnode)
+
+      mut pdecl = cast<ptr ast:PDecl>(pnode)
+      utils:decRef(pdecl'sym)
+
+    /if
+
+    # remember to fix PEXPR leaks.
+
+    spring:vectFreeAll(pnode'leaves, ptr pnodeFree)
+
+    if pnode'semaDataFinalize != null
+      pnode'semaDataFinalize(pnode'semaData)
+    /if
+
+    spring:free(pnode)
+  /if
+/func
+
+
+func pnodeNew(type uint16, value uintptr) ptr ast:PNode
+
+  mut pnode = cast<ptr ast:PNode>(spring:zalloc(size(ast:PNode)))
+  pnode'type = type
+  pnode'value = value
+  pnode'leaves = spring:vectNew(2)
+
+  return pnode
+/func
+
+
+func pdeclNew(nodeType uint16, sym ptr ast:Symbol) ptr ast:PDecl
+
+  mut pdecl = cast<ptr ast:PDecl>(spring:zalloc(size(ast:PDecl)))
+  pdecl'node'type = nodeType
+  pdecl'node'leaves = spring:vectNew(2)
+
+  utils:incRef(sym)
+
+  pdecl'sym = sym
+
+  return pdecl
+/func
+
+
+func pexprNew(tok ptr lex:Token, lhs,rhs ptr ast:PExpr, begin,end utils:Line) ptr ast:PExpr
+
+  mut pexpr = cast<ptr ast:PExpr>(spring:zalloc(size(ast:PExpr)))
+  pexpr'node'type = ast:PEXPR
+  pexpr'node'value = tok'value
+  pexpr'node'leaves = spring:vectNew(2)
+  pexpr'opType = tok'type
+  tok'value = 0 # now the value belongs to this PExpr
+
+  mut pnode = ptr pexpr'node
+  pnode'begin = begin
+  pnode'end = end
+
+  ast:pnodeAppendChild(pnode, ptr lhs'node)
+  ast:pnodeAppendChild(pnode, ptr rhs'node)
+
+  lex:tokenFree(tok)
+
+  return pexpr
+
+/func
+
+
+func pexprNewSingle(tok ptr lex:Token) ptr ast:PExpr
+  return pexprNew(tok, null, null, lex:tokExtractBegin(tok), lex:tokExtractEnd(tok))
+/func
+
+
+func pprogramNew(moduleName ptr ast:StringDef, imports ptr spring:Vector, fileName ptr uint8) ptr ast:PProgram
+
+  mut pprog = cast<ptr ast:PProgram>(spring:zalloc(size(ast:PProgram)))
+  pprog'node'type = ast:PPROGRAM
+  pprog'node'leaves = spring:vectNew(5)
+  pprog'moduleName = moduleName
+  pprog'imports = imports
+  pprog'fileName = spring:strclone(fileName)
+  pprog'node'parent = null
+
+  return pprog
+
+/func
+
+
+func isPDecl(pnode ptr ast:PNode) bool
+  return pnode != null and pnode'type == ast:PALIAS or pnode'type == ast:PDECL or pnode'type == ast:PMUT or pnode'type == ast:PENTRY or pnode'type == ast:PFUNCTION
+/func
+
+
+func isPExpr(pnode ptr ast:PNode) bool
+  return pnode != null and pnode'type == ast:PEXPR
+/func
+
+
+func isPProgram(pnode ptr ast:PNode) bool
+  return pnode != null and pnode'type == ast:PPROGRAM
+/func
+
+func strdefFree(strdef ptr ast:StringDef)
+  if strdef != null
+    spring:free(strdef'name)
+    spring:free(strdef)
+  /if
+/func
+
+
+func strdefNew(name ptr uint8, begin,end utils:Line) ptr ast:StringDef
+  mut strdef = cast<ptr ast:StringDef>(spring:zalloc(size(ast:StringDef)))
+  strdef'name = name
+  strdef'begin = begin
+  strdef'end = end
+
+  return strdef
+/func
+
+
+mut PPROGRAM   uint16 = 10
+mut PENTRY     uint16 = 20
+mut PFUNCTION  uint16 = 30
+mut PALIAS     uint16 = 40
+mut PDECL      uint16 = 50
+mut PMUT       uint16 = 60
+mut PIF        uint16 = 70
+mut PEXPR      uint16 = 80
+mut PBREAK     uint16 = 90
+mut PCONTINUE  uint16 = 100
+mut PRETURN    uint16 = 110
+mut PIFELSE    uint16 = 120
+mut PWHILE     uint16 = 130
+mut PBLOCK     uint16 = 140

@@ -9,11 +9,11 @@
 
 module sema
 
+import ast
 import ctx
 import spring
-import synt
 import utils
 
-#validates the AST, and returns a vector of the issues found.
-decl semaValidateAst func(context ptr ctx:Context, root ptr synt:PNode) ptr spring:Vector
-decl semaParse func(context ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr synt:PNode) ptr spring:Vector
+# validates the AST, and returns a vector of the issues found.
+decl semaValidateAst func(context ptr ctx:Context, root ptr ast:PNode) ptr spring:Vector
+decl semaParse func(context ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr spring:Vector

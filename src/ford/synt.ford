@@ -9,9 +9,9 @@
 
 module synt
 
+import ast
 import lex
 import spring
-import syms
 import utils
 
 alias Parser struct(
@@ -23,92 +23,19 @@ alias ParserContext struct (
   prs ptr Parser,
   lex ptr lex:Lexer,
   next ptr lex:Token,
-  last ptr utils:LexLineno
+  last ptr lex:Lineno
 )
 
-decl lineMake func(lexl ptr utils:LexLineno) utils:Line
+decl parserParseExpr func(ctx ptr ParserContext) ptr ast:PExpr
 
-alias PNode struct(
-  type uint16,
-  value uintptr,
-  parent ptr PNode,
-  leaves ptr spring:Vector,
-  begin, end utils:Line,
-  semaData data,
-  semaDataFinalize ptr func(semaData data)
-)
-
-decl pnodeDump func(node ptr PNode)
-decl pnodeNew func(ptype uint16, value uintptr) ptr PNode
-decl pnodeAppendChild func(parent ptr PNode, child ptr PNode) ptr PNode
-decl pnodeFree func(pnode ptr PNode)
-
-alias StringDef struct(
-  name ptr uint8,
-  begin,end utils:Line
-)
-
-decl strdefFree func(strdef ptr StringDef)
-decl strdefNew func(name ptr uint8, begin,end utils:Line) ptr StringDef
-
-alias PProgram struct(
-  node PNode,
-  moduleName ptr StringDef,
-  fileName ptr uint8,
-  imports ptr spring:Vector
-)
-
-decl isPProgram func(node ptr PNode) bool
-decl pprogramNew func(modName ptr StringDef, imports ptr spring:Vector, fileName ptr uint8) ptr PProgram
-
-alias PDecl struct(
-  node PNode,
-  sym ptr syms:Symbol
-)
-
-decl isPDecl func(node ptr PNode) bool
-decl pdeclNew func(ptype uint16, sym ptr syms:Symbol) ptr PDecl
-
-alias PExpr struct(
-  node PNode,
-  opType uint16,
-  type ptr syms:Type
-)
-
-decl isPExpr func(node ptr PNode) bool
-decl parserParseExpr func(ctx ptr ParserContext) ptr PExpr
-
-decl parserParseType func(ctx ptr ParserContext) ptr syms:Type
+decl parserParseType func(ctx ptr ParserContext) ptr ast:Type
 
 decl nextTok func(ctx ptr ParserContext) ptr lex:Token
 decl discardTok func(ctx ptr ParserContext)
 
-decl tokExtractBegin func(tok ptr lex:Token) utils:Line
-decl tokExtractEnd func(tok ptr lex:Token) utils:Line
-
-decl tokDiscardEnd func(tok ptr lex:Token) utils:Line
-decl tokDiscardBegin func(tok ptr lex:Token) utils:Line
-
 decl parserFree func(prs ptr Parser)
 decl parserNew func(file ptr uint8) ptr Parser
-decl parserParse func(prs ptr Parser) ptr PNode
+decl parserParse func(prs ptr Parser) ptr ast:PNode
 
 decl expect func(ctx ptr ParserContext, tokType uint16) ptr lex:Token
 decl expectDiscard func(ctx ptr ParserContext, tokType uint16) bool
-
-decl emptyExpr PExpr
-
-decl PPROGRAM   uint16
-decl PENTRY     uint16
-decl PEXPR      uint16
-decl PFUNCTION  uint16
-decl PALIAS     uint16
-decl PDECL      uint16
-decl PMUT       uint16
-decl PBREAK     uint16
-decl PCONTINUE  uint16
-decl PRETURN    uint16
-decl PIF        uint16
-decl PIFELSE    uint16
-decl PWHILE     uint16
-decl PBLOCK     uint16

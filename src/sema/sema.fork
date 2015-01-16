@@ -7,18 +7,19 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+import ast
 import ctx
 import sema
 import spring
 import synt
 
 
-func semaValidateAst(context ptr ctx:Context, root ptr synt:PNode) ptr spring:Vector
-  if root'type != synt:PPROGRAM
+func semaValidateAst(context ptr ctx:Context, root ptr ast:PNode) ptr spring:Vector
+  if root'type != ast:PPROGRAM
     return null
   /if
 
-  mut pprog = cast<ptr synt:PProgram>(root)
+  mut pprog = cast<ptr ast:PProgram>(root)
 
   ctx:contextSetCurrentFile(context, pprog'fileName)
 
@@ -30,7 +31,7 @@ func semaValidateAst(context ptr ctx:Context, root ptr synt:PNode) ptr spring:Ve
 /func
 
 
-func semaParse(context ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr synt:PNode) ptr spring:Vector
+func semaParse(context ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr spring:Vector
   mut parser = synt:parserNew(fileName)
 
   val newRoot = synt:parserParse(parser)

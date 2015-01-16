@@ -7,6 +7,7 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+import ast
 import ctx
 import sema
 import spring
@@ -14,7 +15,7 @@ import synt
 import utils
 
 
-func findImport(ctx ptr ctx:Context, importName ptr synt:StringDef, importAst ptr ptr synt:PNode) ptr spring:Vector
+func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr ptr ast:PNode) ptr spring:Vector
   mut fordName = spring:strappend(importName'name, ".ford")
 
   mut len = spring:vectLen(ctx'fordPaths)
@@ -57,7 +58,7 @@ func findImport(ctx ptr ctx:Context, importName ptr synt:StringDef, importAst pt
 /func
 
 
-func contextImport(ctx ptr ctx:Context, importName ptr synt:StringDef, value ptr ptr synt:PNode) ptr spring:Vector
+func contextImport(ctx ptr ctx:Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr spring:Vector
 
   if !spring:mapGet(ctx'imports, importName, value)
     mut errors = findImport(ctx, importName, value)
@@ -78,8 +79,8 @@ func contextImportAll(ctx ptr ctx:Context, imports ptr spring:Vector) ptr spring
   mut i uintptr = 0
 
   while i < len
-    mut value ptr synt:PNode
-    mut importName = cast<ptr synt:StringDef>(val spring:vectGet(imports, i))
+    mut value ptr ast:PNode
+    mut importName = cast<ptr ast:StringDef>(val spring:vectGet(imports, i))
     mut errs = contextImport(ctx, importName, ptr value)
 
     if spring:vectLen(errs) != 0
@@ -114,7 +115,7 @@ func envExtractFordPaths() ptr spring:Vector
 func contextFree(ctx ptr ctx:Context)
   if ctx != null
     if ctx'imports != null
-      spring:mapFreeSpec(ctx'imports, ptr spring:free, cast<ptr func(item data)>(synt:pnodeFree))
+      spring:mapFreeSpec(ctx'imports, ptr spring:free, cast<ptr func(item data)>(ast:pnodeFree))
     /if
 
     if ctx'fordPaths != null

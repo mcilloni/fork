@@ -7,6 +7,7 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+import ast
 import ctx
 import sema
 import spring
@@ -21,7 +22,7 @@ entry
   /if
 
   mut ctx = ctx:contextNew()
-  mut ast ptr synt:PNode
+  mut ast ptr ast:PNode
   mut errors = sema:semaParse(ctx, argv'args[0], ptr ast)
 
   mut errLen = spring:vectLen(errors)
@@ -53,5 +54,5 @@ entry
 
   ctx:contextFree(ctx)
 
-  synt:pnodeFree(ast)
+  ast:pnodeFree(ast)
 /entry

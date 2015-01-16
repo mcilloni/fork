@@ -7,10 +7,13 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
-module syms
+module ast
 
+import lex
 import spring
 import utils
+
+# symbols
 
 decl TYPE_FUNC   uint16
 decl TYPE_ID     uint16
@@ -58,3 +61,74 @@ alias Alias Symbol
 
 decl aliasFree ptr func(item ptr Alias)
 decl aliasNew ptr func(name ptr uint8, type ptr Type) ptr Alias
+
+
+# end symbols
+
+alias PNode struct(
+  type uint16,
+  value uintptr,
+  parent ptr PNode,
+  leaves ptr spring:Vector,
+  begin, end utils:Line,
+  semaData data,
+  semaDataFinalize ptr func(semaData data)
+)
+
+decl pnodeDump func(node ptr PNode)
+decl pnodeNew func(ptype uint16, value uintptr) ptr PNode
+decl pnodeAppendChild func(parent ptr PNode, child ptr PNode) ptr PNode
+decl pnodeFree func(pnode ptr PNode)
+
+alias StringDef struct(
+  name ptr uint8,
+  begin,end utils:Line
+)
+
+decl strdefFree func(strdef ptr StringDef)
+decl strdefNew func(name ptr uint8, begin,end utils:Line) ptr StringDef
+
+alias PProgram struct(
+  node PNode,
+  moduleName ptr StringDef,
+  fileName ptr uint8,
+  imports ptr spring:Vector
+)
+
+decl isPProgram func(node ptr PNode) bool
+decl pprogramNew func(modName ptr StringDef, imports ptr spring:Vector, fileName ptr uint8) ptr PProgram
+
+alias PDecl struct(
+  node PNode,
+  sym ptr Symbol
+)
+
+decl isPDecl func(node ptr PNode) bool
+decl pdeclNew func(ptype uint16, sym ptr Symbol) ptr PDecl
+
+alias PExpr struct(
+  node PNode,
+  opType uint16,
+  type ptr Type
+)
+
+decl pexprNew func(tok ptr lex:Token, lhs,rhs ptr PExpr, begin,end utils:Line) ptr PExpr
+decl pexprNewSingle func(tok ptr lex:Token) ptr PExpr
+decl isPExpr func(node ptr PNode) bool
+
+decl emptyExpr PExpr
+
+decl PPROGRAM   uint16
+decl PENTRY     uint16
+decl PEXPR      uint16
+decl PFUNCTION  uint16
+decl PALIAS     uint16
+decl PDECL      uint16
+decl PMUT       uint16
+decl PBREAK     uint16
+decl PCONTINUE  uint16
+decl PRETURN    uint16
+decl PIF        uint16
+decl PIFELSE    uint16
+decl PWHILE     uint16
+decl PBLOCK     uint16

@@ -159,7 +159,7 @@ func lexExtractString(lex ptr lex:Lexer) ptr lex:StringTok
     got[0] = ch'ch
     got[1] = 0 # `\0` c string terminator
 
-    lex'error = utils:issueToError(utils:errorMism(lex'lineno, "\"", got))
+    lex'error = utils:issueToError(lex:errorMism(lex'lineno, "\"", got))
     return null
   /if
 
@@ -268,7 +268,7 @@ func extractNextToken(lex ptr lex:Lexer) ptr lex:StringTok
 
 func lexerClose(lex ptr lex:Lexer)
   spring:streamClose(lex'file)
-  utils:linenoFree(lex'lineno)
+  lex:linenoFree(lex'lineno)
   spring:free(lex)
 /func
 
@@ -282,7 +282,7 @@ func lexerFromStream(stream ptr spring:Stream, name ptr uint8, err ptr ptr sprin
   mut ret = cast<ptr lex:Lexer>(spring:zalloc(size(lex:Lexer)))
 
   ret'file = stream
-  ret'lineno = utils:linenoNew(spring:strclone(name),0,0)
+  ret'lineno = lex:linenoNew(spring:strclone(name),0,0)
   ret'firstLineTok = true
   ret'firstLineLetter = true
 
@@ -308,7 +308,7 @@ func lexerEof(lexer ptr lex:Lexer) bool
   return spring:streamEnded(lexer'file)
 /func
 
-func tokenNew(type uint16, value uintptr, lineno ptr utils:LexLineno, end uintptr) ptr lex:Token
+func tokenNew(type uint16, value uintptr, lineno ptr lex:Lineno, end uintptr) ptr lex:Token
   mut ret = cast<ptr lex:Token>(spring:alloc(size(lex:Token)))
   ret'type = type
   ret'endPos = end
@@ -322,7 +322,7 @@ func tokenFree(tok ptr lex:Token)
     if (tok'type == lex:ID or tok'type == lex:STRING) and tok'value != 0
       spring:free(cast<data>(tok'value))
     /if
-    utils:linenoFree(tok'lineno)
+    lex:linenoFree(tok'lineno)
     spring:free(tok)
   /if
 /func
@@ -342,7 +342,7 @@ func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr spring:Error
 
 func lexerNext(lex ptr lex:Lexer) ptr lex:Token
   if lexerEof(lex)
-    return tokenNew(lex:EOF, 0, utils:linenoClone(lex'lineno), lex'lineno'pos)
+    return tokenNew(lex:EOF, 0, lex:linenoClone(lex'lineno), lex'lineno'pos)
   /if
 
   if lexerError(lex) != null
@@ -371,7 +371,7 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     return null
   /if
 
-  mut begin = utils:linenoClone(lex'lineno)
+  mut begin = lex:linenoClone(lex'lineno)
   begin'pos = stringToken'begin
   mut endPos = stringToken'end
 
@@ -871,4 +871,118 @@ func tokenStr(tok ptr lex:Token) ptr uint8
   /if
 
   return "<unknown, please, report!>"
+/func
+
+
+func linenoClone(lineno ptr lex:Lineno) ptr lex:Lineno
+  return lex:linenoNew(spring:strclone(lineno'filename), lineno'lineno, lineno'pos)
+/func
+
+
+func linenoFree(lineno ptr lex:Lineno)
+  if lineno != null
+    spring:free(lineno'filename)
+    spring:free(lineno)
+  /if
+/func
+
+
+func linenoNew(filename ptr uint8, lineno, pos uint16) ptr lex:Lineno
+  mut ret = cast<ptr lex:Lineno>(spring:alloc(size(lex:Lineno)))
+
+  ret'filename = filename
+  ret'lineno = lineno
+  ret'pos = pos
+
+  return ret
+/func
+
+
+func issueFromLexError(err ptr spring:Error, lineno ptr lex:Lineno) ptr utils:Issue
+  if err == null
+    return null
+  /if
+
+  mut where utils:Line
+  where'line = lineno'lineno
+  where'pos = lineno'pos
+
+  mut ret = utils:issueNew(utils:ISSUE_ERR, where, lineno'filename, err'msg)
+
+  spring:errorFree(err)
+
+  return ret
+/func
+
+
+func lineMake(llin ptr lex:Lineno) utils:Line
+  mut ret utils:Line
+
+  ret'line = llin'lineno
+  ret'pos =  llin'pos
+
+  return ret
+/func
+
+
+func tokExtractBegin(tok ptr lex:Token) utils:Line
+  mut ret utils:Line
+  ret'line = tok'lineno'lineno
+  ret'pos = tok'lineno'pos
+
+  return ret
+/func
+
+
+func tokExtractEnd(tok ptr lex:Token) utils:Line
+  mut ret utils:Line
+  ret'line = tok'lineno'lineno
+  ret'pos = tok'endPos
+
+  return ret
+/func
+
+
+func tokDiscardBegin(tok ptr lex:Token) utils:Line
+  mut ret = tokExtractBegin(tok)
+
+  lex:tokenFree(tok)
+
+  return ret
+/func
+
+
+func tokDiscardEnd(tok ptr lex:Token) utils:Line
+  mut ret = tokExtractEnd(tok)
+
+  lex:tokenFree(tok)
+
+  return ret
+/func
+
+
+func error(lineno ptr lex:Lineno, msg ptr uint8) ptr utils:Issue
+  mut line utils:Line
+  line'line = lineno'lineno
+  line'pos = lineno'pos
+
+  return utils:issueNew(utils:ISSUE_ERR, line, lineno'filename, msg)
+/func
+
+
+func errorMism(lineno ptr lex:Lineno, exp ptr uint8, got ptr uint8) ptr utils:Issue
+
+  mut toglue [5] ptr uint8
+  toglue[0] = "expected "
+  toglue[1] = exp
+  toglue[2] = ", got "
+  toglue[3] = got
+  toglue[4] = null
+
+  mut glued = spring:strglue(toglue)
+  mut ret =  lex:error(lineno, glued)
+
+  spring:free(glued)
+
+  return ret
 /func

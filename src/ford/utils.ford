@@ -18,21 +18,9 @@ decl charIsSym func(ch uint8) bool
 decl charIsWhite func(ch uint8) bool
 
 
-alias LexLineno struct(
-  filename ptr uint8,
-  lineno,pos uintptr
-)
-
-
-decl linenoClone func(line ptr LexLineno) ptr LexLineno
-decl linenoFree func(line ptr LexLineno)
-decl linenoNew func(file ptr uint8, line,pos uint16) ptr LexLineno
-
-
 alias Line struct(
   line, pos uintptr
 )
-
 
 alias Issue struct (
   gravity uint8,
@@ -45,11 +33,7 @@ decl issueFree func(issue ptr Issue)
 decl issueNew func(gravity uint8, where Line, filename, message ptr uint8) ptr Issue
 decl issueWriteOut func(issue ptr Issue, out ptr func(err ptr uint8))
 decl issueToError func(issue ptr Issue) ptr spring:Error
-decl issueFromLexError func(err ptr spring:Error, lineno ptr LexLineno) ptr Issue
 
-
-decl error func(line ptr LexLineno, msg ptr uint8) ptr Issue
-decl errorMism func(line ptr LexLineno, got ptr uint8, expected ptr uint8) ptr Issue
 
 decl strIsUInt func(str ptr uint8) bool
 

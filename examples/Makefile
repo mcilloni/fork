@@ -16,12 +16,11 @@ all: $(BINS)
 
 %.elf: %.o
 	@echo [FORKL] $<
-	@ $(FORKL) -o $@ $< ../build/libsema.a ../build/libsynt.a ../build/liblex.a ../build/libutils.a 
+	@ $(FORKL) -o $@ $< ../build/libsema.a ../build/libsynt.a ../build/libast.a ../build/liblex.a ../build/libutils.a 
 
-%.o: %.fork 
+%.o: %.fork
 	@echo [FORKC] $<
 	@ FORDPATHS="$(shell pwd)/../src/ford/" $(FORKC) -o $@ $<
 
 clean:
 	rm -f $(BINS)
-

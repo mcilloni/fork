@@ -7,10 +7,9 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+import ast
 import lex
 import spring
-import syms
-import synt
 import utils
 
 func printPadding(depth uintptr)
@@ -43,7 +42,7 @@ func linesDump(begin,end utils:Line)
 /func
 
 
-func symbolDump(sym ptr syms:Symbol)
+func symbolDump(sym ptr ast:Symbol)
   if sym == null
     return
   /if
@@ -51,7 +50,7 @@ func symbolDump(sym ptr syms:Symbol)
   spring:out(sym'name)
   spring:out(" :: ")
   if sym'type != null
-    syms:typeDump(sym'type)
+    ast:typeDump(sym'type)
   else
     spring:out("<inferred>")
   /if
@@ -77,7 +76,7 @@ func typeDescrDumpStructuredDataArgs(args ptr spring:List)
       spring:out(", ")
     /if
 
-    mut sym = cast<ptr syms:Symbol>(val spring:listGet(args, i))
+    mut sym = cast<ptr ast:Symbol>(val spring:listGet(args, i))
     symbolDump(sym)
 
     i++
@@ -87,7 +86,7 @@ func typeDescrDumpStructuredDataArgs(args ptr spring:List)
 /func
 
 
-func typeDescrDump(typeDescr ptr syms:TypeDescr)
+func typeDescrDump(typeDescr ptr ast:TypeDescr)
   if typeDescr == null
     spring:out("<null>")
     return
@@ -95,7 +94,7 @@ func typeDescrDump(typeDescr ptr syms:TypeDescr)
 
   mut type = typeDescr'type
 
-  if type == syms:TYPE_FUNC
+  if type == ast:TYPE_FUNC
     spring:out("func")
 
     if typeDescr'arguments != null
@@ -107,34 +106,34 @@ func typeDescrDump(typeDescr ptr syms:TypeDescr)
     /if
 
     if typeDescr'retType != null
-      syms:typeDump(typeDescr'retType)
+      ast:typeDump(typeDescr'retType)
     /if
   /if
 
-  if type == syms:TYPE_ID
+  if type == ast:TYPE_ID
     return
   /if
 
-  if type == syms:TYPE_LOC
+  if type == ast:TYPE_LOC
     spring:out("[")
     spring:outint(typeDescr'length)
     spring:out("] ")
-    syms:typeDump(typeDescr'retType)
+    ast:typeDump(typeDescr'retType)
   /if
 
-  if type == syms:TYPE_PTR
+  if type == ast:TYPE_PTR
     spring:out("ptr ")
-    syms:typeDump(typeDescr'retType)
+    ast:typeDump(typeDescr'retType)
   /if
 
-  if type == syms:TYPE_STRUCT
+  if type == ast:TYPE_STRUCT
     spring:out("struct ")
     typeDescrDumpStructuredDataArgs(typeDescr'arguments)
   /if
 /func
 
 
-func typeDump(type ptr syms:Type)
+func typeDump(type ptr ast:Type)
   if type == null
     spring:out("<null>")
     return
@@ -150,66 +149,66 @@ func typeDump(type ptr syms:Type)
 
   if type'descr != null
 
-    typeDescrDump(cast<ptr syms:TypeDescr>(type'descr))
+    typeDescrDump(cast<ptr ast:TypeDescr>(type'descr))
   /if
 /func
 
 
 func pnodeTypeToString(ptype uint16) ptr uint8
 
-  if ptype == synt:PPROGRAM
+  if ptype == ast:PPROGRAM
     return "Program"
   /if
 
-  if ptype == synt:PENTRY
+  if ptype == ast:PENTRY
     return "Entry"
   /if
 
-  if ptype == synt:PEXPR
+  if ptype == ast:PEXPR
     return "Expression"
   /if
 
-  if ptype == synt:PFUNCTION
+  if ptype == ast:PFUNCTION
     return "Function"
   /if
 
-  if ptype == synt:PALIAS
+  if ptype == ast:PALIAS
     return "Alias"
   /if
 
-  if ptype == synt:PDECL
+  if ptype == ast:PDECL
     return "Decl"
   /if
 
-  if ptype == synt:PMUT
+  if ptype == ast:PMUT
     return "Mut"
   /if
 
-  if ptype == synt:PBREAK
+  if ptype == ast:PBREAK
     return "Break"
   /if
 
-  if ptype == synt:PCONTINUE
+  if ptype == ast:PCONTINUE
     return "Continue"
   /if
 
-  if ptype == synt:PRETURN
+  if ptype == ast:PRETURN
     return "Return"
   /if
 
-  if ptype == synt:PIF
+  if ptype == ast:PIF
     return "If"
   /if
 
-  if ptype == synt:PIFELSE
+  if ptype == ast:PIFELSE
     return "IfElse"
   /if
 
-  if ptype == synt:PWHILE
+  if ptype == ast:PWHILE
     return "While"
   /if
 
-  if ptype == synt:PBLOCK
+  if ptype == ast:PBLOCK
     return "Block"
   /if
 
@@ -217,7 +216,7 @@ func pnodeTypeToString(ptype uint16) ptr uint8
 /func
 
 
-func pprogramDumpInfo(pprog ptr synt:PProgram, depth uintptr)
+func pprogramDumpInfo(pprog ptr ast:PProgram, depth uintptr)
   if pprog'moduleName != null
     spring:out(" [module: ")
     spring:out(pprog'moduleName'name)
@@ -237,7 +236,7 @@ func pprogramDumpInfo(pprog ptr synt:PProgram, depth uintptr)
 
     while i < len
       printPadding(depth + 1)
-      mut imp = cast<ptr synt:StringDef>(val spring:vectGet(pprog'imports, i))
+      mut imp = cast<ptr ast:StringDef>(val spring:vectGet(pprog'imports, i))
 
       spring:out(imp'name)
       spring:outch(32)
@@ -250,7 +249,7 @@ func pprogramDumpInfo(pprog ptr synt:PProgram, depth uintptr)
 /func
 
 
-func pdeclDumpInfo(pdecl ptr synt:PDecl, depth uintptr)
+func pdeclDumpInfo(pdecl ptr ast:PDecl, depth uintptr)
   spring:outch(10)
   printPadding(depth + 1)
 
@@ -258,7 +257,7 @@ func pdeclDumpInfo(pdecl ptr synt:PDecl, depth uintptr)
 /func
 
 
-func pexprDumpInfo(pexpr ptr synt:PExpr, depth uintptr)
+func pexprDumpInfo(pexpr ptr ast:PExpr, depth uintptr)
   mut tok lex:Token
   tok'type = pexpr'opType
 
@@ -283,7 +282,7 @@ func pexprDumpInfo(pexpr ptr synt:PExpr, depth uintptr)
 /func
 
 
-func pnodeDumpRec(pnode ptr synt:PNode, depth uintptr)
+func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
 
   printPadding(depth)
 
@@ -293,16 +292,16 @@ func pnodeDumpRec(pnode ptr synt:PNode, depth uintptr)
   spring:outch(32)
   linesDump(pnode'begin, pnode'end)
 
-  if synt:isPProgram(pnode)
-    pprogramDumpInfo(cast<ptr synt:PProgram>(pnode), depth)
+  if ast:isPProgram(pnode)
+    pprogramDumpInfo(cast<ptr ast:PProgram>(pnode), depth)
   /if
 
-  if synt:isPDecl(pnode)
-    pdeclDumpInfo(cast<ptr synt:PDecl>(pnode), depth)
+  if ast:isPDecl(pnode)
+    pdeclDumpInfo(cast<ptr ast:PDecl>(pnode), depth)
   /if
 
-  if synt:isPExpr(pnode)
-    pexprDumpInfo(cast<ptr synt:PExpr>(pnode), depth)
+  if ast:isPExpr(pnode)
+    pexprDumpInfo(cast<ptr ast:PExpr>(pnode), depth)
   /if
 
   spring:outch(10)
@@ -311,7 +310,7 @@ func pnodeDumpRec(pnode ptr synt:PNode, depth uintptr)
   mut i uintptr = 0
 
   while i < len
-    mut child = cast<ptr synt:PNode>(val spring:vectGet(pnode'leaves, i))
+    mut child = cast<ptr ast:PNode>(val spring:vectGet(pnode'leaves, i))
 
     pnodeDumpRec(child, depth + 1)
 
@@ -321,6 +320,6 @@ func pnodeDumpRec(pnode ptr synt:PNode, depth uintptr)
 /func
 
 
-func pnodeDump(pnode ptr synt:PNode)
+func pnodeDump(pnode ptr ast:PNode)
   pnodeDumpRec(pnode, 0)
 /func
