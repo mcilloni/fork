@@ -26,11 +26,11 @@ func findImport(ctx ptr ctx:Context, importName ptr synt:StringDef, importAst pt
     mut joinedPath = spring:pathJoin(path, fordName)
 
     if spring:pathExists(joinedPath)
-      mut imported ptr synt:PNode = null
+
+      mut ret = sema:semaParse(ctx, joinedPath, importAst)
 
       spring:free(joinedPath)
-
-      return sema:semaParse(ctx, joinedPath, ptr imported)
+      return ret
     /if
 
     spring:free(joinedPath)
@@ -76,31 +76,20 @@ func contextImport(ctx ptr ctx:Context, importName ptr synt:StringDef, value ptr
 func contextImportAll(ctx ptr ctx:Context, imports ptr spring:Vector) ptr spring:Vector
   mut len = spring:vectLen(imports)
   mut i uintptr = 0
-  mut firstVect ptr spring:Vector = null
 
   while i < len
     mut value ptr synt:PNode
     mut importName = cast<ptr synt:StringDef>(val spring:vectGet(imports, i))
     mut errs = contextImport(ctx, importName, ptr value)
 
-    if firstVect == null
-      firstVect = errs
-    else
-      mut len2 = spring:vectLen(errs)
-      mut j uintptr = 0
-
-      while j < len2
-        spring:vectAppend(firstVect, val spring:vectGet(errs, j))
-        j++
-      /while
-
-      spring:vectFree(errs)
+    if spring:vectLen(errs) != 0
+      return errs
     /if
 
     i++
   /while
 
-  return firstVect
+  return spring:vectNew(0)
 /func
 
 

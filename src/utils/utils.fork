@@ -239,9 +239,13 @@ func tokenizerNext(tkz ptr utils:Tokenizer) ptr uint8
   /while
 
   mut nextLen = tkz'begin - initialBegin
-  mut ret = cast<ptr uint8>(spring:zalloc(nextLen))
+  mut ret = cast<ptr uint8>(spring:zalloc(nextLen + 1)) # + 1 is for the null end. God I hate C
 
   spring:strncpy(ret, tkz'str + initialBegin, nextLen)
+
+  if tkz'str[tkz'begin] == tkz'splitChar
+    tkz'begin++
+  /if
 
   return ret
 /func
