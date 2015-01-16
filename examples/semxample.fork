@@ -1,0 +1,57 @@
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+import ctx
+import sema
+import spring
+import synt
+import utils
+
+entry
+  mut argv = spring:args()
+  if argv'len != 1
+    spring:errln("Wrong number of arguments, required: 1")
+    spring:exit(1)
+  /if
+
+  mut ctx = ctx:contextNew()
+  mut ast ptr synt:PNode
+  mut errors = sema:semaParse(ctx, argv'args[0], ptr ast)
+
+  mut errLen = spring:vectLen(errors)
+
+  if errLen > 0
+    mut i uintptr = 0
+
+    while i < errLen
+      mut issue = cast<ptr utils:Issue>(val spring:vectGet(errors, i))
+
+      utils:issueWriteOut(issue, ptr spring:out)
+
+      i++
+    /while
+
+    spring:exit(1)
+  /if
+
+  mut iter = spring:mapiterStart(ctx'imports)
+
+  mut pair ptr spring:Pair
+
+  while (pair = spring:mapiterNext(iter)) != null
+    spring:out("Imported ")
+    spring:outln(cast<ptr uint8>(pair'key))
+  /while
+
+  spring:mapiterFree(iter)
+
+  ctx:contextFree(ctx)
+
+  synt:pnodeFree(ast)
+/entry
