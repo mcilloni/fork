@@ -46,10 +46,6 @@ func pnodeFree(pnode ptr ast:PNode)
 
     spring:vectFreeAll(pnode'leaves, ptr pnodeFree)
 
-    if pnode'semaDataFinalize != null
-      pnode'semaDataFinalize(pnode'semaData)
-    /if
-
     spring:free(pnode)
   /if
 /func
@@ -63,6 +59,15 @@ func pnodeNew(type uint16, value uintptr) ptr ast:PNode
   pnode'leaves = spring:vectNew(2)
 
   return pnode
+/func
+
+
+func pblockNew() ptr ast:PBlock
+  mut pblock = cast<ptr ast:PBlock>(spring:zalloc(size(ast:PBlock)))
+  pblock'node'type = ast:PBLOCK
+  pblock'node'leaves = spring:vectNew(5)
+
+  return pblock
 /func
 
 
@@ -111,12 +116,15 @@ func pexprNewSingle(tok ptr lex:Token) ptr ast:PExpr
 func pprogramNew(moduleName ptr ast:StringDef, imports ptr spring:Vector, fileName ptr uint8) ptr ast:PProgram
 
   mut pprog = cast<ptr ast:PProgram>(spring:zalloc(size(ast:PProgram)))
-  pprog'node'type = ast:PPROGRAM
-  pprog'node'leaves = spring:vectNew(5)
+  mut pnode = cast<ptr ast:PNode>(pprog)
+
+  pnode'type = ast:PPROGRAM
+  pnode'leaves = spring:vectNew(5)
+  pnode'parent = null
+  
   pprog'moduleName = moduleName
   pprog'imports = imports
   pprog'fileName = spring:strclone(fileName)
-  pprog'node'parent = null
 
   return pprog
 

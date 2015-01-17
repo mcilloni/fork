@@ -65,20 +65,26 @@ decl aliasNew ptr func(name ptr uint8, type ptr Type) ptr Alias
 
 # end symbols
 
+# begin pnode
+
 alias PNode struct(
   type uint16,
   value uintptr,
   parent ptr PNode,
   leaves ptr spring:Vector,
-  begin, end utils:Line,
-  semaData data,
-  semaDataFinalize ptr func(semaData data)
+  begin, end utils:Line
 )
 
 decl pnodeDump func(node ptr PNode)
 decl pnodeNew func(ptype uint16, value uintptr) ptr PNode
 decl pnodeAppendChild func(parent ptr PNode, child ptr PNode) ptr PNode
 decl pnodeFree func(pnode ptr PNode)
+
+alias PBlock struct(
+  node PNode
+)
+
+decl pblockNew func() ptr PBlock
 
 alias StringDef struct(
   name ptr uint8,
@@ -89,7 +95,7 @@ decl strdefFree func(strdef ptr StringDef)
 decl strdefNew func(name ptr uint8, begin,end utils:Line) ptr StringDef
 
 alias PProgram struct(
-  node PNode,
+  node PBlock,
   moduleName ptr StringDef,
   fileName ptr uint8,
   imports ptr spring:Vector
@@ -132,3 +138,5 @@ decl PIF        uint16
 decl PIFELSE    uint16
 decl PWHILE     uint16
 decl PBLOCK     uint16
+
+#end pnode

@@ -506,7 +506,7 @@ func parserParseAlias(ctx ptr synt:ParserContext) ptr ast:PNode
 /func
 
 
-decl parserParseBody func(ctx ptr synt:ParserContext, pnode ptr ast:PNode, isEndToken ptr func(tok ptr lex:Token) bool) bool
+decl parserParseBody func(ctx ptr synt:ParserContext, isEndToken ptr func(tok ptr lex:Token) bool) ptr ast:PBlock
 
 
 func matchWhileEndTok(tok ptr lex:Token) bool
@@ -530,10 +530,13 @@ func parserParseWhile(ctx ptr synt:ParserContext) ptr ast:PNode
   mut whileBlock = ast:pnodeNew(ast:PWHILE, 0)
   ast:pnodeAppendChild(whileBlock, expr)
 
-  if !parserParseBody(ctx, whileBlock, ptr matchWhileEndTok)
+  mut body = cast<ptr ast:PNode>(parserParseBody(ctx, ptr matchWhileEndTok))
+  if body == null
     ast:pnodeFree(whileBlock)
     return null
   /if
+
+  ast:pnodeAppendChild(whileBlock, body)
 
   whileBlock'begin = begin
   whileBlock'end = lex:tokDiscardEnd(synt:nextTok(ctx)) #discard /while
@@ -567,28 +570,30 @@ func parserParseIf(ctx ptr synt:ParserContext) ptr ast:PNode
   mut block = ast:pnodeNew(ast:PIF, 0)
   ast:pnodeAppendChild(block, expr)
 
-  mut mainBlock = ast:pnodeNew(ast:PBLOCK, 0)
-  ast:pnodeAppendChild(block, mainBlock)
+  mut mainBlock = cast<ptr ast:PNode>(parserParseBody(ctx, ptr matchIfElseEndTok))
 
-  if !parserParseBody(ctx, mainBlock, ptr matchIfElseEndTok)
+  if mainBlock == null
     ast:pnodeFree(block)
     return null
   /if
 
-  if ctx'next'type == lex:ELSE
-    mut elseBlock = ast:pnodeNew(ast:PBLOCK, 0)
-    ast:pnodeAppendChild(block, elseBlock)
+  ast:pnodeAppendChild(block, mainBlock)
 
+  if ctx'next'type == lex:ELSE
     synt:discardTok(ctx) #discard else
     if !synt:expectDiscard(ctx, lex:NEWLINE)
       ast:pnodeFree(block)
       return null
     /if
 
-    if !parserParseBody(ctx, elseBlock, ptr matchIfEndTok)
+    mut elseBlock = cast<ptr ast:PNode>(parserParseBody(ctx, ptr matchIfEndTok))
+
+    if elseBlock == null
       ast:pnodeFree(block)
       return null
     /if
+
+    ast:pnodeAppendChild(block, elseBlock)
 
     block'type = ast:PIFELSE
   /if
@@ -677,19 +682,23 @@ func parserParseStatement(ctx ptr synt:ParserContext) ptr ast:PNode
 /func
 
 
-func parserParseBody(ctx ptr synt:ParserContext, block ptr ast:PNode, isEndToken ptr func(tok ptr lex:Token) bool) bool
+func parserParseBody(ctx ptr synt:ParserContext, isEndToken ptr func(tok ptr lex:Token) bool) ptr ast:PBlock
   mut begin utils:Line
 
   mut statement ptr ast:PNode
   mut first = true
 
+  mut block = ast:pblockNew()
+  mut pnode = cast<ptr ast:PNode>(block)
+
   while ctx'next != null and !isEndToken(ctx'next)
     statement = parserParseStatement(ctx)
     if statement == null
-      return false
+      ast:pnodeFree(pnode)
+      return null
     /if
 
-    ast:pnodeAppendChild(block, statement)
+    ast:pnodeAppendChild(pnode, statement)
 
     if first
       begin = statement'begin
@@ -697,20 +706,22 @@ func parserParseBody(ctx ptr synt:ParserContext, block ptr ast:PNode, isEndToken
     /if
 
     if !synt:expectDiscard(ctx, lex:NEWLINE)
-      return false
+      ast:pnodeFree(pnode)
+      return null
     /if
   /while
 
   if ctx'next == null
-    return false
+    ast:pnodeFree(pnode)
+    return null
   /if
 
   # if ctx'next is not null, then the while above quitted because
   # isEndToken(ctx'next) == true.
-  block'begin = begin
-  block'end = statement'end
+  pnode'begin = begin
+  pnode'end = statement'end
 
-  return true
+  return block
 /func
 
 
@@ -726,11 +737,14 @@ func parserMakeFunction(ctx ptr synt:ParserContext,
   /if
 
   mut funcNode = cast<ptr ast:PNode>(ast:pdeclNew(pType, ast:symbolNew(name, type)))
+  mut body = cast<ptr ast:PNode>(parserParseBody(ctx, isEndToken))
 
-  if !parserParseBody(ctx, funcNode, isEndToken)
+  if body == null
     ast:pnodeFree(funcNode)
     return null
   /if
+
+  ast:pnodeAppendChild(funcNode, body)
 
   mut endTok = synt:expect(ctx, endTType)
   if endTok == null
