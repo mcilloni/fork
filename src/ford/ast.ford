@@ -62,7 +62,17 @@ alias Alias Symbol
 decl aliasFree ptr func(item ptr Alias)
 decl aliasNew ptr func(name ptr uint8, type ptr Type) ptr Alias
 
+alias Symtable struct(
+  syms ptr spring:List,
+  upper ptr Symtable
+)
 
+decl stabNew func(upper ptr Symtable) ptr Symtable
+decl stabAdd func(stab ptr Symtable, sym ptr Symbol)
+decl stabTypeof func(stab ptr Symtable, name ptr uint8) ptr Type
+decl stabTypeofLocal func(stab ptr Symtable, name ptr uint8) ptr Type
+decl stabTypeofUpper func(stab ptr Symtable, name ptr uint8) ptr Type
+decl stabFree func(stab ptr Symtable)
 # end symbols
 
 # begin pnode
@@ -94,15 +104,15 @@ alias StringDef struct(
 decl strdefFree func(strdef ptr StringDef)
 decl strdefNew func(name ptr uint8, begin,end utils:Line) ptr StringDef
 
-alias PProgram struct(
+alias PRoot struct(
   node PBlock,
   moduleName ptr StringDef,
   fileName ptr uint8,
   imports ptr spring:Vector
 )
 
-decl isPProgram func(node ptr PNode) bool
-decl pprogramNew func(modName ptr StringDef, imports ptr spring:Vector, fileName ptr uint8) ptr PProgram
+decl isPRoot func(node ptr PNode) bool
+decl prootNew func(modName ptr StringDef, imports ptr spring:Vector, fileName ptr uint8) ptr PRoot
 
 alias PDecl struct(
   node PNode,
@@ -124,7 +134,7 @@ decl isPExpr func(node ptr PNode) bool
 
 decl emptyExpr PExpr
 
-decl PPROGRAM   uint16
+decl PROOT   uint16
 decl PENTRY     uint16
 decl PEXPR      uint16
 decl PFUNCTION  uint16

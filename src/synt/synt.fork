@@ -871,7 +871,7 @@ func parserParseProgram(ctx ptr synt:ParserContext) ptr ast:PNode
     return null
   /if
 
-  mut pnode = cast<ptr ast:PNode>(ast:pprogramNew(moduleName, imports, ctx'prs'filename))
+  mut pnode = cast<ptr ast:PNode>(ast:prootNew(moduleName, imports, ctx'prs'filename))
 
   mut definition ptr ast:PNode = null
   mut first = true

@@ -15,17 +15,17 @@ import synt
 
 
 func semaValidateAst(context ptr ctx:Context, root ptr ast:PNode) ptr spring:Vector
-  if root'type != ast:PPROGRAM
+  if root'type != ast:PROOT
     return null
   /if
 
-  mut pprog = cast<ptr ast:PProgram>(root)
+  mut proot = cast<ptr ast:PRoot>(root)
 
-  ctx:contextSetCurrentFile(context, pprog'fileName)
+  ctx:contextSetCurrentFile(context, proot'fileName)
 
-  mut errors = ctx:contextImportAll(context, pprog'imports)
+  mut errors = ctx:contextImportAll(context, proot'imports)
 
-  ctx:contextSetCurrentFile(context, pprog'fileName)
+  ctx:contextSetCurrentFile(context, proot'fileName)
 
   return errors
 /func

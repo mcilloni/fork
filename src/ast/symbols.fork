@@ -106,6 +106,66 @@ func typeDescrNewLoc(innerType ptr ast:Type, length uintptr) ptr ast:TypeDescr
 mut aliasFree = cast<ptr func(item ptr ast:Alias)>(symbolFree)
 mut aliasNew  = cast<ptr func(name ptr uint8, type ptr ast:Type) ptr ast:Alias>(symbolNew)
 
+
+func stabNew(upper ptr ast:Symtable) ptr ast:Symtable
+  mut stab = cast<ptr ast:Symtable>(spring:zalloc(size(ast:Symtable)))
+
+  stab'syms = spring:listNew()
+
+  return stab
+/func
+
+
+func stabAdd(stab ptr ast:Symtable, sym ptr ast:Symbol)
+  utils:incRef(sym)
+  spring:listAppend(stab'syms, sym)
+/func
+
+
+func stabTypeofLocal(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
+  mut len = spring:listLen(stab'syms)
+  mut i uintptr = 0
+
+  while i < len
+    mut sym = cast<ptr ast:Symbol>(val spring:listGet(stab'syms, i))
+
+    if spring:strequals(name, sym'name)
+      return sym'type
+    /if
+
+    i++
+  /while
+
+  return null
+/func
+
+
+func stabTypeofUpper(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
+  if stab'upper != null
+    return ast:stabTypeof(stab'upper, name)
+  /if
+
+  return null
+/func
+
+func stabTypeof(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
+  mut type = stabTypeofLocal(stab, name)
+  if type != null
+    return type
+  /if
+
+  return stabTypeofUpper(stab, name)
+/func
+
+
+func stabFree(stab ptr ast:Symtable)
+  if stab != null
+    spring:listFreeAll(stab'syms, cast<ptr func(item data)>(utils:decRef))
+    spring:free(stab)
+  /if
+/func
+
+
 mut TYPE_FUNC   uint16 = 10
 mut TYPE_ID     uint16 = 20
 mut TYPE_PTR    uint16 = 30

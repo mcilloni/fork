@@ -156,8 +156,8 @@ func typeDump(type ptr ast:Type)
 
 func pnodeTypeToString(ptype uint16) ptr uint8
 
-  if ptype == ast:PPROGRAM
-    return "Program"
+  if ptype == ast:PROOT
+    return "Root"
   /if
 
   if ptype == ast:PENTRY
@@ -216,18 +216,18 @@ func pnodeTypeToString(ptype uint16) ptr uint8
 /func
 
 
-func pprogramDumpInfo(pprog ptr ast:PProgram, depth uintptr)
-  if pprog'moduleName != null
+func prootDumpInfo(proot ptr ast:PRoot, depth uintptr)
+  if proot'moduleName != null
     spring:out(" [module: ")
-    spring:out(pprog'moduleName'name)
+    spring:out(proot'moduleName'name)
     spring:outch(32)
-    linesDump(pprog'moduleName'begin, pprog'moduleName'end)
+    linesDump(proot'moduleName'begin, proot'moduleName'end)
     spring:out("]")
   /if
 
   spring:outch(10)
 
-  mut len = spring:vectLen(pprog'imports)
+  mut len = spring:vectLen(proot'imports)
   if len > 0
     printPadding(depth)
     spring:outln("Imports: ")
@@ -236,7 +236,7 @@ func pprogramDumpInfo(pprog ptr ast:PProgram, depth uintptr)
 
     while i < len
       printPadding(depth + 1)
-      mut imp = cast<ptr ast:StringDef>(val spring:vectGet(pprog'imports, i))
+      mut imp = cast<ptr ast:StringDef>(val spring:vectGet(proot'imports, i))
 
       spring:out(imp'name)
       spring:outch(32)
@@ -292,8 +292,8 @@ func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
   spring:outch(32)
   linesDump(pnode'begin, pnode'end)
 
-  if ast:isPProgram(pnode)
-    pprogramDumpInfo(cast<ptr ast:PProgram>(pnode), depth)
+  if ast:isPRoot(pnode)
+    prootDumpInfo(cast<ptr ast:PRoot>(pnode), depth)
   /if
 
   if ast:isPDecl(pnode)

@@ -26,12 +26,12 @@ func pnodeAppendChild(pnode, child ptr ast:PNode) ptr ast:PNode
 
 func pnodeFree(pnode ptr ast:PNode)
   if pnode != null
-    if ast:isPProgram(pnode)
+    if ast:isPRoot(pnode)
 
-      mut pprog = cast<ptr ast:PProgram>(pnode)
-      ast:strdefFree(pprog'moduleName)
-      spring:free(pprog'fileName)
-      spring:vectFreeAll(pprog'imports, cast<ptr func(inst data)>(ptr ast:strdefFree))
+      mut proot = cast<ptr ast:PRoot>(pnode)
+      ast:strdefFree(proot'moduleName)
+      spring:free(proot'fileName)
+      spring:vectFreeAll(proot'imports, cast<ptr func(inst data)>(ptr ast:strdefFree))
 
     /if
 
@@ -113,20 +113,20 @@ func pexprNewSingle(tok ptr lex:Token) ptr ast:PExpr
 /func
 
 
-func pprogramNew(moduleName ptr ast:StringDef, imports ptr spring:Vector, fileName ptr uint8) ptr ast:PProgram
+func prootNew(moduleName ptr ast:StringDef, imports ptr spring:Vector, fileName ptr uint8) ptr ast:PRoot
 
-  mut pprog = cast<ptr ast:PProgram>(spring:zalloc(size(ast:PProgram)))
-  mut pnode = cast<ptr ast:PNode>(pprog)
+  mut proot = cast<ptr ast:PRoot>(spring:zalloc(size(ast:PRoot)))
+  mut pnode = cast<ptr ast:PNode>(proot)
 
-  pnode'type = ast:PPROGRAM
+  pnode'type = ast:PROOT
   pnode'leaves = spring:vectNew(5)
   pnode'parent = null
   
-  pprog'moduleName = moduleName
-  pprog'imports = imports
-  pprog'fileName = spring:strclone(fileName)
+  proot'moduleName = moduleName
+  proot'imports = imports
+  proot'fileName = spring:strclone(fileName)
 
-  return pprog
+  return proot
 
 /func
 
@@ -141,8 +141,8 @@ func isPExpr(pnode ptr ast:PNode) bool
 /func
 
 
-func isPProgram(pnode ptr ast:PNode) bool
-  return pnode != null and pnode'type == ast:PPROGRAM
+func isPRoot(pnode ptr ast:PNode) bool
+  return pnode != null and pnode'type == ast:PROOT
 /func
 
 func strdefFree(strdef ptr ast:StringDef)
@@ -163,7 +163,7 @@ func strdefNew(name ptr uint8, begin,end utils:Line) ptr ast:StringDef
 /func
 
 
-mut PPROGRAM   uint16 = 10
+mut PROOT   uint16 = 10
 mut PENTRY     uint16 = 20
 mut PFUNCTION  uint16 = 30
 mut PALIAS     uint16 = 40
