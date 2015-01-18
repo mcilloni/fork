@@ -91,7 +91,8 @@ decl pnodeAppendChild func(parent ptr PNode, child ptr PNode) ptr PNode
 decl pnodeFree func(pnode ptr PNode)
 
 alias PBlock struct(
-  node PNode
+  node PNode,
+  syms ptr Symtable
 )
 
 decl pblockNew func() ptr PBlock

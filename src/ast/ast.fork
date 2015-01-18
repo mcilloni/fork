@@ -42,6 +42,8 @@ func pnodeFree(pnode ptr ast:PNode)
 
     /if
 
+    # remember to fix PBLOCK leaks.
+
     # remember to fix PEXPR leaks.
 
     spring:vectFreeAll(pnode'leaves, ptr pnodeFree)
@@ -64,8 +66,10 @@ func pnodeNew(type uint16, value uintptr) ptr ast:PNode
 
 func pblockNew() ptr ast:PBlock
   mut pblock = cast<ptr ast:PBlock>(spring:zalloc(size(ast:PBlock)))
-  pblock'node'type = ast:PBLOCK
-  pblock'node'leaves = spring:vectNew(5)
+  mut pnode = cast<ptr ast:PNode>(pblock)
+
+  pnode'type = ast:PBLOCK
+  pnode'leaves = spring:vectNew(5)
 
   return pblock
 /func
@@ -121,7 +125,7 @@ func prootNew(moduleName ptr ast:StringDef, imports ptr spring:Vector, fileName 
   pnode'type = ast:PROOT
   pnode'leaves = spring:vectNew(5)
   pnode'parent = null
-  
+
   proot'moduleName = moduleName
   proot'imports = imports
   proot'fileName = spring:strclone(fileName)
