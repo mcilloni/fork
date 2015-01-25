@@ -14,24 +14,99 @@ import spring
 import synt
 
 
-func semaValidateAst(context ptr ctx:Context, root ptr ast:PNode) ptr spring:Vector
+func findPBlock(node ptr ast:PNode) ptr ast:PNode
+  if node == null
+    return null
+  /if
+
+  if !ast:isPBlock(node)
+    return findPBlock(node'parent)
+  /if
+
+  return node
+/func
+
+
+func findStab(node ptr ast:PNode) ptr ast:Symtable
+  mut pblock = findPBlock(node)
+
+  if pblock == null
+    return null
+  /if
+
+  return cast<ptr ast:PBlock>(pblock)'syms
+/func
+
+
+func findSymLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
+  mut stab = findStab(node)
+
+  return ast:stabTypeof(stab, name)
+/func
+
+
+func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
+  mut pblock = findPBlock(node)
+
+  if pblock != null
+    mut stab = findStab(pblock)
+    mut type = ast:stabTypeof(stab, name)
+
+    if type == null
+      return findSym(pblock'parent, name)
+    /if
+  /if
+
+  return null
+/func
+
+# root node contains global declarations
+# it has no stack, and no declaration order
+func makePRootStab(ctx ptr ctx:Context, root ptr ast:PNode, errors ptr spring:Vector) ptr ast:Symtable
+  mut children = root'leaves
+  mut stab = ast:stabNew()
+
+  mut i uintptr = 0
+  mut len = spring:vectLen(children)
+
+  while i < len
+    mut child = cast<ptr ast:PNode>(val spring:vectGet(children, i))
+
+    if ast:isPDecl(child)
+      mut pdecl = cast<ptr ast:PDecl>(child)
+      mut sym = pdecl'sym
+
+      mut existing = ast:stabTypeof(stab, sym'name)
+      if existing != null
+
+      /if
+    /if
+
+    i++
+  /while
+/func
+
+
+func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr spring:Vector
   if root'type != ast:PROOT
     return null
   /if
 
   mut proot = cast<ptr ast:PRoot>(root)
 
-  ctx:contextSetCurrentFile(context, proot'fileName)
+  ctx:contextSetCurrentFile(ctx, proot'fileName)
 
-  mut errors = ctx:contextImportAll(context, proot'imports)
+  mut errors = ctx:contextImportAll(ctx, proot'imports)
 
-  ctx:contextSetCurrentFile(context, proot'fileName)
+  ctx:contextSetCurrentFile(ctx, proot'fileName)
+
+  mut stab = makePRootStab(ctx, root, errors)
 
   return errors
 /func
 
 
-func semaParse(context ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr spring:Vector
+func semaParse(ctx ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr spring:Vector
   mut parser = synt:parserNew(fileName)
 
   val newRoot = synt:parserParse(parser)
@@ -47,5 +122,5 @@ func semaParse(context ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:
     return vect
   /if
 
-  return sema:semaValidateAst(context, val newRoot)
+  return sema:semaValidateAst(ctx, val newRoot)
 /func

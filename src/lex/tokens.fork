@@ -24,6 +24,7 @@ mut ENDIF uint16 = 210
 mut ENDWHILE uint16 = 220
 mut ENTRY uint16 = 230
 mut FALSE uint16 = 240
+mut FATARROW uint16 = 245
 mut FUNC uint16 = 250
 mut ID uint16 = 260
 mut IF uint16 = 270

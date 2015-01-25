@@ -42,6 +42,10 @@ func pnodeFree(pnode ptr ast:PNode)
 
     /if
 
+    if ast:isPBlock(pnode)
+      ast:stabFree(cast<ptr ast:PBlock>(pnode)'syms)
+    /if
+
     # remember to fix PBLOCK leaks.
 
     # remember to fix PEXPR leaks.
@@ -139,6 +143,9 @@ func isPDecl(pnode ptr ast:PNode) bool
   return pnode != null and pnode'type == ast:PALIAS or pnode'type == ast:PDECL or pnode'type == ast:PMUT or pnode'type == ast:PENTRY or pnode'type == ast:PFUNCTION
 /func
 
+func isPBlock(pnode ptr ast:PNode) bool
+  return pnode != null and pnode'type == ast:PBLOCK
+/func
 
 func isPExpr(pnode ptr ast:PNode) bool
   return pnode != null and pnode'type == ast:PEXPR

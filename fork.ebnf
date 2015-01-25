@@ -53,13 +53,15 @@ id ::= letter, {(letter | cipher)}
 
 expr ::= assignExpr
 
-assignExpr ::= assign | or
+assignExpr ::= assign | conditional
 
-assign ::= cast, assignOp, expr
+assign ::= cast, assignOp, assignExpr
 
 assignOp ::= '=' | '+=' | '-=' | '*=' | '/=' | '&=' | '|=' | '^=' | '**='
 
 idname ::= id, [':', id]
+
+conditional ::= (or, '=>', expr, ',', conditional) | or
 
 or ::= ( or, 'or', and ) | and
 

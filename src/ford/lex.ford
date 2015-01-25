@@ -96,6 +96,7 @@ decl ENDWHILE uint16
 decl ENTRY uint16
 decl EQUAL uint16
 decl FALSE uint16
+decl FATARROW uint16
 decl FUNC uint16
 decl ID uint16
 decl IF uint16

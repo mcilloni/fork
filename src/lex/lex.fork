@@ -508,6 +508,10 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     type = lex:FALSE
   /if
 
+  if spring:strequals(strToken, "=>")
+    type = lex:FATARROW
+  /if
+
   if spring:strequals(strToken, "func")
     type = lex:FUNC
   /if
@@ -744,6 +748,10 @@ func tokenStr(tok ptr lex:Token) ptr uint8
 
   if tok'type == lex:FALSE
     return "false"
+  /if
+
+  if tok'type == lex:FATARROW
+    return "=>"
   /if
 
   if tok'type == lex:FUNC

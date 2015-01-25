@@ -63,15 +63,12 @@ decl aliasFree ptr func(item ptr Alias)
 decl aliasNew ptr func(name ptr uint8, type ptr Type) ptr Alias
 
 alias Symtable struct(
-  syms ptr spring:List,
-  upper ptr Symtable
+  syms ptr spring:List
 )
 
-decl stabNew func(upper ptr Symtable) ptr Symtable
+decl stabNew func() ptr Symtable
 decl stabAdd func(stab ptr Symtable, sym ptr Symbol)
 decl stabTypeof func(stab ptr Symtable, name ptr uint8) ptr Type
-decl stabTypeofLocal func(stab ptr Symtable, name ptr uint8) ptr Type
-decl stabTypeofUpper func(stab ptr Symtable, name ptr uint8) ptr Type
 decl stabFree func(stab ptr Symtable)
 # end symbols
 
@@ -85,16 +82,17 @@ alias PNode struct(
   begin, end utils:Line
 )
 
-decl pnodeDump func(node ptr PNode)
-decl pnodeNew func(ptype uint16, value uintptr) ptr PNode
 decl pnodeAppendChild func(parent ptr PNode, child ptr PNode) ptr PNode
+decl pnodeDump func(node ptr PNode)
 decl pnodeFree func(pnode ptr PNode)
+decl pnodeNew func(ptype uint16, value uintptr) ptr PNode
 
 alias PBlock struct(
   node PNode,
   syms ptr Symtable
 )
 
+decl isPBlock func(node ptr PNode) bool
 decl pblockNew func() ptr PBlock
 
 alias StringDef struct(
