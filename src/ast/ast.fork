@@ -93,27 +93,34 @@ func pdeclNew(nodeType uint16, sym ptr ast:Symbol) ptr ast:PDecl
 /func
 
 
-func pexprNew(tok ptr lex:Token, lhs,rhs ptr ast:PExpr, begin,end utils:Line) ptr ast:PExpr
+func pexprTernaryNew(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end utils:Line) ptr ast:PExpr
+    mut pexpr = cast<ptr ast:PExpr>(spring:zalloc(size(ast:PExpr)))
+    pexpr'node'type = ast:PEXPR
+    pexpr'node'value = tok'value
+    pexpr'node'leaves = spring:vectNew(2)
+    pexpr'opType = tok'type
+    tok'value = 0 # now the value belongs to this PExpr
 
-  mut pexpr = cast<ptr ast:PExpr>(spring:zalloc(size(ast:PExpr)))
-  pexpr'node'type = ast:PEXPR
-  pexpr'node'value = tok'value
-  pexpr'node'leaves = spring:vectNew(2)
-  pexpr'opType = tok'type
-  tok'value = 0 # now the value belongs to this PExpr
+    mut pnode = ptr pexpr'node
+    pnode'begin = begin
+    pnode'end = end
 
-  mut pnode = ptr pexpr'node
-  pnode'begin = begin
-  pnode'end = end
+    ast:pnodeAppendChild(pnode, ptr lhs'node)
+    ast:pnodeAppendChild(pnode, ptr mid'node)
+    ast:pnodeAppendChild(pnode, ptr rhs'node)
 
-  ast:pnodeAppendChild(pnode, ptr lhs'node)
-  ast:pnodeAppendChild(pnode, ptr rhs'node)
+    lex:tokenFree(tok)
 
-  lex:tokenFree(tok)
-
-  return pexpr
-
+    return pexpr
 /func
+
+
+func pexprNew(tok ptr lex:Token, lhs,rhs ptr ast:PExpr, begin,end utils:Line) ptr ast:PExpr
+  return pexprTernaryNew(tok, lhs, null, rhs, begin, end)
+/func
+
+
+
 
 
 func pexprNewSingle(tok ptr lex:Token) ptr ast:PExpr

@@ -401,11 +401,27 @@ func parserParseCastExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
 /func
 
 
+func isConditionalOperator(tok ptr lex:Token) bool
+  return tok != null and tok'type == lex:FATARROW
+/func
+
+
 func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri uint16) ptr ast:PExpr
   mut curOpPrec uint16
   mut rhs ptr ast:PExpr = null
+
   while ctx'next != null and ((curOpPrec = opPrec(ctx'next)) >= minPri)
     mut opTok = synt:nextTok(ctx)
+
+    mut ternaryMiddle ptr ast:PExpr = null
+
+    if isConditionalOperator(opTok)
+      if (ternaryMiddle = synt:parserParseExpr(ctx)) == null or !synt:expectDiscard(ctx, lex:SEPARATOR)
+        lex:tokenFree(opTok)
+        return null
+      /if
+    /if
+
     rhs = parserParseCastExpr(ctx)
 
     if rhs == null
@@ -421,7 +437,7 @@ func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri 
       /if
     /if
 
-    lhs = ast:pexprNew(opTok, lhs, rhs, lhs'node'begin, rhs'node'end)
+    lhs = ast:pexprTernaryNew(opTok, lhs, ternaryMiddle, rhs, lhs'node'begin, rhs'node'end)
   /while
 
   return lhs

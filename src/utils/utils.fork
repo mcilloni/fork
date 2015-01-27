@@ -45,8 +45,8 @@ func charIsPar(ch uint8) bool
 
 
 func charIsWhite(ch uint8) bool
-  #32 == ` `, 10 == `\n`, 13 == `\r`, 12 == `\f`, 11 == `\v`
-  return ch == 32 or ch == 10 or ch == 13 or ch == 12 or ch == 11
+  #32 == ` `, 10 == `\n`, 13 == `\r`, 12 == `\f`, 11 == `\v`, 9 == `\t`
+  return ch == 32 or ch == 10 or ch == 13 or ch == 12 or ch == 11 or ch == 9
 /func
 
 

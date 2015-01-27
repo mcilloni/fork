@@ -128,6 +128,7 @@ alias PExpr struct(
 )
 
 decl pexprNew func(tok ptr lex:Token, lhs,rhs ptr PExpr, begin,end utils:Line) ptr PExpr
+decl pexprTernaryNew func(tok ptr lex:Token, lhs,mid,rhs ptr PExpr, begin,end utils:Line) ptr PExpr
 decl pexprNewSingle func(tok ptr lex:Token) ptr PExpr
 decl isPExpr func(node ptr PNode) bool
 

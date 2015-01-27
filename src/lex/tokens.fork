@@ -24,7 +24,6 @@ mut ENDIF uint16 = 210
 mut ENDWHILE uint16 = 220
 mut ENTRY uint16 = 230
 mut FALSE uint16 = 240
-mut FATARROW uint16 = 245
 mut FUNC uint16 = 250
 mut ID uint16 = 260
 mut IF uint16 = 270
@@ -33,6 +32,7 @@ mut MODULE uint16 = 360
 mut MUT uint16 = 370
 mut NUMBER uint16 = 390
 mut RETURN uint16 = 470
+mut SEPARATOR uint16 = 480
 mut STRING uint16 = 490
 mut STRUCT uint16 = 500
 mut TRUE uint16 = 510
@@ -88,4 +88,6 @@ mut AND uint16 = 5040
 
 mut OR uint16 = 4420
 
-mut ASSIGN uint16 = 3061
+mut FATARROW uint16 = 3061
+
+mut ASSIGN uint16 = 2061

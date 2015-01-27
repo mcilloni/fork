@@ -596,6 +596,10 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     type = lex:RETURN
   /if
 
+  if spring:strequals(strToken, "||")
+    type = lex:SEPARATOR
+  /if
+
   if spring:strequals(strToken, "size")
     type = lex:SIZE
   /if
@@ -844,6 +848,10 @@ func tokenStr(tok ptr lex:Token) ptr uint8
 
   if tok'type == lex:RETURN
     return "return"
+  /if
+
+  if tok'type == lex:SEPARATOR
+    return "||"
   /if
 
   if tok'type == lex:SIZE

@@ -120,6 +120,7 @@ decl PLUS uint16
 decl POW uint16
 decl PTR uint16
 decl RETURN uint16
+decl SEPARATOR uint16
 decl SIZE uint16
 decl STRING uint16
 decl STRUCT uint16

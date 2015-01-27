@@ -774,6 +774,10 @@ func parserParseEntry(ctx ptr synt:ParserContext) ptr ast:PNode
 
   mut entryNode = parserMakeFunction(ctx, ast:PENTRY, spring:strclone("_fork_entry"), makeEntryType(), lex:ENDENTRY, ptr matchEntryEndTok)
 
+  if entryNode == null
+    return null
+  /if
+
   entryNode'begin = begin
 
   return entryNode
