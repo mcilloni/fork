@@ -18,23 +18,27 @@ import utils
 decl TYPE_FUNC   uint16
 decl TYPE_ID     uint16
 decl TYPE_PTR    uint16
-decl TYPE_LOC    uint16
 decl TYPE_STRUCT uint16
+decl TYPE_LOC    uint16
 
-alias Type struct (
+# PType and PTypeDescr do not represent a type, but its parse-time representation.
+# Per example, uint16 and PType are bot "id-types", because they are syntactically presented by
+# an identifier at parsing time, while being really very different (a struct and an integer).
+
+alias PType struct (
   refc utils:Ref,
   name, moduleName ptr uint8,
-  # anonymous because of first-step parser limitations; actually a TypeDescr
+  # anonymous because of first-step parser limitations; actually a PTypeDescr
   descr data,
   begin, end utils:Line
 )
 
-alias TypeDescr struct (
+alias PTypeDescr struct (
   refc utils:Ref,
   type uint16,
   # if type is TYPE_PTR or TYPE_LOC, this is the type returned by dereferencing.
   # if type is TYPE_FUNC, this is the return type of the function
-  retType ptr Type,
+  retType ptr PType,
   # if type is TYPE_FUNC, this is the arguments list
   # if type is TYPE_STRUCT, this is the fields list
   arguments ptr spring:List,
@@ -42,33 +46,28 @@ alias TypeDescr struct (
   length uintptr
 )
 
-decl typeDump func(type ptr Type)
-decl typeNew func(name,moduleName ptr uint8, descr ptr TypeDescr) ptr Type
+decl ptypeDump func(ptype ptr PType)
+decl ptypeNew func(name,moduleName ptr uint8, descr ptr PTypeDescr) ptr PType
 
-decl typeDescrDump func(type ptr TypeDescr)
-decl typeDescrNew func(type uint16, retType ptr Type, params ptr spring:List) ptr TypeDescr
-decl typeDescrNewLoc func(innerType ptr Type, length uintptr) ptr TypeDescr
+decl ptypeDescrDump func(type ptr PTypeDescr)
+decl ptypeDescrNew func(type uint16, retType ptr PType, params ptr spring:List) ptr PTypeDescr
+decl ptypeDescrNewLoc func(innerType ptr PType, length uintptr) ptr PTypeDescr
 
-alias Symbol struct(
+alias PSymbol struct(
   refc utils:Ref,
   name ptr uint8,
-  type ptr Type
+  type ptr PType
 )
 
-decl symbolNew func(name ptr uint8, type ptr Type) ptr Symbol
-
-alias Alias Symbol
-
-decl aliasFree ptr func(item ptr Alias)
-decl aliasNew ptr func(name ptr uint8, type ptr Type) ptr Alias
+decl psymbolNew func(name ptr uint8, type ptr PType) ptr PSymbol
 
 alias Symtable struct(
   syms ptr spring:List
 )
 
 decl stabNew func() ptr Symtable
-decl stabAdd func(stab ptr Symtable, sym ptr Symbol)
-decl stabTypeof func(stab ptr Symtable, name ptr uint8) ptr Type
+decl stabAdd func(stab ptr Symtable, sym ptr PSymbol)
+decl stabTypeof func(stab ptr Symtable, name ptr uint8) ptr PType
 decl stabFree func(stab ptr Symtable)
 # end symbols
 
@@ -107,7 +106,8 @@ alias PRoot struct(
   node PBlock,
   moduleName ptr StringDef,
   fileName ptr uint8,
-  imports ptr spring:Vector
+  imports ptr spring:Vector,
+  aliases ptr Symtable
 )
 
 decl isPRoot func(node ptr PNode) bool
@@ -115,16 +115,16 @@ decl prootNew func(modName ptr StringDef, imports ptr spring:Vector, fileName pt
 
 alias PDecl struct(
   node PNode,
-  sym ptr Symbol
+  sym ptr PSymbol
 )
 
 decl isPDecl func(node ptr PNode) bool
-decl pdeclNew func(ptype uint16, sym ptr Symbol) ptr PDecl
+decl pdeclNew func(ptype uint16, sym ptr PSymbol) ptr PDecl
 
 alias PExpr struct(
   node PNode,
   opType uint16,
-  type ptr Type
+  type ptr PType
 )
 
 decl pexprNew func(tok ptr lex:Token, lhs,rhs ptr PExpr, begin,end utils:Line) ptr PExpr

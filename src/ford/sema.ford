@@ -20,6 +20,6 @@ decl semaParse func(context ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr
 
 # ast sema operations
 
-decl findSym func(node ptr ast:PNode, name ptr uint8) ptr ast:Type
-decl findSymLocal func(node ptr ast:PNode, name ptr uint8) ptr ast:Type
+decl findSym func(node ptr ast:PNode, name ptr uint8) ptr ast:PType
+decl findSymLocal func(node ptr ast:PNode, name ptr uint8) ptr ast:PType
 decl findStab func(node ptr ast:PNode) ptr ast:Symtable

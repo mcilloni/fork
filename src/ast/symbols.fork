@@ -12,7 +12,7 @@ import spring
 import utils
 
 
-func symbolFree(sym ptr ast:Symbol)
+func psymbolFree(sym ptr ast:PSymbol)
   if sym != null
     spring:free(sym'name)
     utils:decRef(sym'type)
@@ -21,10 +21,10 @@ func symbolFree(sym ptr ast:Symbol)
 /func
 
 
-func symbolNew(name ptr uint8, type ptr ast:Type) ptr ast:Symbol
-  mut sym = cast<ptr ast:Symbol>(spring:zalloc(size(ast:Symbol)))
+func psymbolNew(name ptr uint8, type ptr ast:PType) ptr ast:PSymbol
+  mut sym = cast<ptr ast:PSymbol>(spring:zalloc(size(ast:PSymbol)))
 
-  sym'refc'freeFunc = ptr symbolFree
+  sym'refc'freeFunc = ptr psymbolFree
 
   utils:incRef(type)
   sym'name = name
@@ -34,7 +34,7 @@ func symbolNew(name ptr uint8, type ptr ast:Type) ptr ast:Symbol
 /func
 
 
-func typeFree(type ptr ast:Type)
+func ptypeFree(type ptr ast:PType)
   if type != null
     if type'descr != null
       utils:decRef(type'descr)
@@ -53,10 +53,10 @@ func typeFree(type ptr ast:Type)
 /func
 
 
-func typeNew(name, moduleName ptr uint8, descr ptr ast:TypeDescr) ptr ast:Type
-  mut type = cast<ptr ast:Type>(spring:zalloc(size(ast:Type)))
+func ptypeNew(name, moduleName ptr uint8, descr ptr ast:PTypeDescr) ptr ast:PType
+  mut type = cast<ptr ast:PType>(spring:zalloc(size(ast:PType)))
 
-  type'refc'freeFunc = ptr typeFree
+  type'refc'freeFunc = ptr ptypeFree
 
   type'name = name
   type'moduleName = moduleName
@@ -67,23 +67,23 @@ func typeNew(name, moduleName ptr uint8, descr ptr ast:TypeDescr) ptr ast:Type
 /func
 
 
-func typeDescrFree(descr ptr ast:TypeDescr)
+func ptypeDescrFree(descr ptr ast:PTypeDescr)
   if descr != null
     if descr'retType != null
       utils:decRef(descr'retType)
     /if
 
     if descr'arguments != null
-      spring:listFreeAll(descr'arguments, ptr symbolFree)
+      spring:listFreeAll(descr'arguments, ptr psymbolFree)
     /if
   /if
 /func
 
 
-func typeDescrNew(type uint16, retType ptr ast:Type, params ptr spring:List) ptr ast:TypeDescr
-  mut descr = cast<ptr ast:TypeDescr>(spring:zalloc(size(ast:TypeDescr)))
+func ptypeDescrNew(type uint16, retType ptr ast:PType, params ptr spring:List) ptr ast:PTypeDescr
+  mut descr = cast<ptr ast:PTypeDescr>(spring:zalloc(size(ast:PTypeDescr)))
 
-  descr'refc'freeFunc = ptr typeDescrFree
+  descr'refc'freeFunc = ptr ptypeDescrFree
 
   utils:incRef(retType)
 
@@ -95,16 +95,12 @@ func typeDescrNew(type uint16, retType ptr ast:Type, params ptr spring:List) ptr
 /func
 
 
-func typeDescrNewLoc(innerType ptr ast:Type, length uintptr) ptr ast:TypeDescr
-  mut typeDescr = typeDescrNew(ast:TYPE_LOC, innerType, null)
+func ptypeDescrNewLoc(innerType ptr ast:PType, length uintptr) ptr ast:PTypeDescr
+  mut typeDescr = ast:ptypeDescrNew(ast:TYPE_LOC, innerType, null)
   typeDescr'length = length
 
   return typeDescr
 /func
-
-
-mut aliasFree = cast<ptr func(item ptr ast:Alias)>(symbolFree)
-mut aliasNew  = cast<ptr func(name ptr uint8, type ptr ast:Type) ptr ast:Alias>(symbolNew)
 
 
 func stabNew() ptr ast:Symtable
@@ -116,18 +112,18 @@ func stabNew() ptr ast:Symtable
 /func
 
 
-func stabAdd(stab ptr ast:Symtable, sym ptr ast:Symbol)
+func stabAdd(stab ptr ast:Symtable, sym ptr ast:PSymbol)
   utils:incRef(sym)
   spring:listAppend(stab'syms, sym)
 /func
 
 
-func stabTypeof(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
+func stabTypeof(stab ptr ast:Symtable, name ptr uint8) ptr ast:PType
   mut len = spring:listLen(stab'syms)
   mut i uintptr = 0
 
   while i < len
-    mut sym = cast<ptr ast:Symbol>(val spring:listGet(stab'syms, i))
+    mut sym = cast<ptr ast:PSymbol>(val spring:listGet(stab'syms, i))
 
     if spring:strequals(name, sym'name)
       return sym'type
@@ -146,6 +142,85 @@ func stabFree(stab ptr ast:Symtable)
     spring:free(stab)
   /if
 /func
+
+#TODO: change this with something that does less comparisons as soon you implement it.
+#func getBuiltinType(name ptr uint8) ptr ast:PType
+#  mut type uint16 = 0
+#  mut typeSize = 0
+#  mut signed = false
+
+#  if spring:strequals(name, "uint8")
+#    type = ast:TYPE_INT
+#    typeSize = 1
+#  /if
+
+#  if spring:strequals(name, "uint16")
+#    type = ast:TYPE_INT
+#    typeSize = 2
+#  /if
+
+#  if spring:strequals(name, "uint32")
+#    type = ast:TYPE_INT
+#    typeSize = 4
+#  /if
+
+#  if spring:strequals(name, "uint64")
+#    type = ast:TYPE_INT
+#    typeSize = 8
+#  /if
+
+#  if spring:strequals(name, "int8")
+#    type = ast:TYPE_INT
+#    typeSize = 1
+#    signed = true
+#  /if
+
+#  if spring:strequals(name, "int16")
+#    type = ast:TYPE_INT
+#    typeSize = 2
+#    signed = true
+#  /if
+
+#  if spring:strequals(name, "int32")
+#    type = ast:TYPE_INT
+#    typeSize = 4
+#    signed = true
+#  /if
+
+#  if spring:strequals(name, "int64")
+#    type = ast:TYPE_INT
+#    typeSize = 8
+#    signed = true
+#  /if
+
+#  if spring:strequals(name, "uintptr")
+#    type = ast:TYPE_INT
+#    typeSize = size(uintptr)
+#  /if
+
+#  if spring:strequals(name, "uintptr")
+#    type = ast:TYPE_INT
+#    typeSize = size(intptr)
+#    signed = true
+#  /if
+
+#  if spring:strequals(name, "bool")
+#    type = ast:TYPE_BOOL
+#    typeSize = 1
+#  /if
+
+#  if spring:strequals(name, "data")
+#    type = ast:TYPE_PTR
+#    typeSize = size(data)
+#  /if
+
+#  if type == 0
+#    return null
+#  /if
+
+#  mut tDescr = ast:ptypeDescrNew(type, null, null)
+
+#/func
 
 
 mut TYPE_FUNC   uint16 = 10

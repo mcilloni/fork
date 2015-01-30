@@ -28,7 +28,7 @@ alias ParserContext struct (
 
 decl parserParseExpr func(ctx ptr ParserContext) ptr ast:PExpr
 
-decl parserParseType func(ctx ptr ParserContext) ptr ast:Type
+decl parserParseType func(ctx ptr ParserContext) ptr ast:PType
 
 decl nextTok func(ctx ptr ParserContext) ptr lex:Token
 decl discardTok func(ctx ptr ParserContext)

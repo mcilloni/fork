@@ -42,22 +42,22 @@ func linesDump(begin,end utils:Line)
 /func
 
 
-func symbolDump(sym ptr ast:Symbol)
-  if sym == null
+func psymbolDump(psym ptr ast:PSymbol)
+  if psym == null
     return
   /if
 
-  spring:out(sym'name)
+  spring:out(psym'name)
   spring:out(" :: ")
-  if sym'type != null
-    ast:typeDump(sym'type)
+  if psym'type != null
+    ast:ptypeDump(psym'type)
   else
     spring:out("<inferred>")
   /if
 /func
 
 
-func typeDescrDumpStructuredDataArgs(args ptr spring:List)
+func ptypeDescrDumpStructuredDataArgs(args ptr spring:List)
   if args == null
     spring:out("<null>")
     return
@@ -76,8 +76,8 @@ func typeDescrDumpStructuredDataArgs(args ptr spring:List)
       spring:out(", ")
     /if
 
-    mut sym = cast<ptr ast:Symbol>(val spring:listGet(args, i))
-    symbolDump(sym)
+    mut sym = cast<ptr ast:PSymbol>(val spring:listGet(args, i))
+    psymbolDump(sym)
 
     i++
   /while
@@ -86,70 +86,70 @@ func typeDescrDumpStructuredDataArgs(args ptr spring:List)
 /func
 
 
-func typeDescrDump(typeDescr ptr ast:TypeDescr)
-  if typeDescr == null
+func ptypeDescrDump(ptypeDescr ptr ast:PTypeDescr)
+  if ptypeDescr == null
     spring:out("<null>")
     return
   /if
 
-  mut type = typeDescr'type
+  mut ptype = ptypeDescr'type
 
-  if type == ast:TYPE_FUNC
+  if ptype == ast:TYPE_FUNC
     spring:out("func")
 
-    if typeDescr'arguments != null
+    if ptypeDescr'arguments != null
 
-      typeDescrDumpStructuredDataArgs(typeDescr'arguments)
+      ptypeDescrDumpStructuredDataArgs(ptypeDescr'arguments)
       spring:outch(32)
     else
       spring:out("()")
     /if
 
-    if typeDescr'retType != null
-      ast:typeDump(typeDescr'retType)
+    if ptypeDescr'retType != null
+      ast:ptypeDump(ptypeDescr'retType)
     /if
   /if
 
-  if type == ast:TYPE_ID
+  if ptype == ast:TYPE_ID
     return
   /if
 
-  if type == ast:TYPE_LOC
+  if ptype == ast:TYPE_LOC
     spring:out("[")
-    spring:outint(typeDescr'length)
+    spring:outint(ptypeDescr'length)
     spring:out("] ")
-    ast:typeDump(typeDescr'retType)
+    ast:ptypeDump(ptypeDescr'retType)
   /if
 
-  if type == ast:TYPE_PTR
+  if ptype == ast:TYPE_PTR
     spring:out("ptr ")
-    ast:typeDump(typeDescr'retType)
+    ast:ptypeDump(ptypeDescr'retType)
   /if
 
-  if type == ast:TYPE_STRUCT
+  if ptype == ast:TYPE_STRUCT
     spring:out("struct ")
-    typeDescrDumpStructuredDataArgs(typeDescr'arguments)
+    ptypeDescrDumpStructuredDataArgs(ptypeDescr'arguments)
   /if
 /func
 
 
-func typeDump(type ptr ast:Type)
-  if type == null
+func ptypeDump(ptype ptr ast:PType)
+  if ptype == null
     spring:out("<null>")
     return
   /if
 
-  if type'name != null
-    if type'moduleName != null
-      spring:out(type'moduleName)
+  if ptype'name != null
+    if ptype'moduleName != null
+      spring:out(ptype'moduleName)
       spring:outch(58)
     /if
-    spring:out(type'name)
+    spring:out(ptype'name)
   /if
 
-  if type'descr != null
+  if ptype'descr != null
 
-    typeDescrDump(cast<ptr ast:TypeDescr>(type'descr))
+    ptypeDescrDump(cast<ptr ast:PTypeDescr>(ptype'descr))
   /if
 /func
 
@@ -253,7 +253,7 @@ func pdeclDumpInfo(pdecl ptr ast:PDecl, depth uintptr)
   spring:outch(10)
   printPadding(depth + 1)
 
-  symbolDump(pdecl'sym)
+  psymbolDump(pdecl'sym)
 /func
 
 
@@ -264,20 +264,34 @@ func pexprDumpInfo(pexpr ptr ast:PExpr, depth uintptr)
   spring:out(": ")
 
   if pexpr'opType == lex:ID
-    spring:out("an id \"")
+    spring:out("an id - \"")
     spring:out(cast<ptr uint8>(pexpr'node'value))
     spring:out("\"")
   else
     if pexpr'opType == lex:NUMBER
       spring:outint(pexpr'node'value)
     else
-      spring:out(lex:tokenStr(ptr tok))
+      if pexpr'opType == lex:STRING
+        spring:out("a string - \"")
+        spring:out(cast<ptr uint8>(pexpr'node'value))
+        spring:out("\"")
+      else
+        if pexpr'opType == lex:OPAR
+          spring:out("a function call")
+        else
+          if pexpr'opType == lex:OBRAC
+            spring:out("an array access")
+          else
+            spring:out(lex:tokenStr(ptr tok))
+          /if
+        /if
+      /if
     /if
   /if
   if pexpr'type != null
     spring:out(", type ")
 
-    typeDump(pexpr'type)
+    ptypeDump(pexpr'type)
   /if
 /func
 

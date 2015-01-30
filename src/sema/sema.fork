@@ -12,6 +12,7 @@ import ctx
 import sema
 import spring
 import synt
+import utils
 
 
 func findPBlock(node ptr ast:PNode) ptr ast:PNode
@@ -38,14 +39,24 @@ func findStab(node ptr ast:PNode) ptr ast:Symtable
 /func
 
 
-func findSymLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
+func getBuiltinType(name ptr uint8) ptr ast:PType
+
+/func
+
+
+func findType(node ptr ast:PNode) ptr ast:PType
+
+/func
+
+
+func findSymLocal(node ptr ast:PNode, name ptr uint8) ptr ast:PType
   mut stab = findStab(node)
 
   return ast:stabTypeof(stab, name)
 /func
 
 
-func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
+func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:PType
   mut pblock = findPBlock(node)
 
   if pblock != null
@@ -78,7 +89,11 @@ func makePRootStab(ctx ptr ctx:Context, root ptr ast:PNode, errors ptr spring:Ve
 
       mut existing = ast:stabTypeof(stab, sym'name)
       if existing != null
+        mut errMsg = spring:strappend(sym'name, " is already defined")
 
+        spring:vectAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, ctx'currentFile, errMsg))
+
+        spring:free(errMsg)
       /if
     /if
 

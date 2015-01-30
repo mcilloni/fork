@@ -32,7 +32,7 @@ func pnodeFree(pnode ptr ast:PNode)
       ast:strdefFree(proot'moduleName)
       spring:free(proot'fileName)
       spring:vectFreeAll(proot'imports, cast<ptr func(inst data)>(ptr ast:strdefFree))
-
+      ast:stabFree(proot'aliases)
     /if
 
     if ast:isPDecl(pnode)
@@ -79,7 +79,7 @@ func pblockNew() ptr ast:PBlock
 /func
 
 
-func pdeclNew(nodeType uint16, sym ptr ast:Symbol) ptr ast:PDecl
+func pdeclNew(nodeType uint16, sym ptr ast:PSymbol) ptr ast:PDecl
 
   mut pdecl = cast<ptr ast:PDecl>(spring:zalloc(size(ast:PDecl)))
   pdecl'node'type = nodeType
@@ -118,9 +118,6 @@ func pexprTernaryNew(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end uti
 func pexprNew(tok ptr lex:Token, lhs,rhs ptr ast:PExpr, begin,end utils:Line) ptr ast:PExpr
   return pexprTernaryNew(tok, lhs, null, rhs, begin, end)
 /func
-
-
-
 
 
 func pexprNewSingle(tok ptr lex:Token) ptr ast:PExpr
@@ -181,7 +178,7 @@ func strdefNew(name ptr uint8, begin,end utils:Line) ptr ast:StringDef
 /func
 
 
-mut PROOT   uint16 = 10
+mut PROOT      uint16 = 10
 mut PENTRY     uint16 = 20
 mut PFUNCTION  uint16 = 30
 mut PALIAS     uint16 = 40

@@ -146,7 +146,7 @@ func parserParseImports(ctx ptr synt:ParserContext) ptr spring:Vector
 /func
 
 
-func parserParseIdType(ctx ptr synt:ParserContext, name ptr uint8) ptr ast:Type
+func parserParseIdType(ctx ptr synt:ParserContext, name ptr uint8) ptr ast:PType
   mut moduleName ptr uint8 = null
 
   if ctx'next != null and ctx'next'type == lex:COLON
@@ -164,7 +164,7 @@ func parserParseIdType(ctx ptr synt:ParserContext, name ptr uint8) ptr ast:Type
     lex:tokenFree(tok)
   /if
 
-  return ast:typeNew(name, moduleName, ast:typeDescrNew(ast:TYPE_ID, null, null))
+  return ast:ptypeNew(name, moduleName, ast:ptypeDescrNew(ast:TYPE_ID, null, null))
 /func
 
 
@@ -174,7 +174,7 @@ func tokenIsTypeStart(tok ptr lex:Token) bool
 /func
 
 
-decl parserParseType func(ctx ptr synt:ParserContext) ptr ast:Type
+decl parserParseType func(ctx ptr synt:ParserContext) ptr ast:PType
 
 
 # if the next token exists and it's a lex:NEWLINE, then discards it
@@ -214,15 +214,15 @@ func parserParseIdList(ctx ptr synt:ParserContext) ptr spring:List
 /func
 
 
-func makeSymsAndInsertInList(syms ptr spring:List, ids ptr spring:List, type ptr ast:Type)
+func makeSymsAndInsertInList(syms ptr spring:List, ids ptr spring:List, type ptr ast:PType)
   mut len = spring:listLen(ids)
   mut i uintptr = 0
   mut elem ptr uint8
-  mut sym ptr ast:Symbol
+  mut sym ptr ast:PSymbol
 
   while i < len
     elem = cast<ptr uint8>(val spring:listGet(ids, i))
-    sym = ast:symbolNew(elem, type)
+    sym = ast:psymbolNew(elem, type)
     spring:listAppend(syms, sym)
     i++
   /while
@@ -301,27 +301,27 @@ func parserParseStructBody(ctx ptr synt:ParserContext, end ptr utils:Line) ptr s
 /func
 
 
-func parserParseFunctionType(ctx ptr synt:ParserContext) ptr ast:Type
+func parserParseFunctionType(ctx ptr synt:ParserContext) ptr ast:PType
   mut end utils:Line
   mut args = parserParseStructBody(ctx, ptr end)
   if args == null
     return null
   /if
 
-  mut retType ptr ast:Type = null
+  mut retType ptr ast:PType = null
 
   if ctx'next != null and tokenIsTypeStart(ctx'next)
     retType = parserParseType(ctx)
   /if
 
-  mut type = ast:typeNew(null, null, ast:typeDescrNew(ast:TYPE_FUNC, retType, args))
+  mut type = ast:ptypeNew(null, null, ast:ptypeDescrNew(ast:TYPE_FUNC, retType, args))
   type'end = end
 
   return type
 /func
 
 
-func parserParseLocType(ctx ptr synt:ParserContext) ptr ast:Type
+func parserParseLocType(ctx ptr synt:ParserContext) ptr ast:PType
   mut locLengthTok = expect(ctx, lex:NUMBER)
   if locLengthTok == null
     return null
@@ -340,14 +340,14 @@ func parserParseLocType(ctx ptr synt:ParserContext) ptr ast:Type
     return null
   /if
 
-  mut type = ast:typeNew(null, null, ast:typeDescrNewLoc(realType, locLength))
+  mut type = ast:ptypeNew(null, null, ast:ptypeDescrNewLoc(realType, locLength))
   type'end = realType'end
 
   return type
 /func
 
 
-func parserParseStructType(ctx ptr synt:ParserContext) ptr ast:Type
+func parserParseStructType(ctx ptr synt:ParserContext) ptr ast:PType
   mut end utils:Line
 
   mut args = parserParseStructBody(ctx, ptr end)
@@ -355,21 +355,21 @@ func parserParseStructType(ctx ptr synt:ParserContext) ptr ast:Type
     return null
   /if
 
-  mut type = ast:typeNew(null, null, ast:typeDescrNew(ast:TYPE_STRUCT, null, args))
+  mut type = ast:ptypeNew(null, null, ast:ptypeDescrNew(ast:TYPE_STRUCT, null, args))
   type'end = end
 
   return type
 /func
 
 
-func parserParseType(ctx ptr synt:ParserContext) ptr ast:Type
+func parserParseType(ctx ptr synt:ParserContext) ptr ast:PType
   if ctx'next == null
     ctx'prs'err = lex:errorMism(ctx'last, "a valid type", "end of file")
     return null
   /if
 
   mut tok = nextTok(ctx)
-  mut ret ptr ast:Type = null
+  mut ret ptr ast:PType = null
 
   if tok'type == lex:FUNC
     ret = parserParseFunctionType(ctx)
@@ -387,7 +387,7 @@ func parserParseType(ctx ptr synt:ParserContext) ptr ast:Type
   if tok'type == lex:PTR
     # parses the real type (after ptr)
     mut realType = parserParseType(ctx)
-    ret = ast:typeNew(null, null, ast:typeDescrNew(ast:TYPE_PTR, realType, null))
+    ret = ast:ptypeNew(null, null, ast:ptypeDescrNew(ast:TYPE_PTR, realType, null))
     ret'end = realType'end
   /if
 
@@ -429,7 +429,7 @@ func parserParseDeclaration(ctx ptr synt:ParserContext, declType uint16, externa
     return null
   /if
 
-  mut type ptr ast:Type = null
+  mut type ptr ast:PType = null
   mut end utils:Line
 
   if ctx'next'type != lex:ASSIGN
@@ -442,7 +442,7 @@ func parserParseDeclaration(ctx ptr synt:ParserContext, declType uint16, externa
     end = type'end
   /if
 
-  mut pdecl = ast:pdeclNew(declType, ast:symbolNew(id, type))
+  mut pdecl = ast:pdeclNew(declType, ast:psymbolNew(id, type))
   mut pnode = cast<ptr ast:PNode>(pdecl)
 
   if ctx'next != null and ctx'next'type == lex:ASSIGN
@@ -494,7 +494,7 @@ func parserParseAlias(ctx ptr synt:ParserContext) ptr ast:PNode
       return null
     /if
 
-    mut palias = ast:pdeclNew(ast:PALIAS, ast:symbolNew(cast<ptr uint8>(name'value), type))
+    mut palias = ast:pdeclNew(ast:PALIAS, ast:psymbolNew(cast<ptr uint8>(name'value), type))
     mut pnode = cast<ptr ast:PNode>(palias)
     pnode'begin = begin
     pnode'end = type'end
@@ -728,7 +728,7 @@ func parserParseBody(ctx ptr synt:ParserContext, isEndToken ptr func(tok ptr lex
 func parserMakeFunction(ctx ptr synt:ParserContext,
                         pType uint16,
                         name ptr uint8,
-                        type ptr ast:Type,
+                        type ptr ast:PType,
                         endTType uint16,
                         isEndToken ptr func(tok ptr lex:Token) bool) ptr ast:PNode
 
@@ -736,7 +736,7 @@ func parserMakeFunction(ctx ptr synt:ParserContext,
     return null
   /if
 
-  mut funcNode = cast<ptr ast:PNode>(ast:pdeclNew(pType, ast:symbolNew(name, type)))
+  mut funcNode = cast<ptr ast:PNode>(ast:pdeclNew(pType, ast:psymbolNew(name, type)))
   mut body = cast<ptr ast:PNode>(parserParseBody(ctx, isEndToken))
 
   if body == null
@@ -759,8 +759,8 @@ func parserMakeFunction(ctx ptr synt:ParserContext,
 /func
 
 
-func makeEntryType() ptr ast:Type
-  return ast:typeNew(null, null,ast:typeDescrNew(ast:TYPE_FUNC, null, null))
+func makeEntryType() ptr ast:PType
+  return ast:ptypeNew(null, null,ast:ptypeDescrNew(ast:TYPE_FUNC, null, null))
 /func
 
 
