@@ -61,7 +61,7 @@ assignOp ::= '=' | '+=' | '-=' | '*=' | '/=' | '&=' | '|=' | '^=' | '**='
 
 idname ::= id, [':', id]
 
-conditional ::= (or, '=>', expr, ',', conditional) | or
+conditional ::= (or, '=>', expr, '||', conditional) | or
 
 or ::= ( or, 'or', and ) | and
 
@@ -93,7 +93,7 @@ size ::= 'size', '(', type, ')'
 
 postfix ::= primary | access | call | field | inc
 
-primary ::= idname | constant | string | ( '(', expr, ')' )
+primary ::= idname | constant | ( '(', expr, ')' )
 
 access ::= postfix, '[', expr, ']'
 
@@ -105,7 +105,7 @@ field ::= postfix, ''', id
 
 inc ::= postfix, ('++' | '--')
 
-constant ::= number | boolVal
+constant ::= number | boolVal | 'null' | string
 
 boolVal ::= 'true' | 'false'
 

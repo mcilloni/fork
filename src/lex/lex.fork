@@ -564,6 +564,10 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     type = lex:NOT
   /if
 
+  if spring:strequals(strToken, "null")
+    type = lex:NULLPTR
+  /if
+
   if spring:strequals(strToken, "[")
     type = lex:OBRAC
   /if
@@ -812,6 +816,10 @@ func tokenStr(tok ptr lex:Token) ptr uint8
 
   if tok'type == lex:NOT
     return "!"
+  /if
+
+  if tok'type == lex:NULLPTR
+    return "null"
   /if
 
   if tok'type == lex:NUMBER

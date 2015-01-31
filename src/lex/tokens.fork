@@ -30,6 +30,7 @@ mut IF uint16 = 270
 mut IMPORT uint16 = 280
 mut MODULE uint16 = 360
 mut MUT uint16 = 370
+mut NULLPTR uint16 = 380
 mut NUMBER uint16 = 390
 mut RETURN uint16 = 470
 mut SEPARATOR uint16 = 480

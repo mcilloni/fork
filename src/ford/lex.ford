@@ -111,6 +111,7 @@ decl MOD uint16
 decl MODULE uint16
 decl MUT uint16
 decl NOT uint16
+decl NULLPTR uint16
 decl NUMBER uint16
 decl OBRAC uint16
 decl OPAR uint16
