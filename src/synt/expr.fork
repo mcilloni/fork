@@ -13,8 +13,8 @@ import spring
 import synt
 import utils
 
-mut TYPE_BINARY uint8 = 0
-mut TYPE_UNARY uint8 = 2
+mut PTYPE_BINARY uint8 = 0
+mut PTYPE_UNARY uint8 = 2
 
 mut ASSOC_LEFT uint8 = 0
 mut ASSOC_RIGHT uint8 = 1

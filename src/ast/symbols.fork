@@ -96,7 +96,7 @@ func ptypeDescrNew(type uint16, retType ptr ast:PType, params ptr spring:List) p
 
 
 func ptypeDescrNewLoc(innerType ptr ast:PType, length uintptr) ptr ast:PTypeDescr
-  mut typeDescr = ast:ptypeDescrNew(ast:TYPE_LOC, innerType, null)
+  mut typeDescr = ast:ptypeDescrNew(ast:PTYPE_LOC, innerType, null)
   typeDescr'length = length
 
   return typeDescr
@@ -150,67 +150,67 @@ func stabFree(stab ptr ast:Symtable)
 #  mut signed = false
 
 #  if spring:strequals(name, "uint8")
-#    type = ast:TYPE_INT
+#    type = ast:PTYPE_INT
 #    typeSize = 1
 #  /if
 
 #  if spring:strequals(name, "uint16")
-#    type = ast:TYPE_INT
+#    type = ast:PTYPE_INT
 #    typeSize = 2
 #  /if
 
 #  if spring:strequals(name, "uint32")
-#    type = ast:TYPE_INT
+#    type = ast:PTYPE_INT
 #    typeSize = 4
 #  /if
 
 #  if spring:strequals(name, "uint64")
-#    type = ast:TYPE_INT
+#    type = ast:PTYPE_INT
 #    typeSize = 8
 #  /if
 
 #  if spring:strequals(name, "int8")
-#    type = ast:TYPE_INT
+#    type = ast:PTYPE_INT
 #    typeSize = 1
 #    signed = true
 #  /if
 
 #  if spring:strequals(name, "int16")
-#    type = ast:TYPE_INT
+#    type = ast:PTYPE_INT
 #    typeSize = 2
 #    signed = true
 #  /if
 
 #  if spring:strequals(name, "int32")
-#    type = ast:TYPE_INT
+#    type = ast:PTYPE_INT
 #    typeSize = 4
 #    signed = true
 #  /if
 
 #  if spring:strequals(name, "int64")
-#    type = ast:TYPE_INT
+#    type = ast:PTYPE_INT
 #    typeSize = 8
 #    signed = true
 #  /if
 
 #  if spring:strequals(name, "uintptr")
-#    type = ast:TYPE_INT
+#    type = ast:PTYPE_INT
 #    typeSize = size(uintptr)
 #  /if
 
 #  if spring:strequals(name, "uintptr")
-#    type = ast:TYPE_INT
+#    type = ast:PTYPE_INT
 #    typeSize = size(intptr)
 #    signed = true
 #  /if
 
 #  if spring:strequals(name, "bool")
-#    type = ast:TYPE_BOOL
+#    type = ast:PTYPE_BOOL
 #    typeSize = 1
 #  /if
 
 #  if spring:strequals(name, "data")
-#    type = ast:TYPE_PTR
+#    type = ast:PTYPE_PTR
 #    typeSize = size(data)
 #  /if
 
@@ -223,8 +223,8 @@ func stabFree(stab ptr ast:Symtable)
 #/func
 
 
-mut TYPE_FUNC   uint16 = 10
-mut TYPE_ID     uint16 = 20
-mut TYPE_PTR    uint16 = 30
-mut TYPE_STRUCT uint16 = 40
-mut TYPE_LOC    uint16 = 50
+mut PTYPE_FUNC   uint16 = 10
+mut PTYPE_ID     uint16 = 20
+mut PTYPE_PTR    uint16 = 30
+mut PTYPE_STRUCT uint16 = 40
+mut PTYPE_LOC    uint16 = 50

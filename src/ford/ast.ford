@@ -15,11 +15,11 @@ import utils
 
 # symbols
 
-decl TYPE_FUNC   uint16
-decl TYPE_ID     uint16
-decl TYPE_PTR    uint16
-decl TYPE_STRUCT uint16
-decl TYPE_LOC    uint16
+decl PTYPE_FUNC   uint16
+decl PTYPE_ID     uint16
+decl PTYPE_PTR    uint16
+decl PTYPE_STRUCT uint16
+decl PTYPE_LOC    uint16
 
 # PType and PTypeDescr do not represent a type, but its parse-time representation.
 # Per example, uint16 and PType are bot "id-types", because they are syntactically presented by
@@ -36,13 +36,13 @@ alias PType struct (
 alias PTypeDescr struct (
   refc utils:Ref,
   type uint16,
-  # if type is TYPE_PTR or TYPE_LOC, this is the type returned by dereferencing.
-  # if type is TYPE_FUNC, this is the return type of the function
+  # if type is PTYPE_PTR or PTYPE_LOC, this is the type returned by dereferencing.
+  # if type is PTYPE_FUNC, this is the return type of the function
   retType ptr PType,
-  # if type is TYPE_FUNC, this is the arguments list
-  # if type is TYPE_STRUCT, this is the fields list
+  # if type is PTYPE_FUNC, this is the arguments list
+  # if type is PTYPE_STRUCT, this is the fields list
   arguments ptr spring:List,
-  #if type is TYPE_LOC, this is the number of items allocated
+  #if type is PTYPE_LOC, this is the number of items allocated
   length uintptr
 )
 
@@ -60,6 +60,37 @@ alias PSymbol struct(
 )
 
 decl psymbolNew func(name ptr uint8, type ptr PType) ptr PSymbol
+
+
+decl TYPE_FUNC   uint16
+decl TYPE_PTR    uint16
+decl TYPE_STRUCT uint16
+decl TYPE_LOC    uint16
+decl TYPE_BOOL   uint16
+decl TYPE_INT    uint16
+decl TYPE_DATA   uint16
+decl TYPE_NULL   uint16
+
+
+# Type represents a well formed, semantically valid type.
+# An instance of this is the product of type validation by sema.
+
+alias Type struct(
+  # which type macroclass this instance represents.
+  type uint16
+
+  # eventual module and alias of the current type.
+  moduleName, name ptr uint8
+
+  # if integer, this represent its signedness.
+  signed bool
+
+  # size of this type. This is set unless this is inside a recursive description of this type.
+  # In this case, size can be found using the upper type.
+  sizeof uintptr
+  exprval ptr Type
+  members ptr spring:List
+)
 
 alias Symtable struct(
   syms ptr spring:List

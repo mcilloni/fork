@@ -94,7 +94,7 @@ func ptypeDescrDump(ptypeDescr ptr ast:PTypeDescr)
 
   mut ptype = ptypeDescr'type
 
-  if ptype == ast:TYPE_FUNC
+  if ptype == ast:PTYPE_FUNC
     spring:out("func")
 
     if ptypeDescr'arguments != null
@@ -110,23 +110,23 @@ func ptypeDescrDump(ptypeDescr ptr ast:PTypeDescr)
     /if
   /if
 
-  if ptype == ast:TYPE_ID
+  if ptype == ast:PTYPE_ID
     return
   /if
 
-  if ptype == ast:TYPE_LOC
+  if ptype == ast:PTYPE_LOC
     spring:out("[")
     spring:outint(ptypeDescr'length)
     spring:out("] ")
     ast:ptypeDump(ptypeDescr'retType)
   /if
 
-  if ptype == ast:TYPE_PTR
+  if ptype == ast:PTYPE_PTR
     spring:out("ptr ")
     ast:ptypeDump(ptypeDescr'retType)
   /if
 
-  if ptype == ast:TYPE_STRUCT
+  if ptype == ast:PTYPE_STRUCT
     spring:out("struct ")
     ptypeDescrDumpStructuredDataArgs(ptypeDescr'arguments)
   /if
