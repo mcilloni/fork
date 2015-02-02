@@ -455,6 +455,10 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     type = lex:DIFFERENT
   /if
 
+  if spring:strequals(strToken, "/^")
+    type = lex:MOD
+  /if
+
   if spring:strequals(strToken, "/")
     if utils:charIsIdVal(lex'peek)
       lex'saved = extractNextToken(lex)
@@ -546,10 +550,6 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 
   if spring:strequals(strToken, "-")
     type = lex:MINUS
-  /if
-
-  if spring:strequals(strToken, "mod")
-    type = lex:MOD
   /if
 
   if spring:strequals(strToken, "module")
@@ -803,7 +803,7 @@ func tokenStr(tok ptr lex:Token) ptr uint8
   /if
 
   if tok'type == lex:MOD
-    return "mod"
+    return "/^"
   /if
 
   if tok'type == lex:MODULE

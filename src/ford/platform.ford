@@ -1,0 +1,16 @@
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+module platform
+
+# The size, in bytes, of a pointer.
+# Because in 2015 we are not yet fully 64 bit, I'm pretty sure I'll be dead
+# since a several centuries before someone would ever have to express the length of a
+# pointer in bytes with more than 8 bits (Can't wait for 2040 bits systems).
+decl ptrSize uint8

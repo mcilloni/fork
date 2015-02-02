@@ -13,13 +13,6 @@ import lex
 import spring
 import utils
 
-# symbols
-
-decl PTYPE_FUNC   uint16
-decl PTYPE_ID     uint16
-decl PTYPE_PTR    uint16
-decl PTYPE_STRUCT uint16
-decl PTYPE_LOC    uint16
 
 # PType and PTypeDescr do not represent a type, but its parse-time representation.
 # Per example, uint16 and PType are bot "id-types", because they are syntactically presented by
@@ -49,9 +42,9 @@ alias PTypeDescr struct (
 decl ptypeDump func(ptype ptr PType)
 decl ptypeNew func(name,moduleName ptr uint8, descr ptr PTypeDescr) ptr PType
 
-decl ptypeDescrDump func(type ptr PTypeDescr)
-decl ptypeDescrNew func(type uint16, retType ptr PType, params ptr spring:List) ptr PTypeDescr
-decl ptypeDescrNewLoc func(innerType ptr PType, length uintptr) ptr PTypeDescr
+decl ptypeDescrDump func(ptype ptr PTypeDescr)
+decl ptypeDescrNew func(ptype uint16, retPType ptr PType, params ptr spring:List) ptr PTypeDescr
+decl ptypeDescrNewLoc func(innerPType ptr PType, length uintptr) ptr PTypeDescr
 
 alias PSymbol struct(
   refc utils:Ref,
@@ -62,16 +55,6 @@ alias PSymbol struct(
 decl psymbolNew func(name ptr uint8, type ptr PType) ptr PSymbol
 
 
-decl TYPE_FUNC   uint16
-decl TYPE_PTR    uint16
-decl TYPE_STRUCT uint16
-decl TYPE_LOC    uint16
-decl TYPE_BOOL   uint16
-decl TYPE_INT    uint16
-decl TYPE_DATA   uint16
-decl TYPE_NULL   uint16
-
-
 # Type represents a well formed, semantically valid type.
 # An instance of this is the product of type validation by sema.
 
@@ -79,26 +62,56 @@ alias Type struct(
   # which type macroclass this instance represents.
   type uint16,
 
-  # eventual module and alias of the current type.
+  # eventual alias (module and name) of the current type.
   moduleName, name ptr uint8,
 
   # if integer, this represent its signedness.
   isSigned bool,
 
-  # size of this type. This is set unless this is inside a recursive description of this type.
-  # In this case, size can be found using the upper type.
-  typeSize uintptr,
-  exprval ptr Type,
+  # size of this type. Set on creation. -1 if recursive.
+  # functions have no size.
+  # alignment of this type. Set on creation. -1 if recursive.
+  typeSize, typeAlign intptr,
+
+  # number of items, in case this is a location.
+  itemCount uintptr,
+
+  # the type the current instance evaluates to when an operation like function invocation or derefereciation is made.
+  # For pointers, this is the type of the expression obtained with val.
+  # For functions, this is the value of the expression obtained invoking the function.
+  retType ptr Type,
+
+  # The members that compose this type.
+  # For functions, these are the parameters.
+  # For structures, these are the members.
   members ptr spring:List
 )
 
+alias Symbol struct(
+  name ptr uint8,
+  type ptr Type
+)
+
+decl symbolClone func(sym ptr Symbol) ptr Symbol
+decl symbolFree func(sym ptr Symbol)
+decl symbolNew func(name ptr uint8, type ptr Type) ptr Symbol
+
+decl typeClone func(type ptr Type) ptr Type
+decl typeFree func(type ptr Type)
+decl typeNewBuiltin func(name ptr uint8) ptr Type
+decl typeNewFunc func(moduleName, name ptr uint8, retVal ptr Type, members ptr spring:List) ptr Type
+decl typeNewLoc func(moduleName, name ptr uint8, itemCount intptr, retVal ptr Type) ptr Type
+decl typeNewPtr func(moduleName, name ptr uint8, retVal ptr Type) ptr Type
+decl typeNewStruct func(moduleName, name ptr uint8, members ptr spring:List) ptr Type
+decl typeSetAlias func(type ptr Type, moduleName, name ptr uint8) ptr Type
+
 alias Symtable struct(
-  syms ptr spring:List
+  syms ptr spring:Map
 )
 
 decl stabNew func() ptr Symtable
-decl stabAdd func(stab ptr Symtable, sym ptr PSymbol)
-decl stabTypeof func(stab ptr Symtable, name ptr uint8) ptr PType
+decl stabAdd func(stab ptr Symtable, name ptr uint8, type ptr Type)
+decl stabTypeof func(stab ptr Symtable, name ptr uint8) ptr Type
 decl stabFree func(stab ptr Symtable)
 # end symbols
 
@@ -181,3 +194,21 @@ decl PWHILE     uint16
 decl PBLOCK     uint16
 
 #end pnode
+
+# symbols
+
+decl PTYPE_FUNC   uint16
+decl PTYPE_ID     uint16
+decl PTYPE_PTR    uint16
+decl PTYPE_STRUCT uint16
+decl PTYPE_LOC    uint16
+
+
+decl TYPE_FUNC   uint16
+decl TYPE_PTR    uint16
+decl TYPE_STRUCT uint16
+decl TYPE_LOC    uint16
+decl TYPE_BOOL   uint16
+decl TYPE_INT    uint16
+decl TYPE_DATA   uint16
+decl TYPE_NULL   uint16

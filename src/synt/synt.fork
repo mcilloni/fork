@@ -820,6 +820,10 @@ func parserParseFunc(ctx ptr synt:ParserContext) ptr ast:PNode
   /if
 
   mut functionNode =  parserMakeFunction(ctx, ast:PFUNCTION, name, type, lex:ENDFUNC, ptr matchFuncEndTok)
+  if functionNode == null
+    return null
+  /if
+
   functionNode'begin = begin
 
   return functionNode

@@ -1,0 +1,110 @@
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+import ast
+import spring
+import utils
+
+
+func psymbolFree(sym ptr ast:PSymbol)
+  if sym != null
+    spring:free(sym'name)
+    utils:decRef(sym'type)
+    spring:free(sym)
+  /if
+/func
+
+
+func psymbolNew(name ptr uint8, type ptr ast:PType) ptr ast:PSymbol
+  mut sym = cast<ptr ast:PSymbol>(spring:zalloc(size(ast:PSymbol)))
+
+  sym'refc'freeFunc = ptr psymbolFree
+
+  utils:incRef(type)
+  sym'name = name
+  sym'type = type
+
+  return sym
+/func
+
+
+func ptypeFree(type ptr ast:PType)
+  if type != null
+    if type'descr != null
+      utils:decRef(type'descr)
+    /if
+
+    if type'moduleName != null
+      spring:free(type'moduleName)
+    /if
+
+    if type'name != null
+      spring:free(type'name)
+    /if
+
+    spring:free(type)
+  /if
+/func
+
+
+func ptypeNew(name, moduleName ptr uint8, descr ptr ast:PTypeDescr) ptr ast:PType
+  mut type = cast<ptr ast:PType>(spring:zalloc(size(ast:PType)))
+
+  type'refc'freeFunc = ptr ptypeFree
+
+  type'name = name
+  type'moduleName = moduleName
+  utils:incRef(descr)
+  type'descr = descr
+
+  return type
+/func
+
+
+func ptypeDescrFree(descr ptr ast:PTypeDescr)
+  if descr != null
+    if descr'retType != null
+      utils:decRef(descr'retType)
+    /if
+
+    if descr'arguments != null
+      spring:listFreeAll(descr'arguments, ptr psymbolFree)
+    /if
+  /if
+/func
+
+
+func ptypeDescrNew(type uint16, retType ptr ast:PType, params ptr spring:List) ptr ast:PTypeDescr
+  mut descr = cast<ptr ast:PTypeDescr>(spring:zalloc(size(ast:PTypeDescr)))
+
+  descr'refc'freeFunc = ptr ptypeDescrFree
+
+  utils:incRef(retType)
+
+  descr'type = type
+  descr'retType = retType
+  descr'arguments = params
+
+  return descr
+/func
+
+
+func ptypeDescrNewLoc(innerType ptr ast:PType, length uintptr) ptr ast:PTypeDescr
+  mut typeDescr = ast:ptypeDescrNew(ast:PTYPE_LOC, innerType, null)
+  typeDescr'length = length
+
+  return typeDescr
+/func
+
+
+mut PTYPE_FUNC   uint16 = 10
+mut PTYPE_ID     uint16 = 20
+mut PTYPE_PTR    uint16 = 30
+mut PTYPE_STRUCT uint16 = 40
+mut PTYPE_LOC    uint16 = 50

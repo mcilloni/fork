@@ -49,14 +49,14 @@ func findType(node ptr ast:PNode) ptr ast:PType
 /func
 
 
-func findSymLocal(node ptr ast:PNode, name ptr uint8) ptr ast:PType
+func findSymLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
   mut stab = findStab(node)
 
   return ast:stabTypeof(stab, name)
 /func
 
 
-func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:PType
+func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
   mut pblock = findPBlock(node)
 
   if pblock != null
