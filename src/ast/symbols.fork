@@ -192,7 +192,7 @@ func typeNewPtr(moduleName, name ptr uint8, retVal ptr ast:Type) ptr ast:Type
 /func
 
 
-alias AlignResult struct(typeAlign,typeSize uintptr)
+alias AlignResult struct(typeAlign,typeSize intptr)
 
 
 func typeCalculateAlign(members ptr spring:List) AlignResult
@@ -206,18 +206,39 @@ func typeCalculateAlign(members ptr spring:List) AlignResult
   while i < len
     mut member = cast<ptr ast:Type>(val spring:listGet(members, i))
 
+    # calculate the alignment offset of the member against the current starting address.
     mut offset = ret'typeSize mod member'typeAlign
 
+    # if offset is not 0, then the member to be inserted is currently misaligned.
+    # padding is needed.
+    if offset != 0
+      mut padding = member'typeAlign - offset
+      ret'typeSize = ret'typeSize + padding
+    /if
+
+    ret'typeSize = member'typeSize
+    ret'typeAlign = (member'typeAlign > ret'typeAlign) => member'typeAlign || ret'typeAlign
 
     i++
   /while
+
+  # for being sequentially stackable, structs must be padded at the end, according to their alignment.
+  mut finalOffset = ret'typeSize mod ret'typeAlign
+
+  # if there is misalignment at the end of the struct, we need additional padding to reach
+  # a size which is a multiple of the alignment value.
+  if finalOffset > 0
+    ret'typeSize = ret'typeSize + (ret'typeAlign - finalOffset)
+  /if
 
   return ret
 /func
 
 
 func typeNewStruct(moduleName, name ptr uint8, members ptr spring:List) ptr ast:Type
+  mut alignInfo = typeCalculateAlign(members)
 
+  return typeNew(ast:TYPE_STRUCT, moduleName, name, false, alignInfo'typeSize, alignInfo'typeAlign, 1, null, members)
 /func
 
 
