@@ -13,13 +13,13 @@ import ast
 import spring
 
 alias Context struct (
-  fordPaths ptr spring:Vector,
+  fordPaths ptr spring:List,
   imports ptr spring:Map,
   currentFile ptr uint8
 )
 
 decl contextFree func(ctx ptr Context)
-decl contextImport func(ctx ptr Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr spring:Vector
-decl contextImportAll func(ctx ptr Context, imports ptr spring:Vector) ptr spring:Vector
+decl contextImport func(ctx ptr Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr spring:List
+decl contextImportAll func(ctx ptr Context, imports ptr spring:List) ptr spring:List
 decl contextSetCurrentFile func(ctx ptr Context, filename ptr uint8)
 decl contextNew func() ptr Context

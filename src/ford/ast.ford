@@ -122,7 +122,7 @@ alias PNode struct(
   type uint16,
   value uintptr,
   parent ptr PNode,
-  leaves ptr spring:Vector,
+  leaves ptr spring:List,
   begin, end utils:Line
 )
 
@@ -151,12 +151,12 @@ alias PRoot struct(
   node PBlock,
   moduleName ptr StringDef,
   fileName ptr uint8,
-  imports ptr spring:Vector,
+  imports ptr spring:List,
   aliases ptr Symtable
 )
 
 decl isPRoot func(node ptr PNode) bool
-decl prootNew func(modName ptr StringDef, imports ptr spring:Vector, fileName ptr uint8) ptr PRoot
+decl prootNew func(modName ptr StringDef, imports ptr spring:List, fileName ptr uint8) ptr PRoot
 
 alias PDecl struct(
   node PNode,

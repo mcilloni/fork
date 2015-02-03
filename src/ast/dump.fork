@@ -227,7 +227,7 @@ func prootDumpInfo(proot ptr ast:PRoot, depth uintptr)
 
   spring:outch(10)
 
-  mut len = spring:vectLen(proot'imports)
+  mut len = spring:listLen(proot'imports)
   if len > 0
     printPadding(depth)
     spring:outln("Imports: ")
@@ -236,7 +236,7 @@ func prootDumpInfo(proot ptr ast:PRoot, depth uintptr)
 
     while i < len
       printPadding(depth + 1)
-      mut imp = cast<ptr ast:StringDef>(val spring:vectGet(proot'imports, i))
+      mut imp = cast<ptr ast:StringDef>(val spring:listGet(proot'imports, i))
 
       spring:out(imp'name)
       spring:outch(32)
@@ -320,11 +320,11 @@ func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
 
   spring:outch(10)
 
-  mut len = spring:vectLen(pnode'leaves)
+  mut len = spring:listLen(pnode'leaves)
   mut i uintptr = 0
 
   while i < len
-    mut child = cast<ptr ast:PNode>(val spring:vectGet(pnode'leaves, i))
+    mut child = cast<ptr ast:PNode>(val spring:listGet(pnode'leaves, i))
 
     pnodeDumpRec(child, depth + 1)
 

@@ -14,9 +14,9 @@ import ctx
 import spring
 import utils
 
-# validates the AST, and returns a vector of the issues found.
-decl semaValidateAst func(context ptr ctx:Context, root ptr ast:PNode) ptr spring:Vector
-decl semaParse func(context ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr spring:Vector
+# validates the AST, and returns a listor of the issues found.
+decl semaValidateAst func(context ptr ctx:Context, root ptr ast:PNode) ptr spring:List
+decl semaParse func(context ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr spring:List
 
 # ast sema operations
 

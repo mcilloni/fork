@@ -15,15 +15,15 @@ import synt
 import utils
 
 
-func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr ptr ast:PNode) ptr spring:Vector
+func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr ptr ast:PNode) ptr spring:List
   mut fordName = spring:strappend(importName'name, ".ford")
 
-  mut len = spring:vectLen(ctx'fordPaths)
+  mut len = spring:listLen(ctx'fordPaths)
 
   mut i uintptr = 0
 
   while i < len
-    mut path = cast<ptr uint8>(val spring:vectGet(ctx'fordPaths, i))
+    mut path = cast<ptr uint8>(val spring:listGet(ctx'fordPaths, i))
     mut joinedPath = spring:pathJoin(path, fordName)
 
     if spring:pathExists(joinedPath)
@@ -39,7 +39,7 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
     i++
   /while
 
-  mut errors = spring:vectNew(1)
+  mut errors = spring:listNew()
 
   mut toGlue [4] ptr uint8
 
@@ -50,7 +50,7 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
 
   mut glued = spring:strglue(toGlue)
 
-  spring:vectAppend(errors, utils:issueNew(utils:ISSUE_ERR, importName'begin, ctx'currentFile, glued))
+  spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, importName'begin, ctx'currentFile, glued))
 
   spring:free(glued)
 
@@ -58,44 +58,44 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
 /func
 
 
-func contextImport(ctx ptr ctx:Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr spring:Vector
+func contextImport(ctx ptr ctx:Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr spring:List
 
   if !spring:mapGet(ctx'imports, importName, value)
     mut errors = findImport(ctx, importName, value)
-    if spring:vectLen(errors) == 0
+    if spring:listLen(errors) == 0
       spring:mapPut(ctx'imports, spring:strclone(importName'name), val value, spring:FREE_KEY | spring:FREE_VALUE)
     /if
 
     return errors
   else
-    return spring:vectNew(0)
+    return spring:listNew()
   /if
 
 /func
 
 
-func contextImportAll(ctx ptr ctx:Context, imports ptr spring:Vector) ptr spring:Vector
-  mut len = spring:vectLen(imports)
+func contextImportAll(ctx ptr ctx:Context, imports ptr spring:List) ptr spring:List
+  mut len = spring:listLen(imports)
   mut i uintptr = 0
 
   while i < len
     mut value ptr ast:PNode
-    mut importName = cast<ptr ast:StringDef>(val spring:vectGet(imports, i))
+    mut importName = cast<ptr ast:StringDef>(val spring:listGet(imports, i))
     mut errs = contextImport(ctx, importName, ptr value)
 
-    if spring:vectLen(errs) != 0
+    if spring:listLen(errs) != 0
       return errs
     /if
 
     i++
   /while
 
-  return spring:vectNew(0)
+  return spring:listNew()
 /func
 
 
-func envExtractFordPaths() ptr spring:Vector
-  mut vect = spring:vectNew(3)
+func envExtractFordPaths() ptr spring:List
+  mut list = spring:listNew()
 
   mut paths = spring:getenv("FORDPATHS")
   if paths != null
@@ -103,12 +103,12 @@ func envExtractFordPaths() ptr spring:Vector
     mut path ptr uint8
 
     while (path = utils:tokenizerNext(tkz)) != null
-      spring:vectAppend(vect, path)
+      spring:listAppend(list, path)
     /while
 
   /if
 
-  return vect
+  return list
 /func
 
 
@@ -119,7 +119,7 @@ func contextFree(ctx ptr ctx:Context)
     /if
 
     if ctx'fordPaths != null
-      spring:vectFreeAll(ctx'fordPaths, ptr spring:free)
+      spring:listFreeAll(ctx'fordPaths, ptr spring:free)
     /if
 
     spring:free(ctx'currentFile)

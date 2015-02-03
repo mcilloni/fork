@@ -15,7 +15,7 @@ import utils
 func pnodeAppendChild(pnode, child ptr ast:PNode) ptr ast:PNode
 
   if pnode != null and child != null
-    spring:vectAppend(pnode'leaves, child)
+    spring:listAppend(pnode'leaves, child)
 
     child'parent = pnode
   /if
@@ -31,7 +31,7 @@ func pnodeFree(pnode ptr ast:PNode)
       mut proot = cast<ptr ast:PRoot>(pnode)
       ast:strdefFree(proot'moduleName)
       spring:free(proot'fileName)
-      spring:vectFreeAll(proot'imports, cast<ptr func(inst data)>(ptr ast:strdefFree))
+      spring:listFreeAll(proot'imports, cast<ptr func(inst data)>(ptr ast:strdefFree))
       ast:stabFree(proot'aliases)
     /if
 
@@ -50,7 +50,7 @@ func pnodeFree(pnode ptr ast:PNode)
 
     # remember to fix PEXPR leaks.
 
-    spring:vectFreeAll(pnode'leaves, ptr pnodeFree)
+    spring:listFreeAll(pnode'leaves, ptr pnodeFree)
 
     spring:free(pnode)
   /if
@@ -62,7 +62,7 @@ func pnodeNew(type uint16, value uintptr) ptr ast:PNode
   mut pnode = cast<ptr ast:PNode>(spring:zalloc(size(ast:PNode)))
   pnode'type = type
   pnode'value = value
-  pnode'leaves = spring:vectNew(2)
+  pnode'leaves = spring:listNew()
 
   return pnode
 /func
@@ -73,7 +73,7 @@ func pblockNew() ptr ast:PBlock
   mut pnode = cast<ptr ast:PNode>(pblock)
 
   pnode'type = ast:PBLOCK
-  pnode'leaves = spring:vectNew(5)
+  pnode'leaves = spring:listNew()
 
   return pblock
 /func
@@ -83,7 +83,7 @@ func pdeclNew(nodeType uint16, sym ptr ast:PSymbol) ptr ast:PDecl
 
   mut pdecl = cast<ptr ast:PDecl>(spring:zalloc(size(ast:PDecl)))
   pdecl'node'type = nodeType
-  pdecl'node'leaves = spring:vectNew(2)
+  pdecl'node'leaves = spring:listNew()
 
   utils:incRef(sym)
 
@@ -97,7 +97,7 @@ func pexprTernaryNew(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end uti
     mut pexpr = cast<ptr ast:PExpr>(spring:zalloc(size(ast:PExpr)))
     pexpr'node'type = ast:PEXPR
     pexpr'node'value = tok'value
-    pexpr'node'leaves = spring:vectNew(2)
+    pexpr'node'leaves = spring:listNew()
     pexpr'opType = tok'type
     tok'value = 0 # now the value belongs to this PExpr
 
@@ -125,13 +125,13 @@ func pexprNewSingle(tok ptr lex:Token) ptr ast:PExpr
 /func
 
 
-func prootNew(moduleName ptr ast:StringDef, imports ptr spring:Vector, fileName ptr uint8) ptr ast:PRoot
+func prootNew(moduleName ptr ast:StringDef, imports ptr spring:List, fileName ptr uint8) ptr ast:PRoot
 
   mut proot = cast<ptr ast:PRoot>(spring:zalloc(size(ast:PRoot)))
   mut pnode = cast<ptr ast:PNode>(proot)
 
   pnode'type = ast:PROOT
-  pnode'leaves = spring:vectNew(5)
+  pnode'leaves = spring:listNew()
   pnode'parent = null
 
   proot'moduleName = moduleName

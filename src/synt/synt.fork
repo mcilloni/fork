@@ -134,12 +134,12 @@ func parserParseImport(ctx ptr synt:ParserContext) ptr ast:StringDef
 
 
 # parses the 'import' statements
-func parserParseImports(ctx ptr synt:ParserContext) ptr spring:Vector
-  mut ret = spring:vectNew(5)
+func parserParseImports(ctx ptr synt:ParserContext) ptr spring:List
+  mut ret = spring:listNew()
   mut importLine ptr ast:StringDef
 
   while (importLine = parserParseImport(ctx)) != null
-    spring:vectAppend(ret, importLine)
+    spring:listAppend(ret, importLine)
   /while
 
   return ret

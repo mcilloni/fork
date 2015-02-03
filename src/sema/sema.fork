@@ -73,15 +73,15 @@ func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 
 # root node contains global declarations
 # it has no stack, and no declaration order
-func makePRootStab(ctx ptr ctx:Context, root ptr ast:PNode, errors ptr spring:Vector) ptr ast:Symtable
+func makePRootStab(ctx ptr ctx:Context, root ptr ast:PNode, errors ptr spring:List) ptr ast:Symtable
   mut children = root'leaves
   mut stab = ast:stabNew()
 
   mut i uintptr = 0
-  mut len = spring:vectLen(children)
+  mut len = spring:listLen(children)
 
   while i < len
-    mut child = cast<ptr ast:PNode>(val spring:vectGet(children, i))
+    mut child = cast<ptr ast:PNode>(val spring:listGet(children, i))
 
     if ast:isPDecl(child)
       mut pdecl = cast<ptr ast:PDecl>(child)
@@ -91,7 +91,7 @@ func makePRootStab(ctx ptr ctx:Context, root ptr ast:PNode, errors ptr spring:Ve
       if existing != null
         mut errMsg = spring:strappend(sym'name, " is already defined")
 
-        spring:vectAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, ctx'currentFile, errMsg))
+        spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, ctx'currentFile, errMsg))
 
         spring:free(errMsg)
       /if
@@ -102,7 +102,22 @@ func makePRootStab(ctx ptr ctx:Context, root ptr ast:PNode, errors ptr spring:Ve
 /func
 
 
-func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr spring:Vector
+func validatePRootAliases(ctx ptr ctx:Context, root ptr ast:PNode, errors ptr spring:List) ptr ast:Symtable
+  mut children = root'leaves
+  mut len = spring:listLen(children)
+  mut i uintptr = 0
+
+  mut aliases = ast:stabNew()
+
+  while i < len
+    mut child = cast<ptr ast:PNode>(val spring:listGet(children, i))
+
+    i++
+  /while
+/func
+
+
+func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr spring:List
   if root'type != ast:PROOT
     return null
   /if
@@ -115,13 +130,14 @@ func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr spring:Vector
 
   ctx:contextSetCurrentFile(ctx, proot'fileName)
 
+  mut aliases = validatePRootAliases(ctx, root, errors)
   mut stab = makePRootStab(ctx, root, errors)
 
   return errors
 /func
 
 
-func semaParse(ctx ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr spring:Vector
+func semaParse(ctx ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr spring:List
   mut parser = synt:parserNew(fileName)
 
   val newRoot = synt:parserParse(parser)
@@ -131,10 +147,10 @@ func semaParse(ctx ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNod
   synt:parserFree(parser)
 
   if val newRoot == null
-    mut vect = spring:vectNew(1)
-    spring:vectAppend(vect, error)
+    mut list = spring:listNew()
+    spring:listAppend(list, error)
 
-    return vect
+    return list
   /if
 
   return sema:semaValidateAst(ctx, val newRoot)

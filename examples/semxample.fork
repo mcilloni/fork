@@ -25,13 +25,13 @@ entry
   mut ast ptr ast:PNode
   mut errors = sema:semaParse(ctx, argv'args[0], ptr ast)
 
-  mut errLen = spring:vectLen(errors)
+  mut errLen = spring:listLen(errors)
 
   if errLen > 0
     mut i uintptr = 0
 
     while i < errLen
-      mut issue = cast<ptr utils:Issue>(val spring:vectGet(errors, i))
+      mut issue = cast<ptr utils:Issue>(val spring:listGet(errors, i))
 
       utils:issueWriteOut(issue, ptr spring:out)
 
