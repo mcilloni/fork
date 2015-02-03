@@ -102,6 +102,7 @@ decl typeNewBuiltin func(name ptr uint8) ptr Type
 decl typeNewFunc func(moduleName, name ptr uint8, retVal ptr Type, members ptr spring:List) ptr Type
 decl typeNewLoc func(moduleName, name ptr uint8, itemCount intptr, retVal ptr Type) ptr Type
 decl typeNewPtr func(moduleName, name ptr uint8, retVal ptr Type) ptr Type
+decl typeNewRecursiveAlias func(moduleName, name ptr uint8) ptr Type
 decl typeNewStruct func(moduleName, name ptr uint8, members ptr spring:List) ptr Type
 decl typeSetAlias func(type ptr Type, moduleName, name ptr uint8) ptr Type
 
@@ -204,11 +205,12 @@ decl PTYPE_STRUCT uint16
 decl PTYPE_LOC    uint16
 
 
-decl TYPE_FUNC   uint16
-decl TYPE_PTR    uint16
-decl TYPE_STRUCT uint16
-decl TYPE_LOC    uint16
-decl TYPE_BOOL   uint16
-decl TYPE_INT    uint16
-decl TYPE_DATA   uint16
-decl TYPE_NULL   uint16
+decl TYPE_FUNC      uint16
+decl TYPE_PTR       uint16
+decl TYPE_STRUCT    uint16
+decl TYPE_LOC       uint16
+decl TYPE_BOOL      uint16
+decl TYPE_INT       uint16
+decl TYPE_DATA      uint16
+decl TYPE_REC_ALIAS uint16
+decl TYPE_NULL      uint16

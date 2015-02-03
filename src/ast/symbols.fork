@@ -235,6 +235,11 @@ func typeCalculateAlign(members ptr spring:List) AlignResult
 /func
 
 
+func typeNewRecursiveAlias(moduleName, name ptr uint8) ptr ast:Type
+  return typeNew(ast:TYPE_REC_ALIAS, moduleName, name, false, -1, -1, 0, null, null)
+/func
+
+
 func typeNewStruct(moduleName, name ptr uint8, members ptr spring:List) ptr ast:Type
   mut alignInfo = typeCalculateAlign(members)
 
@@ -281,11 +286,12 @@ func stabFree(stab ptr ast:Symtable)
 /func
 
 
-mut TYPE_FUNC   uint16 = 10
-mut TYPE_PTR    uint16 = 20
-mut TYPE_STRUCT uint16 = 30
-mut TYPE_LOC    uint16 = 40
-mut TYPE_BOOL   uint16 = 50
-mut TYPE_INT    uint16 = 60
-mut TYPE_DATA   uint16 = 70
-mut TYPE_NULL   uint16 = 80
+mut TYPE_FUNC      uint16 = 10
+mut TYPE_PTR       uint16 = 20
+mut TYPE_STRUCT    uint16 = 30
+mut TYPE_LOC       uint16 = 40
+mut TYPE_BOOL      uint16 = 50
+mut TYPE_INT       uint16 = 60
+mut TYPE_DATA      uint16 = 70
+mut TYPE_REC_ALIAS uint16 = 80
+mut TYPE_NULL      uint16 = 90
