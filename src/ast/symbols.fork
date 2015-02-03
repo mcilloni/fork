@@ -206,7 +206,7 @@ func typeCalculateAlign(members ptr spring:List) AlignResult
   while i < len
     mut member = cast<ptr ast:Type>(val spring:listGet(members, i))
     # /^ is the modulo operator
-    mut offset = ret'typeSize /^ member'typeAlign
+#    mut offset = ret'typeSize /^ member'typeAlign
 
 
     i++
