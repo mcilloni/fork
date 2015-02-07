@@ -112,6 +112,15 @@ func envExtractFordPaths() ptr spring:List
 /func
 
 
+func contextGetImport(ctx ptr ctx:Context, name ptr uint8) ptr ast:PRoot
+  mut ret ptr ast:PRoot = null
+
+  spring:mapGet(ctx'imports, name, ptr ret)
+
+  return ret
+/func
+
+
 func contextFree(ctx ptr ctx:Context)
   if ctx != null
     if ctx'imports != null

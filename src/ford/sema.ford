@@ -14,11 +14,18 @@ import ctx
 import spring
 import utils
 
+# type validation
+
+decl validateAlias func(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType, errors,recursive ptr spring:List) ptr ast:Type
+
 # validates the AST, and returns a listor of the issues found.
 decl semaValidateAst func(context ptr ctx:Context, root ptr ast:PNode) ptr spring:List
 decl semaParse func(context ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr spring:List
 
 # ast sema operations
+
+decl findAliasImport func(ctx ptr ctx:Context, moduleName,name ptr uint8) ptr ast:Type
+decl findAliasLocal func(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 
 decl findSym func(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 decl findSymLocal func(node ptr ast:PNode, name ptr uint8) ptr ast:Type
