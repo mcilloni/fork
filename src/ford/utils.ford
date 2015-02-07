@@ -57,6 +57,18 @@ decl tokenizerNew func(str ptr uint8, ch uint8) ptr Tokenizer
 decl tokenizerNext func(tkz ptr Tokenizer) ptr uint8
 
 
+alias FreePool struct(
+  ptrs ptr spring:List,
+  freeFunc ptr func(item data)
+)
+
+
+decl fpAlloc func(fp ptr FreePool, len uintptr) data
+decl fpFree func(fp ptr FreePool)
+decl fpNew func(freeFunc ptr func(item data)) ptr FreePool
+decl fpZAlloc func(fp ptr FreePool, len uintptr) data
+
+
 decl ISSUE_ERR uint8
 decl ISSUE_WARN uint8
 decl ISSUE_INFO uint8

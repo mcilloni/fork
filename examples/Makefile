@@ -15,11 +15,11 @@ BINS = $(patsubst %.fork,%.elf,$(SRCS))
 all: $(BINS)
 
 %.elf: %.o
-	@echo [FORKL] $<
+	@echo FORKL $<
 	@ $(FORKL) -o $@ $< ../build/libsema.a ../build/libsynt.a ../build/libast.a ../build/liblex.a ../build/libutils.a 
 
 %.o: %.fork
-	@echo [FORKC] $<
+	@printf "FORKC\t\t%s\n" $<
 	@ FORDPATHS="$(shell pwd)/../src/ford/" $(FORKC) -o $@ $<
 
 clean:

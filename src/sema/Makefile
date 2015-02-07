@@ -27,7 +27,7 @@ dir:
 	install -d $(BUILDPATH)
 
 $(BUILDPATH)/%.o: %.fork dir
-	@echo [FORKC] $<
+	@printf "FORKC\t\t%s\n" $<
 	@ FORDPATHS="$(shell pwd)/../ford/" $(FORKC) -o $@ $<
 
 clean:
