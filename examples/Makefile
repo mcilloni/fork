@@ -15,11 +15,9 @@ BINS = $(patsubst %.fork,%.elf,$(SRCS))
 all: $(BINS)
 
 %.elf: %.o
-<<<<<<< HEAD
+
 	@printf "FORKL\t\t%s\n" $<
-=======
-	@echo FORKL $<
->>>>>>> 6e9387e28c7ba2ddd343ef303d8076fa93a60bed
+
 	@ $(FORKL) -o $@ $< ../build/libsema.a ../build/libsynt.a ../build/libast.a ../build/liblex.a ../build/libutils.a 
 
 %.o: %.fork
