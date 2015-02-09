@@ -13,14 +13,14 @@ import spring
 import utils
 
 
-func symbolClone(pool ptr utils:FreePool, sym ptr ast:Symbol) ptr ast:Symbol
+func symbolClone(sym ptr ast:Symbol) ptr ast:Symbol
   if sym == null
     return null
   /if
 
   mut newInst = cast<ptr ast:Symbol>(spring:alloc(size(ast:Symbol)))
   newInst'name = spring:strclone(sym'name)
-  newInst'type = ast:typeClone(pool, sym'type)
+  newInst'type = sym'type
 
   return newInst
 /func
@@ -56,7 +56,7 @@ func symbolListClone(pool ptr utils:FreePool, symList ptr spring:List) ptr sprin
 
   while i < len
     mut elem = cast<ptr ast:Symbol>(val spring:listGet(symList, i))
-    spring:listAppend(ret, ast:symbolClone(pool, elem))
+    spring:listAppend(ret, ast:symbolClone(elem))
     i++
   /while
 
@@ -91,7 +91,9 @@ func typeFree(type ptr ast:Type)
 
 func typeNew(pool ptr utils:FreePool, type uint16, moduleName, name ptr uint8, isSigned bool,
   typeSize, typeAlign intptr, itemCount uintptr, retType ptr ast:Type, members ptr spring:List) ptr ast:Type
-  mut ret = cast<ptr ast:Type>(utils:fpAlloc(pool, size(ast:Type)))
+
+  mut location = pool != null => utils:fpAlloc(pool, size(ast:Type)) || spring:alloc(size(ast:Type))
+  mut ret = cast<ptr ast:Type>(location)
 
   ret'type = type
   ret'moduleName = spring:strclone(moduleName)
@@ -107,73 +109,48 @@ func typeNew(pool ptr utils:FreePool, type uint16, moduleName, name ptr uint8, i
 /func
 
 
-func typeNewBuiltinInt(pool ptr utils:FreePool, name ptr uint8, len uint8, isSigned bool) ptr ast:Type
-  return typeNew(pool, ast:TYPE_INT, null, name, isSigned, len, len, 1, null, null)
+func typeNewBuiltin(type uint16, name ptr uint8, isSigned bool,
+  typeSize, typeAlign intptr, itemCount uintptr, retType ptr ast:Type, members ptr spring:List) ptr ast:Type
+  mut ret = typeNew(null, type, null, name, isSigned, typeSize, typeAlign, itemCount, retType, members)
+  ret'builtin = true
+
+  return ret
 /func
 
 
-func typeNewBuiltinBool(pool ptr utils:FreePool) ptr ast:Type
-  return typeNew(pool, ast:TYPE_BOOL, null, "bool", false, 1, 1, 1, null, null)
+func typeNewBuiltinInt(name ptr uint8, len uint8, isSigned bool) ptr ast:Type
+  return typeNewBuiltin(ast:TYPE_INT, name, isSigned, len, len, 1, null, null)
 /func
 
 
-func typeNewBuiltinData(pool ptr utils:FreePool) ptr ast:Type
-  return typeNew(pool, ast:TYPE_DATA, null, "data", false, platform:ptrSize, platform:ptrSize, 1, null, null)
+func typeNewBuiltinBool() ptr ast:Type
+  return typeNewBuiltin(ast:TYPE_BOOL, "bool", false, 1, 1, 1, null, null)
 /func
 
 
-func typeNewBuiltin(pool ptr utils:FreePool, name ptr uint8) ptr ast:Type
+func typeNewBuiltinData() ptr ast:Type
+  return typeNewBuiltin(ast:TYPE_DATA, "data", false, platform:ptrSize, platform:ptrSize, 1, null, null)
+/func
 
-  if spring:strequals(name, "uint8")
-    return typeNewBuiltinInt(pool, name, 1, false)
-  /if
 
-  if spring:strequals(name, "uint16")
-    return typeNewBuiltinInt(pool, name, 2, false)
-  /if
+func builtinSetNew() ptr spring:Map
 
-  if spring:strequals(name, "uint32")
-    return typeNewBuiltinInt(pool, name, 4, false)
-  /if
+  mut ret = spring:strmapNew()
 
-  if spring:strequals(name, "uint64")
-    return typeNewBuiltinInt(pool, name, 8, false)
-  /if
+  spring:mapPut(ret, "uint8", typeNewBuiltinInt("uint8", 1, false), spring:FREE_VALUE)
+  spring:mapPut(ret, "uint16", typeNewBuiltinInt("uint16", 2, false), spring:FREE_VALUE)
+  spring:mapPut(ret, "uint32", typeNewBuiltinInt("uint32", 4, false), spring:FREE_VALUE)
+  spring:mapPut(ret, "uint64", typeNewBuiltinInt("uint64", 8, false), spring:FREE_VALUE)
+  spring:mapPut(ret, "int8", typeNewBuiltinInt("int8", 1, true), spring:FREE_VALUE)
+  spring:mapPut(ret, "int16", typeNewBuiltinInt("int16", 2, true), spring:FREE_VALUE)
+  spring:mapPut(ret, "int32", typeNewBuiltinInt("int32", 4, true), spring:FREE_VALUE)
+  spring:mapPut(ret, "int64", typeNewBuiltinInt("int64", 8, true), spring:FREE_VALUE)
+  spring:mapPut(ret, "uintptr", typeNewBuiltinInt("uintptr", platform:ptrSize, false), spring:FREE_VALUE)
+  spring:mapPut(ret, "intptr", typeNewBuiltinInt("intptr", platform:ptrSize, true), spring:FREE_VALUE)
+  spring:mapPut(ret, "bool", typeNewBuiltinBool(), spring:FREE_VALUE)
+  spring:mapPut(ret, "data", typeNewBuiltinData(), spring:FREE_VALUE)
 
-  if spring:strequals(name, "int8")
-    return typeNewBuiltinInt(pool, name, 1, true)
-  /if
-
-  if spring:strequals(name, "int16")
-    return typeNewBuiltinInt(pool, name, 2, true)
-  /if
-
-  if spring:strequals(name, "int32")
-    return typeNewBuiltinInt(pool, name, 4, true)
-  /if
-
-  if spring:strequals(name, "int64")
-    return typeNewBuiltinInt(pool, name, 8, true)
-  /if
-
-  if spring:strequals(name, "uintptr")
-    return typeNewBuiltinInt(pool, name, platform:ptrSize, false)
-  /if
-
-  if spring:strequals(name, "intptr")
-    return typeNewBuiltinInt(pool, name, platform:ptrSize, true)
-  /if
-
-  if spring:strequals(name, "bool")
-    return typeNewBuiltinBool(pool)
-  /if
-
-  if spring:strequals(name, "data")
-    return typeNewBuiltinData(pool)
-  /if
-
-  return null
-
+  return ret
 /func
 
 
@@ -247,10 +224,18 @@ func typeNewStruct(pool ptr utils:FreePool, moduleName, name ptr uint8, members 
 /func
 
 
-func typeSetAlias(type ptr ast:Type, moduleName, name ptr uint8) ptr ast:Type
+func typeSetAlias(type ptr ast:Type, moduleName, name ptr uint8)
   if type != null
     type'moduleName = spring:strclone(moduleName)
     type'name = spring:strclone(name)
+  /if
+/func
+
+
+func typeSetBoundaries(type ptr ast:Type, begin,end utils:Line)
+  if type != null
+    type'begin = begin
+    type'end = end
   /if
 /func
 

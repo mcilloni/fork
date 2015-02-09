@@ -131,6 +131,8 @@ func contextFree(ctx ptr ctx:Context)
       spring:listFreeAll(ctx'fordPaths, ptr spring:free)
     /if
 
+    spring:mapFreeSpec(ctx'builtins, ptr spring:free, cast<ptr func(item data)>(ptr ast:typeFree))
+
     spring:free(ctx'currentFile)
     spring:free(ctx)
   /if
@@ -149,5 +151,14 @@ func contextNew() ptr ctx:Context
   ctx'imports = spring:strmapNew()
 
   ctx'fordPaths = envExtractFordPaths()
+  ctx'builtins = ast:builtinSetNew()
   return ctx
+/func
+
+
+func contextMatchBuiltin(ctx ptr ctx:Context, name ptr uint8) ptr ast:Type
+  mut value ptr ast:Type = null
+
+  spring:mapGet(ctx'builtins, name, ptr value)
+  return value
 /func
