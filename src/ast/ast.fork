@@ -145,6 +145,24 @@ func prootNew(moduleName ptr ast:StringDef, imports ptr spring:List, fileName pt
 /func
 
 
+func prootHasImported(root ptr ast:PRoot, name ptr uint8) bool
+  mut i uintptr = 0
+  mut len = spring:listLen(root'imports)
+
+  while i < len
+    mut elem = cast<ptr uint8>(val spring:listGet(root'imports, i))
+
+    if spring:strequals(elem, name)
+      return true
+    /if
+
+    i++
+  /while
+
+  return false
+/func
+
+
 func isPDecl(pnode ptr ast:PNode) bool
   return pnode != null and pnode'type == ast:PALIAS or pnode'type == ast:PDECL or pnode'type == ast:PMUT or pnode'type == ast:PENTRY or pnode'type == ast:PFUNCTION
 /func

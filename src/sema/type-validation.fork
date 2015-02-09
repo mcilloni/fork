@@ -38,15 +38,22 @@ func findAliasLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 /func
 
 
+# Validates an alias.
+# recursive starts containing the alias name, so it will be treated correctly by validateAlias.
 func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType, errors,recursive ptr spring:List) ptr ast:Type
   if ptype == null or root == null or errors == null or recursive == null
     return null
   /if
 
+  # first, if the PType is defined in another module, then it's not our business; just check the module and fetch the type.
+  if ptype'moduleName != null
+  /if
+
   mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
 
+  # if we've found an id, it can be 1. an id type 2. builtin 3. an invalid type
   if ptdes'type == ast:PTYPE_ID
-
+    #mut builtin = ctx:contextMatchBuiltin(ctx, )
   /if
 
 /func
