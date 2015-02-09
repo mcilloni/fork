@@ -92,18 +92,18 @@ alias Symbol struct(
   type ptr Type
 )
 
-decl symbolClone func(sym ptr Symbol) ptr Symbol
+decl symbolClone func(pool ptr utils:FreePool, sym ptr Symbol) ptr Symbol
 decl symbolFree func(sym ptr Symbol)
 decl symbolNew func(name ptr uint8, type ptr Type) ptr Symbol
 
-decl typeClone func(type ptr Type) ptr Type
+decl typeClone func(pool ptr utils:FreePool, type ptr Type) ptr Type
 decl typeFree func(type ptr Type)
-decl typeNewBuiltin func(name ptr uint8) ptr Type
-decl typeNewFunc func(moduleName, name ptr uint8, retVal ptr Type, members ptr spring:List) ptr Type
-decl typeNewLoc func(moduleName, name ptr uint8, itemCount intptr, retVal ptr Type) ptr Type
-decl typeNewPtr func(moduleName, name ptr uint8, retVal ptr Type) ptr Type
-decl typeNewRecursiveAlias func(moduleName, name ptr uint8) ptr Type
-decl typeNewStruct func(moduleName, name ptr uint8, members ptr spring:List) ptr Type
+decl typeNewBuiltin func(pool ptr utils:FreePool, name ptr uint8) ptr Type
+decl typeNewFunc func(pool ptr utils:FreePool, moduleName, name ptr uint8, retVal ptr Type, members ptr spring:List) ptr Type
+decl typeNewLoc func(pool ptr utils:FreePool, moduleName, name ptr uint8, itemCount intptr, retVal ptr Type) ptr Type
+decl typeNewPtr func(pool ptr utils:FreePool, moduleName, name ptr uint8, retVal ptr Type) ptr Type
+decl typeNewRecursiveAlias func(pool ptr utils:FreePool, moduleName, name ptr uint8) ptr Type
+decl typeNewStruct func(pool ptr utils:FreePool, moduleName, name ptr uint8, members ptr spring:List) ptr Type
 decl typeSetAlias func(type ptr Type, moduleName, name ptr uint8) ptr Type
 
 alias Symtable struct(
@@ -152,7 +152,8 @@ alias PRoot struct(
   moduleName ptr StringDef,
   fileName ptr uint8,
   imports ptr spring:List,
-  aliases ptr Symtable
+  aliases ptr Symtable,
+  typePool ptr utils:FreePool
 )
 
 decl isPRoot func(node ptr PNode) bool

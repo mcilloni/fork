@@ -130,6 +130,8 @@ func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr spring:List
 
   ctx:contextSetCurrentFile(ctx, proot'fileName)
 
+  proot'typePool = utils:fpNew(cast<ptr func(item data)>(ptr ast:typeFree))
+
   mut aliases = validatePRootAliases(ctx, root, errors)
   mut stab = makePRootStab(ctx, root, errors)
 

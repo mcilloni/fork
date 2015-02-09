@@ -33,6 +33,8 @@ func pnodeFree(pnode ptr ast:PNode)
       spring:free(proot'fileName)
       spring:listFreeAll(proot'imports, cast<ptr func(inst data)>(ptr ast:strdefFree))
       ast:stabFree(proot'aliases)
+
+      utils:fpFree(proot'typePool)
     /if
 
     if ast:isPDecl(pnode)
