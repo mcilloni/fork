@@ -2,6 +2,7 @@
 
 all:
 	$(MAKE) -C src
+	$(MAKE) -C examples clean
 	$(MAKE) -C examples
 
 tests:

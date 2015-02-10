@@ -11,6 +11,7 @@ import ast
 import ctx
 import sema
 import spring
+import utils
 
 
 func findAliasImport(ctx ptr ctx:Context, moduleName,name ptr uint8) ptr ast:Type
@@ -45,15 +46,64 @@ func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType,
     return null
   /if
 
-  # first, if the PType is defined in another module, then it's not our business; just check the module and fetch the type.
+  # first, if the PType refers another module, then it's not our business; just check the module and fetch the type.
   if ptype'moduleName != null
+    if !ast:prootHasImported(root, ptype'moduleName)
+      mut msg = spring:strappend("no import called ", ptype'moduleName)
+      spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, root'fileName, msg))
+      spring:free(msg)
+
+      return null
+    /if
+
+    mut type = findAliasImport(ctx, ptype'moduleName, ptype'name)
+    if type == null
+      mut cs = spring:csNew(20)
+      spring:csAppendStr(cs, "no alias called ")
+      spring:csAppendStr(cs, ptype'name)
+      spring:csAppendStr(cs, " in module ")
+      spring:csAppendStr(cs, ptype'moduleName)
+
+      mut msg = spring:csUnleash(cs)
+      spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, root'fileName, msg))
+      spring:free(msg)
+
+      return null
+    /if
+
+    return type
   /if
+
+  # otherwise, it can be a builtin, a local alias or a composite type
 
   mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
 
   # if we've found an id, it can be 1. an id type 2. builtin 3. an invalid type
   if ptdes'type == ast:PTYPE_ID
-    #mut builtin = ctx:contextMatchBuiltin(ctx, )
+    mut builtin = ctx:contextMatchBuiltin(ctx, ptype'name)
+    if builtin != null
+      return builtin
+    /if
+
+    # it's not builtin, so it must be a local alias. Otherwise, this is invalid
+    # and can't be admitted
+
+    mut local = findAliasLocal(cast<ptr ast:PNode>(root), ptype'name)
+    if local != null
+      return local
+    /if
+
+    # no match found, error
+    mut cs = spring:csNew(20)
+    spring:csAppendStr(cs, "no type called ")
+    spring:csAppendStr(cs, ptype'name)
+    spring:csAppendStr(cs, " in current scope")
+
+    mut msg = spring:csUnleash(cs)
+    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, root'fileName, msg))
+    spring:free(msg)
+
+    return null
   /if
 
 /func
