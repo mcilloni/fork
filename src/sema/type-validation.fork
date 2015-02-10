@@ -75,7 +75,6 @@ func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType,
   /if
 
   # otherwise, it can be a builtin, a local alias or a composite type
-
   mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
 
   # if we've found an id, it can be 1. an id type 2. builtin 3. an invalid type
