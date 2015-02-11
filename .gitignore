@@ -2,3 +2,4 @@ build/*
 examples/*.txt
 examples/*.elf
 examples/*.old
+tests/*.err
