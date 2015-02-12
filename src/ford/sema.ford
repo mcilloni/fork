@@ -14,9 +14,14 @@ import ctx
 import spring
 import utils
 
+alias ValidationResult struct(
+    retry bool,
+    type ptr ast:Type
+)
+
 # type validation
 
-decl validateAlias func(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType, errors,recursive ptr spring:List) ptr ast:Type
+decl validateAlias func(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType, errors,recursive ptr spring:List) ValidationResult
 
 # validates the AST, and returns a listor of the issues found.
 decl semaValidateAst func(context ptr ctx:Context, root ptr ast:PNode) ptr spring:List

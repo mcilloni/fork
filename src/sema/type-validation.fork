@@ -41,9 +41,14 @@ func findAliasLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 
 # Validates an alias.
 # recursive starts containing the alias name, so it will be treated correctly by validateAlias.
-func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType, errors,recursive ptr spring:List) ptr ast:Type
+func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType, errors,recursive ptr spring:List) sema:ValidationResult
+  mut ret sema:ValidationResult
+
+  ret'retry = false
+  ret'type = null
+
   if ptype == null or root == null or errors == null or recursive == null
-    return null
+    return ret
   /if
 
   # first, if the PType refers another module, then it's not our business; just check the module and fetch the type.
@@ -53,7 +58,7 @@ func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType,
       spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, root'fileName, msg))
       spring:free(msg)
 
-      return null
+      return ret
     /if
 
     mut type = findAliasImport(ctx, ptype'moduleName, ptype'name)
@@ -68,10 +73,12 @@ func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType,
       spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, root'fileName, msg))
       spring:free(msg)
 
-      return null
+      return ret
     /if
 
-    return type
+    ret'type = type
+
+    return ret
   /if
 
   # otherwise, it can be a builtin, a local alias or a composite type
@@ -79,17 +86,18 @@ func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType,
 
   # if we've found an id, it can be 1. an id type 2. builtin 3. an invalid type
   if ptdes'type == ast:PTYPE_ID
-    mut builtin = ctx:contextMatchBuiltin(ctx, ptype'name)
-    if builtin != null
-      return builtin
+
+    ret'type = ctx:contextMatchBuiltin(ctx, ptype'name)
+    if ret'type != null
+      return ret
     /if
 
-    # it's not builtin, so it must be a local alias. Otherwise, this is invalid
-    # and can't be admitted
-
-    mut local = findAliasLocal(cast<ptr ast:PNode>(root), ptype'name)
-    if local != null
-      return local
+    # it's not builtin, so it must be a local alias.
+    # Otherwise, caller should try more aliases, an determinate itself if this is not valid.
+    ret'type = findAliasLocal(cast<ptr ast:PNode>(root), ptype'name)
+    if ret'type != null
+      ret'retry = true
+      return ret
     /if
 
     # no match found, error
@@ -102,7 +110,43 @@ func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType,
     spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, root'fileName, msg))
     spring:free(msg)
 
-    return null
+    return ret
   /if
 
+/func
+
+
+func collectAliases(root ptr ast:PRoot, errors ptr spring:List) ptr spring:Map
+  mut map = spring:strmapNew()
+
+  mut i uintptr = 0
+  mut leaves = root'node'node'leaves
+  mut len = spring:listLen(leaves)
+
+  while i < len
+    mut pdecl = cast<ptr ast:PDecl>(val spring:listGet(leaves, i))
+
+    if pdecl'node'type == ast:PALIAS
+      if spring:mapContains(map, pdecl'sym'name)
+        spring:mapFree(map)
+
+        mut cs = spring:csNew(20)
+        spring:csAppendStr(cs, "alias ")
+        spring:csAppendStr(cs, pdecl'sym'name)
+        spring:csAppendStr(cs, " is already defined")
+
+        spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, spring:csUnleash(cs)))
+      /if
+
+      spring:mapPut(map, pdecl'sym'name, pdecl'sym'type, spring:FREE_NONE)
+    /if
+
+    i++
+  /while
+
+  return map
+/func
+
+func validateAllTypes(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr spring:List) bool
+  mut aliasMap = collectAliases(root, errors)
 /func

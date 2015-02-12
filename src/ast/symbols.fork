@@ -84,7 +84,10 @@ func typeFree(type ptr ast:Type)
     spring:free(type'moduleName)
     spring:free(type'name)
     ast:typeFree(type'retType)
-    spring:listFreeAll(type'members, cast<ptr func(p data)>(ast:symbolFree))
+
+    if type'members != null
+      spring:listFreeAll(type'members, cast<ptr func(p data)>(ast:symbolFree))
+    /if
   /if
 /func
 
