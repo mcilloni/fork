@@ -253,7 +253,7 @@ func stabNew() ptr ast:Symtable
 
 
 func stabAdd(stab ptr ast:Symtable, name ptr uint8, type ptr ast:Type)
-  spring:mapPut(stab'syms, spring:strclone(name), type, spring:FREE_KEY | spring:FREE_VALUE)
+  spring:mapPut(stab'syms, spring:strclone(name), type, spring:FREE_KEY)
 /func
 
 
@@ -268,7 +268,7 @@ func stabTypeof(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
 
 func stabFree(stab ptr ast:Symtable)
   if stab != null
-    spring:mapFreeSpec(stab'syms, ptr spring:free, cast<ptr func(item data)>(ast:typeFree))
+    spring:mapFreeSpec(stab'syms, ptr spring:free, null)
     spring:free(stab)
   /if
 /func

@@ -13,7 +13,6 @@ import sema
 import spring
 import utils
 
-
 func findAliasImport(ctx ptr ctx:Context, moduleName,name ptr uint8) ptr ast:Type
   mut imp = ctx:contextGetImport(ctx, moduleName)
   if imp == null
@@ -39,17 +38,34 @@ func findAliasLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 /func
 
 
+func listContains(list ptr spring:List, value ptr uint8) bool
+  mut i uintptr = 0
+  mut len = spring:listLen(list)
+
+  while i < len
+    mut elem = cast<ptr uint8>(val spring:listGet(list, i))
+
+    if spring:strequals(elem, value)
+      return true
+    /if
+
+    i++
+  /while
+/func
+
+
 # Validates an alias.
 # recursive starts containing the alias name, so it will be treated correctly by validateAlias.
-func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType, errors,recursive ptr spring:List) sema:ValidationResult
-  mut ret sema:ValidationResult
+func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot, rawAliases ptr spring:Map, pair ptr spring:Pair, errors,recList ptr spring:List) bool
 
-  ret'retry = false
-  ret'type = null
-
-  if ptype == null or root == null or errors == null or recursive == null
-    return ret
+  if pair == null
+    return false
   /if
+
+  mut name = cast<ptr uint8>(pair'key)
+  mut ptype = cast<ptr ast:PType>(pair'value)
+
+  spring:listPush(recList, name)
 
   # first, if the PType refers another module, then it's not our business; just check the module and fetch the type.
   if ptype'moduleName != null
@@ -58,7 +74,7 @@ func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType,
       spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, root'fileName, msg))
       spring:free(msg)
 
-      return ret
+      return false
     /if
 
     mut type = findAliasImport(ctx, ptype'moduleName, ptype'name)
@@ -73,12 +89,12 @@ func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType,
       spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, root'fileName, msg))
       spring:free(msg)
 
-      return ret
+      return false
     /if
 
-    ret'type = type
-
-    return ret
+    ast:stabAdd(root'aliases, name, type)
+    spring:listPop(recList)
+    return true
   /if
 
   # otherwise, it can be a builtin, a local alias or a composite type
@@ -87,36 +103,71 @@ func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType,
   # if we've found an id, it can be 1. an id type 2. builtin 3. an invalid type
   if ptdes'type == ast:PTYPE_ID
 
-    ret'type = ctx:contextMatchBuiltin(ctx, ptype'name)
-    if ret'type != null
-      return ret
+    mut builtin = ctx:contextMatchBuiltin(ctx, ptype'name)
+    if builtin != null
+      ast:stabAdd(root'aliases, name, builtin)
+      spring:listPop(recList)
+
+      return true
+    /if
+
+    if listContains(recList, ptype'name)
+      mut cs = spring:csNew(20)
+      spring:csAppendStr(cs, "illegal recursive type ")
+      spring:csAppendStr(cs, ptype'name)
+
+      mut msg = spring:csUnleash(cs)
+      spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, root'fileName, msg))
+      spring:free(msg)
+
+      return false
     /if
 
     # it's not builtin, so it must be a local alias.
-    # Otherwise, caller should try more aliases, an determinate itself if this is not valid.
-    ret'type = findAliasLocal(cast<ptr ast:PNode>(root), ptype'name)
-    if ret'type != null
-      ret'retry = true
-      return ret
+    mut type = findAliasLocal(cast<ptr ast:PNode>(root), ptype'name)
+    if type != null
+      ast:stabAdd(root'aliases, name, type)
+      spring:listPop(recList)
+
+      return true
     /if
 
-    # no match found, error
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "no type called ")
-    spring:csAppendStr(cs, ptype'name)
-    spring:csAppendStr(cs, " in current scope")
+    # If here, then it's either undefined, or not validated yet.
+    # So, we try to find a valid ptype, or otherwise it's an error.
 
-    mut msg = spring:csUnleash(cs)
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, root'fileName, msg))
-    spring:free(msg)
+    mut missingPType ptr ast:PType
 
-    return ret
+    if spring:mapGet(rawAliases, ptype'name, ptr missingPType)
+      mut rp = spring:pairNew(ptype'name, missingPType)
+
+      mut res = validateAlias(ctx, root, rawAliases, rp, errors, recList)
+
+      spring:pairFree(rp)
+
+      spring:listPop(recList)
+      return res
+    else
+      # no match found, error
+      mut cs = spring:csNew(20)
+      spring:csAppendStr(cs, "no type called ")
+      spring:csAppendStr(cs, ptype'name)
+      spring:csAppendStr(cs, " in current scope")
+
+      mut msg = spring:csUnleash(cs)
+      spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, root'fileName, msg))
+      spring:free(msg)
+
+      return false
+    /if
   /if
 
+  if ptdes'type == ast:PTYPE_PTR or ptdes'type == ast:PTYPE_LOC
+
+  /if
 /func
 
 
-func collectAliases(root ptr ast:PRoot, errors ptr spring:List) ptr spring:Map
+func collectGlobalAliases(root ptr ast:PRoot, errors ptr spring:List) ptr spring:Map
   mut map = spring:strmapNew()
 
   mut i uintptr = 0
@@ -147,6 +198,25 @@ func collectAliases(root ptr ast:PRoot, errors ptr spring:List) ptr spring:Map
   return map
 /func
 
-func validateAllTypes(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr spring:List) bool
-  mut aliasMap = collectAliases(root, errors)
+
+func populateGlobalAliasTable(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr spring:List) bool
+  mut aliasMap = collectGlobalAliases(root, errors)
+
+  mut pair ptr spring:Pair
+
+  while (pair = spring:mapFirst(aliasMap)) != null
+    mut recList = spring:listNew()
+
+    mut res = validateAlias(ctx, root, aliasMap, pair, errors, recList)
+
+    spring:pairFree(pair)
+
+    if res
+      spring:mapRemove(aliasMap, pair'key)
+    else
+      break
+    /if
+  /while
+
+  spring:mapFree(aliasMap)
 /func
