@@ -685,7 +685,13 @@ func parserParseStatement(ctx ptr synt:ParserContext) ptr ast:PNode
 func parserParseBody(ctx ptr synt:ParserContext, isEndToken ptr func(tok ptr lex:Token) bool) ptr ast:PBlock
   mut begin utils:Line
 
-  mut statement ptr ast:PNode
+  # If this block is empty, then begin will remain unset.
+  # We avoid this, assigning it to the next token position (usually newline or end of block)
+  if ctx'next != null
+    begin = lex:tokExtractBegin(ctx'next)
+  /if
+
+  mut statement ptr ast:PNode = null
   mut first = true
 
   mut block = ast:pblockNew()
@@ -719,7 +725,9 @@ func parserParseBody(ctx ptr synt:ParserContext, isEndToken ptr func(tok ptr lex
   # if ctx'next is not null, then the while above quitted because
   # isEndToken(ctx'next) == true.
   pnode'begin = begin
-  pnode'end = statement'end
+  
+  # prevent issues from empty blocks.
+  pnode'end = statement != null => statement'end || begin
 
   return block
 /func

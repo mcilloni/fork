@@ -206,6 +206,15 @@ func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
     else
       if ptdes'type == ast:PTYPE_PTR or ptdes'type == ast:PTYPE_LOC
         type = validatePtrLocAlias(ctx, root, rawAliases, ptype, errors, recList)
+      else
+        if ptdes'type == ast:PTYPE_STRUCT
+        else
+          if ptdes'type == ast:PTYPE_FUNC
+          else
+            spring:errln("Unreachable")
+            spring:abort()
+          /if
+        /if
       /if
     /if
 
