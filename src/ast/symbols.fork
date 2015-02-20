@@ -162,8 +162,8 @@ func typeNewFunc(pool ptr utils:FreePool, moduleName, name ptr uint8, retVal ptr
 /func
 
 
-func typeNewLoc(pool ptr utils:FreePool, moduleName, name ptr uint8, itemCount intptr, retVal ptr ast:Type) ptr ast:Type
-  return typeNew(pool, ast:TYPE_LOC, moduleName, name, false, retVal'typeSize * itemCount, retVal'typeAlign, itemCount, retVal, null)
+func typeNewLoc(pool ptr utils:FreePool, moduleName, name ptr uint8, itemCount uintptr, retVal ptr ast:Type) ptr ast:Type
+  return typeNew(pool, ast:TYPE_LOC, moduleName, name, false, retVal'typeSize * cast<intptr>(itemCount), retVal'typeAlign, itemCount, retVal, null)
 /func
 
 
