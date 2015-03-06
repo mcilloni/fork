@@ -499,6 +499,9 @@ func parserParseAlias(ctx ptr synt:ParserContext) ptr ast:PNode
     pnode'begin = begin
     pnode'end = type'end
 
+    name'value = 0 # steal from the token the string
+    lex:tokenFree(name)
+
     return pnode
   /if
 
