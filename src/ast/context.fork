@@ -131,7 +131,7 @@ func contextFree(ctx ptr ctx:Context)
       spring:listFreeAll(ctx'fordPaths, ptr spring:free)
     /if
 
-    spring:mapFreeSpec(ctx'builtins, ptr spring:free, cast<ptr func(item data)>(ptr ast:typeFree))
+    spring:mapFreeSpec(ctx'builtins, null, cast<ptr func(item data)>(ptr ast:typeFree))
 
     spring:free(ctx'currentFile)
     spring:free(ctx)

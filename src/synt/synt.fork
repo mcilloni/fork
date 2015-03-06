@@ -725,7 +725,7 @@ func parserParseBody(ctx ptr synt:ParserContext, isEndToken ptr func(tok ptr lex
   # if ctx'next is not null, then the while above quitted because
   # isEndToken(ctx'next) == true.
   pnode'begin = begin
-  
+
   # prevent issues from empty blocks.
   pnode'end = statement != null => statement'end || begin
 

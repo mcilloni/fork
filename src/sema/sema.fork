@@ -132,7 +132,10 @@ func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr spring:List
 
   proot'typePool = utils:fpNew(cast<ptr func(item data)>(ptr ast:typeFree))
 
-  mut aliases = validatePRootAliases(ctx, root, errors)
+  proot'aliases = ast:stabNew()
+
+  sema:populateGlobalAliasTable(ctx, proot, errors)
+
   mut stab = makePRootStab(ctx, root, errors)
 
   return errors

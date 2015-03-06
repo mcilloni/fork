@@ -83,11 +83,12 @@ func typeFree(type ptr ast:Type)
   if type != null
     spring:free(type'moduleName)
     spring:free(type'name)
-    ast:typeFree(type'retType)
 
     if type'members != null
       spring:listFreeAll(type'members, cast<ptr func(p data)>(ast:symbolFree))
     /if
+
+    spring:free(type)
   /if
 /func
 
@@ -174,7 +175,7 @@ func typeNewPtr(pool ptr utils:FreePool, moduleName, name ptr uint8, retVal ptr 
 
 alias AlignResult struct(typeAlign,typeSize intptr)
 
-
+# members is a list of ast:Symbol
 func typeCalculateAlign(members ptr spring:List) AlignResult
   mut ret AlignResult
   ret'typeAlign = 1
@@ -184,7 +185,7 @@ func typeCalculateAlign(members ptr spring:List) AlignResult
   mut len = spring:listLen(members)
 
   while i < len
-    mut member = cast<ptr ast:Type>(val spring:listGet(members, i))
+    mut member = cast<ptr ast:Symbol>(val spring:listGet(members, i))'type
 
     # calculate the alignment offset of the member against the current starting address.
     mut offset = ret'typeSize mod member'typeAlign

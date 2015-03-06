@@ -342,7 +342,7 @@ func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr spring:Error
 
 func lexerNext(lex ptr lex:Lexer) ptr lex:Token
   if lexerEof(lex)
-    return tokenNew(lex:EOF, 0, lex:linenoClone(lex'lineno), lex'lineno'pos)
+    return null
   /if
 
   if lexerError(lex) != null

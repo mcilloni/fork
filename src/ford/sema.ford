@@ -16,7 +16,7 @@ import utils
 
 # type validation
 
-#decl validateAlias func(ctx ptr ctx:Context, root ptr ast:PRoot, ptype ptr ast:PType, errors,recursive ptr spring:List) ValidationResult
+decl populateGlobalAliasTable func(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr spring:List) bool
 
 # validates the AST, and returns a listor of the issues found.
 decl semaValidateAst func(context ptr ctx:Context, root ptr ast:PNode) ptr spring:List

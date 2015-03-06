@@ -13,6 +13,15 @@ import sema
 import spring
 import utils
 
+
+func rootAliasRegister(root ptr ast:PRoot, rawAliases ptr spring:Map, name ptr uint8, type ptr ast:Type)
+  type'name = spring:strclone(name)
+  type'moduleName = root'moduleName != null => spring:strclone(root'moduleName'name) || null
+  ast:stabAdd(root'aliases, name, type)
+  spring:mapRemove(rawAliases, name)
+/func
+
+
 func findAliasImport(ctx ptr ctx:Context, moduleName,name ptr uint8) ptr ast:Type
   mut imp = ctx:contextGetImport(ctx, moduleName)
   if imp == null
@@ -51,6 +60,8 @@ func listContains(list ptr spring:List, value ptr uint8) bool
 
     i++
   /while
+
+  return false
 /func
 
 
@@ -88,19 +99,14 @@ func validateModuleAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
 /func
 
 
-func registerType()
-
-/func
-
-
 decl validateAlias func(ctx ptr ctx:Context, root ptr ast:PRoot,
     rawAliases ptr spring:Map, ptype ptr ast:PType,
-    errors,recList ptr spring:List) ptr ast:Type
+    errors,recList ptr spring:List, canBeFunc,ignoreSize bool) ptr ast:Type
 
 
 func validateIdAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
     rawAliases ptr spring:Map, ptype ptr ast:PType,
-    errors,recList ptr spring:List) ptr ast:Type
+    errors,recList ptr spring:List, ignoreSize bool) ptr ast:Type
 
   mut builtin = ctx:contextMatchBuiltin(ctx, ptype'name)
   if builtin != null
@@ -108,6 +114,9 @@ func validateIdAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
   /if
 
   if listContains(recList, ptype'name)
+    if ignoreSize
+      return ast:typeNewRecursiveAlias(root'typePool, root'moduleName != null => root'moduleName'name || null, ptype'name)
+    /if
     mut cs = spring:csNew(20)
     spring:csAppendStr(cs, "illegal recursive type ")
     spring:csAppendStr(cs, ptype'name)
@@ -132,8 +141,13 @@ func validateIdAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
 
   if spring:mapGet(rawAliases, ptype'name, ptr missingPType)
     spring:listPush(recList, ptype'name)
-    return validateAlias(ctx, root, rawAliases, ptype, errors, recList)
+    mut ret = validateAlias(ctx, root, rawAliases, ptype, errors, recList, true, ignoreSize)
     spring:listPop(recList)
+
+    if ret != null
+      rootAliasRegister(root, rawAliases, ptype'name, ret)
+    /if
+    return ret
   /if
 
   # no match found, error
@@ -150,27 +164,36 @@ func validateIdAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
 /func
 
 
+func validateRetType(ctx ptr ctx:Context, root ptr ast:PRoot,
+    rawAliases ptr spring:Map, retPType ptr ast:PType,
+    errors,recList ptr spring:List, isLoc bool) ptr ast:Type
+
+  mut res ptr ast:Type = null
+
+  # if this condition evaluates to true, than we're in the case of a recursive alias.
+  if !isLoc and retPType'moduleName == null and retPType'name != null and listContains(recList, retPType'name)
+    res = ast:typeNewRecursiveAlias(root'typePool, null, retPType'name)
+  else
+    # otherwise, this is a normal type. Validate it with validateAlias.
+    res = validateAlias(ctx, root, rawAliases, retPType, errors, recList, true, true)
+  /if
+
+  return res
+/func
+
+
 # Validates a ptr or a loc type alias.
 func validatePtrLocAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
     rawAliases ptr spring:Map, ptype ptr ast:PType,
     errors,recList ptr spring:List) ptr ast:Type
 
   mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
+  mut isLoc = ptdes'type == ast:PTYPE_LOC
 
   # validate ptdes'retType
+  mut res = validateRetType(ctx, root, rawAliases, ptdes'retType, errors, recList, isLoc)
 
-  mut retPType = ptdes'retType
-  mut res ptr ast:Type = null
-
-  # if this condition evaluates to true, than we're in the case of a recursive pointer alias.
-  if retPType'moduleName == null and retPType'name != null and listContains(recList, retPType'name)
-    res = ast:typeNewRecursiveAlias(root'typePool, root'moduleName'name, retPType'name)
-  else
-    # otherwise, this is a normal type. Validate it with validateAlias.
-    res = validateAlias(ctx, root, rawAliases, retPType, errors, recList)
-  /if
-
-  if ptdes'type == ast:PTYPE_LOC
+  if isLoc
     res = ast:typeNewLoc(root'typePool, null, null, ptdes'length, res)
   else
     res = ast:typeNewPtr(root'typePool, null, null, res)
@@ -180,14 +203,82 @@ func validatePtrLocAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
 /func
 
 
-# Validates an alias.
-func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
+func validateSymbolList(ctx ptr ctx:Context, root ptr ast:PRoot,
+    rawAliases ptr spring:Map,
+    pargs,errors,recList ptr spring:List, funcArgs bool) ptr spring:List
+
+  mut errLen = spring:listLen(errors)
+
+  mut plen = spring:listLen(pargs)
+  mut i uintptr = 0
+  mut members = spring:listNew()
+
+  while i < plen
+    mut member = cast<ptr ast:PSymbol>(val spring:listGet(pargs, i))
+    mut ptype = member'type
+
+    mut type ptr ast:Type = null
+
+    # functions can refer to recursive types, because their arguments and their
+    # return types do not affect the size of the function (a function is always sizeless)
+    if funcArgs and ptype'moduleName == null and ptype'name != null and listContains(recList, ptype'name)
+      type = ast:typeNewRecursiveAlias(root'typePool, null, ptype'name)
+    else
+      type = validateAlias(ctx, root, rawAliases, ptype, errors, recList, false, false)
+    /if
+
+    if type != null
+      spring:listAppend(members, ast:symbolNew(member'name, type))
+    /if
+
+    i++
+  /while
+
+  if spring:listLen(errors) > errLen
+    spring:listFreeAll(members, cast<ptr func(i data)>(ptr ast:symbolFree))
+    return null
+  /if
+
+  return members
+/func
+
+
+func validateStructAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
     rawAliases ptr spring:Map, ptype ptr ast:PType,
     errors,recList ptr spring:List) ptr ast:Type
 
-  if ptype == null
+  mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
+
+  mut members = validateSymbolList(ctx, root, rawAliases, ptdes'arguments, errors, recList, false)
+
+  return members != null => ast:typeNewStruct(root'typePool, null, null, members) || null
+/func
+
+
+func validateFuncAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
+    rawAliases ptr spring:Map, ptype ptr ast:PType,
+    errors,recList ptr spring:List) ptr ast:Type
+
+  mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
+
+  mut retVal = validateRetType(ctx, root, rawAliases, ptdes'retType, errors, recList, false)
+  if retVal == null
     return null
   /if
+
+  mut members = validateSymbolList(ctx, root, rawAliases, ptdes'arguments, errors, recList, true)
+  if members == null
+    return null
+  /if
+
+  return ast:typeNewFunc(root'typePool, null, null, retVal, members)
+/func
+
+
+# Validates an alias.
+func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
+    rawAliases ptr spring:Map, ptype ptr ast:PType,
+    errors,recList ptr spring:List, canBeFunc,ignoreSize bool) ptr ast:Type
 
   mut type ptr ast:Type = null
 
@@ -202,14 +293,22 @@ func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
 
     # if we've found an id, it can be 1. an id type 2. builtin 3. an invalid type
     if ptdes'type == ast:PTYPE_ID
-      type = validateIdAlias(ctx, root, rawAliases, ptype, errors, recList)
+      type = validateIdAlias(ctx, root, rawAliases, ptype, errors, recList, ignoreSize)
     else
       if ptdes'type == ast:PTYPE_PTR or ptdes'type == ast:PTYPE_LOC
         type = validatePtrLocAlias(ctx, root, rawAliases, ptype, errors, recList)
       else
         if ptdes'type == ast:PTYPE_STRUCT
+          type = validateStructAlias(ctx, root, rawAliases, ptype, errors, recList)
         else
           if ptdes'type == ast:PTYPE_FUNC
+            if !canBeFunc
+              # a function is not allowed.
+              spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, root'fileName, "a function type is not allowed here"))
+              return null
+            /if
+
+            type = validateFuncAlias(ctx, root, rawAliases, ptype, errors, recList)
           else
             spring:errln("Unreachable")
             spring:abort()
@@ -260,23 +359,22 @@ func populateGlobalAliasTable(ctx ptr ctx:Context, root ptr ast:PRoot, errors pt
   mut aliasMap = collectGlobalAliases(root, errors)
 
   mut pair ptr spring:Pair
+  mut recList = spring:listNew()
 
   while (pair = spring:mapFirst(aliasMap)) != null
-    mut recList = spring:listNew()
     mut name = cast<ptr uint8>(pair'key)
     mut ptype = cast<ptr ast:PType>(pair'value)
 
     spring:listPush(recList, name)
 
-    mut type = validateAlias(ctx, root, aliasMap, ptype, errors, recList)
+    mut type = validateAlias(ctx, root, aliasMap, ptype, errors, recList, true, false)
 
     spring:listPop(recList)
 
     spring:pairFree(pair)
 
     if type != null
-      ast:stabAdd(root'aliases, name, type)
-      spring:mapRemove(aliasMap, name)
+      rootAliasRegister(root, aliasMap, name, type)
     else
       break
     /if
