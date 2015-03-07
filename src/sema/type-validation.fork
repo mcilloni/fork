@@ -140,9 +140,17 @@ func validateIdAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
   mut missingPType ptr ast:PType
 
   if spring:mapGet(rawAliases, ptype'name, ptr missingPType)
-    spring:listPush(recList, ptype'name)
+    mut named = ptype'name != null
+
+    if named
+      spring:listPush(recList, ptype'name)
+    /if
+
     mut ret = validateAlias(ctx, root, rawAliases, ptype, errors, recList, true, ignoreSize)
-    spring:listPop(recList)
+
+    if named
+      spring:listPop(recList)
+    /if
 
     if ret != null
       rootAliasRegister(root, rawAliases, ptype'name, ret)
@@ -261,9 +269,12 @@ func validateFuncAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
 
   mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
 
-  mut retVal = validateRetType(ctx, root, rawAliases, ptdes'retType, errors, recList, false)
-  if retVal == null
-    return null
+  mut retVal ptr ast:Type = null
+  if ptdes'retType != null
+    retVal = validateRetType(ctx, root, rawAliases, ptdes'retType, errors, recList, false)
+    if retVal == null
+      return null
+    /if
   /if
 
   mut members = validateSymbolList(ctx, root, rawAliases, ptdes'arguments, errors, recList, true)
