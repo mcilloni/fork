@@ -197,7 +197,7 @@ func typeCalculateAlign(members ptr spring:List) AlignResult
       ret'typeSize = ret'typeSize + padding
     /if
 
-    ret'typeSize = member'typeSize
+    ret'typeSize = ret'typeSize + member'typeSize
     ret'typeAlign = (member'typeAlign > ret'typeAlign) => member'typeAlign || ret'typeAlign
 
     i++
