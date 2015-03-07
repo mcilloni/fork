@@ -99,12 +99,14 @@ alias Symbol struct(
 )
 
 decl symbolClone func(sym ptr Symbol) ptr Symbol
+decl symbolDump func(sym ptr Symbol)
 decl symbolFree func(sym ptr Symbol)
 decl symbolNew func(name ptr uint8, type ptr Type) ptr Symbol
 
 decl builtinSetNew func() ptr spring:Map
 
 decl typeClone func(pool ptr utils:FreePool, type ptr Type) ptr Type
+decl typeDump func(type ptr Type)
 decl typeFree func(type ptr Type)
 decl typeNewFunc func(pool ptr utils:FreePool, moduleName, name ptr uint8, retVal ptr Type, members ptr spring:List) ptr Type
 decl typeNewLoc func(pool ptr utils:FreePool, moduleName, name ptr uint8, itemCount uintptr, retVal ptr Type) ptr Type
@@ -122,6 +124,8 @@ decl stabNew func() ptr Symtable
 decl stabAdd func(stab ptr Symtable, name ptr uint8, type ptr Type)
 decl stabTypeof func(stab ptr Symtable, name ptr uint8) ptr Type
 decl stabFree func(stab ptr Symtable)
+
+decl declDump func(prefix,name ptr uint8, type ptr Type)
 # end symbols
 
 # begin pnode

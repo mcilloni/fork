@@ -337,3 +337,147 @@ func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
 func pnodeDump(pnode ptr ast:PNode)
   pnodeDumpRec(pnode, 0)
 /func
+
+
+func symbolDump(sym ptr ast:Symbol)
+  if sym == null
+    return
+  /if
+
+  spring:out(sym'name)
+  spring:outch(32)
+  ast:typeDump(sym'type)
+/func
+
+
+func symlistDump(symlist ptr spring:List)
+
+  spring:out("(")
+
+  if symlist != null
+    mut len = spring:listLen(symlist)
+    mut i uintptr = 0
+
+    while i < len
+      mut sym = cast<ptr ast:Symbol>(val spring:listGet(symlist, i))
+
+      ast:symbolDump(sym)
+
+      if i + 1 < len
+        spring:out(", ")
+      /if
+
+      i++
+    /while
+  /if
+
+  spring:out(")")
+/func
+
+
+func typeDumpName(type ptr ast:Type)
+  if type'name != null
+    spring:out("{ ")
+
+    if type'moduleName != null
+      spring:out(type'moduleName)
+      spring:out(":")
+    /if
+    spring:out(type'name)
+
+    spring:out(" } ")
+  /if
+/func
+
+
+func typeDump(type ptr ast:Type)
+
+  if type == null
+    return
+  /if
+
+  if type'type == ast:TYPE_FUNC
+    typeDumpName(type)
+
+    spring:out("func")
+
+    symlistDump(type'members)
+
+    spring:outch(32)
+
+    typeDump(type'retType)
+  else
+    if type'type == ast:TYPE_PTR
+      spring:out("ptr ")
+
+      typeDump(type'retType)
+    else
+      if type'type == ast:TYPE_STRUCT
+        typeDumpName(type)
+
+        spring:out("struct")
+
+        symlistDump(type'members)
+      else
+        if type'type == ast:TYPE_LOC
+          spring:out("[")
+          spring:outint(type'itemCount)
+          spring:out("] ")
+
+          typeDump(type'retType)
+        else
+          if type'type == ast:TYPE_BOOL
+            spring:out("bool")
+          else
+            if type'type == ast:TYPE_INT
+              if !type'isSigned
+                spring:out("u")
+              /if
+
+              spring:out("int")
+              spring:outint(type'typeSize * 8)
+
+            else
+              if type'type == ast:TYPE_DATA
+                spring:out("data")
+              else
+                if type'type == ast:TYPE_REC_ALIAS
+                  spring:out("<< alias to ")
+                  spring:out(type'name)
+                  spring:out(" >>")
+                else
+                  if type'type == ast:TYPE_NULL
+                    spring:out("<< type of null >>")
+                  else
+                  /if
+                /if
+              /if
+            /if
+          /if
+        /if
+      /if
+    /if
+  /if
+
+/func
+
+
+func declDump(prefix,name ptr uint8, type ptr ast:Type)
+  spring:out(prefix)
+  spring:outch(32)
+
+  spring:out(name)
+  spring:outch(32)
+
+  ast:typeDump(type)
+
+  spring:outch(10)
+
+  spring:out("[[ size: ")
+  spring:outint(type'typeSize)
+  spring:out(", align: ")
+  spring:outint(type'typeAlign)
+  spring:out(" ]]")
+
+  spring:outch(10)
+/func
