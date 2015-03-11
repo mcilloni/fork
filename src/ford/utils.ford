@@ -69,6 +69,27 @@ decl fpNew func(freeFunc ptr func(item data)) ptr FreePool
 decl fpZAlloc func(fp ptr FreePool, len uintptr) data
 
 
+alias KVList struct(
+    list spring:List,
+    cmp spring:comparer,
+    freeKey,freeVal ptr func(item data)
+)
+
+decl kvContains func(kv ptr KVList, key data) bool
+decl kvDeinit func(kv ptr KVList)
+decl kvFirst func(kv ptr KVList) ptr spring:Pair
+decl kvFree func(kv ptr KVList)
+decl kvGet func(kv ptr KVList, key data, value ptr data) bool
+decl kvGetAt func(kv ptr KVList, index uintptr) ptr spring:Pair
+decl kvGetPos func(kv ptr KVList, key data, value ptr data) intptr
+decl kvInit func(kv ptr KVList, cmp spring:comparer) ptr KVList
+decl kvLen func(kv ptr KVList) uintptr
+decl kvNew func(cmp spring:comparer) ptr KVList
+decl kvPut func(kv ptr KVList, key data, value data)
+decl kvRemove func(kv ptr KVList, key data) bool
+decl kvSetFreeFuncs func(kv ptr KVList, freeKey ptr func(item data), freeVal ptr func(item data))
+
+
 decl ISSUE_ERR uint8
 decl ISSUE_WARN uint8
 decl ISSUE_INFO uint8
