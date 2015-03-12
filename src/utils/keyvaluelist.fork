@@ -187,6 +187,8 @@ func kvRemove(kv ptr utils:KVList, key data) bool
     kvFreePairContents(kv, pair)
 
     spring:listRemove(ptr kv'list, pos, ptr spring:pairFree)
+
+    return true
   /if
 
   return false

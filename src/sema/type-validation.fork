@@ -14,11 +14,11 @@ import spring
 import utils
 
 
-func rootAliasRegister(root ptr ast:PRoot, rawAliases ptr spring:Map, name ptr uint8, type ptr ast:Type)
+func rootAliasRegister(root ptr ast:PRoot, rawAliases ptr utils:KVList, name ptr uint8, type ptr ast:Type)
   type'name = spring:strclone(name)
   type'moduleName = root'moduleName != null => spring:strclone(root'moduleName'name) || null
   ast:stabAdd(root'aliases, name, type)
-  spring:mapRemove(rawAliases, name)
+  utils:kvRemove(rawAliases, name)
 /func
 
 
@@ -66,7 +66,7 @@ func listContains(list ptr spring:List, value ptr uint8) bool
 
 
 func validateModuleAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
-    rawAliases ptr spring:Map, ptype ptr ast:PType,
+    rawAliases ptr utils:KVList, ptype ptr ast:PType,
     errors ptr spring:List) ptr ast:Type
 
 
@@ -100,12 +100,12 @@ func validateModuleAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
 
 
 decl validateAlias func(ctx ptr ctx:Context, root ptr ast:PRoot,
-    rawAliases ptr spring:Map, ptype ptr ast:PType,
+    rawAliases ptr utils:KVList, ptype ptr ast:PType,
     errors,recList ptr spring:List, canBeFunc,ignoreSize bool) ptr ast:Type
 
 
 func validateIdAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
-    rawAliases ptr spring:Map, ptype ptr ast:PType,
+    rawAliases ptr utils:KVList, ptype ptr ast:PType,
     errors,recList ptr spring:List, ignoreSize bool) ptr ast:Type
 
   mut builtin = ctx:contextMatchBuiltin(ctx, ptype'name)
@@ -139,7 +139,7 @@ func validateIdAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
 
   mut missingPType ptr ast:PType
 
-  if spring:mapGet(rawAliases, ptype'name, ptr missingPType)
+  if utils:kvGet(rawAliases, ptype'name, ptr missingPType)
     mut named = ptype'name != null
 
     if named
@@ -173,7 +173,7 @@ func validateIdAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
 
 
 func validateRetType(ctx ptr ctx:Context, root ptr ast:PRoot,
-    rawAliases ptr spring:Map, retPType ptr ast:PType,
+    rawAliases ptr utils:KVList, retPType ptr ast:PType,
     errors,recList ptr spring:List, isLoc bool) ptr ast:Type
 
   mut res ptr ast:Type = null
@@ -192,7 +192,7 @@ func validateRetType(ctx ptr ctx:Context, root ptr ast:PRoot,
 
 # Validates a ptr or a loc type alias.
 func validatePtrLocAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
-    rawAliases ptr spring:Map, ptype ptr ast:PType,
+    rawAliases ptr utils:KVList, ptype ptr ast:PType,
     errors,recList ptr spring:List) ptr ast:Type
 
   mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
@@ -212,7 +212,7 @@ func validatePtrLocAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
 
 
 func validateSymbolList(ctx ptr ctx:Context, root ptr ast:PRoot,
-    rawAliases ptr spring:Map,
+    rawAliases ptr utils:KVList,
     pargs,errors,recList ptr spring:List, funcArgs bool) ptr spring:List
 
   mut errLen = spring:listLen(errors)
@@ -252,7 +252,7 @@ func validateSymbolList(ctx ptr ctx:Context, root ptr ast:PRoot,
 
 
 func validateStructAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
-    rawAliases ptr spring:Map, ptype ptr ast:PType,
+    rawAliases ptr utils:KVList, ptype ptr ast:PType,
     errors,recList ptr spring:List) ptr ast:Type
 
   mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
@@ -264,7 +264,7 @@ func validateStructAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
 
 
 func validateFuncAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
-    rawAliases ptr spring:Map, ptype ptr ast:PType,
+    rawAliases ptr utils:KVList, ptype ptr ast:PType,
     errors,recList ptr spring:List) ptr ast:Type
 
   mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
@@ -288,7 +288,7 @@ func validateFuncAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
 
 # Validates an alias.
 func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
-    rawAliases ptr spring:Map, ptype ptr ast:PType,
+    rawAliases ptr utils:KVList, ptype ptr ast:PType,
     errors,recList ptr spring:List, canBeFunc,ignoreSize bool) ptr ast:Type
 
   mut type ptr ast:Type = null
@@ -334,8 +334,8 @@ func validateAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
 /func
 
 
-func collectGlobalAliases(root ptr ast:PRoot, errors ptr spring:List) ptr spring:Map
-  mut map = spring:strmapNew()
+func collectGlobalAliases(root ptr ast:PRoot, errors ptr spring:List, kv ptr utils:KVList) ptr utils:KVList
+  utils:strkvInit(kv)
 
   mut i uintptr = 0
   mut leaves = root'node'node'leaves
@@ -345,8 +345,8 @@ func collectGlobalAliases(root ptr ast:PRoot, errors ptr spring:List) ptr spring
     mut pdecl = cast<ptr ast:PDecl>(val spring:listGet(leaves, i))
 
     if pdecl'node'type == ast:PALIAS
-      if spring:mapContains(map, pdecl'sym'name)
-        spring:mapFree(map)
+      if utils:kvContains(kv, pdecl'sym'name)
+        utils:kvDeinit(kv)
 
         mut cs = spring:csNew(20)
         spring:csAppendStr(cs, "alias ")
@@ -356,40 +356,40 @@ func collectGlobalAliases(root ptr ast:PRoot, errors ptr spring:List) ptr spring
         spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, spring:csUnleash(cs)))
       /if
 
-      spring:mapPut(map, pdecl'sym'name, pdecl'sym'type, spring:FREE_NONE)
+      utils:kvPut(kv, pdecl'sym'name, pdecl'sym'type)
     /if
 
     i++
   /while
 
-  return map
+  return kv
 /func
 
 
 func populateGlobalAliasTable(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr spring:List) bool
-  mut aliasMap = collectGlobalAliases(root, errors)
+  mut aliasKV utils:KVList
+
+  collectGlobalAliases(root, errors, ptr aliasKV)
 
   mut pair ptr spring:Pair
   mut recList = spring:listNew()
 
-  while (pair = spring:mapFirst(aliasMap)) != null
+  while (pair = utils:kvGetAt(ptr aliasKV, 0)) != null
     mut name = cast<ptr uint8>(pair'key)
     mut ptype = cast<ptr ast:PType>(pair'value)
 
     spring:listPush(recList, name)
 
-    mut type = validateAlias(ctx, root, aliasMap, ptype, errors, recList, true, false)
+    mut type = validateAlias(ctx, root, ptr aliasKV, ptype, errors, recList, true, false)
 
     spring:listPop(recList)
 
-    spring:pairFree(pair)
-
     if type != null
-      rootAliasRegister(root, aliasMap, name, type)
+      rootAliasRegister(root, ptr aliasKV, name, type)
     else
       break
     /if
   /while
 
-  spring:mapFree(aliasMap)
+  utils:kvDeinit(ptr aliasKV)
 /func
