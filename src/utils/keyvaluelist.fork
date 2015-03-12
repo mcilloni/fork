@@ -37,6 +37,8 @@ func kvInit(kv ptr utils:KVList, cmp spring:comparer) ptr utils:KVList
 
   spring:listInit(ptr kv'list)
   kv'cmp = cmp
+
+  return kv
 /func
 
 
@@ -131,12 +133,42 @@ func kvLen(kv ptr utils:KVList) uintptr
 /func
 
 
+func kvPrint(kv ptr utils:KVList)
+  if kv == null
+    spring:outln("<null>")
+  else
+
+    spring:out("[ ")
+
+    mut len = utils:kvLen(kv)
+    mut i uintptr = 0
+
+    while i < len
+      if i > 0
+        spring:out(", ")
+      /if
+
+      mut pair = utils:kvGetAt(kv, i)
+
+      spring:out(cast<ptr uint8>(pair'key))
+      spring:out(": ")
+      spring:out(cast<ptr uint8>(pair'value))
+
+      i++
+    /while
+
+    spring:out(" ]")
+
+  /if
+/func
+
+
 func kvPut(kv ptr utils:KVList, key data, value data)
   mut pair ptr spring:Pair
-  mut pos = kvGetPos(kv, key, ptr pair)
+  mut pos = kvGetPairAndPos(kv, key, ptr pair)
 
   if pos < 0
-    spring:listPush(ptr kv'list, spring:pairNew(key, value))
+    spring:listAppend(ptr kv'list, spring:pairNew(key, value))
   else
     kvFreePairContents(kv, pair)
 
@@ -164,4 +196,14 @@ func kvRemove(kv ptr utils:KVList, key data) bool
 func kvSetFreeFuncs(kv ptr utils:KVList, freeKey ptr func(item data), freeVal ptr func(item data))
   kv'freeKey = freeKey
   kv'freeVal = freeVal
+/func
+
+
+func strkvInit(kv ptr utils:KVList) ptr utils:KVList
+  return utils:kvInit(kv, ptr spring:strcomparer)
+/func
+
+
+func strkvNew() ptr utils:KVList
+  return utils:kvNew(ptr spring:strcomparer)
 /func

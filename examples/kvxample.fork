@@ -1,0 +1,35 @@
+import spring
+import utils
+
+
+entry
+  mut kv = utils:strkvNew()
+
+  utils:kvSetFreeFuncs(kv, ptr spring:free, ptr spring:free)
+
+  utils:kvPut(kv, spring:strclone("aaa"), spring:strclone("eee"))
+  utils:kvPrint(kv)
+  spring:outch(10)
+
+  utils:kvPut(kv, spring:strclone("aaa"), spring:strclone("rrr"))
+  utils:kvPrint(kv)
+  spring:outch(10)
+
+  utils:kvPut(kv, spring:strclone("ooo"), spring:strclone("uuu"))
+  utils:kvPrint(kv)
+  spring:outch(10)
+
+  utils:kvPut(kv, spring:strclone("uuu"), spring:strclone("ppp"))
+  utils:kvPrint(kv)
+  spring:outch(10)
+
+  utils:kvPut(kv, spring:strclone("qwe"), spring:strclone("rere"))
+  utils:kvPrint(kv)
+  spring:outch(10)
+
+  utils:kvRemove(kv, "ooo")
+  utils:kvPrint(kv)
+  spring:outch(10)
+
+  utils:kvFree(kv)
+/entry
