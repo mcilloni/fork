@@ -150,9 +150,9 @@ func prootHasImported(root ptr ast:PRoot, name ptr uint8) bool
   mut len = spring:listLen(root'imports)
 
   while i < len
-    mut elem = cast<ptr uint8>(val spring:listGet(root'imports, i))
+    mut elem = cast<ptr ast:StringDef>(val spring:listGet(root'imports, i))
 
-    if spring:strequals(elem, name)
+    if spring:strequals(elem'name, name)
       return true
     /if
 

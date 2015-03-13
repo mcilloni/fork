@@ -41,6 +41,8 @@ entry
     spring:exit(1)
   /if
 
+  spring:listFree(errors)
+
   mut iter = spring:mapiterStart(cast<ptr ast:PRoot>(ast)'aliases'syms)
 
   mut pair ptr spring:Pair

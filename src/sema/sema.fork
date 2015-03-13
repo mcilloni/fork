@@ -99,6 +99,10 @@ func makePRootStab(ctx ptr ctx:Context, root ptr ast:PNode, errors ptr spring:Li
 
     i++
   /while
+
+  ## FINISH THIS ##
+
+  return stab
 /func
 
 
@@ -130,11 +134,17 @@ func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr spring:List
 
   ctx:contextSetCurrentFile(ctx, proot'fileName)
 
+  if spring:listLen(errors) != 0
+    return errors
+  /if
+
   proot'typePool = utils:fpNew(cast<ptr func(item data)>(ptr ast:typeFree))
 
   proot'aliases = ast:stabNew()
 
-  sema:populateGlobalAliasTable(ctx, proot, errors)
+  if !sema:populateGlobalAliasTable(ctx, proot, errors)
+    return errors
+  /if
 
   mut stab = makePRootStab(ctx, root, errors)
 

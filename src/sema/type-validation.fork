@@ -117,6 +117,7 @@ func validateIdAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
     if ignoreSize
       return ast:typeNewRecursiveAlias(root'typePool, root'moduleName != null => root'moduleName'name || null, ptype'name)
     /if
+
     mut cs = spring:csNew(20)
     spring:csAppendStr(cs, "illegal recursive type ")
     spring:csAppendStr(cs, ptype'name)
@@ -140,17 +141,11 @@ func validateIdAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
   mut missingPType ptr ast:PType
 
   if utils:kvGet(rawAliases, ptype'name, ptr missingPType)
-    mut named = ptype'name != null
+    spring:listPush(recList, ptype'name)
 
-    if named
-      spring:listPush(recList, ptype'name)
-    /if
+    mut ret = validateAlias(ctx, root, rawAliases, missingPType, errors, recList, true, ignoreSize)
 
-    mut ret = validateAlias(ctx, root, rawAliases, ptype, errors, recList, true, ignoreSize)
-
-    if named
-      spring:listPop(recList)
-    /if
+    spring:listPop(recList)
 
     if ret != null
       rootAliasRegister(root, rawAliases, ptype'name, ret)
@@ -372,17 +367,19 @@ func populateGlobalAliasTable(ctx ptr ctx:Context, root ptr ast:PRoot, errors pt
   collectGlobalAliases(root, errors, ptr aliasKV)
 
   mut pair ptr spring:Pair
-  mut recList = spring:listNew()
+  mut recList spring:List
+
+  spring:listInit(ptr recList)
 
   while (pair = utils:kvGetAt(ptr aliasKV, 0)) != null
     mut name = cast<ptr uint8>(pair'key)
     mut ptype = cast<ptr ast:PType>(pair'value)
 
-    spring:listPush(recList, name)
+    spring:listPush(ptr recList, name)
 
-    mut type = validateAlias(ctx, root, ptr aliasKV, ptype, errors, recList, true, false)
+    mut type = validateAlias(ctx, root, ptr aliasKV, ptype, errors, ptr recList, true, false)
 
-    spring:listPop(recList)
+    spring:listPop(ptr recList)
 
     if type != null
       rootAliasRegister(root, ptr aliasKV, name, type)
@@ -392,4 +389,7 @@ func populateGlobalAliasTable(ctx ptr ctx:Context, root ptr ast:PRoot, errors pt
   /while
 
   utils:kvDeinit(ptr aliasKV)
+  spring:listDeinit(ptr recList)
+
+  return spring:listLen(errors) == 0
 /func
