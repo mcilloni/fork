@@ -145,8 +145,9 @@ func validateIdAlias(ctx ptr ctx:Context, root ptr ast:PRoot,
     /if
 
     mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "illegal recursive type ")
+    spring:csAppendStr(cs, "alias declaration makes type ")
     spring:csAppendStr(cs, ptype'name)
+    spring:csAppendStr(cs, " recursive")
     spring:csAppend(cs, 32)
     listDumpHierarchyIntoCS(recList, cs)
 
