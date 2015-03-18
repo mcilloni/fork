@@ -79,6 +79,86 @@ func typeClone(pool ptr utils:FreePool, type ptr ast:Type) ptr ast:Type
 /func
 
 
+func typeEqualsList(list1, list2 ptr spring:List) bool
+  mut len = spring:listLen(list1)
+
+  if len != spring:listLen(list2)
+    return false
+  /if
+
+  mut i uintptr = 0
+
+  while i < len
+    mut type1 = cast<ptr ast:Type>(val spring:listGet(list1, i))
+    mut type2 = cast<ptr ast:Type>(val spring:listGet(list2, i))
+
+    if !ast:typeEquals(type1, type2)
+      return false
+    /if
+
+    i++
+  /while
+
+  return true
+/func
+
+
+func typeEquals(type1, type2 ptr ast:Type) bool
+  if type1 == null or type2 == null
+    return false
+  /if
+
+  if type1'name != null and type2'name != null
+    mut res = spring:strequals(type1'name, type2'name)
+
+    if res and type1'moduleName != null and type2'moduleName != null
+      res = spring:strequals(type1'moduleName, type2'moduleName)
+    /if
+
+    return res
+  /if
+
+  if type1'type != type2'type
+    return false
+  /if
+
+  if type1'type == ast:TYPE_FUNC
+    return typeEquals(type1'retType, type2'retType) and typeEqualsList(type1'members, type2'members)
+  else
+    if type1'type == ast:TYPE_PTR
+      return typeEquals(type1'retType, type2'retType)
+    else
+      if type1'type == ast:TYPE_STRUCT
+        return typeEqualsList(type1'members, type2'members)
+      else
+        if type1'type == ast:TYPE_LOC
+          return typeEquals(type1'retType, type2'retType) and type1'itemCount == type2'itemCount
+        else
+          if type1'type == ast:TYPE_BOOL
+            return true
+          else
+            if type1'type == ast:TYPE_INT
+              return type1'isSigned == type2'isSigned and type1'typeSize == type2'typeSize
+            else
+              if type1'type == ast:TYPE_DATA
+                return true
+              else
+                if type1'type == ast:TYPE_NULL
+                  return true
+                else
+                  spring:errln("Unreachable: unknown type comparison")
+                  spring:abort()
+                /if
+              /if
+            /if
+          /if
+        /if
+      /if
+    /if
+  /if
+/func
+
+
 func typeFree(type ptr ast:Type)
   if type != null
     spring:free(type'moduleName)

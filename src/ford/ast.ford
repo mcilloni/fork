@@ -107,6 +107,7 @@ decl builtinSetNew func() ptr spring:Map
 
 decl typeClone func(pool ptr utils:FreePool, type ptr Type) ptr Type
 decl typeDump func(type ptr Type)
+decl typeEquals func(type1, type2 ptr Type) bool
 decl typeFree func(type ptr Type)
 decl typeNewFunc func(pool ptr utils:FreePool, moduleName, name ptr uint8, retVal ptr Type, members ptr spring:List) ptr Type
 decl typeNewLoc func(pool ptr utils:FreePool, moduleName, name ptr uint8, itemCount uintptr, retVal ptr Type) ptr Type
@@ -135,7 +136,8 @@ alias PNode struct(
   value uintptr,
   parent ptr PNode,
   leaves ptr spring:List,
-  begin, end utils:Line
+  begin, end utils:Line,
+  validated bool
 )
 
 decl pnodeAppendChild func(parent ptr PNode, child ptr PNode) ptr PNode
