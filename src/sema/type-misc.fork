@@ -1,0 +1,113 @@
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+import ast
+import ctx
+import sema
+import spring
+import utils
+
+
+func typeResolveList(ctx ptr ctx:Context, root ptr ast:PNode, list,errors ptr spring:List) ptr spring:List
+  mut len = spring:listLen(list)
+  mut i uintptr = 0
+  mut retList = spring:listNew()
+
+  while i < len
+    mut psym = cast<ptr ast:PSymbol>(val spring:listGet(list, i))
+
+    mut type = sema:typeResolve(ctx, root, psym'type, errors)
+    if type == null
+      spring:listFree(retList)
+
+      return null
+    /if
+
+    spring:listAppend(retList, ast:symbolNew(psym'name, type))
+    i++
+  /while
+
+  return retList
+/func
+
+
+func typeResolve(ctx ptr ctx:Context, root ptr ast:PNode, ptype ptr ast:PType, errors ptr spring:List) ptr ast:Type
+  mut builtin = ctx:contextMatchBuiltin(ctx, ptype'name)
+  if builtin != null
+    return builtin
+  /if
+
+  if ptype'name != null
+    mut ret ptr ast:Type = null
+    mut name ptr uint8 = null
+
+    if ptype'moduleName != null
+      if (ret = sema:findAliasImport(ctx, ptype'moduleName, ptype'name)) == null
+        mut cs = spring:csNew(10)
+        spring:csAppendStr(cs, ptype'moduleName)
+        spring:csAppendStr(cs, ":")
+        spring:csAppendStr(cs, ptype'name)
+
+        name = spring:csUnleash(cs)
+      /if
+    else
+      if (ret = sema:findAliasLocal(root, ptype'name)) == null
+        name = spring:strclone(ptype'name)
+      /if
+    /if
+
+    if ret == null
+      mut proot = cast<ptr ast:PRoot>(root)
+      mut msg = spring:strappend("cannot resolve type ", name)
+      spring:free(name)
+
+      spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, proot'fileName, msg))
+
+      return null
+    /if
+  /if
+
+  mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
+  mut proot = cast<ptr ast:PRoot>(root)
+  mut pool = proot'typePool
+
+  if ptdes'type == ast:PTYPE_FUNC
+    mut retType = typeResolve(ctx, root, ptdes'retType, errors)
+    if retType == null
+      return null
+    /if
+
+    mut args = typeResolveList(ctx, root, ptdes'arguments, errors)
+    if args == null
+      return null
+    /if
+
+    return ast:typeNewFunc(pool, null, null, retType, args)
+  else
+    if ptdes'type == ast:PTYPE_STRUCT
+      mut args = typeResolveList(ctx, root, ptdes'arguments, errors)
+
+      return args != null => ast:typeNewStruct(pool, null, null, args) || null
+    else
+      mut valType = typeResolve(ctx, root, ptdes'retType, errors)
+
+      if ptdes'type == ast:PTYPE_PTR
+        return valType != null => ast:typeNewPtr(pool, null, null, valType) || null
+      else
+        if ptdes'type == ast:PTYPE_LOC
+          return valType != null => ast:typeNewLoc(pool, null, null, ptdes'length, valType) || null
+        else
+          spring:errln("Unreachable code - unknown ptype")
+          spring:abort()
+        /if
+      /if
+    /if
+  /if
+
+/func

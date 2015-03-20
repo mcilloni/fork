@@ -1,0 +1,93 @@
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+import ast
+import ctx
+import sema
+import spring
+import utils
+
+
+# This function validates a single declaration.
+# The resolver is used to resolve symbols and aliases; if they are in the global
+# scope, they may be unresolved yet, and are then verified.
+func validatePDecl(rsv sema:Resolver, pdecl ptr ast:PDecl, errors ptr spring:List) bool
+  mut ntype = pdecl'node'type
+
+  if ntype == ast:PDECL or ntype == ast:PMUT
+    #utils:kvPut(rsv'decls, pdecl'sym'name, pdecl)
+    return true
+  else
+    if ntype == ast:PFUNCTION
+      #utils:kvPut(rsv'funcs, pdecl'sym'name, pdecl)
+
+      return true
+    else
+      if ntype == ast:PALIAS
+        return sema:resolveAlias(rsv, pdecl'sym'name, pdecl'sym'type, errors) != null
+      else
+        if ntype == ast:PENTRY
+          return true
+        else
+          spring:errln("Unreachable: invalid pdecl value")
+          spring:abort()
+        /if
+      /if
+    /if
+  /if
+
+  # unreachable
+  return false
+/func
+
+
+# This function validates an AST.
+# Being supposed to be called by semaValidateAst, we may assume that all imports
+# have been already evaluated.
+#
+# This function initializes a resolver and then parses the children of the given
+# AST root, using the resolver to resolve eventual symbols and aliases.
+#
+# If not found, a symbol is looked after and verified out of order, allowing
+# complete visibility of the global scope without any issue with the declaration
+# order of variables, aliases and functions.
+func semaValidateAstRoot(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr spring:List) bool
+  if root'node'node'validated
+    return true
+  /if
+
+  mut rsv sema:Resolver
+
+  if !sema:resolverCollect(ptr rsv, ctx, root, errors)
+    return false
+  /if
+
+  mut len = spring:listLen(root'node'node'leaves)
+  mut i uintptr = 0
+  mut result = true
+
+  while i < len
+    # PDecl because root can only have pdecl children
+    mut pdecl = cast<ptr ast:PDecl>(val spring:listGet(root'node'node'leaves, i))
+
+    if !pdecl'node'validated
+      if !validatePDecl(rsv, pdecl, errors)
+        result = false
+
+        break
+      /if
+    /if
+
+    i++
+  /while
+
+  sema:resolverDeinit(rsv)
+
+  return result
+/func
