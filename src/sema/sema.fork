@@ -142,11 +142,7 @@ func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr spring:List
 
   proot'aliases = ast:stabNew()
 
-  if !sema:populateGlobalAliasTable(ctx, proot, errors)
-    return errors
-  /if
-
-  mut stab = makePRootStab(ctx, root, errors)
+  sema:semaValidateAstRoot(ctx, proot, errors)
 
   return errors
 /func

@@ -31,6 +31,7 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
       mut ret = sema:semaParse(ctx, joinedPath, importAst)
 
       spring:free(joinedPath)
+      spring:free(fordName)
       return ret
     /if
 
@@ -51,7 +52,8 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
   mut glued = spring:strglue(toGlue)
 
   spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, importName'begin, ctx'currentFile, glued))
-
+  
+  spring:free(fordName)
   spring:free(glued)
 
   return errors

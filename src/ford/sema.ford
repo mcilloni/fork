@@ -17,20 +17,37 @@ import utils
 alias Resolver struct (
   ctx ptr ctx:Context,
   root ptr ast:PRoot,
-  aliases,decls,funcs ptr utils:KVList
+  aliases,decls ptr utils:KVList
 )
 
-# type validation
+decl resolverCollect func(rsv ptr Resolver,
+                          ctx ptr ctx:Context,
+                          root ptr ast:PRoot,
+                          errors ptr spring:List) bool
 
-decl populateGlobalAliasTable func(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr spring:List) bool
+decl resolverDeinit func(rsv Resolver)
 
-# sym declaration validation
 
-decl verifyGlobalDeclarations func(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr spring:List) bool
+decl resolveAlias func(rsv Resolver,
+                       name ptr uint8,
+                       ptype ptr ast:PType,
+                       errors ptr spring:List) ptr ast:Type
+
+decl resolveType func(rsv Resolver,
+                      ptype ptr ast:PType,
+                      errors ptr spring:List) ptr ast:Type
+
+decl semaValidateAstRoot func(ctx ptr ctx:Context,
+                              root ptr ast:PRoot,
+                              errors ptr spring:List) bool
 
 # validates the AST, and returns a list of the issues found.
-decl semaValidateAst func(context ptr ctx:Context, root ptr ast:PNode) ptr spring:List
-decl semaParse func(context ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr spring:List
+decl semaValidateAst func(context ptr ctx:Context,
+                          root ptr ast:PNode) ptr spring:List
+                          
+decl semaParse func(context ptr ctx:Context,
+                    fileName ptr uint8,
+                    newRoot ptr ptr ast:PNode) ptr spring:List
 
 # ast sema operations
 

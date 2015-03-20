@@ -37,7 +37,8 @@ entry
 
       i++
     /while
-
+    
+    spring:listFree(errors)
     spring:exit(1)
   /if
 
