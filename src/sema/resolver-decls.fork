@@ -1,0 +1,205 @@
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+import ast
+import sema
+import spring
+import utils
+
+
+func findPBlock(node ptr ast:PNode) ptr ast:PNode
+  if node == null
+    return null
+  /if
+
+  if !ast:isPBlock(node)
+    return findPBlock(node'parent)
+  /if
+
+  return node
+/func
+
+
+func findStab(node ptr ast:PNode) ptr ast:Symtable
+  mut pblock = findPBlock(node)
+
+  if pblock == null
+    return null
+  /if
+
+  return cast<ptr ast:PBlock>(pblock)'syms
+/func
+
+
+func findSymLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
+  mut stab = findStab(node)
+
+  return ast:stabTypeof(stab, name)
+/func
+
+
+func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
+  mut pblock = findPBlock(node)
+
+  if pblock != null
+    mut stab = findStab(pblock)
+    mut type = ast:stabTypeof(stab, name)
+
+    if type == null
+      return findSym(pblock'parent, name)
+    /if
+  /if
+
+  return null
+/func
+
+
+func rootDeclsRegister(rsv sema:Resolver, name ptr uint8, type ptr ast:Type)
+  type'name = spring:strclone(name)
+  type'moduleName = rsv'root'moduleName != null => spring:strclone(rsv'root'moduleName'name) || null
+  ast:stabAdd(rsv'root'node'syms, name, type)
+
+  mut pdecl ptr ast:PDecl
+
+  utils:kvGet(rsv'decls, name, ptr pdecl)
+
+  pdecl'node'validated = true
+
+  utils:kvRemove(rsv'decls, name)
+/func
+
+
+# Idea: if we're in a recursive invocation from an expression,
+# we only need its type (if possible).
+# Otherwise, if inherited from an expression, we must validate it to extract the
+# actual type.
+func registerDeclReal(rsv sema:Resolver,
+                      pdecl ptr ast:PDecl,
+                      recursive bool,
+                      recList,errors ptr spring:List) ptr ast:Type
+
+  mut name = pdecl'sym'name
+  mut ptype = pdecl'sym'type
+
+  mut isDecl = pdecl'node'type == ast:PDECL
+  mut isFunc = pdecl'node'type == ast:PFUNCTION or pdecl'node'type == ast:PENTRY
+
+  mut realType ptr ast:Type = sema:findSym(cast<ptr ast:PNode>(pdecl), name)
+  mut typeResolved = realType != null
+  mut inMap = typeResolved
+
+  # check: if this symbol is present, than it's because it has already been
+  # type-resolved (we ensured univocity of declarations while collecting decls)
+  # and maybe not validated yet. Return type if validated.
+  if typeResolved and pdecl'node'validated
+    return realType
+  /if
+
+  if ptype != null and !typeResolved
+    typeResolved = (realType = sema:resolveType(rsv, ptype, errors)) == null
+
+    if !typeResolved
+      return null
+    /if
+  /if
+
+  # if we are just resolving a type, we shall stop, return the type and
+  # validate the rest only when needed.
+
+  if !pdecl'node'validated and !recursive
+
+    if isFunc
+      # validate function
+    else
+      if spring:listLen(pdecl'node'leaves) != 1 and !typeResolved
+        spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, "declaration with neither a type nor an initializer"))
+
+        return null
+      else
+        if isDecl
+          spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, "decls can't have initializers"))
+
+          return null
+        /if
+      /if
+
+      mut pexpr = cast<ptr ast:PExpr>(val spring:listGet(pdecl'node'leaves, 0))
+
+      # do something
+
+    /if
+
+    pdecl'node'validated = true
+  /if
+
+  if !inMap and realType != null and pdecl'node'type != ast:PENTRY
+    rootDeclsRegister(rsv, name, realType)
+  /if
+
+  return realType
+/func
+
+
+func registerTopDeclReal(rsv sema:Resolver,
+                         pdecl ptr ast:PDecl,
+                         recList,errors ptr spring:List) ptr ast:Type
+
+  spring:listPush(recList, cast<ptr uint8>(pdecl'node'value))
+
+  mut ret = registerDeclReal(rsv, pdecl, false, recList, errors)
+
+  spring:listPop(recList)
+
+  return ret
+/func
+
+
+func registerTopDecl(rsv sema:Resolver,
+                     pdecl ptr ast:PDecl,
+                     errors ptr spring:List) ptr ast:Type
+
+  mut recList spring:List
+  spring:listInit(ptr recList)
+
+  mut ret = registerTopDeclReal(rsv, pdecl, ptr recList, errors)
+
+  spring:listDeinit(ptr recList)
+
+  return ret
+/func
+
+func resolveDeclType(rsv sema:Resolver,
+                     name ptr uint8,
+                     node ptr ast:PNode,
+                     recList,errors ptr spring:List) ptr ast:Type
+
+  mut dtype = sema:findSym(node, name)
+
+  if dtype != null
+    return dtype
+  /if
+
+  # in this case we should look if there is a global declaration value left with
+  # this name
+
+  mut whichDecl ptr ast:PDecl
+
+  if utils:kvGet(rsv'decls, name, ptr whichDecl)
+    return registerDeclReal(rsv, whichDecl, false, recList, errors)
+  /if
+
+  # The declaration is absent
+
+  mut msg = spring:strappend(name, " is not defined in current scope")
+  spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, node'begin, rsv'root'fileName, msg))
+
+  spring:free(msg)
+
+  return null
+/func

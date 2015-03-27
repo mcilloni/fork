@@ -22,6 +22,11 @@ mut ASSOC_RIGHT uint8 = 1
 mut emptyExpr ast:PExpr
 
 
+func isConst(tok ptr lex:Token) bool
+  return tok != null and (tok'type == lex:STRING or tok'type == lex:NUMBER)
+/func
+
+
 func isBinary(tok ptr lex:Token) bool
   return tok != null and (tok'type mod 10) < 2
 /func
@@ -107,7 +112,7 @@ func parserParseCastTag(ctx ptr synt:ParserContext) ptr ast:PExpr
   /if
 
   mut pexpr = ast:pexprNew(castTok, expr, null, lex:tokExtractBegin(castTok), lex:tokDiscardEnd(cpar))
-  pexpr'type = type
+  pexpr'node'value = cast<uintptr>(type)
 
   return pexpr
 /func
@@ -136,7 +141,7 @@ func parserParseSizeOp(ctx ptr synt:ParserContext) ptr ast:PExpr
   /if
 
   mut sizeop = ast:pexprNew(sizeTok, null, null, lex:tokExtractBegin(sizeTok), lex:tokDiscardEnd(cpar))
-  sizeop'type = type
+  sizeop'node'value = cast<uintptr>(type)
 
   return sizeop
 /func

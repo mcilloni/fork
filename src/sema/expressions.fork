@@ -1,0 +1,115 @@
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import ast
+import ctx
+import lex
+import sema
+import spring
+import synt
+import utils
+
+
+func intForVal(ctx ptr ctx:Context, value intptr) ptr ast:Type
+  mut aval = spring:abs(value)
+
+  if aval < 2**7
+    return ctx:contextMatchBuiltin(ctx, "int8")
+  else
+    if aval < 2**15
+      return ctx:contextMatchBuiltin(ctx, "int16")
+    else
+      if aval < 2 ** 31
+        return ctx:contextMatchBuiltin(ctx, "int32")
+      /if
+    /if
+  /if
+
+  return ctx:contextMatchBuiltin(ctx, "int64")
+/func
+
+
+func validateExprCast(rsv sema:Resolver,
+                      pexpr ptr ast:PExpr,
+                      recList,errors ptr spring:List) ptr ast:Type
+
+/func
+
+
+decl resolveDeclType func(rsv sema:Resolver,
+                          name ptr uint8,
+                          node ptr ast:PNode,
+                          recList,errors ptr spring:List) ptr ast:Type
+
+
+func validateExprId(rsv sema:Resolver,
+                    pexpr ptr ast:PExpr,
+                    recList,errors ptr spring:List) ptr ast:Type
+
+  mut name = cast<ptr uint8>(pexpr'node'value)
+  mut type = sema:findSym(cast<ptr ast:PNode>(pexpr), name)
+
+  # try searching for a top declaration
+  return type == null => resolveDeclType(rsv, name, cast<ptr ast:PNode>(pexpr), recList, errors) || type
+/func
+
+
+func validateBinaryExpr(rsv sema:Resolver,
+                        pexpr ast:PExpr,
+                        recList,errors ptr spring:List) ptr ast:Type
+
+/func
+
+
+func validateUnaryExpr(rsv sema:Resolver,
+                       pexpr ast:PExpr,
+                       recList, errors ptr spring:List) ptr ast:Type
+
+/func
+
+
+func validateExprReal(rsv sema:Resolver,
+                      pexpr ptr ast:PExpr,
+                      recList,errors ptr spring:List) ptr ast:Type
+
+
+  if pexpr'type != null
+    return pexpr'type
+  /if
+
+  mut tok lex:Token
+  mut op = pexpr'opType
+
+  tok'type = op
+
+  if synt:isConst(ptr tok)
+    return pexpr'type = (op == lex:STRING => ctx:contextMatchBuiltin(rsv'ctx, "ptr uint8") || intForVal(rsv'ctx, cast<intptr>(pexpr'node'value)))
+  /if
+
+  if tok'type == lex:ID
+    return pexpr'type = validateExprId(rsv, pexpr, recList, errors)
+  /if
+
+  if tok'type == lex:CAST
+    return pexpr'type = validateExprCast(rsv, pexpr, recList, errors)
+  /if
+
+  # unreachable
+  spring:abort()
+  return null
+/func
+
+
+func validateExpr(rsv sema:Resolver,
+                  pexpr ast:PExpr,
+                  errors ptr spring:List) ptr ast:Type
+
+  return validateExprReal(rsv, ptr pexpr, null, errors)
+/func

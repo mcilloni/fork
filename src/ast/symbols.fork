@@ -217,11 +217,22 @@ func typeNewBuiltinData() ptr ast:Type
 /func
 
 
+func typeNewBuiltinEmpty() ptr ast:Type
+  return typeNewBuiltin(ast:TYPE_EMPTY, "\0", false, 0, 0, 0, null, null)
+/func
+
+
+func typeNewBuiltinString(uint8t ptr ast:Type) ptr ast:Type
+  return ast:typeNewPtr(null, null, null, uint8t)
+/func
+
+
 func builtinSetNew() ptr spring:Map
 
   mut ret = spring:strmapNew()
+  mut uint8t = typeNewBuiltinInt("uint8", 1, false)
 
-  spring:mapPut(ret, "uint8", typeNewBuiltinInt("uint8", 1, false), spring:FREE_VALUE)
+  spring:mapPut(ret, "uint8", uint8t, spring:FREE_VALUE)
   spring:mapPut(ret, "uint16", typeNewBuiltinInt("uint16", 2, false), spring:FREE_VALUE)
   spring:mapPut(ret, "uint32", typeNewBuiltinInt("uint32", 4, false), spring:FREE_VALUE)
   spring:mapPut(ret, "uint64", typeNewBuiltinInt("uint64", 8, false), spring:FREE_VALUE)
@@ -233,6 +244,8 @@ func builtinSetNew() ptr spring:Map
   spring:mapPut(ret, "intptr", typeNewBuiltinInt("intptr", platform:ptrSize, true), spring:FREE_VALUE)
   spring:mapPut(ret, "bool", typeNewBuiltinBool(), spring:FREE_VALUE)
   spring:mapPut(ret, "data", typeNewBuiltinData(), spring:FREE_VALUE)
+  spring:mapPut(ret, "\0", typeNewBuiltinEmpty(), spring:FREE_VALUE)
+  spring:mapPut(ret, "ptr uint8", typeNewBuiltinString(uint8t), spring:FREE_VALUE)
 
   return ret
 /func
@@ -364,3 +377,4 @@ mut TYPE_INT       uint16 = 60
 mut TYPE_DATA      uint16 = 70
 mut TYPE_REC_ALIAS uint16 = 80
 mut TYPE_NULL      uint16 = 90
+mut TYPE_EMPTY     uint16 = 100

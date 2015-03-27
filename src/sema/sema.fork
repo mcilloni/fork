@@ -15,62 +15,6 @@ import synt
 import utils
 
 
-func findPBlock(node ptr ast:PNode) ptr ast:PNode
-  if node == null
-    return null
-  /if
-
-  if !ast:isPBlock(node)
-    return findPBlock(node'parent)
-  /if
-
-  return node
-/func
-
-
-func findStab(node ptr ast:PNode) ptr ast:Symtable
-  mut pblock = findPBlock(node)
-
-  if pblock == null
-    return null
-  /if
-
-  return cast<ptr ast:PBlock>(pblock)'syms
-/func
-
-
-func getBuiltinType(name ptr uint8) ptr ast:PType
-
-/func
-
-
-func findType(node ptr ast:PNode) ptr ast:PType
-
-/func
-
-
-func findSymLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
-  mut stab = findStab(node)
-
-  return ast:stabTypeof(stab, name)
-/func
-
-
-func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
-  mut pblock = findPBlock(node)
-
-  if pblock != null
-    mut stab = findStab(pblock)
-    mut type = ast:stabTypeof(stab, name)
-
-    if type == null
-      return findSym(pblock'parent, name)
-    /if
-  /if
-
-  return null
-/func
-
 # root node contains global declarations
 # it has no stack, and no declaration order
 func makePRootStab(ctx ptr ctx:Context, root ptr ast:PNode, errors ptr spring:List) ptr ast:Symtable

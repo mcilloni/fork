@@ -39,3 +39,7 @@ decl parserParse func(prs ptr Parser) ptr ast:PNode
 
 decl expect func(ctx ptr ParserContext, tokType uint16) ptr lex:Token
 decl expectDiscard func(ctx ptr ParserContext, tokType uint16) bool
+
+decl isBinary func(tok ptr lex:Token) bool
+decl isConst func(tok ptr lex:Token) bool
+decl isUnary func(tok ptr lex:Token) bool

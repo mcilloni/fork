@@ -283,15 +283,16 @@ func pexprDumpInfo(pexpr ptr ast:PExpr, depth uintptr)
             spring:out("an array access")
           else
             spring:out(lex:tokenStr(ptr tok))
+            
+            if pexpr'opType == lex:CAST or pexpr'opType == lex:SIZE
+              spring:out(" to ")
+
+              ptypeDump(cast<ptr ast:PType>(pexpr'node'value))
+            /if
           /if
         /if
       /if
     /if
-  /if
-  if pexpr'type != null
-    spring:out(", type ")
-
-    ptypeDump(pexpr'type)
   /if
 /func
 

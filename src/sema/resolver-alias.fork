@@ -35,7 +35,7 @@ func checkNotFuncType(rsv sema:Resolver, type ptr ast:Type) ptr utils:Issue
 /func
 
 
-decl resolveAliasReal func(rsv sema:Resolver,
+decl registerAliasReal func(rsv sema:Resolver,
                            name ptr uint8,
                            ptype ptr ast:PType,
                            recList,errors ptr spring:List,
@@ -308,12 +308,7 @@ func resolveIdType(rsv sema:Resolver,
       spring:abort()
     /if
 
-    mut ret = resolveAliasReal(rsv, ptype'name, whichDecl'sym'type, recList, errors, ignoreSize)
-
-    if ret != null
-      rootAliasRegister(rsv, ptype'name, ret)
-    /if
-    return ret
+    return registerAliasReal(rsv, ptype'name, whichDecl'sym'type, recList, errors, ignoreSize)
   /if
 
   # no match found, error
@@ -371,7 +366,7 @@ func resolveTypeReal(rsv sema:Resolver,
 /func
 
 
-func resolveAliasReal(rsv sema:Resolver,
+func registerAliasReal(rsv sema:Resolver,
                       name ptr uint8,
                       ptype ptr ast:PType,
                       recList,errors ptr spring:List,
@@ -401,15 +396,14 @@ func resolveAliasReal(rsv sema:Resolver,
 /func
 
 
-func resolveAlias(rsv sema:Resolver,
-                  name ptr uint8,
-                  ptype ptr ast:PType,
+func registerAlias(rsv sema:Resolver,
+                  pdecl ptr ast:PDecl,
                   errors ptr spring:List) ptr ast:Type
 
   mut recList spring:List
   spring:listInit(ptr recList)
 
-  mut ret = resolveAliasReal(rsv, name, ptype, ptr recList, errors, false)
+  mut ret = registerAliasReal(rsv, pdecl'sym'name, pdecl'sym'type, ptr recList, errors, false)
 
   spring:listDeinit(ptr recList)
 

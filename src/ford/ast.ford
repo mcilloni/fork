@@ -185,7 +185,8 @@ decl pdeclNew func(ptype uint16, sym ptr PSymbol) ptr PDecl
 alias PExpr struct(
   node PNode,
   opType uint16,
-  type ptr PType
+  constant bool,
+  type ptr Type
 )
 
 decl pexprNew func(tok ptr lex:Token, lhs,rhs ptr PExpr, begin,end utils:Line) ptr PExpr
@@ -221,6 +222,7 @@ decl PTYPE_STRUCT uint16
 decl PTYPE_LOC    uint16
 
 
+decl TYPE_EMPTY     uint16
 decl TYPE_FUNC      uint16
 decl TYPE_PTR       uint16
 decl TYPE_STRUCT    uint16

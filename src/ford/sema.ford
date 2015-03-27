@@ -28,10 +28,13 @@ decl resolverCollect func(rsv ptr Resolver,
 decl resolverDeinit func(rsv Resolver)
 
 
-decl resolveAlias func(rsv Resolver,
-                       name ptr uint8,
-                       ptype ptr ast:PType,
-                       errors ptr spring:List) ptr ast:Type
+decl registerAlias func(rsv Resolver,
+                        pdecl ptr ast:PDecl,
+                        errors ptr spring:List) ptr ast:Type
+
+decl registerTopDecl func(rsv Resolver,
+                          pdecl ptr ast:PDecl,
+                          errors ptr spring:List) ptr ast:Type
 
 decl resolveType func(rsv Resolver,
                       ptype ptr ast:PType,
@@ -44,7 +47,7 @@ decl semaValidateAstRoot func(ctx ptr ctx:Context,
 # validates the AST, and returns a list of the issues found.
 decl semaValidateAst func(context ptr ctx:Context,
                           root ptr ast:PNode) ptr spring:List
-                          
+
 decl semaParse func(context ptr ctx:Context,
                     fileName ptr uint8,
                     newRoot ptr ptr ast:PNode) ptr spring:List

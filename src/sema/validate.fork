@@ -21,16 +21,13 @@ func validatePDecl(rsv sema:Resolver, pdecl ptr ast:PDecl, errors ptr spring:Lis
   mut ntype = pdecl'node'type
 
   if ntype == ast:PDECL or ntype == ast:PMUT
-    #utils:kvPut(rsv'decls, pdecl'sym'name, pdecl)
-    return true
+    return sema:registerTopDecl(rsv, pdecl, errors) != null
   else
     if ntype == ast:PFUNCTION
-      #utils:kvPut(rsv'funcs, pdecl'sym'name, pdecl)
-
       return true
     else
       if ntype == ast:PALIAS
-        return sema:resolveAlias(rsv, pdecl'sym'name, pdecl'sym'type, errors) != null
+        return sema:registerAlias(rsv, pdecl, errors) != null
       else
         if ntype == ast:PENTRY
           return true
