@@ -283,7 +283,7 @@ func pexprDumpInfo(pexpr ptr ast:PExpr, depth uintptr)
             spring:out("an array access")
           else
             spring:out(lex:tokenStr(ptr tok))
-            
+
             if pexpr'opType == lex:CAST or pexpr'opType == lex:SIZE
               spring:out(" to ")
 
@@ -340,116 +340,123 @@ func pnodeDump(pnode ptr ast:PNode)
 /func
 
 
-func symbolDump(sym ptr ast:Symbol)
+func symbolDump(cs ptr spring:Charstash, sym ptr ast:Symbol)
   if sym == null
     return
   /if
 
-  spring:out(sym'name)
-  spring:outch(32)
-  ast:typeDump(sym'type)
+  spring:csAppendStr(cs, sym'name)
+  spring:csAppend(cs, 32)
+  ast:typeDump(cs, sym'type)
 /func
 
 
-func symlistDump(symlist ptr spring:List)
+func symlistDump(cs ptr spring:Charstash, symlist ptr utils:KVList)
 
-  spring:out("(")
+  spring:csAppendStr(cs, "(")
 
   if symlist != null
-    mut len = spring:listLen(symlist)
+    mut len = utils:kvLen(symlist)
     mut i uintptr = 0
 
     while i < len
-      mut sym = cast<ptr ast:Symbol>(val spring:listGet(symlist, i))
+      mut pair = utils:kvGetAt(symlist, i)
+      mut sym ast:Symbol
 
-      ast:symbolDump(sym)
+      sym'name = cast<ptr uint8>(pair'key)
+      sym'type = cast<ptr ast:Type>(pair'value)
+
+      ast:symbolDump(cs, ptr sym)
 
       if i + 1 < len
-        spring:out(", ")
+        spring:csAppendStr(cs, ", ")
       /if
 
       i++
     /while
   /if
 
-  spring:out(")")
+  spring:csAppendStr(cs, ")")
 /func
 
 
-func typeDumpName(type ptr ast:Type)
+func typeDumpName(cs ptr spring:Charstash, type ptr ast:Type)
   if type'name != null
-    spring:out("{ ")
+    spring:csAppendStr(cs, "{ ")
 
     if type'moduleName != null
-      spring:out(type'moduleName)
-      spring:out(":")
+      spring:csAppendStr(cs, type'moduleName)
+      spring:csAppendStr(cs, ":")
     /if
-    spring:out(type'name)
+    spring:csAppendStr(cs, type'name)
 
-    spring:out(" } ")
+    spring:csAppendStr(cs, " } ")
   /if
 /func
 
 
-func typeDump(type ptr ast:Type)
+func typeDump(cs ptr spring:Charstash, type ptr ast:Type)
 
   if type == null
     return
   /if
 
   if type'type == ast:TYPE_FUNC
-    typeDumpName(type)
+    typeDumpName(cs, type)
 
-    spring:out("func")
+    spring:csAppendStr(cs, "func")
 
-    symlistDump(type'members)
+    symlistDump(cs, type'members)
 
-    spring:outch(32)
+    spring:csAppend(cs, 32)
 
-    typeDump(type'retType)
+    typeDump(cs, type'retType)
   else
     if type'type == ast:TYPE_PTR
-      spring:out("ptr ")
+      spring:csAppendStr(cs, "ptr ")
 
-      typeDump(type'retType)
+      typeDump(cs, type'retType)
     else
       if type'type == ast:TYPE_STRUCT
-        typeDumpName(type)
+        typeDumpName(cs, type)
 
-        spring:out("struct")
+        spring:csAppendStr(cs, "struct")
 
-        symlistDump(type'members)
+        symlistDump(cs, type'members)
       else
         if type'type == ast:TYPE_LOC
-          spring:out("[")
-          spring:outint(type'itemCount)
-          spring:out("] ")
+          spring:csAppendStr(cs, "[")
+          spring:csAppendInt(cs, type'itemCount)
+          spring:csAppendStr(cs, "] ")
 
-          typeDump(type'retType)
+          typeDump(cs, type'retType)
         else
           if type'type == ast:TYPE_BOOL
-            spring:out("bool")
+            spring:csAppendStr(cs, "bool")
           else
             if type'type == ast:TYPE_INT
               if !type'isSigned
-                spring:out("u")
+                spring:csAppendStr(cs, "u")
               /if
 
-              spring:out("int")
-              spring:outint(type'typeSize * 8)
+              spring:csAppendStr(cs, "int")
+              spring:csAppendInt(cs, type'typeSize * 8)
 
             else
               if type'type == ast:TYPE_DATA
-                spring:out("data")
+                spring:csAppendStr(cs, "data")
               else
-                if type'type == ast:TYPE_REC_ALIAS
-                  spring:out("<< alias to ")
-                  spring:out(type'name)
-                  spring:out(" >>")
+                if type'type == ast:TYPE_RECALIAS
+                  spring:csAppendStr(cs, "<< alias to ")
+                  spring:csAppendStr(cs, type'name)
+                  spring:csAppendStr(cs, " >>")
                 else
                   if type'type == ast:TYPE_NULL
-                    spring:out("<< type of null >>")
+                    spring:csAppendStr(cs, "null")
                   else
+                    if type'type == ast:TYPE_EMPTY
+                      spring:csAppendStr(cs, "<<empty type>>")
+                    /if
                   /if
                 /if
               /if
@@ -463,6 +470,44 @@ func typeDump(type ptr ast:Type)
 /func
 
 
+func typeSummarize(cs ptr spring:Charstash, type ptr ast:Type)
+  if type == null
+    spring:csAppendStr(cs, "<<null type please report>>")
+    return
+  /if
+
+  if type'name != null
+    if type'moduleName != null
+      spring:csAppendStr(cs, type'moduleName)
+      spring:csAppendStr(cs, ":")
+    /if
+
+    spring:csAppendStr(cs, type'name)
+    return
+  /if
+
+  if type'type == ast:TYPE_PTR
+    spring:csAppendStr(cs, "ptr ")
+    typeSummarize(cs, type'retType)
+    return
+  /if
+
+  if type'type == ast:TYPE_LOC
+    spring:csAppendStr(cs, "loc[")
+    spring:csAppendInt(cs, type'itemCount)
+    spring:csAppendStr(cs, "] ")
+    typeSummarize(cs, type'retType)
+    return
+  /if
+
+  if type'type == ast:TYPE_STRUCT
+    spring:csAppendStr(cs, "<anonymous struct>")
+  /if
+
+  ast:typeDump(cs, type)
+/func
+
+
 func declDump(prefix,name ptr uint8, type ptr ast:Type)
   spring:out(prefix)
   spring:outch(32)
@@ -470,7 +515,13 @@ func declDump(prefix,name ptr uint8, type ptr ast:Type)
   spring:out(name)
   spring:outch(32)
 
-  ast:typeDump(type)
+  mut cs = spring:csNew(40)
+  ast:typeDump(cs, type)
+  mut str = spring:csUnleash(cs)
+
+  spring:out(str)
+
+  spring:free(str)
 
   spring:outch(10)
 

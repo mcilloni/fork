@@ -653,248 +653,258 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
   return tokenNew(type, value, begin, endPos)
 /func
 
-func tokenStr(tok ptr lex:Token) ptr uint8
-  if tok == null or tok'type == lex:EOF
+
+func ttypeStr(tt uint16) ptr uint8
+  if tt == lex:EOF
     return "Eof"
   /if
 
-  if tok'type == lex:NEWLINE
+  if tt == lex:NEWLINE
     return "a newline"
   /if
 
-  if tok'type == lex:ALIAS
+  if tt == lex:ALIAS
     return "alias"
   /if
 
-  if tok'type == lex:AMPER
+  if tt == lex:AMPER
     return "&"
   /if
 
-  if tok'type == lex:AND
+  if tt == lex:AND
     return "and"
   /if
 
-  if tok'type == lex:APOS
+  if tt == lex:APOS
     return "'"
   /if
 
-  if tok'type == lex:ASSIGN
+  if tt == lex:ASSIGN
     return "="
   /if
 
-  if tok'type == lex:BREAK
+  if tt == lex:BREAK
     return "break"
   /if
 
-  if tok'type == lex:CAST
+  if tt == lex:CAST
     return "cast"
   /if
 
-  if tok'type == lex:CBRAC
+  if tt == lex:CBRAC
     return "]"
   /if
 
-  if tok'type == lex:COLON
+  if tt == lex:COLON
     return ":"
   /if
 
-  if tok'type == lex:COMMA
+  if tt == lex:COMMA
     return ","
   /if
 
-  if tok'type == lex:CONTINUE
+  if tt == lex:CONTINUE
     return "continue"
   /if
 
-  if tok'type == lex:CPAR
+  if tt == lex:CPAR
     return ")"
   /if
 
-  if tok'type == lex:DEC
+  if tt == lex:DEC
     return "--"
   /if
 
-  if tok'type == lex:DECL
+  if tt == lex:DECL
     return "decl"
   /if
 
-  if tok'type == lex:DIFFERENT
+  if tt == lex:DIFFERENT
     return "!="
   /if
 
-  if tok'type == lex:DIV
+  if tt == lex:DIV
     return "/"
   /if
 
-  if tok'type == lex:ELSE
+  if tt == lex:ELSE
     return "else"
   /if
 
-  if tok'type == lex:ENDENTRY
+  if tt == lex:ENDENTRY
     return "/entry"
   /if
 
-  if tok'type == lex:ENDFUNC
+  if tt == lex:ENDFUNC
     return "/func"
   /if
 
-  if tok'type == lex:ENDIF
+  if tt == lex:ENDIF
     return "/if"
   /if
 
-  if tok'type == lex:ENDWHILE
+  if tt == lex:ENDWHILE
     return "/while"
   /if
 
-  if tok'type == lex:ENTRY
+  if tt == lex:ENTRY
     return "entry"
   /if
 
-  if tok'type == lex:EQUAL
+  if tt == lex:EQUAL
     return "=="
   /if
 
-  if tok'type == lex:FALSE
+  if tt == lex:FALSE
     return "false"
   /if
 
-  if tok'type == lex:FATARROW
+  if tt == lex:FATARROW
     return "=>"
   /if
 
-  if tok'type == lex:FUNC
+  if tt == lex:FUNC
     return "func"
   /if
 
-  if tok'type == lex:ID
+  if tt == lex:ID
     return "an identifier"
   /if
 
-  if tok'type == lex:IF
+  if tt == lex:IF
     return "if"
   /if
 
-  if tok'type == lex:IMPORT
+  if tt == lex:IMPORT
     return "import"
   /if
 
-  if tok'type == lex:INC
+  if tt == lex:INC
     return "++"
   /if
 
-  if tok'type == lex:MAJEQ
+  if tt == lex:MAJEQ
     return ">="
   /if
 
-  if tok'type == lex:MAJOR
+  if tt == lex:MAJOR
     return ">"
   /if
 
-  if tok'type == lex:MINEQ
+  if tt == lex:MINEQ
     return "<="
   /if
 
-  if tok'type == lex:MINOR
+  if tt == lex:MINOR
     return "<"
   /if
 
-  if tok'type == lex:MINUS
+  if tt == lex:MINUS
     return "-"
   /if
 
-  if tok'type == lex:MOD
+  if tt == lex:MOD
     return "mod"
   /if
 
-  if tok'type == lex:MODULE
+  if tt == lex:MODULE
     return "module"
   /if
 
-  if tok'type == lex:MUT
+  if tt == lex:MUT
     return "mut"
   /if
 
-  if tok'type == lex:NOT
+  if tt == lex:NOT
     return "!"
   /if
 
-  if tok'type == lex:NULLPTR
+  if tt == lex:NULLPTR
     return "null"
   /if
 
-  if tok'type == lex:NUMBER
+  if tt == lex:NUMBER
     return "a number"
   /if
 
-  if tok'type == lex:OBRAC
+  if tt == lex:OBRAC
     return "["
   /if
 
-  if tok'type == lex:OPAR
+  if tt == lex:OPAR
     return "("
   /if
 
-  if tok'type == lex:OR
+  if tt == lex:OR
     return "or"
   /if
 
-  if tok'type == lex:PIPE
+  if tt == lex:PIPE
     return "|"
   /if
 
-  if tok'type == lex:PLUS
+  if tt == lex:PLUS
     return "+"
   /if
 
-  if tok'type == lex:POW
+  if tt == lex:POW
     return "**"
   /if
 
-  if tok'type == lex:PTR
+  if tt == lex:PTR
     return "ptr"
   /if
 
-  if tok'type == lex:RETURN
+  if tt == lex:RETURN
     return "return"
   /if
 
-  if tok'type == lex:SEPARATOR
+  if tt == lex:SEPARATOR
     return "||"
   /if
 
-  if tok'type == lex:SIZE
+  if tt == lex:SIZE
     return "size"
   /if
 
-  if tok'type == lex:STRING
+  if tt == lex:STRING
     return "a string"
   /if
 
-  if tok'type == lex:STRUCT
+  if tt == lex:STRUCT
     return "struct"
   /if
 
-  if tok'type == lex:TIMES
+  if tt == lex:TIMES
     return "*"
   /if
 
-  if tok'type == lex:TRUE
+  if tt == lex:TRUE
     return "true"
   /if
 
-  if tok'type == lex:VAL
+  if tt == lex:UMINUS
+    return "- (Unary)"
+  /if
+
+  if tt == lex:VAL
     return "val"
   /if
 
-  if tok'type == lex:WHILE
+  if tt == lex:WHILE
     return "while"
   /if
 
-  if tok'type == lex:XOR
+  if tt == lex:XOR
     return "^"
   /if
 
   return "<unknown, please, report!>"
+/func
+
+
+func tokenStr(tok ptr lex:Token) ptr uint8
+  return lex:ttypeStr(tok == null => lex:EOF || tok'type)
 /func
 
 

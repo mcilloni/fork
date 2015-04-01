@@ -96,13 +96,14 @@ func convertPtrLocType(rsv sema:Resolver,
 
 func convertSymbolList(rsv sema:Resolver,
                        pargs,errors,recList ptr spring:List,
-                       funcArgs bool) ptr spring:List
+                       funcArgs bool) ptr utils:KVList
 
   mut errLen = spring:listLen(errors)
 
   mut plen = spring:listLen(pargs)
   mut i uintptr = 0
-  mut members = spring:listNew()
+  mut members = utils:strkvNew()
+  utils:kvSetFreeFuncs(members, ptr spring:free, cast<ptr func(item data)>(ptr ast:typeFree))
 
   while i < plen
     mut member = cast<ptr ast:PSymbol>(val spring:listGet(pargs, i))
@@ -126,14 +127,14 @@ func convertSymbolList(rsv sema:Resolver,
         return null
       /if
 
-      spring:listAppend(members, ast:symbolNew(member'name, type))
+      utils:kvPut(members, member'name, type)
     /if
 
     i++
   /while
 
   if spring:listLen(errors) > errLen
-    spring:listFreeAll(members, cast<ptr func(i data)>(ptr ast:symbolFree))
+    utils:kvFree(members)
     return null
   /if
 
@@ -235,32 +236,6 @@ func resolveModuleAlias(rsv sema:Resolver,
 /func
 
 
-func listDumpHierarchyIntoCS(list ptr spring:List, cs ptr spring:Charstash)
-  mut len = spring:listLen(list)
-
-  spring:csAppendStr(cs, "(")
-
-  if len > 1
-
-    mut i = cast<intptr>(len)
-
-    while i > 0
-      i--
-
-      spring:csAppendStr(cs, cast<ptr uint8>(val spring:listGet(list, i)))
-
-      spring:csAppendStr(cs, " => ")
-    /while
-
-    spring:csAppendStr(cs, cast<ptr uint8>(val spring:listGet(list, len - 1)))
-  else
-    spring:csAppendStr(cs, "alias of itself")
-  /if
-
-  spring:csAppendStr(cs, ")")
-/func
-
-
 func resolveIdType(rsv sema:Resolver,
                     ptype ptr ast:PType,
                     errors, recList ptr spring:List,
@@ -281,7 +256,7 @@ func resolveIdType(rsv sema:Resolver,
     spring:csAppendStr(cs, ptype'name)
     spring:csAppendStr(cs, " recursive")
     spring:csAppend(cs, 32)
-    listDumpHierarchyIntoCS(recList, cs)
+    utils:listDumpHierarchyIntoCS(recList, cs)
 
     mut msg = spring:csUnleash(cs)
     spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))

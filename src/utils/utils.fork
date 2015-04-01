@@ -242,6 +242,32 @@ func listContains(list ptr spring:List, value ptr uint8) bool
 /func
 
 
+func listDumpHierarchyIntoCS(list ptr spring:List, cs ptr spring:Charstash)
+  mut len = spring:listLen(list)
+
+  spring:csAppendStr(cs, "(")
+
+  if len > 1
+
+    mut i = cast<intptr>(len)
+
+    while i > 0
+      i--
+
+      spring:csAppendStr(cs, cast<ptr uint8>(val spring:listGet(list, i)))
+
+      spring:csAppendStr(cs, " => ")
+    /while
+
+    spring:csAppendStr(cs, cast<ptr uint8>(val spring:listGet(list, len - 1)))
+  else
+    spring:csAppendStr(cs, "alias of itself")
+  /if
+
+  spring:csAppendStr(cs, ")")
+/func
+
+
 mut ISSUE_ERR  uint8 = 10
 mut ISSUE_WARN uint8 = 20
 mut ISSUE_INFO uint8 = 30

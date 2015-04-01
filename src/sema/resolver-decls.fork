@@ -8,9 +8,19 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 import ast
+import ctx
 import sema
 import spring
 import utils
+
+
+func findRecAlias(ctx ptr ctx:Context, scope ptr ast:PNode, ralias ptr ast:Type) ptr ast:Type
+  if ralias'type != ast:TYPE_RECALIAS
+    return ralias
+  /if
+  
+  return ralias'moduleName != null => sema:findAliasImport(ctx, ralias'moduleName, ralias'name) || sema:findAliasLocal(scope, ralias'name)
+/func
 
 
 func findPBlock(node ptr ast:PNode) ptr ast:PNode

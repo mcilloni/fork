@@ -22,11 +22,6 @@ mut ASSOC_RIGHT uint8 = 1
 mut emptyExpr ast:PExpr
 
 
-func isConst(tok ptr lex:Token) bool
-  return tok != null and (tok'type == lex:STRING or tok'type == lex:NUMBER)
-/func
-
-
 func isBinary(tok ptr lex:Token) bool
   return tok != null and (tok'type mod 10) < 2
 /func
@@ -373,6 +368,10 @@ func parserParseUnaryExprOp(ctx ptr synt:ParserContext) ptr ast:PExpr
   if result == null
     lex:tokenFree(operator)
     return null
+  /if
+
+  if operator'type == lex:MINUS
+    operator'type = lex:UMINUS
   /if
 
   return ast:pexprNew(operator, result, null, lex:tokExtractBegin(operator), result'node'end)

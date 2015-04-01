@@ -94,6 +94,7 @@ decl strkvInit func(kv ptr KVList) ptr KVList
 decl strkvNew func() ptr KVList
 
 decl listContains func(list ptr spring:List, value ptr uint8) bool
+decl listDumpHierarchyIntoCS func(list ptr spring:List, cs ptr spring:Charstash)
 
 decl ISSUE_ERR uint8
 decl ISSUE_WARN uint8

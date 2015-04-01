@@ -49,8 +49,11 @@ func resolverCollect(rsv ptr sema:Resolver, ctx ptr ctx:Context, root ptr ast:PR
           spring:csAppendStr(cs, name)
           spring:csAppendStr(cs, " defined twice")
 
-          spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, spring:csUnleash(cs)))
+          mut str = spring:csUnleash(cs)
+          spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
 
+          spring:free(str)
+          
           return false
 
         else

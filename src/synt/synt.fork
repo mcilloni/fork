@@ -400,8 +400,12 @@ func parserParseType(ctx ptr synt:ParserContext) ptr ast:PType
     ret = parserParseType(ctx)
   /if
 
-  if ret == null and !theresError(ctx)
-    ctx'prs'err = lex:errorMism(ctx'last, "a valid type", lex:tokenStr(tok))
+  if ret == null
+    if !theresError(ctx)
+      ctx'prs'err = lex:errorMism(ctx'last, "a valid type", lex:tokenStr(tok))
+    /if
+
+    return null
   /if
 
   ret'begin = lex:tokDiscardBegin(tok)

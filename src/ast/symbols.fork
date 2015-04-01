@@ -25,6 +25,10 @@ func symbolClone(sym ptr ast:Symbol) ptr ast:Symbol
   return newInst
 /func
 
+func symbolEquals(sym1,sym2 ptr ast:Symbol) bool
+  return spring:strequals(sym1'name, sym2'name) and ast:typeEquals(sym1'type, sym2'type)
+/func
+
 
 func symbolFree(sym ptr ast:Symbol)
   if sym != null
@@ -45,18 +49,22 @@ func symbolNew(name ptr uint8, type ptr ast:Type) ptr ast:Symbol
 /func
 
 
-func symbolListClone(pool ptr utils:FreePool, symList ptr spring:List) ptr spring:List
+func symbolListClone(pool ptr utils:FreePool, symList ptr utils:KVList) ptr utils:KVList
   if symList == null
     return null
   /if
 
-  mut len = spring:listLen(symList)
-  mut ret = spring:listNew()
+  mut len = utils:kvLen(symList)
+  mut ret = utils:strkvNew()
   mut i uintptr = 0
 
   while i < len
-    mut elem = cast<ptr ast:Symbol>(val spring:listGet(symList, i))
-    spring:listAppend(ret, ast:symbolClone(elem))
+    mut elem = utils:kvGetAt(symList, i)
+    mut newStr = spring:strclone(cast<ptr uint8>(elem'key))
+    mut newType = ast:typeClone(pool, cast<ptr ast:Type>(elem'value))
+
+    utils:kvPut(ret, newStr, newType)
+
     i++
   /while
 
@@ -79,20 +87,26 @@ func typeClone(pool ptr utils:FreePool, type ptr ast:Type) ptr ast:Type
 /func
 
 
-func typeEqualsList(list1, list2 ptr spring:List) bool
-  mut len = spring:listLen(list1)
+func typeEqualsList(list1, list2 ptr utils:KVList) bool
+  mut len = utils:kvLen(list1)
 
-  if len != spring:listLen(list2)
+  if len != utils:kvLen(list2)
     return false
   /if
 
   mut i uintptr = 0
 
   while i < len
-    mut type1 = cast<ptr ast:Type>(val spring:listGet(list1, i))
-    mut type2 = cast<ptr ast:Type>(val spring:listGet(list2, i))
+    mut pair1 = utils:kvGetAt(list1, i)
+    mut pair2 = utils:kvGetAt(list2, i)
 
-    if !ast:typeEquals(type1, type2)
+    mut name1 = cast<ptr uint8>(pair1'key)
+    mut name2 = cast<ptr uint8>(pair2'key)
+
+    mut type1 = cast<ptr ast:Type>(pair1'value)
+    mut type2 = cast<ptr ast:Type>(pair2'value)
+
+    if !spring:strequals(name1, name2) or !ast:typeEquals(type1, type2)
       return false
     /if
 
@@ -165,7 +179,7 @@ func typeFree(type ptr ast:Type)
     spring:free(type'name)
 
     if type'members != null
-      spring:listFreeAll(type'members, cast<ptr func(p data)>(ast:symbolFree))
+      utils:kvFree(type'members)
     /if
 
     spring:free(type)
@@ -173,8 +187,54 @@ func typeFree(type ptr ast:Type)
 /func
 
 
-func typeNew(pool ptr utils:FreePool, type uint16, moduleName, name ptr uint8, isSigned bool,
-  typeSize, typeAlign intptr, itemCount uintptr, retType ptr ast:Type, members ptr spring:List) ptr ast:Type
+func typeIsBool(type ptr ast:Type) bool
+  return type != null and type'type == ast:TYPE_BOOL
+/func
+
+
+func typeIsData(type ptr ast:Type) bool
+  return type != null and type'type == ast:TYPE_DATA
+/func
+
+
+func typeIsFunc(type ptr ast:Type) bool
+  return type != null and type'type == ast:TYPE_FUNC
+/func
+
+
+func typeIsInt(type ptr ast:Type) bool
+  return type != null and type'type == ast:TYPE_INT
+/func
+
+
+func typeIsLoc(type ptr ast:Type) bool
+  return type != null and type'type == ast:TYPE_LOC
+/func
+
+
+func typeIsNull(type ptr ast:Type) bool
+  return type != null and type'type == ast:TYPE_NULL
+/func
+
+
+func typeIsPtr(type ptr ast:Type) bool
+  return type != null and (type'type == ast:TYPE_PTR or type'type == ast:TYPE_DATA)
+/func
+
+
+func typeIsStruct(type ptr ast:Type) bool
+  return type != null and type'type == ast:TYPE_STRUCT
+/func
+
+
+func typeNew(pool ptr utils:FreePool,
+             type uint16,
+             moduleName, name ptr uint8,
+             isSigned bool,
+             typeSize, typeAlign intptr,
+             itemCount uintptr,
+             retType ptr ast:Type,
+             members ptr utils:KVList) ptr ast:Type
 
   mut location = pool != null => utils:fpAlloc(pool, size(ast:Type)) || spring:alloc(size(ast:Type))
   mut ret = cast<ptr ast:Type>(location)
@@ -193,8 +253,14 @@ func typeNew(pool ptr utils:FreePool, type uint16, moduleName, name ptr uint8, i
 /func
 
 
-func typeNewBuiltin(type uint16, name ptr uint8, isSigned bool,
-  typeSize, typeAlign intptr, itemCount uintptr, retType ptr ast:Type, members ptr spring:List) ptr ast:Type
+func typeNewBuiltin(type uint16,
+                    name ptr uint8,
+                    isSigned bool,
+                    typeSize, typeAlign intptr,
+                    itemCount uintptr,
+                    retType ptr ast:Type,
+                    members ptr utils:KVList) ptr ast:Type
+
   mut ret = typeNew(null, type, null, name, isSigned, typeSize, typeAlign, itemCount, retType, members)
   ret'builtin = true
 
@@ -251,7 +317,7 @@ func builtinSetNew() ptr spring:Map
 /func
 
 
-func typeNewFunc(pool ptr utils:FreePool, moduleName, name ptr uint8, retVal ptr ast:Type, members ptr spring:List) ptr ast:Type
+func typeNewFunc(pool ptr utils:FreePool, moduleName, name ptr uint8, retVal ptr ast:Type, members ptr utils:KVList) ptr ast:Type
   return typeNew(pool, ast:TYPE_FUNC, moduleName, name, false, 0, 0, 0, retVal, members)
 /func
 
@@ -269,16 +335,16 @@ func typeNewPtr(pool ptr utils:FreePool, moduleName, name ptr uint8, retVal ptr 
 alias AlignResult struct(typeAlign,typeSize intptr)
 
 # members is a list of ast:Symbol
-func typeCalculateAlign(members ptr spring:List) AlignResult
+func typeCalculateAlign(members ptr utils:KVList) AlignResult
   mut ret AlignResult
   ret'typeAlign = 1
   ret'typeSize  = 0
 
   mut i uintptr = 0
-  mut len = spring:listLen(members)
+  mut len = utils:kvLen(members)
 
   while i < len
-    mut member = cast<ptr ast:Symbol>(val spring:listGet(members, i))'type
+    mut member = cast<ptr ast:Type>(utils:kvGetAt(members, i)'value)
 
     # calculate the alignment offset of the member against the current starting address.
     mut offset = ret'typeSize mod member'typeAlign
@@ -310,11 +376,11 @@ func typeCalculateAlign(members ptr spring:List) AlignResult
 
 
 func typeNewRecursiveAlias(pool ptr utils:FreePool, moduleName, name ptr uint8) ptr ast:Type
-  return typeNew(pool, ast:TYPE_REC_ALIAS, moduleName, name, false, -1, -1, 0, null, null)
+  return typeNew(pool, ast:TYPE_RECALIAS, moduleName, name, false, -1, -1, 0, null, null)
 /func
 
 
-func typeNewStruct(pool ptr utils:FreePool, moduleName, name ptr uint8, members ptr spring:List) ptr ast:Type
+func typeNewStruct(pool ptr utils:FreePool, moduleName, name ptr uint8, members ptr utils:KVList) ptr ast:Type
   mut alignInfo = typeCalculateAlign(members)
 
   return typeNew(pool, ast:TYPE_STRUCT, moduleName, name, false, alignInfo'typeSize, alignInfo'typeAlign, 1, null, members)
@@ -375,6 +441,6 @@ mut TYPE_LOC       uint16 = 40
 mut TYPE_BOOL      uint16 = 50
 mut TYPE_INT       uint16 = 60
 mut TYPE_DATA      uint16 = 70
-mut TYPE_REC_ALIAS uint16 = 80
+mut TYPE_RECALIAS uint16 = 80
 mut TYPE_NULL      uint16 = 90
 mut TYPE_EMPTY     uint16 = 100

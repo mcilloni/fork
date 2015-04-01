@@ -59,6 +59,8 @@ decl tokenFree func(tok ptr Token)
 decl tokenNew func(type uint16, value uintptr, line ptr Lineno, end uintptr) ptr Token
 decl tokenStr func(tok ptr Token) ptr uint8
 
+decl ttypeStr func(tt uint16) ptr uint8
+
 decl error func(line ptr Lineno, msg ptr uint8) ptr utils:Issue
 decl errorMism func(line ptr Lineno, got ptr uint8, expected ptr uint8) ptr utils:Issue
 decl errorLex func(lex ptr Lexer, msg ptr uint8) ptr spring:Error
@@ -128,6 +130,7 @@ decl STRUCT uint16
 decl TIMES uint16
 decl TRUE uint16
 decl TWOCOLONS uint16
+decl UMINUS uint16
 decl VAL uint16
 decl WHILE uint16
 decl XOR uint16
