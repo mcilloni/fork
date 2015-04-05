@@ -42,7 +42,9 @@ entry
     spring:exit(1)
   /if
 
-  spring:outln("== IMPORTS\n")
+  spring:out("== IMPORTS: ")
+  spring:outint(spring:mapLen(ctx'imports))
+  spring:outch(10)
 
   mut iter = spring:mapiterStart(ctx'imports)
 
@@ -57,12 +59,17 @@ entry
 
   spring:mapiterFree(iter)
 
-  spring:outln("\n\n== ALIASES\n")
+  mut aliasesMap = cast<ptr ast:PRoot>(ast)'aliases'syms
 
-  iter = spring:mapiterStart(cast<ptr ast:PRoot>(ast)'aliases'syms)
+  spring:out("\n\n== ALIASES: ")
+  spring:outint(spring:mapLen(aliasesMap))
+  spring:outch(10)
+
+  iter = spring:mapiterStart(aliasesMap)
 
   while (pair = spring:mapiterNext(iter)) != null
-    ast:declDump("alias", cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value))
+    spring:out("alias ")
+    spring:outln(cast<ptr uint8>(pair'key))
 
     spring:pairFree(pair)
   /while

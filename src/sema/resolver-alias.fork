@@ -59,7 +59,7 @@ func convertRetType(rsv sema:Resolver,
     res = ast:typeNewRecursiveAlias(rsv'root'typePool, null, retPType'name)
   else
     # otherwise, this is a normal type. Validate it with validateAlias.
-    res = resolveTypeReal(rsv, retPType, errors, recList, isPtr)
+    res = resolveTypeReal(rsv, retPType, recList, errors, isPtr)
   /if
 
   # if this is not the retType of a ptr, then it's an error having a function
@@ -116,7 +116,7 @@ func convertSymbolList(rsv sema:Resolver,
     if funcArgs and ptype'moduleName == null and ptype'name != null and recList != null and utils:listContains(recList, ptype'name)
       type = ast:typeNewRecursiveAlias(rsv'root'typePool, null, ptype'name)
     else
-      type = resolveTypeReal(rsv, ptype, errors, recList, false)
+      type = resolveTypeReal(rsv, ptype, recList, errors, false)
     /if
 
     if type != null

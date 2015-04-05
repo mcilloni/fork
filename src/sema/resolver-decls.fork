@@ -112,7 +112,7 @@ func registerDeclReal(rsv sema:Resolver,
   /if
 
   if ptype != null and !typeResolved
-    typeResolved = (realType = sema:resolveType(rsv, ptype, errors)) == null
+    typeResolved = (realType = sema:resolveType(rsv, ptype, errors)) != null
 
     if !typeResolved
       return null
@@ -133,11 +133,15 @@ func registerDeclReal(rsv sema:Resolver,
 
     else
 
-      if spring:listLen(pdecl'node'leaves) != 1 and !typeResolved
+      mut hasLeaves = spring:listLen(pdecl'node'leaves) > 0
+
+      if !hasLeaves and !typeResolved
         spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, "declaration with neither a type nor an initializer"))
 
         return null
-      else
+      /if
+
+      if hasLeaves
         if isDecl
           # because we're sure that ptype was null and there's a leaf, then
           # we have a malformed 'decl'
@@ -145,15 +149,15 @@ func registerDeclReal(rsv sema:Resolver,
 
           return null
         /if
-      /if
+        
+        mut pexpr = cast<ptr ast:PExpr>(val spring:listGet(pdecl'node'leaves, 0))
 
-      mut pexpr = cast<ptr ast:PExpr>(val spring:listGet(pdecl'node'leaves, 0))
-
-      # if we're are validating the declaration directly and not because of
-      # recursive resolution, or if we still have no type, resolve the
-      # expression associated with this mut (we are also sure we have a mut)
-      if !recursive or !typeResolved
-        realType = sema:validateExprRecl(rsv, pexpr, recList, errors)
+        # if we're are validating the declaration directly and not because of
+        # recursive resolution, or if we still have no type, resolve the
+        # expression associated with this mut (we are also sure we have a mut)
+        if !recursive or !typeResolved
+          realType = sema:validateExprRecl(rsv, pexpr, recList, errors)
+        /if
       /if
 
       pdecl'node'validated = true

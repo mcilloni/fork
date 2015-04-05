@@ -59,6 +59,8 @@ func semaValidateAstRoot(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr spr
     return true
   /if
 
+  root'node'syms = ast:stabNew()
+
   mut rsv sema:Resolver
 
   if !sema:resolverCollect(ptr rsv, ctx, root, errors)
