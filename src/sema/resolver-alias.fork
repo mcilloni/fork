@@ -55,7 +55,7 @@ func convertRetType(rsv sema:Resolver,
   mut res ptr ast:Type = null
 
   # if this condition evaluates to true, than we're in the case of a recursive alias.
-  if !isLoc and retPType'moduleName == null and retPType'name != null and utils:listContains(recList, retPType'name)
+  if !isLoc and retPType'moduleName == null and retPType'name != null and recList != null and utils:listContains(recList, retPType'name)
     res = ast:typeNewRecursiveAlias(rsv'root'typePool, null, retPType'name)
   else
     # otherwise, this is a normal type. Validate it with validateAlias.
@@ -63,7 +63,7 @@ func convertRetType(rsv sema:Resolver,
   /if
 
   # if this is not the retType of a ptr, then it's an error having a function
-  if res'type == ast:TYPE_FUNC and !isPtr
+  if res != null and res'type == ast:TYPE_FUNC and !isPtr
     spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, retPType'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
 
     return null
@@ -103,7 +103,7 @@ func convertSymbolList(rsv sema:Resolver,
   mut plen = spring:listLen(pargs)
   mut i uintptr = 0
   mut members = utils:strkvNew()
-  utils:kvSetFreeFuncs(members, ptr spring:free, cast<ptr func(item data)>(ptr ast:typeFree))
+  utils:kvSetFreeFuncs(members, ptr spring:free, null)
 
   while i < plen
     mut member = cast<ptr ast:PSymbol>(val spring:listGet(pargs, i))
@@ -113,7 +113,7 @@ func convertSymbolList(rsv sema:Resolver,
 
     # functions can refer to recursive types, because their arguments and their
     # return types do not affect the size of the function (a function is always sizeless)
-    if funcArgs and ptype'moduleName == null and ptype'name != null and utils:listContains(recList, ptype'name)
+    if funcArgs and ptype'moduleName == null and ptype'name != null and recList != null and utils:listContains(recList, ptype'name)
       type = ast:typeNewRecursiveAlias(rsv'root'typePool, null, ptype'name)
     else
       type = resolveTypeReal(rsv, ptype, errors, recList, false)
