@@ -500,10 +500,6 @@ func typeSummarize(cs ptr spring:Charstash, type ptr ast:Type)
     return
   /if
 
-  if type'type == ast:TYPE_STRUCT
-    spring:csAppendStr(cs, "<anonymous struct>")
-  /if
-
   ast:typeDump(cs, type)
 /func
 

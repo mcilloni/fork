@@ -76,6 +76,32 @@ entry
 
   spring:mapiterFree(iter)
 
+  mut declsMap = cast<ptr ast:PRoot>(ast)'node'syms'syms
+
+  spring:out("\n\n== DECLS: ")
+  spring:outint(spring:mapLen(declsMap))
+  spring:outch(10)
+
+  iter = spring:mapiterStart(declsMap)
+
+  while (pair = spring:mapiterNext(iter)) != null
+    spring:out(cast<ptr uint8>(pair'key))
+
+    spring:out(" :: ")
+
+    mut cs = spring:csNew(10)
+    ast:typeSummarize(cs, cast<ptr ast:Type>(pair'value))
+
+    mut des = spring:csUnleash(cs)
+
+    spring:outln(des)
+
+    spring:free(des)
+    spring:pairFree(pair)
+  /while
+
+  spring:mapiterFree(iter)
+
   ctx:contextFree(ctx)
 
   ast:pnodeFree(ast)
