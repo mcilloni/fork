@@ -156,9 +156,9 @@ func registerDeclReal(rsv sema:Resolver,
           if typeResolved
             if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pdecl), realType, valType)
               mut cs = spring:csNew(20)
-              spring:csAppendStr(cs, "cannot assign an expression of type ")
+              spring:csAppendStr(cs, "cannot assign an expression of type '")
               ast:typeSummarize(cs, valType)
-              spring:csAppendStr(cs, " to a variable declared as '")
+              spring:csAppendStr(cs, "' to a variable declared as '")
               ast:typeSummarize(cs, realType)
               spring:csAppendStr(cs, "'")
 

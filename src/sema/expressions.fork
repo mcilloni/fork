@@ -162,7 +162,7 @@ func typeIsAssignable(ctx ptr ctx:Context, scope ptr ast:PNode, dest,src ptr ast
     return false
   /if
 
-  if dest'name != null and src'name != null
+  if dest'name != null and src'name != null and !dest'builtin and !src'builtin
     mut ret = spring:strequals(dest'name, src'name)
 
     if ret and dest'moduleName != null and src'moduleName != null
