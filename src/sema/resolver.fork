@@ -53,7 +53,7 @@ func resolverCollect(rsv ptr sema:Resolver, ctx ptr ctx:Context, root ptr ast:PR
           spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
 
           spring:free(str)
-          
+
           return false
 
         else
@@ -102,8 +102,9 @@ func resolverCollect(rsv ptr sema:Resolver, ctx ptr ctx:Context, root ptr ast:PR
       /if
     /if
 
-
-    utils:kvPut(kv, name, pdecl)
+    if ntype != ast:PENTRY
+      utils:kvPut(kv, name, pdecl)
+    /if
 
     i++
   /while
