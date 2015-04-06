@@ -288,6 +288,11 @@ func typeNewBuiltinEmpty() ptr ast:Type
 /func
 
 
+func typeNewBuiltinNull() ptr ast:Type
+  return typeNewBuiltin(ast:TYPE_NULL, "null", false, platform:ptrSize, platform:ptrSize, 1, null, null)
+/func
+
+
 func typeNewBuiltinString(uint8t ptr ast:Type) ptr ast:Type
   return ast:typeNewPtr(null, null, null, uint8t)
 /func
@@ -311,6 +316,7 @@ func builtinSetNew() ptr spring:Map
   spring:mapPut(ret, "bool", typeNewBuiltinBool(), spring:FREE_VALUE)
   spring:mapPut(ret, "data", typeNewBuiltinData(), spring:FREE_VALUE)
   spring:mapPut(ret, "\0", typeNewBuiltinEmpty(), spring:FREE_VALUE)
+  spring:mapPut(ret, "null", typeNewBuiltinNull(), spring:FREE_VALUE)
   spring:mapPut(ret, "ptr uint8", typeNewBuiltinString(uint8t), spring:FREE_VALUE)
 
   return ret

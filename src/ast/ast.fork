@@ -168,7 +168,7 @@ func isPDecl(pnode ptr ast:PNode) bool
 /func
 
 func isPBlock(pnode ptr ast:PNode) bool
-  return pnode != null and pnode'type == ast:PBLOCK
+  return pnode != null and (pnode'type == ast:PBLOCK or ast:isPRoot(pnode))
 /func
 
 func isPExpr(pnode ptr ast:PNode) bool

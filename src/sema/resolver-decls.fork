@@ -39,11 +39,7 @@ func findPBlock(node ptr ast:PNode) ptr ast:PNode
 func findStab(node ptr ast:PNode) ptr ast:Symtable
   mut pblock = findPBlock(node)
 
-  if pblock == null
-    return null
-  /if
-
-  return cast<ptr ast:PBlock>(pblock)'syms
+  return pblock != null => cast<ptr ast:PBlock>(pblock)'syms || null
 /func
 
 
@@ -61,9 +57,7 @@ func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
     mut stab = findStab(pblock)
     mut type = ast:stabTypeof(stab, name)
 
-    if type == null
-      return findSym(pblock'parent, name)
-    /if
+    return type != null => type || findSym(pblock'parent, name)
   /if
 
   return null
@@ -155,6 +149,10 @@ func registerDeclReal(rsv sema:Resolver,
         # expression associated with this mut (we are also sure we have a mut)
         if !recursive
           mut valType = sema:validateExprRecl(rsv, pexpr, recList, errors)
+          if valType == null
+            return null
+          /if
+
           if typeResolved
             if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pdecl), realType, valType)
               mut cs = spring:csNew(20)
@@ -195,7 +193,7 @@ func registerTopDeclReal(rsv sema:Resolver,
                          pdecl ptr ast:PDecl,
                          recList,errors ptr spring:List) ptr ast:Type
 
-  spring:listPush(recList, cast<ptr uint8>(pdecl'node'value))
+  spring:listPush(recList, cast<ptr uint8>(pdecl'sym'name))
 
   mut ret = registerDeclReal(rsv, pdecl, false, recList, errors)
 

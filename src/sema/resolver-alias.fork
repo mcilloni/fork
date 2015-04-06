@@ -217,7 +217,7 @@ func resolveModuleAlias(rsv sema:Resolver,
 
   mut type = sema:findAliasImport(rsv'ctx, ptype'moduleName, ptype'name)
   if type != null
-    return type
+    return ast:typeClone(rsv'root'typePool, type)
   /if
 
   # we could not find the type anywhere in the module.
@@ -243,7 +243,7 @@ func resolveIdType(rsv sema:Resolver,
 
   mut builtin = ctx:contextMatchBuiltin(rsv'ctx, ptype'name)
   if builtin != null
-    return builtin
+    return ast:typeClone(rsv'root'typePool, builtin)
   /if
 
   if recList != null and utils:listContains(recList, ptype'name)
@@ -268,7 +268,7 @@ func resolveIdType(rsv sema:Resolver,
   # it's not builtin, so it must be a local alias.
   mut type = sema:findAliasLocal(cast<ptr ast:PNode>(rsv'root), ptype'name)
   if type != null
-    return type
+    return ast:typeClone(rsv'root'typePool, type)
   /if
 
   # If here, then it's either undefined, or not validated yet.

@@ -316,7 +316,7 @@ func validateExprCast(rsv sema:Resolver,
     return null
   /if
 
-  return chType
+  return pexpr'type
 /func
 
 
@@ -382,7 +382,7 @@ func validateExprId(rsv sema:Resolver,
     return null
   /if
 
-
+  return type
 /func
 
 
@@ -1047,6 +1047,8 @@ func validateExprRecl(rsv sema:Resolver,
   if pexpr'node'validated
     return pexpr'type
   /if
+
+  pexpr'type = null
 
   mut op = pexpr'opType
   if ttypeIsConst(op)
