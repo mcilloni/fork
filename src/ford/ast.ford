@@ -127,12 +127,21 @@ decl typeSetAlias func(type ptr Type, moduleName, name ptr uint8)
 decl typeSetBoundaries func(type ptr Type, begin,end utils:Line)
 decl typeSummarize func(cs ptr spring:Charstash, type ptr Type)
 
+alias DeclInfo struct(
+  declType uint16,
+  type ptr Type
+)
+
+decl declInfoFree func(declInfo ptr DeclInfo)
+decl declInfoNew func(declType uint16, type ptr Type) ptr DeclInfo
+
 alias Symtable struct(
   syms ptr spring:Map
 )
 
 decl stabNew func() ptr Symtable
-decl stabAdd func(stab ptr Symtable, name ptr uint8, type ptr Type)
+decl stabAdd func(stab ptr Symtable, name ptr uint8, type ptr Type, symType uint16)
+decl stabGet func(stab ptr Symtable, name ptr uint8) ptr DeclInfo
 decl stabTypeof func(stab ptr Symtable, name ptr uint8) ptr Type
 decl stabFree func(stab ptr Symtable)
 

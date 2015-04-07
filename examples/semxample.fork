@@ -85,12 +85,30 @@ entry
   iter = spring:mapiterStart(declsMap)
 
   while (pair = spring:mapiterNext(iter)) != null
+    mut dinfo = cast<ptr ast:DeclInfo>(pair'value)
+    mut typeStr ptr uint8 = null
+
+    if dinfo'declType == ast:PFUNCTION
+      typeStr = "func "
+    else
+      if dinfo'declType == ast:PENTRY
+        typeStr = "entry "
+      else
+        if dinfo'declType == ast:PDECL
+          typeStr = "decl "
+        else
+          typeStr = "mut "
+        /if
+      /if
+    /if
+
+    spring:out(typeStr)
     spring:out(cast<ptr uint8>(pair'key))
 
     spring:out(" :: ")
 
     mut cs = spring:csNew(10)
-    ast:typeSummarize(cs, cast<ptr ast:Type>(pair'value))
+    ast:typeSummarize(cs, dinfo'type)
 
     mut des = spring:csUnleash(cs)
 

@@ -64,8 +64,8 @@ func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 /func
 
 
-func rootDeclsRegister(rsv sema:Resolver, name ptr uint8, type ptr ast:Type)
-  ast:stabAdd(rsv'root'node'syms, name, type)
+func rootDeclsRegister(rsv sema:Resolver, name ptr uint8, type ptr ast:Type, declType uint16)
+  ast:stabAdd(rsv'root'node'syms, name, type, declType)
 
   mut pdecl ptr ast:PDecl
 
@@ -182,7 +182,7 @@ func registerDeclReal(rsv sema:Resolver,
   /if
 
   if !inMap and realType != null and pdecl'node'type != ast:PENTRY
-    rootDeclsRegister(rsv, name, realType)
+    rootDeclsRegister(rsv, name, realType, pdecl'node'type)
   /if
 
   return realType

@@ -409,6 +409,20 @@ func typeSetBoundaries(type ptr ast:Type, begin,end utils:Line)
 /func
 
 
+func declInfoFree(declInfo ptr ast:DeclInfo)
+  spring:free(declInfo)
+/func
+
+
+func declInfoNew(declType uint16, type ptr ast:Type) ptr ast:DeclInfo
+  mut ret = cast<ptr ast:DeclInfo>(spring:alloc(size(ast:DeclInfo)))
+  ret'declType = declType
+  ret'type = type
+
+  return ret
+/func
+
+
 func stabNew() ptr ast:Symtable
   mut stab = cast<ptr ast:Symtable>(spring:zalloc(size(ast:Symtable)))
 
@@ -418,13 +432,13 @@ func stabNew() ptr ast:Symtable
 /func
 
 
-func stabAdd(stab ptr ast:Symtable, name ptr uint8, type ptr ast:Type)
-  spring:mapPut(stab'syms, spring:strclone(name), type, spring:FREE_KEY)
+func stabAdd(stab ptr ast:Symtable, name ptr uint8, type ptr ast:Type, symType uint16)
+  spring:mapPut(stab'syms, spring:strclone(name), ast:declInfoNew(symType, type), spring:FREE_KEY | spring:FREE_VALUE)
 /func
 
 
-func stabTypeof(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
-  mut value ptr ast:Type = null
+func stabGet(stab ptr ast:Symtable, name ptr uint8) ptr ast:DeclInfo
+  mut value ptr ast:DeclInfo = null
 
   spring:mapGet(stab'syms, name, ptr value)
 
@@ -432,9 +446,16 @@ func stabTypeof(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
 /func
 
 
+func stabTypeof(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
+  mut di = ast:stabGet(stab, name)
+
+  return di != null => di'type || null
+/func
+
+
 func stabFree(stab ptr ast:Symtable)
   if stab != null
-    spring:mapFreeSpec(stab'syms, ptr spring:free, null)
+    spring:mapFreeSpec(stab'syms, ptr spring:free, ptr ast:declInfoFree)
     spring:free(stab)
   /if
 /func
@@ -447,6 +468,6 @@ mut TYPE_LOC       uint16 = 40
 mut TYPE_BOOL      uint16 = 50
 mut TYPE_INT       uint16 = 60
 mut TYPE_DATA      uint16 = 70
-mut TYPE_RECALIAS uint16 = 80
+mut TYPE_RECALIAS  uint16 = 80
 mut TYPE_NULL      uint16 = 90
 mut TYPE_EMPTY     uint16 = 100
