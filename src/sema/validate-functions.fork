@@ -15,6 +15,17 @@ import spring
 import utils
 
 
+func validateStmt(rsv sema:Resolver,
+                  stmt ptr ast:PNode,
+                  funcInfo ast:Symbol,
+                  inLoop bool,
+                  errors ptr spring:List
+                  ) bool
+
+  return true
+/func
+
+
 func validatePBlock(rsv sema:Resolver,
                     pblock ptr ast:PBlock,
                     funcInfo ast:Symbol,
@@ -26,9 +37,16 @@ func validatePBlock(rsv sema:Resolver,
   mut i uintptr = 0
 
   while i < len
+    mut stmt = cast<ptr ast:PNode>(val spring:listGet(pblock'node'leaves, i))
+
+    if !validateStmt(rsv, stmt, funcInfo, inLoop, errors)
+      return false
+    /if
+
     i++
   /while
 
+  return true
 /func
 
 
