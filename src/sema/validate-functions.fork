@@ -1,0 +1,48 @@
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import ast
+import ctx
+import sema
+import spring
+import utils
+
+
+func validatePBlock(rsv sema:Resolver,
+                    pblock ptr ast:PBlock,
+                    funcInfo ast:Symbol,
+                    inLoop bool,
+                    errors ptr spring:List
+                    ) bool
+
+  mut len = spring:listLen(pblock'node'leaves)
+  mut i uintptr = 0
+
+  while i < len
+    i++
+  /while
+
+/func
+
+
+func validateFunc(rsv sema:Resolver,
+                  pdecl ptr ast:PDecl,
+                  funcType ptr ast:Type,
+                  errors ptr spring:List) bool
+
+  mut sym ast:Symbol
+
+  sym'type = funcType
+  sym'name = pdecl'sym'name
+
+  mut pblock = cast<ptr ast:PBlock>(val spring:listGet(pdecl'node'leaves, 0))
+
+  return validatePBlock(rsv, pblock, sym, false, errors)
+/func

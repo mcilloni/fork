@@ -118,6 +118,13 @@ func registerDeclReal(rsv sema:Resolver,
 
     if isFunc
 
+      # register function BEFORE because it can be recursive
+      # realType will always be non-null
+      if !inMap and pdecl'node'type != ast:PENTRY
+        rootDeclsRegister(rsv, name, realType, pdecl'node'type)
+        inMap = true
+      /if
+
       if !recursive
         # validate function
         pdecl'node'validated = true
@@ -181,6 +188,7 @@ func registerDeclReal(rsv sema:Resolver,
 
   /if
 
+  # functions are already registered
   if !inMap and realType != null and pdecl'node'type != ast:PENTRY
     rootDeclsRegister(rsv, name, realType, pdecl'node'type)
   /if
