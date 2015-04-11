@@ -70,7 +70,7 @@ func validateIf(rsv sema:Resolver,
     return false
   /if
 
-  if stmt'node'type == ast:PIFELSE
+  if stmt'type == ast:PIFELSE
     mut elseBlock = cast<ptr ast:PBlock>(val spring:listGet(stmt'leaves, 2))
     if !validatePBlock(rsv, elseBlock, funcInfo, inLoop, errors)
       return false
