@@ -162,6 +162,12 @@ alias PNode struct(
 decl pnodeAppendChild func(parent ptr PNode, child ptr PNode) ptr PNode
 decl pnodeDump func(node ptr PNode)
 decl pnodeFree func(pnode ptr PNode)
+decl pnodeIsBreakContinue func(pnode ptr PNode) bool
+decl pnodeIsDecl func(pnode ptr PNode) bool
+decl pnodeIsExpr func(pnode ptr PNode) bool
+decl pnodeIsIf func(pnode ptr PNode) bool
+decl pnodeIsReturn func(pnode ptr PNode) bool
+decl pnodeIsWhile func(pnode ptr PNode) bool
 decl pnodeNew func(ptype uint16, value uintptr) ptr PNode
 
 alias PBlock struct(

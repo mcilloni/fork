@@ -70,6 +70,36 @@ func pnodeNew(type uint16, value uintptr) ptr ast:PNode
 /func
 
 
+func pnodeIsBreakContinue(pnode ptr ast:PNode) bool
+  return pnode'type == ast:PBREAK or pnode'type == ast:PCONTINUE
+/func
+
+
+func pnodeIsDecl(pnode ptr ast:PNode) bool
+  return pnode'type == ast:PDECL or pnode'type == ast:PMUT
+/func
+
+
+func pnodeIsExpr(pnode ptr ast:PNode) bool
+  return pnode'type == ast:PEXPR
+/func
+
+
+func pnodeIsIf(pnode ptr ast:PNode) bool
+  return pnode'type == ast:PIF or pnode'type == ast:PIFELSE
+/func
+
+
+func pnodeIsReturn(pnode ptr ast:PNode) bool
+  return pnode'type == ast:PWHILE
+/func
+
+
+func pnodeIsWhile(pnode ptr ast:PNode) bool
+  return pnode'type == ast:PWHILE
+/func
+
+
 func pblockNew() ptr ast:PBlock
   mut pblock = cast<ptr ast:PBlock>(spring:zalloc(size(ast:PBlock)))
   mut pnode = cast<ptr ast:PNode>(pblock)

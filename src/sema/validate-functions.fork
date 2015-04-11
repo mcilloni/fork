@@ -15,14 +15,55 @@ import spring
 import utils
 
 
+func validateBreakContinue(rsv sema:Resolver,
+                           stmt ptr ast:PNode,
+                           inLoop bool,
+                           errors ptr spring:List) bool
+
+  if !inLoop
+    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, stmt'begin, rsv'root'fileName, "break or continue outside of a loop"))
+
+    return false
+  /if
+
+  return true
+/func
+
+
 func validateStmt(rsv sema:Resolver,
                   stmt ptr ast:PNode,
                   funcInfo ast:Symbol,
                   inLoop bool,
-                  errors ptr spring:List
-                  ) bool
+                  errors ptr spring:List) bool
 
-  return true
+  if ast:pnodeIsBreakContinue(stmt)
+
+  /if
+
+  if ast:pnodeIsDecl(stmt)
+
+  /if
+
+  if ast:pnodeIsExpr(stmt)
+
+  /if
+
+  if ast:pnodeIsIf(stmt)
+
+  /if
+
+  if ast:pnodeIsReturn(stmt)
+
+  /if
+
+  if ast:pnodeIsWhile(stmt)
+
+  /if
+
+  # unreachable
+  spring:errln("unknown statement type")
+  spring:abort()
+  return false
 /func
 
 
@@ -30,8 +71,7 @@ func validatePBlock(rsv sema:Resolver,
                     pblock ptr ast:PBlock,
                     funcInfo ast:Symbol,
                     inLoop bool,
-                    errors ptr spring:List
-                    ) bool
+                    errors ptr spring:List) bool
 
   mut len = spring:listLen(pblock'node'leaves)
   mut i uintptr = 0
