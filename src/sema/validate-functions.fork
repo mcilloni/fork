@@ -77,6 +77,7 @@ func validateIf(rsv sema:Resolver,
     /if
   /if
 
+  return true
 /func
 
 
