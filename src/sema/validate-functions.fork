@@ -37,7 +37,7 @@ func validateStmt(rsv sema:Resolver,
                   errors ptr spring:List) bool
 
   if ast:pnodeIsBreakContinue(stmt)
-
+    return validateBreakContinue(rsv, stmt, inLoop, errors)
   /if
 
   if ast:pnodeIsDecl(stmt)
