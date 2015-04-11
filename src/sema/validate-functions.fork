@@ -15,6 +15,13 @@ import spring
 import utils
 
 
+decl validatePBlock func(rsv sema:Resolver,
+                         pblock ptr ast:PBlock,
+                         funcInfo ast:Symbol,
+                         inLoop bool,
+                         errors ptr spring:List) bool
+
+
 func validateBreakContinue(rsv sema:Resolver,
                            stmt ptr ast:PNode,
                            inLoop bool,
@@ -27,6 +34,49 @@ func validateBreakContinue(rsv sema:Resolver,
   /if
 
   return true
+/func
+
+
+func validateIf(rsv sema:Resolver,
+                stmt ptr ast:PNode,
+                funcInfo ast:Symbol,
+                inLoop bool,
+                errors ptr spring:List) bool
+
+  mut cond = cast<ptr ast:PExpr>(val spring:listGet(stmt'leaves, 0))
+
+  mut condType = sema:validateExpr(rsv, cond, errors)
+  if condType == null
+    return false
+  /if
+
+  if !ast:typeIsBool(condType)
+    mut cs = spring:csNew(20)
+    spring:csAppendStr(cs, "expected a boolean expression, got type '")
+    ast:typeSummarize(cs, condType)
+    spring:csAppendStr(cs, "' instead")
+
+    mut msg = spring:csUnleash(cs)
+
+    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
+
+    spring:free(msg)
+
+    return false
+  /if
+
+  mut firstBlock = cast<ptr ast:PBlock>(val spring:listGet(stmt'leaves, 1))
+  if !validatePBlock(rsv, firstBlock, funcInfo, inLoop, errors)
+    return false
+  /if
+
+  if stmt'node'type == ast:PIFELSE
+    mut elseBlock = cast<ptr ast:PBlock>(val spring:listGet(stmt'leaves, 2))
+    if !validatePBlock(rsv, elseBlock, funcInfo, inLoop, errors)
+      return false
+    /if
+  /if
+
 /func
 
 
@@ -45,7 +95,7 @@ func validateStmt(rsv sema:Resolver,
   /if
 
   if ast:pnodeIsExpr(stmt)
-
+    return sema:validateExpr(rsv, cast<ptr ast:PExpr>(stmt), errors) != null
   /if
 
   if ast:pnodeIsIf(stmt)
