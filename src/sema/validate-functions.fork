@@ -99,7 +99,7 @@ func validateStmt(rsv sema:Resolver,
   /if
 
   if ast:pnodeIsIf(stmt)
-
+    return validateIf(rsv, stmt, funcInfo, inLoop, errors)
   /if
 
   if ast:pnodeIsReturn(stmt)
