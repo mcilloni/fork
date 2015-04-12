@@ -71,8 +71,6 @@ func rootDeclsRegister(rsv sema:Resolver, name ptr uint8, type ptr ast:Type, dec
 
   utils:kvGet(rsv'decls, name, ptr pdecl)
 
-  pdecl'node'validated = true
-
   utils:kvRemove(rsv'decls, name)
 /func
 
