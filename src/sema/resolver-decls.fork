@@ -124,7 +124,10 @@ func registerDeclReal(rsv sema:Resolver,
       /if
 
       if !recursive
-        # validate function
+        if !sema:validateFunc(rsv, pdecl, realType, errors)
+          return null
+        /if
+
         pdecl'node'validated = true
       /if
 
@@ -251,4 +254,35 @@ func resolveDeclType(rsv sema:Resolver,
   spring:free(msg)
 
   return null
+/func
+
+
+func registerDecl(rsv sema:Resolver,
+                  pdecl ptr ast:PDecl,
+                  name ptr uint8,
+                  type ptr ast:Type,
+                  declType uint16,
+                  errors ptr spring:List) ptr ast:Type
+
+  mut declNode = cast<ptr ast:PNode>(pdecl)
+
+  mut stab = sema:findStab(declNode)
+  if ast:stabTypeof(stab, name) != null
+    mut cs = spring:csNew(20)
+    spring:csAppendStr(cs, "symbol '")
+    spring:csAppendStr(cs, name)
+    spring:csAppendStr(cs, "' is already defined")
+
+    mut msg = spring:csUnleash(cs)
+
+    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, declNode'begin, rsv'root'fileName, msg))
+
+    spring:free(msg)
+
+    return null
+  /if
+
+  ast:stabAdd(stab, name, type, declType)
+
+  return type
 /func

@@ -32,6 +32,13 @@ decl registerAlias func(rsv Resolver,
                         pdecl ptr ast:PDecl,
                         errors ptr spring:List) ptr ast:Type
 
+decl registerDecl func(rsv Resolver,
+                       pdecl ptr ast:PDecl,
+                       name ptr uint8,
+                       type ptr ast:Type,
+                       declType uint16,
+                       errors ptr spring:List) ptr ast:Type
+
 decl registerTopDecl func(rsv Resolver,
                           pdecl ptr ast:PDecl,
                           errors ptr spring:List) ptr ast:Type
@@ -47,6 +54,11 @@ decl validateExprRecl func(rsv Resolver,
 decl validateExpr func(rsv Resolver,
                        pexpr ptr ast:PExpr,
                        errors ptr spring:List) ptr ast:Type
+
+decl validateFunc func(rsv Resolver,
+                       pdecl ptr ast:PDecl,
+                       funcType ptr ast:Type,
+                       errors ptr spring:List) bool
 
 
 decl semaValidateAstRoot func(ctx ptr ctx:Context,

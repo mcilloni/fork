@@ -37,6 +37,50 @@ func validateBreakContinue(rsv sema:Resolver,
 /func
 
 
+func validateDecl(rsv sema:Resolver,
+                  pdecl ptr ast:PDecl,
+                  errors ptr spring:List) bool
+
+  mut isDecl = pdecl'node'type == ast:PDECL
+  mut type ptr ast:Type = null
+
+  if pdecl'sym'type != null
+    type = sema:resolveType(rsv, pdecl'sym'type, errors)
+    if type == null
+      return false
+    /if
+  else
+    if isDecl
+      spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, rsv'root'fileName, "a decl must have a type"))
+
+      return false
+    /if
+  /if
+
+  mut leavLen = spring:listLen(pdecl'node'leaves)
+
+  if leavLen > 0
+    mut pexpr = cast<ptr ast:PExpr>(val spring:listGet(pdecl'node'leaves, 0))
+    if isDecl
+      spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "a decl can't have an assignment"))
+    /if
+
+    type = sema:validateExpr(rsv, pexpr, errors)
+    if type == null
+      return false
+    /if
+  /if
+
+  if type == null
+    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, rsv'root'fileName, "declaration without an explicit or inferrable type"))
+
+    return false
+  /if
+
+  return sema:registerDecl(rsv, pdecl, pdecl'sym'name, type, pdecl'node'type, errors) != null
+/func
+
+
 func validateIf(rsv sema:Resolver,
                 stmt ptr ast:PNode,
                 funcInfo ast:Symbol,
@@ -73,6 +117,71 @@ func validateIf(rsv sema:Resolver,
   if stmt'type == ast:PIFELSE
     mut elseBlock = cast<ptr ast:PBlock>(val spring:listGet(stmt'leaves, 2))
     if !validatePBlock(rsv, elseBlock, funcInfo, inLoop, errors)
+      return false
+    /if
+  /if
+
+  return true
+/func
+
+
+func validateReturn(rsv sema:Resolver,
+                    stmt ptr ast:PNode,
+                    funcInfo ast:Symbol,
+                    errors ptr spring:List) bool
+
+  mut hasRetExpr = spring:listLen(stmt'leaves) == 1
+  mut funcRetTypeEmpty = funcInfo'type'retType == null or funcInfo'type'retType'type == ast:TYPE_EMPTY
+
+  if !hasRetExpr and !funcRetTypeEmpty
+    mut cs = spring:csNew(20)
+    spring:csAppendStr(cs, "function '")
+    spring:csAppendStr(cs, funcInfo'name)
+    spring:csAppendStr(cs, "' has a return value, but no expression is given to return")
+
+    mut msg = spring:csUnleash(cs)
+
+    spring:free(msg)
+
+    return false
+  /if
+
+  if hasRetExpr and funcRetTypeEmpty
+    mut cs = spring:csNew(20)
+    spring:csAppendStr(cs, "function '")
+    spring:csAppendStr(cs, funcInfo'name)
+    spring:csAppendStr(cs, "' has no return value, but an expression is given to return")
+
+    mut msg = spring:csUnleash(cs)
+
+    spring:free(msg)
+
+    return false
+  /if
+
+  if hasRetExpr
+    mut retType = funcInfo'type'retType
+    mut retExpr = cast<ptr ast:PExpr>(val spring:listGet(stmt'leaves, 0))
+
+    mut exprType = sema:validateExpr(rsv, retExpr, errors)
+    if exprType == null
+      return false
+    /if
+
+    if !sema:typeIsAssignable(rsv'ctx, stmt, retType, exprType)
+      mut cs = spring:csNew(20)
+      spring:csAppendStr(cs, "cannot return type '")
+      ast:typeSummarize(cs, exprType)
+      spring:csAppendStr(cs, "' from '")
+      spring:csAppendStr(cs, funcInfo'name)
+      spring:csAppendStr(cs, "', expected '")
+      ast:typeSummarize(cs, retType)
+      spring:csAppendStr(cs, "'")
+
+      mut msg = spring:csUnleash(cs)
+
+      spring:free(msg)
+
       return false
     /if
   /if
@@ -125,7 +234,7 @@ func validateStmt(rsv sema:Resolver,
   /if
 
   if ast:pnodeIsDecl(stmt)
-
+    return validateDecl(rsv, cast<ptr ast:PDecl>(stmt), errors)
   /if
 
   if ast:pnodeIsExpr(stmt)
@@ -137,7 +246,7 @@ func validateStmt(rsv sema:Resolver,
   /if
 
   if ast:pnodeIsReturn(stmt)
-
+    return validateReturn(rsv, stmt, funcInfo, errors)
   /if
 
   if ast:pnodeIsWhile(stmt)
@@ -174,6 +283,23 @@ func validatePBlock(rsv sema:Resolver,
 /func
 
 
+func addAllSymbolsToStab(stab ptr ast:Symtable, syms ptr utils:KVList)
+  mut len = utils:kvLen(syms)
+  mut i uintptr = 0
+
+  while i < len
+    mut pair = utils:kvGetAt(syms, i)
+
+    mut name = cast<ptr uint8>(pair'key)
+    mut type = cast<ptr ast:Type>(pair'value)
+
+    ast:stabAdd(stab, name, type, ast:PDECL)
+
+    i++
+  /while
+/func
+
+
 func validateFunc(rsv sema:Resolver,
                   pdecl ptr ast:PDecl,
                   funcType ptr ast:Type,
@@ -185,6 +311,8 @@ func validateFunc(rsv sema:Resolver,
   sym'name = pdecl'sym'name
 
   mut pblock = cast<ptr ast:PBlock>(val spring:listGet(pdecl'node'leaves, 0))
+
+  addAllSymbolsToStab(pblock'syms, funcType'members)
 
   return validatePBlock(rsv, pblock, sym, false, errors)
 /func
