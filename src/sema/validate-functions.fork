@@ -65,10 +65,12 @@ func validateDecl(rsv sema:Resolver,
       spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "a decl can't have an assignment"))
     /if
 
-    type = sema:validateExpr(rsv, pexpr, errors)
-    if type == null
+    mut exprType = sema:validateExpr(rsv, pexpr, errors)
+    if exprType == null
       return false
     /if
+
+    type = type != null => type || exprType
   /if
 
   if type == null
