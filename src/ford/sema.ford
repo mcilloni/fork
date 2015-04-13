@@ -81,6 +81,7 @@ decl findRecAlias func(ctx ptr ctx:Context, scope ptr ast:PNode, ralias ptr ast:
 
 decl findSym func(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 decl findSymLocal func(node ptr ast:PNode, name ptr uint8) ptr ast:Type
+decl findSymModule func(ctx ptr ctx:Context, moduleName, name ptr uint8) ptr ast:Type
 decl findStab func(node ptr ast:PNode) ptr ast:Symtable
 
 decl typeIsAssignable func(ctx ptr ctx:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool

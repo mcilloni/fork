@@ -304,9 +304,9 @@ func validateExprCast(rsv sema:Resolver,
     mut cs = spring:csNew(20)
 
     spring:csAppendStr(cs, "can't cast ")
-    ast:typeDump(cs, pexpr'type)
+    ast:typeSummarize(cs, pexpr'type)
     spring:csAppendStr(cs, " to ")
-    ast:typeDump(cs, chType)
+    ast:typeSummarize(cs, chType)
 
     mut str = spring:csUnleash(cs)
 
@@ -320,20 +320,24 @@ func validateExprCast(rsv sema:Resolver,
 /func
 
 
-func validateExprSize(rsv sema:Resolver,
+func validateSizeExpr(rsv sema:Resolver,
                       pexpr ptr ast:PExpr,
                       errors ptr spring:List) ptr ast:Type
 
   mut ptype = cast<ptr ast:PType>(pexpr'node'value)
-  pexpr'type = sema:resolveType(rsv, ptype, errors)
 
-  if pexpr'type'type == ast:TYPE_FUNC
+  mut sizeType = sema:resolveType(rsv, ptype, errors)
+  if sizeType == null
+    return null
+  /if
+
+  if sizeType'type == ast:TYPE_FUNC
 
     spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "invalid application of 'size' to a function type"))
     return null
   /if
 
-  return pexpr'type
+  return ctx:contextMatchBuiltin(rsv'ctx, "uintptr")
 /func
 
 
@@ -535,8 +539,8 @@ func validateModuleAccessExpr(rsv sema:Resolver,
     return null
   /if
 
-  mut symName = cast<ptr uint8>(cast<ptr ast:PNode>(val spring:listGet(pexpr'node'leaves, 0))'value)
-  mut type = sema:findAliasImport(rsv'ctx, modName, symName)
+  mut symName = cast<ptr uint8>(cast<ptr ast:PNode>(val spring:listGet(pexpr'node'leaves, 1))'value)
+  mut type = sema:findSymModule(rsv'ctx, modName, symName)
 
   if type == null
     mut cs = spring:csNew(20)
@@ -684,9 +688,9 @@ func validateFunctionCallExpr(rsv sema:Resolver,
   mut scope = cast<ptr ast:PNode>(pexpr)
   mut i uintptr = 0
 
-  while i < expParams
-    mut gotParam = cast<ptr ast:PExpr>(val spring:listGet(scope'leaves, i))
-    mut expPair = utils:kvGetAt(expParams, i + 1)
+  while i < expLen
+    mut gotParam = cast<ptr ast:PExpr>(val spring:listGet(scope'leaves, i + 1))
+    mut expPair = utils:kvGetAt(expParams, i)
 
     mut expType = cast<ptr ast:Type>(expPair'value)
 
@@ -695,9 +699,9 @@ func validateFunctionCallExpr(rsv sema:Resolver,
       return null
     /if
 
-    if !sema:typeIsAssignable(rsv'ctx, scope, gotType, expType)
+    if !sema:typeIsAssignable(rsv'ctx, scope, expType, gotType)
       mut cs = spring:csNew(20)
-      spring:csAppendStr(cs, "passing ' ")
+      spring:csAppendStr(cs, "passing '")
 
       ast:typeSummarize(cs, gotType)
 
@@ -1057,13 +1061,17 @@ func validateExprRecl(rsv sema:Resolver,
       if op == lex:CAST
         pexpr'type = validateExprCast(rsv, pexpr, recList, errors)
       else
-        if ttypeIsTernary(op)
-          pexpr'type = validateTernaryExpr(rsv, pexpr, recList, errors)
+        if op == lex:SIZE
+          pexpr'type = validateSizeExpr(rsv, pexpr, errors)
         else
-          if ttypeIsBinary(op)
-            pexpr'type = validateBinaryExpr(rsv, pexpr, recList, errors)
+          if ttypeIsTernary(op)
+            pexpr'type = validateTernaryExpr(rsv, pexpr, recList, errors)
           else
-            pexpr'type = validateUnaryExpr(rsv, pexpr, recList, errors)
+            if ttypeIsBinary(op)
+              pexpr'type = validateBinaryExpr(rsv, pexpr, recList, errors)
+            else
+              pexpr'type = validateUnaryExpr(rsv, pexpr, recList, errors)
+            /if
           /if
         /if
       /if

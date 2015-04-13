@@ -64,6 +64,16 @@ func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 /func
 
 
+func findSymModule(ctx ptr ctx:Context, moduleName, name ptr uint8) ptr ast:Type
+  mut imp = ctx:contextGetImport(ctx, moduleName)
+  if imp == null
+    return null
+  /if
+
+  return ast:stabTypeof(imp'node'syms, name)
+/func
+
+
 func rootDeclsRegister(rsv sema:Resolver, name ptr uint8, type ptr ast:Type, declType uint16)
   ast:stabAdd(rsv'root'node'syms, name, type, declType)
 
