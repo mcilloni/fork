@@ -730,7 +730,7 @@ func validateAssignExpr(rsv sema:Resolver,
                         ltype,rtype ptr ast:Type,
                         errors ptr spring:List) ptr ast:Type
 
-  if ttypeCanBeAssignTarget(left'opType, ltype)
+  if !ttypeCanBeAssignTarget(left'opType, ltype)
     spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, left'node'begin, rsv'root'fileName, "expression cannot be target of assignment"))
     return null
   /if
@@ -740,12 +740,9 @@ func validateAssignExpr(rsv sema:Resolver,
 
     spring:csAppendStr(cs, "cannot assign expression of type '")
     ast:typeSummarize(cs, rtype)
-    spring:csAppendStr(cs, "' to ")
-
-
-
-    ast:typeSummarize(cs, rtype)
-    spring:csAppendStr(cs, " are not compatible")
+    spring:csAppendStr(cs, "' to a lvalue of type '")
+    ast:typeSummarize(cs, ltype)
+    spring:csAppendStr(cs, "'")
 
     mut str = spring:csUnleash(cs)
 

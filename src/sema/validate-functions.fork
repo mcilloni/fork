@@ -312,6 +312,8 @@ func validateFunc(rsv sema:Resolver,
 
   mut pblock = cast<ptr ast:PBlock>(val spring:listGet(pdecl'node'leaves, 0))
 
+  pblock'syms = ast:stabNew()
+
   addAllSymbolsToStab(pblock'syms, funcType'members)
 
   return validatePBlock(rsv, pblock, sym, false, errors)

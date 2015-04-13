@@ -91,7 +91,7 @@ func pnodeIsIf(pnode ptr ast:PNode) bool
 
 
 func pnodeIsReturn(pnode ptr ast:PNode) bool
-  return pnode'type == ast:PWHILE
+  return pnode'type == ast:PRETURN
 /func
 
 
