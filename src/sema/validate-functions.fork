@@ -220,7 +220,7 @@ func validateWhile(rsv sema:Resolver,
 
   mut pblock = cast<ptr ast:PBlock>(val spring:listGet(stmt'leaves, 1))
 
-  return validatePBlock(rsv, pblock, funcInfo, inLoop, errors)
+  return validatePBlock(rsv, pblock, funcInfo, true, errors)
 /func
 
 func validateStmt(rsv sema:Resolver,
@@ -265,6 +265,10 @@ func validatePBlock(rsv sema:Resolver,
                     funcInfo ast:Symbol,
                     inLoop bool,
                     errors ptr spring:List) bool
+
+  if pblock'syms == null
+    pblock'syms = ast:stabNew()
+  /if
 
   mut len = spring:listLen(pblock'node'leaves)
   mut i uintptr = 0
