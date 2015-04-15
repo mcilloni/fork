@@ -416,6 +416,7 @@ func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri 
 
   while ctx'next != null and ((curOpPrec = opPrec(ctx'next)) >= minPri)
     mut opTok = synt:nextTok(ctx)
+    mut opIsRight = assocRight(opTok)
 
     mut ternaryMiddle ptr ast:PExpr = null
 
@@ -434,8 +435,13 @@ func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri 
 
     mut nextOpPrec = opPrec(ctx'next)
 
-    if ctx'next != null and (nextOpPrec > curOpPrec or (assocRight(ctx'next) and nextOpPrec == curOpPrec))
-      rhs = parserParseBinaryRhs(ctx, rhs, nextOpPrec)
+    if ctx'next != null and (nextOpPrec > curOpPrec or (opIsRight and nextOpPrec == curOpPrec))
+      mut rhsMinPrec = curOpPrec
+      if !opIsRight
+        curOpPrec++
+      /if
+
+      rhs = parserParseBinaryRhs(ctx, rhs, curOpPrec)
       if rhs == null
         return null
       /if
