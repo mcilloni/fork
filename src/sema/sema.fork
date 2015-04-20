@@ -15,56 +15,6 @@ import synt
 import utils
 
 
-# root node contains global declarations
-# it has no stack, and no declaration order
-func makePRootStab(ctx ptr ctx:Context, root ptr ast:PNode, errors ptr spring:List) ptr ast:Symtable
-  mut children = root'leaves
-  mut stab = ast:stabNew()
-
-  mut i uintptr = 0
-  mut len = spring:listLen(children)
-
-  while i < len
-    mut child = cast<ptr ast:PNode>(val spring:listGet(children, i))
-
-    if ast:isPDecl(child)
-      mut pdecl = cast<ptr ast:PDecl>(child)
-      mut sym = pdecl'sym
-
-      mut existing = ast:stabTypeof(stab, sym'name)
-      if existing != null
-        mut errMsg = spring:strappend(sym'name, " is already defined")
-
-        spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, ctx'currentFile, errMsg))
-
-        spring:free(errMsg)
-      /if
-    /if
-
-    i++
-  /while
-
-  ## FINISH THIS ##
-
-  return stab
-/func
-
-
-func validatePRootAliases(ctx ptr ctx:Context, root ptr ast:PNode, errors ptr spring:List) ptr ast:Symtable
-  mut children = root'leaves
-  mut len = spring:listLen(children)
-  mut i uintptr = 0
-
-  mut aliases = ast:stabNew()
-
-  while i < len
-    mut child = cast<ptr ast:PNode>(val spring:listGet(children, i))
-
-    i++
-  /while
-/func
-
-
 func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr spring:List
   if root'type != ast:PROOT
     return null
