@@ -103,6 +103,7 @@ decl symbolDump func(cs ptr spring:Charstash, sym ptr Symbol)
 decl symbolEquals func(sym1,sym2 ptr Symbol) bool
 decl symbolFree func(sym ptr Symbol)
 decl symbolNew func(name ptr uint8, type ptr Type) ptr Symbol
+decl symbolSummarize func(cs ptr spring:Charstash, sym ptr Symbol)
 
 decl builtinSetNew func() ptr spring:Map
 

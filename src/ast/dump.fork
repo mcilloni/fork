@@ -472,6 +472,46 @@ func typeDump(cs ptr spring:Charstash, type ptr ast:Type)
 /func
 
 
+func symbolSummarize(cs ptr spring:Charstash, sym ptr ast:Symbol)
+  if sym == null
+    return
+  /if
+
+  spring:csAppendStr(cs, sym'name)
+  spring:csAppend(cs, 32)
+  ast:typeSummarize(cs, sym'type)
+/func
+
+
+func symlistSummarize(cs ptr spring:Charstash, symlist ptr utils:KVList)
+
+  spring:csAppendStr(cs, "(")
+
+  if symlist != null
+    mut len = utils:kvLen(symlist)
+    mut i uintptr = 0
+
+    while i < len
+      mut pair = utils:kvGetAt(symlist, i)
+      mut sym ast:Symbol
+
+      sym'name = cast<ptr uint8>(pair'key)
+      sym'type = cast<ptr ast:Type>(pair'value)
+
+      ast:symbolSummarize(cs, ptr sym)
+
+      if i + 1 < len
+        spring:csAppendStr(cs, ", ")
+      /if
+
+      i++
+    /while
+  /if
+
+  spring:csAppendStr(cs, ")")
+/func
+
+
 func typeSummarize(cs ptr spring:Charstash, type ptr ast:Type)
   if type == null
     spring:csAppendStr(cs, "<<null type please report>>")
@@ -501,6 +541,21 @@ func typeSummarize(cs ptr spring:Charstash, type ptr ast:Type)
     typeSummarize(cs, type'retType)
     return
   /if
+
+  if type'type == ast:TYPE_FUNC
+    spring:csAppendStr(cs, "func")
+
+    symlistSummarize(cs, type'members)
+
+    if type'retType != null
+      spring:csAppend(cs, 32)
+
+      typeSummarize(cs, type'retType)
+    /if
+
+    return
+  /if
+
 
   ast:typeDump(cs, type)
 /func

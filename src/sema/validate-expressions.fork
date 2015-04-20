@@ -155,7 +155,7 @@ func intTypesFindLargestCompatible(ctx ptr ctx:Context, type1, type2 ptr ast:Typ
 
 func typeIsAssignable(ctx ptr ctx:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
   if dest == null or src == null
-    return false
+    return dest == src
   /if
 
   if dest'type == ast:TYPE_EMPTY or src'type == ast:TYPE_EMPTY
@@ -211,7 +211,7 @@ func typeIsAssignable(ctx ptr ctx:Context, scope ptr ast:PNode, dest,src ptr ast
       mut type1 = cast<ptr ast:Type>(pair1'value)
       mut type2 = cast<ptr ast:Type>(pair2'value)
 
-      if !ast:typeEquals(type1, type2)
+      if !typeIsAssignable(ctx, scope, type2, type1)
         return false
       /if
 
