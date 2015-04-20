@@ -208,13 +208,10 @@ func typeIsAssignable(ctx ptr ctx:Context, scope ptr ast:PNode, dest,src ptr ast
       mut pair1 = utils:kvGetAt(src'members, i)
       mut pair2 = utils:kvGetAt(dest'members, i)
 
-      mut name1 = cast<ptr uint8>(pair1'key)
-      mut name2 = cast<ptr uint8>(pair2'key)
-
       mut type1 = cast<ptr ast:Type>(pair1'value)
       mut type2 = cast<ptr ast:Type>(pair2'value)
 
-      if !spring:strequals(name1, name2) or !ast:typeEquals(type1, type2)
+      if !ast:typeEquals(type1, type2)
         return false
       /if
 
@@ -631,6 +628,11 @@ func validateArrayAccess(rsv sema:Resolver,
 /func
 
 
+func normalizeEmptyType(ctx ptr ctx:Context, type ptr ast:Type) ptr ast:Type
+  return type != null => type || ctx:contextMatchBuiltin(ctx, "\0")
+/func
+
+
 func validateFunctionCallExpr(rsv sema:Resolver,
                               pexpr ptr ast:PExpr,
                               ltype ptr ast:Type,
@@ -725,7 +727,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
     i++
   /while
 
-  return cast<ptr ast:Type>(accType'retType)
+  return normalizeEmptyType(rsv'ctx, cast<ptr ast:Type>(accType'retType))
 /func
 
 

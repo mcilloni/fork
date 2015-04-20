@@ -408,9 +408,11 @@ func typeDump(cs ptr spring:Charstash, type ptr ast:Type)
 
     symlistDump(cs, type'members)
 
-    spring:csAppend(cs, 32)
+    if type'retType != null
+      spring:csAppend(cs, 32)
 
-    typeDump(cs, type'retType)
+      typeDump(cs, type'retType)
+    /if
   else
     if type'type == ast:TYPE_PTR
       spring:csAppendStr(cs, "ptr ")
