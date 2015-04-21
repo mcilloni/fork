@@ -187,19 +187,6 @@ alias StringDef struct(
 decl strdefFree func(strdef ptr StringDef)
 decl strdefNew func(name ptr uint8, begin,end utils:Line) ptr StringDef
 
-alias PRoot struct(
-  node PBlock,
-  moduleName ptr StringDef,
-  fileName ptr uint8,
-  imports ptr spring:List,
-  aliases ptr Symtable,
-  typePool ptr utils:FreePool
-)
-
-decl isPRoot func(node ptr PNode) bool
-decl prootHasImported func(root ptr PRoot, name ptr uint8) bool
-decl prootNew func(modName ptr StringDef, imports ptr spring:List, fileName ptr uint8) ptr PRoot
-
 alias PDecl struct(
   node PNode,
   sym ptr PSymbol
@@ -207,6 +194,20 @@ alias PDecl struct(
 
 decl isPDecl func(node ptr PNode) bool
 decl pdeclNew func(ptype uint16, sym ptr PSymbol) ptr PDecl
+
+alias PRoot struct(
+  node PBlock,
+  moduleName ptr StringDef,
+  fileName ptr uint8,
+  imports ptr spring:List,
+  aliases ptr Symtable,
+  typePool ptr utils:FreePool,
+  entryNode ptr PDecl
+)
+
+decl isPRoot func(node ptr PNode) bool
+decl prootHasImported func(root ptr PRoot, name ptr uint8) bool
+decl prootNew func(modName ptr StringDef, imports ptr spring:List, fileName ptr uint8) ptr PRoot
 
 alias PExpr struct(
   node PNode,

@@ -98,7 +98,9 @@ func registerDeclReal(rsv sema:Resolver,
   mut ptype = pdecl'sym'type
 
   mut isDecl = pdecl'node'type == ast:PDECL
-  mut isFunc = pdecl'node'type == ast:PFUNCTION or pdecl'node'type == ast:PENTRY
+  mut isEntry = pdecl'node'type == ast:PENTRY
+  mut isFunc = pdecl'node'type == ast:PFUNCTION or isEntry
+
 
   mut realType ptr ast:Type = sema:findSym(cast<ptr ast:PNode>(pdecl), name)
   mut typeResolved = realType != null
@@ -128,7 +130,7 @@ func registerDeclReal(rsv sema:Resolver,
 
       # register function BEFORE because it can be recursive
       # realType will always be non-null
-      if !inMap and pdecl'node'type != ast:PENTRY
+      if !inMap and !isEntry
         rootDeclsRegister(rsv, name, realType, pdecl'node'type)
         inMap = true
       /if
@@ -202,6 +204,10 @@ func registerDeclReal(rsv sema:Resolver,
   # functions are already registered
   if !inMap and realType != null and pdecl'node'type != ast:PENTRY
     rootDeclsRegister(rsv, name, realType, pdecl'node'type)
+  /if
+
+  if isEntry
+    rsv'root'entryNode = pdecl
   /if
 
   return realType

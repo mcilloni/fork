@@ -98,11 +98,17 @@ func convertSymbolList(rsv sema:Resolver,
                        pargs,errors,recList ptr spring:List,
                        funcArgs bool) ptr utils:KVList
 
+
+  mut members = utils:strkvNew()
+
+  if pargs == null
+    return members
+  /if
+
   mut errLen = spring:listLen(errors)
 
   mut plen = spring:listLen(pargs)
   mut i uintptr = 0
-  mut members = utils:strkvNew()
   utils:kvSetFreeFuncs(members, ptr spring:free, null)
 
   while i < plen

@@ -42,6 +42,8 @@ entry
     spring:exit(1)
   /if
 
+  mut root = cast<ptr ast:PRoot>(ast)
+
   spring:out("== IMPORTS: ")
   spring:outint(spring:mapLen(ctx'imports))
   spring:outch(10)
@@ -59,7 +61,7 @@ entry
 
   spring:mapiterFree(iter)
 
-  mut aliasesMap = cast<ptr ast:PRoot>(ast)'aliases'syms
+  mut aliasesMap = root'aliases'syms
 
   spring:out("\n\n== ALIASES: ")
   spring:outint(spring:mapLen(aliasesMap))
@@ -117,6 +119,10 @@ entry
     spring:free(des)
     spring:pairFree(pair)
   /while
+
+  spring:out("\n\n==> Has entry? ")
+
+  spring:outln(root'entryNode != null => "yes" || "no")
 
   spring:mapiterFree(iter)
 
