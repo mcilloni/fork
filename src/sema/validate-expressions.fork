@@ -67,7 +67,7 @@ func ttypeIsBool(tt uint16) bool
 
 
 func ttypeCanBeAssignTarget(tt uint16, type ptr ast:Type) bool
-  return (tt == lex:VAL or tt == lex:OBRAC or tt == lex:APOS or tt == lex:COLON or tt == lex:ID) and (ast:typeIsPtr(type) or ast:typeIsInt(type) or ast:typeIsStruct(type))
+  return (tt == lex:VAL or tt == lex:OBRAC or tt == lex:APOS or tt == lex:COLON or tt == lex:ID) and (ast:typeIsPtr(type) or ast:typeIsInt(type) or ast:typeIsStruct(type) or ast:typeIsBool(type))
 /func
 
 
