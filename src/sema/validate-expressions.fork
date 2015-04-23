@@ -301,9 +301,9 @@ func validateExprCast(rsv sema:Resolver,
     mut cs = spring:csNew(20)
 
     spring:csAppendStr(cs, "can't cast ")
-    ast:typeSummarize(cs, pexpr'type)
-    spring:csAppendStr(cs, " to ")
     ast:typeSummarize(cs, chType)
+    spring:csAppendStr(cs, " to ")
+    ast:typeSummarize(cs, pexpr'type)
 
     mut str = spring:csUnleash(cs)
 
@@ -560,15 +560,30 @@ func validateModuleAccessExpr(rsv sema:Resolver,
 /func
 
 
+func resolveRecType(rsv sema:Resolver,
+                    type ptr ast:Type) ptr ast:Type
+
+  if type'type != ast:TYPE_RECALIAS
+    return type
+  /if
+
+  if type'moduleName != null
+    return sema:findAliasImport(rsv'ctx, type'moduleName, type'name)
+  /if
+
+  return sema:findAliasLocal(cast<ptr ast:PNode>(rsv'root), type'name)
+/func
+
+
 func validateStructureAccessExpr(rsv sema:Resolver,
                                  pexpr ptr ast:PExpr,
                                  ltype ptr ast:Type,
                                  errors ptr spring:List) ptr ast:Type
 
-  mut accType = ltype
+  mut accType = resolveRecType(rsv, ltype)
 
   if ltype'type == ast:TYPE_PTR
-    accType = ltype'retType
+    accType = resolveRecType(rsv, ltype'retType)
   /if
 
   if !ast:typeIsStruct(accType)

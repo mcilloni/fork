@@ -49,10 +49,10 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
   toGlue[2] = " in the given FORDPATHS"
   toGlue[3] = null
 
-  mut glued = spring:strglue(toGlue)
+  mut glued = spring:strglue(ptr toGlue[0])
 
   spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, importName'begin, ctx'currentFile, glued))
-  
+
   spring:free(fordName)
   spring:free(glued)
 
@@ -126,7 +126,7 @@ func contextGetImport(ctx ptr ctx:Context, name ptr uint8) ptr ast:PRoot
 func contextFree(ctx ptr ctx:Context)
   if ctx != null
     if ctx'imports != null
-      spring:mapFreeSpec(ctx'imports, ptr spring:free, cast<ptr func(item data)>(ast:pnodeFree))
+      spring:mapFreeSpec(ctx'imports, ptr spring:free, cast<ptr func(item data)>(ptr ast:pnodeFree))
     /if
 
     if ctx'fordPaths != null
