@@ -24,14 +24,16 @@ func resolverDeinit(rsv sema:Resolver)
 func resolverCollect(rsv ptr sema:Resolver,
                      ctx ptr ctx:Context,
                      root ptr ast:PRoot,
-                     errors ptr spring:List) ptr spring:List
+                     errors ptr spring:List) ptr utils:KVList
 
   rsv'aliases = utils:strkvNew()
   rsv'decls = utils:strkvNew()
   rsv'root = root
   rsv'ctx = ctx
 
-  mut ret = spring:listNew()
+  mut ret = utils:strkvNew()
+
+  utils:kvSetFreeFuncs(ret, ptr spring:free, null)
 
   mut len = spring:listLen(root'node'node'leaves)
   mut i uintptr = 0
@@ -110,8 +112,9 @@ func resolverCollect(rsv ptr sema:Resolver,
 
     if ntype != ast:PENTRY
       utils:kvPut(kv, name, pdecl)
-      spring:listAppend(ret, pdecl)
     /if
+
+    utils:kvPut(ret, spring:strclone(name), pdecl)
 
     i++
   /while
