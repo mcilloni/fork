@@ -55,17 +55,18 @@ func semaValidateAstRoot(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr spr
 
   mut rsv sema:Resolver
 
-  if !sema:resolverCollect(ptr rsv, ctx, root, errors)
+  mut decls = sema:resolverCollect(ptr rsv, ctx, root, errors)
+  if decls == null
     return false
   /if
 
-  mut len = spring:listLen(root'node'node'leaves)
+  mut len = spring:listLen(decls)
   mut i uintptr = 0
   mut result = true
 
   while i < len
     # PDecl because root can only have pdecl children
-    mut pdecl = cast<ptr ast:PDecl>(val spring:listGet(root'node'node'leaves, i))
+    mut pdecl = cast<ptr ast:PDecl>(val spring:listGet(decls, i))
 
     if !pdecl'node'validated
       if !validatePDecl(rsv, pdecl, errors)
@@ -78,6 +79,7 @@ func semaValidateAstRoot(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr spr
     i++
   /while
 
+  spring:listFree(decls)
   sema:resolverDeinit(rsv)
 
   return result

@@ -21,11 +21,17 @@ func resolverDeinit(rsv sema:Resolver)
 /func
 
 
-func resolverCollect(rsv ptr sema:Resolver, ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr spring:List) bool
+func resolverCollect(rsv ptr sema:Resolver,
+                     ctx ptr ctx:Context,
+                     root ptr ast:PRoot,
+                     errors ptr spring:List) ptr spring:List
+
   rsv'aliases = utils:strkvNew()
   rsv'decls = utils:strkvNew()
   rsv'root = root
   rsv'ctx = ctx
+
+  mut ret = spring:listNew()
 
   mut len = spring:listLen(root'node'node'leaves)
   mut i uintptr = 0
@@ -54,7 +60,7 @@ func resolverCollect(rsv ptr sema:Resolver, ctx ptr ctx:Context, root ptr ast:PR
 
           spring:free(str)
 
-          return false
+          return null
 
         else
 
@@ -80,7 +86,7 @@ func resolverCollect(rsv ptr sema:Resolver, ctx ptr ctx:Context, root ptr ast:PR
 
           spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, spring:csUnleash(cs)))
 
-          return false
+          return null
         /if
 
         kv = rsv'aliases
@@ -93,7 +99,7 @@ func resolverCollect(rsv ptr sema:Resolver, ctx ptr ctx:Context, root ptr ast:PR
             spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, "entry declared twice in same file"))
             resolverDeinit(val rsv)
 
-            return false
+            return null
           /if
         else
           spring:errln("Unreachable: invalid pdecl value")
@@ -104,10 +110,11 @@ func resolverCollect(rsv ptr sema:Resolver, ctx ptr ctx:Context, root ptr ast:PR
 
     if ntype != ast:PENTRY
       utils:kvPut(kv, name, pdecl)
+      spring:listAppend(ret, pdecl)
     /if
 
     i++
   /while
 
-  return true
+  return ret
 /func

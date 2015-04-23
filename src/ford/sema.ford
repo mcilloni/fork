@@ -23,7 +23,7 @@ alias Resolver struct (
 decl resolverCollect func(rsv ptr Resolver,
                           ctx ptr ctx:Context,
                           root ptr ast:PRoot,
-                          errors ptr spring:List) bool
+                          errors ptr spring:List) ptr spring:List
 
 decl resolverDeinit func(rsv Resolver)
 

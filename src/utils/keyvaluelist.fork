@@ -19,12 +19,30 @@ import spring
 import utils
 
 
+func kvClone(kv ptr utils:KVList) ptr utils:KVList
+  mut ret = utils:kvNew(kv'cmp)
+
+  mut len = utils:kvLen(kv)
+  mut i uintptr = 0
+
+  while i < len
+    mut elem = utils:kvGetAt(kv, i)
+    utils:kvPut(ret, elem'key, elem'value)
+
+    i++
+  /while
+
+  return ret
+/func
+
+
 func kvContains(kv ptr utils:KVList, key data) bool
   mut discard data
   return utils:kvGetPos(kv, key, ptr discard) >= 0
 /func
 
 decl kvFreeContents func(kv ptr utils:KVList)
+
 
 func kvDeinit(kv ptr utils:KVList)
   kvFreeContents(kv)

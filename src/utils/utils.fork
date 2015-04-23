@@ -228,8 +228,15 @@ func listContains(list ptr spring:List, value ptr uint8) bool
   mut i uintptr = 0
   mut len = spring:listLen(list)
 
+
+  mut clone = val list
+
+  # this fixes a weird bug in spring:List that I haven't found yet.
+  spring:listSeekZero(list)
+
   while i < len
-    mut elem = cast<ptr uint8>(val spring:listGet(list, i))
+    mut ptrElem = spring:listGet(list, i)
+    mut elem = cast<ptr uint8>(val ptrElem)
 
     if spring:strequals(elem, value)
       return true
