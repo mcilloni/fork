@@ -580,7 +580,7 @@ func validateStructureAccessExpr(rsv sema:Resolver,
                                  ltype ptr ast:Type,
                                  errors ptr spring:List) ptr ast:Type
 
-  mut accType = resolveRecType(rsv, ltype)
+  mut accType = ltype
 
   if ltype'type == ast:TYPE_PTR
     accType = resolveRecType(rsv, ltype'retType)
