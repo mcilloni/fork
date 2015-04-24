@@ -1,4 +1,5 @@
 build/*
+perf
 examples/*.txt
 examples/*.elf
 examples/*.old
