@@ -8,7 +8,7 @@ This is incredibly alpha, so alpha it has no version number, so it may crash in 
 
 Everything is available under the MPL v2 license.
 
-*Building:*: you need [first-step](http://github.com/mcilloni/first-step/) to build this, a C++ compiler (like clang or gcc) and GNU/Linux.
+*Building:* you need [first-step](http://github.com/mcilloni/first-step/) to build this, a C++ compiler (like clang or gcc) and GNU/Linux.
 
 
 
