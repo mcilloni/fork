@@ -5,7 +5,7 @@ endif
 FORKC_O = $(FORKC) --no-spring
 
 CCLD = $(CC)
-SONAME = 'libforkc.so'
+SONAME = 'libfork.so'
 
 .PHONY: all clean
 
