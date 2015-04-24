@@ -7,8 +7,9 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
+import base
 import lex
-import spring
 import utils
 
 
@@ -16,7 +17,7 @@ alias Char struct(ch uint8, pos uintptr)
 
 
 func strtokNew(str ptr uint8, line,begin,end uintptr) ptr lex:StringTok
-  mut strTok = cast<ptr lex:StringTok>(spring:zalloc(size(lex:StringTok)))
+  mut strTok = cast<ptr lex:StringTok>(base:zalloc(size(lex:StringTok)))
 
   strTok'str = str
 
@@ -30,7 +31,7 @@ func strtokNew(str ptr uint8, line,begin,end uintptr) ptr lex:StringTok
 
 func strtokFree(stok ptr lex:StringTok)
   if stok != null
-    spring:free(stok)
+    base:free(stok)
   /if
 /func
 
@@ -40,8 +41,8 @@ func nextChar(lex ptr lex:Lexer) Char
   ret'ch = lex'peek
   ret'pos = 0
 
-  spring:streamRead(lex'file, ptr lex'peek, 1)
-  if (lex'error = spring:streamError(lex'file)) != null
+  base:streamRead(lex'file, ptr lex'peek, 1)
+  if (lex'error = base:streamError(lex'file)) != null
     ret'ch = 0
     return ret
   /if
@@ -50,7 +51,7 @@ func nextChar(lex ptr lex:Lexer) Char
 
   ret'pos = lex'lineno'pos
 
-  if spring:streamEnded(lex'file)
+  if base:streamEnded(lex'file)
     lex'peek = 0
   /if
 
@@ -126,35 +127,35 @@ func lexExtractString(lex ptr lex:Lexer) ptr lex:StringTok
   mut ch = nextChar(lex) #discard the `"`
   mut begin = ch'pos
 
-  mut cs = spring:csNew(10) #just a magic number here
+  mut cs = base:csNew(10) #just a magic number here
   #an STX is added at the beginning, indicating that the content is not a token but a whole string.
-  spring:csAppend(cs, STX)
+  base:csAppend(cs, STX)
 
   mut escape = false
 
   while !lex:lexerEof(lex) and utils:charCanBeInString(lex'peek, escape)
     ch = nextChar(lex)
     if ch'ch == 0
-      spring:csFree(cs)
+      base:csFree(cs)
       return null
     /if
 
     if !escape and ch'ch == 92 # `\\`
       escape = true
     else
-      spring:csAppend(cs, applyEscape(ch'ch, escape))
+      base:csAppend(cs, applyEscape(ch'ch, escape))
       escape = false
     /if
   /while
 
   if lex:lexerEof(lex)
-    spring:csFree(cs)
+    base:csFree(cs)
     lex'error = lex:errorLex(lex, "unexpected EOF in string body")
     return null
   /if
 
   if (ch = nextChar(lex))'ch != 34 # `"`
-    spring:csFree(cs)
+    base:csFree(cs)
     mut got [2] uint8
     got[0] = ch'ch
     got[1] = 0 # `\0` c string terminator
@@ -163,12 +164,12 @@ func lexExtractString(lex ptr lex:Lexer) ptr lex:StringTok
     return null
   /if
 
-  return strtokNew(spring:csUnleash(cs), lex'lineno'lineno, begin, ch'pos)
+  return strtokNew(base:csUnleash(cs), lex'lineno'lineno, begin, ch'pos)
 /func
 
 
 func lexExtractSym(lex ptr lex:Lexer) ptr lex:StringTok
-  mut cs = spring:csNew(10) #magic number
+  mut cs = base:csNew(10) #magic number
   mut i uintptr = 0
   mut ch Char
   mut first = true
@@ -177,7 +178,7 @@ func lexExtractSym(lex ptr lex:Lexer) ptr lex:StringTok
   while !lex:lexerEof(lex) and utils:charIsSym(lex'peek) and i < 2
     ch = nextChar(lex)
     if ch'ch == 0
-      spring:csFree(cs)
+      base:csFree(cs)
       return null
     /if
 
@@ -186,15 +187,15 @@ func lexExtractSym(lex ptr lex:Lexer) ptr lex:StringTok
       first = false
     /if
 
-    spring:csAppend(cs, ch'ch)
+    base:csAppend(cs, ch'ch)
   /while
 
-  return strtokNew(spring:csUnleash(cs), lex'lineno'lineno, begin, ch'pos)
+  return strtokNew(base:csUnleash(cs), lex'lineno'lineno, begin, ch'pos)
 /func
 
 
 func lexHandleId(lex ptr lex:Lexer) ptr lex:StringTok
-  mut cs = spring:csNew(10) #magic number
+  mut cs = base:csNew(10) #magic number
   mut ch Char
   mut begin uintptr
   mut first = true
@@ -202,7 +203,7 @@ func lexHandleId(lex ptr lex:Lexer) ptr lex:StringTok
   while utils:charIsIdVal(lex'peek)
     ch = nextChar(lex)
     if ch'ch == 0
-      spring:csFree(cs)
+      base:csFree(cs)
       return null
     /if
 
@@ -211,16 +212,16 @@ func lexHandleId(lex ptr lex:Lexer) ptr lex:StringTok
       first = false
     /if
 
-    spring:csAppend(cs, ch'ch)
+    base:csAppend(cs, ch'ch)
   /while
 
-  return strtokNew(spring:csUnleash(cs), lex'lineno'lineno, begin, ch'pos)
+  return strtokNew(base:csUnleash(cs), lex'lineno'lineno, begin, ch'pos)
 /func
 
 
 func extractNextToken(lex ptr lex:Lexer) ptr lex:StringTok
 
-  if spring:streamEnded(lex'file)
+  if base:streamEnded(lex'file)
     return null
   /if
 
@@ -254,7 +255,7 @@ func extractNextToken(lex ptr lex:Lexer) ptr lex:StringTok
   /if
 
   if utils:charIsPar(lex'peek)
-    mut str = cast<ptr uint8>(spring:zalloc(2 * size(uint8)))
+    mut str = cast<ptr uint8>(base:zalloc(2 * size(uint8)))
     mut par = nextChar(lex)
     str[0] = par'ch
     return strtokNew(str, lex'lineno'lineno, par'pos, par'pos)
@@ -267,35 +268,35 @@ func extractNextToken(lex ptr lex:Lexer) ptr lex:StringTok
 
 
 func lexerClose(lex ptr lex:Lexer)
-  spring:streamClose(lex'file)
+  base:streamClose(lex'file)
   lex:linenoFree(lex'lineno)
-  spring:free(lex)
+  base:free(lex)
 /func
 
 
-func lexerError(lexer ptr lex:Lexer) ptr spring:Error
+func lexerError(lexer ptr lex:Lexer) ptr base:Error
   return lexer'error
 /func
 
 
-func lexerFromStream(stream ptr spring:Stream, name ptr uint8, err ptr ptr spring:Error) ptr lex:Lexer
-  mut ret = cast<ptr lex:Lexer>(spring:zalloc(size(lex:Lexer)))
+func lexerFromStream(stream ptr base:Stream, name ptr uint8, err ptr ptr base:Error) ptr lex:Lexer
+  mut ret = cast<ptr lex:Lexer>(base:zalloc(size(lex:Lexer)))
 
   ret'file = stream
-  ret'lineno = lex:linenoNew(spring:strclone(name),0,0)
+  ret'lineno = lex:linenoNew(base:strclone(name),0,0)
   ret'firstLineTok = true
   ret'firstLineLetter = true
 
-  spring:streamRead(stream, ptr ret'peek, 1)
-  if (val err = spring:streamError(stream)) != null
+  base:streamRead(stream, ptr ret'peek, 1)
+  if (val err = base:streamError(stream)) != null
     return null
   /if
 
   return ret
 /func
 
-func lexerNew(fname ptr uint8, err ptr ptr spring:Error) ptr lex:Lexer
-  mut file = spring:fileOpen(fname, err)
+func lexerNew(fname ptr uint8, err ptr ptr base:Error) ptr lex:Lexer
+  mut file = base:fileOpen(fname, err)
 
   if val err != null
     return null
@@ -305,11 +306,11 @@ func lexerNew(fname ptr uint8, err ptr ptr spring:Error) ptr lex:Lexer
 /func
 
 func lexerEof(lexer ptr lex:Lexer) bool
-  return spring:streamEnded(lexer'file)
+  return base:streamEnded(lexer'file)
 /func
 
 func tokenNew(type uint16, value uintptr, lineno ptr lex:Lineno, end uintptr) ptr lex:Token
-  mut ret = cast<ptr lex:Token>(spring:alloc(size(lex:Token)))
+  mut ret = cast<ptr lex:Token>(base:alloc(size(lex:Token)))
   ret'type = type
   ret'endPos = end
   ret'lineno = lineno
@@ -320,15 +321,15 @@ func tokenNew(type uint16, value uintptr, lineno ptr lex:Lineno, end uintptr) pt
 func tokenFree(tok ptr lex:Token)
   if tok != null
     if (tok'type == lex:ID or tok'type == lex:STRING) and tok'value != 0
-      spring:free(cast<data>(tok'value))
+      base:free(cast<data>(tok'value))
     /if
     lex:linenoFree(tok'lineno)
-    spring:free(tok)
+    base:free(tok)
   /if
 /func
 
 
-func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr spring:Error
+func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr base:Error
   mut toglue [4] ptr uint8
 
   toglue[0] = lex'lineno'filename
@@ -336,7 +337,7 @@ func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr spring:Error
   toglue[2] = msg
   toglue[3] = null
 
-  return spring:errorGlue(ptr toglue[0])
+  return base:errorGlue(ptr toglue[0])
 /func
 
 
@@ -392,74 +393,74 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 
   if val strToken == STX # is a constant string
     type = lex:STRING
-    value = cast<uintptr>(spring:strclone(strToken + 1))
+    value = cast<uintptr>(base:strclone(strToken + 1))
   /if
 
-  if spring:strequals(strToken, "alias")
+  if base:strequals(strToken, "alias")
     type = lex:ALIAS
   /if
 
-  if spring:strequals(strToken, "&")
+  if base:strequals(strToken, "&")
     type = lex:AMPER
   /if
 
-  if spring:strequals(strToken, "and")
+  if base:strequals(strToken, "and")
     type = lex:AND
   /if
 
-  if spring:strequals(strToken, "'")
+  if base:strequals(strToken, "'")
     type = lex:APOS
   /if
 
-  if spring:strequals(strToken, "=")
+  if base:strequals(strToken, "=")
     type = lex:ASSIGN
   /if
 
-  if spring:strequals(strToken, "break")
+  if base:strequals(strToken, "break")
     type = lex:BREAK
   /if
 
-  if spring:strequals(strToken, "cast")
+  if base:strequals(strToken, "cast")
     type = lex:CAST
   /if
 
-  if spring:strequals(strToken, "]")
+  if base:strequals(strToken, "]")
     type = lex:CBRAC
   /if
 
-  if spring:strequals(strToken, ":")
+  if base:strequals(strToken, ":")
     type = lex:COLON
   /if
 
-  if spring:strequals(strToken, ",")
+  if base:strequals(strToken, ",")
     type = lex:COMMA
   /if
 
-  if spring:strequals(strToken, "continue")
+  if base:strequals(strToken, "continue")
     type = lex:CONTINUE
   /if
 
-  if spring:strequals(strToken, ")")
+  if base:strequals(strToken, ")")
     type = lex:CPAR
   /if
 
-  if spring:strequals(strToken, "--")
+  if base:strequals(strToken, "--")
     type = lex:DEC
   /if
 
-  if spring:strequals(strToken, "decl")
+  if base:strequals(strToken, "decl")
     type = lex:DECL
   /if
 
-  if spring:strequals(strToken, "!=")
+  if base:strequals(strToken, "!=")
     type = lex:DIFFERENT
   /if
 
-  if spring:strequals(strToken, "mod")
+  if base:strequals(strToken, "mod")
     type = lex:MOD
   /if
 
-  if spring:strequals(strToken, "/")
+  if base:strequals(strToken, "/")
     if utils:charIsIdVal(lex'peek)
       lex'saved = extractNextToken(lex)
       if lexerError(lex) != null
@@ -468,25 +469,25 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 
       mut savedTok = lex'saved'str
 
-      if spring:strequals(savedTok, "entry")
+      if base:strequals(savedTok, "entry")
         type = lex:ENDENTRY
       /if
 
-      if spring:strequals(savedTok, "func")
+      if base:strequals(savedTok, "func")
         type = lex:ENDFUNC
       /if
 
-      if spring:strequals(savedTok, "if")
+      if base:strequals(savedTok, "if")
         type = lex:ENDIF
       /if
 
-      if spring:strequals(savedTok, "while")
+      if base:strequals(savedTok, "while")
         type = lex:ENDWHILE
       /if
 
       if type != 0
         endPos = lex'saved'end
-        spring:free(savedTok)
+        base:free(savedTok)
         strtokFree(lex'saved)
         lex'saved = null
       /if
@@ -496,156 +497,156 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     /if
   /if
 
-  if spring:strequals(strToken, "else")
+  if base:strequals(strToken, "else")
     type = lex:ELSE
   /if
 
-  if spring:strequals(strToken, "entry")
+  if base:strequals(strToken, "entry")
     type = lex:ENTRY
   /if
 
-  if spring:strequals(strToken, "==")
+  if base:strequals(strToken, "==")
     type = lex:EQUAL
   /if
 
-  if spring:strequals(strToken, "false")
+  if base:strequals(strToken, "false")
     type = lex:FALSE
   /if
 
-  if spring:strequals(strToken, "=>")
+  if base:strequals(strToken, "=>")
     type = lex:FATARROW
   /if
 
-  if spring:strequals(strToken, "func")
+  if base:strequals(strToken, "func")
     type = lex:FUNC
   /if
 
-  if spring:strequals(strToken, "if")
+  if base:strequals(strToken, "if")
     type = lex:IF
   /if
 
-  if spring:strequals(strToken, "import")
+  if base:strequals(strToken, "import")
     type = lex:IMPORT
   /if
 
-  if spring:strequals(strToken, "++")
+  if base:strequals(strToken, "++")
     type = lex:INC
   /if
 
-  if spring:strequals(strToken, ">=")
+  if base:strequals(strToken, ">=")
     type = lex:MAJEQ
   /if
 
-  if spring:strequals(strToken, ">")
+  if base:strequals(strToken, ">")
     type = lex:MAJOR
   /if
 
-  if spring:strequals(strToken, "<=")
+  if base:strequals(strToken, "<=")
     type = lex:MINEQ
   /if
 
-  if spring:strequals(strToken, "<")
+  if base:strequals(strToken, "<")
     type = lex:MINOR
   /if
 
-  if spring:strequals(strToken, "-")
+  if base:strequals(strToken, "-")
     type = lex:MINUS
   /if
 
-  if spring:strequals(strToken, "module")
+  if base:strequals(strToken, "module")
     type = lex:MODULE
   /if
 
-  if spring:strequals(strToken, "mut")
+  if base:strequals(strToken, "mut")
     type = lex:MUT
   /if
 
-  if spring:strequals(strToken, "!")
+  if base:strequals(strToken, "!")
     type = lex:NOT
   /if
 
-  if spring:strequals(strToken, "null")
+  if base:strequals(strToken, "null")
     type = lex:NULLPTR
   /if
 
-  if spring:strequals(strToken, "[")
+  if base:strequals(strToken, "[")
     type = lex:OBRAC
   /if
 
-  if spring:strequals(strToken, "(")
+  if base:strequals(strToken, "(")
     type = lex:OPAR
   /if
 
-  if spring:strequals(strToken, "or")
+  if base:strequals(strToken, "or")
     type = lex:OR
   /if
 
-  if spring:strequals(strToken, "|")
+  if base:strequals(strToken, "|")
     type = lex:PIPE
   /if
 
-  if spring:strequals(strToken, "+")
+  if base:strequals(strToken, "+")
     type = lex:PLUS
   /if
 
-  if spring:strequals(strToken, "**")
+  if base:strequals(strToken, "**")
     type = lex:POW
   /if
 
-  if spring:strequals(strToken, "ptr")
+  if base:strequals(strToken, "ptr")
     type = lex:PTR
   /if
 
-  if spring:strequals(strToken, "return")
+  if base:strequals(strToken, "return")
     type = lex:RETURN
   /if
 
-  if spring:strequals(strToken, "||")
+  if base:strequals(strToken, "||")
     type = lex:SEPARATOR
   /if
 
-  if spring:strequals(strToken, "size")
+  if base:strequals(strToken, "size")
     type = lex:SIZE
   /if
 
-  if spring:strequals(strToken, "struct")
+  if base:strequals(strToken, "struct")
     type = lex:STRUCT
   /if
 
-  if spring:strequals(strToken, "*")
+  if base:strequals(strToken, "*")
     type = lex:TIMES
   /if
 
-  if spring:strequals(strToken, "true")
+  if base:strequals(strToken, "true")
     type = lex:TRUE
   /if
 
-  if spring:strequals(strToken, "::")
+  if base:strequals(strToken, "::")
     type = lex:TWOCOLONS
   /if
 
-  if spring:strequals(strToken, "val")
+  if base:strequals(strToken, "val")
     type = lex:VAL
   /if
 
-  if spring:strequals(strToken, "while")
+  if base:strequals(strToken, "while")
     type = lex:WHILE
   /if
 
-  if spring:strequals(strToken, "^")
+  if base:strequals(strToken, "^")
     type = lex:XOR
   /if
 
   if utils:strIsUInt(strToken)
     type = lex:NUMBER
-    value = spring:strtonum(strToken)
+    value = base:strtonum(strToken)
   /if
 
   if type == 0 # if it's still unmodified, then it's an identifier
     type = lex:ID
     value = cast<uintptr>(strToken)
   else
-    spring:free(strToken)
+    base:free(strToken)
   /if
 
   strtokFree(stringToken)
@@ -909,20 +910,20 @@ func tokenStr(tok ptr lex:Token) ptr uint8
 
 
 func linenoClone(lineno ptr lex:Lineno) ptr lex:Lineno
-  return lex:linenoNew(spring:strclone(lineno'filename), lineno'lineno, lineno'pos)
+  return lex:linenoNew(base:strclone(lineno'filename), lineno'lineno, lineno'pos)
 /func
 
 
 func linenoFree(lineno ptr lex:Lineno)
   if lineno != null
-    spring:free(lineno'filename)
-    spring:free(lineno)
+    base:free(lineno'filename)
+    base:free(lineno)
   /if
 /func
 
 
 func linenoNew(filename ptr uint8, lineno, pos uintptr) ptr lex:Lineno
-  mut ret = cast<ptr lex:Lineno>(spring:alloc(size(lex:Lineno)))
+  mut ret = cast<ptr lex:Lineno>(base:alloc(size(lex:Lineno)))
 
   ret'filename = filename
   ret'lineno = lineno
@@ -932,7 +933,7 @@ func linenoNew(filename ptr uint8, lineno, pos uintptr) ptr lex:Lineno
 /func
 
 
-func issueFromLexError(err ptr spring:Error, lineno ptr lex:Lineno) ptr utils:Issue
+func issueFromLexError(err ptr base:Error, lineno ptr lex:Lineno) ptr utils:Issue
   if err == null
     return null
   /if
@@ -943,7 +944,7 @@ func issueFromLexError(err ptr spring:Error, lineno ptr lex:Lineno) ptr utils:Is
 
   mut ret = utils:issueNew(utils:ISSUE_ERR, where, lineno'filename, err'msg)
 
-  spring:errorFree(err)
+  base:errorFree(err)
 
   return ret
 /func
@@ -1013,10 +1014,10 @@ func errorMism(lineno ptr lex:Lineno, exp ptr uint8, got ptr uint8) ptr utils:Is
   toglue[3] = got
   toglue[4] = null
 
-  mut glued = spring:strglue(ptr toglue[0])
+  mut glued = base:strglue(ptr toglue[0])
   mut ret =  lex:error(lineno, glued)
 
-  spring:free(glued)
+  base:free(glued)
 
   return ret
 /func

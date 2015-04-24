@@ -7,8 +7,8 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+import base
 import lex
-import spring
 import utils
 
 
@@ -57,19 +57,19 @@ func charIsSym(ch uint8) bool
 
 func issueFree(issue ptr utils:Issue)
   if issue != null
-    spring:free(issue'filename)
-    spring:free(issue'message)
+    base:free(issue'filename)
+    base:free(issue'message)
   /if
 /func
 
 
 func issueNew(gravity uint8, where utils:Line, filename, message ptr uint8)  ptr utils:Issue
-  mut issue = cast<ptr utils:Issue>(spring:zalloc(size(utils:Issue)))
+  mut issue = cast<ptr utils:Issue>(base:zalloc(size(utils:Issue)))
 
   issue'gravity = gravity
   issue'where = where
-  issue'filename = spring:strclone(filename)
-  issue'message = spring:strclone(message)
+  issue'filename = base:strclone(filename)
+  issue'message = base:strclone(message)
 
   return issue
 /func
@@ -92,12 +92,12 @@ func issueGravityToStr(issueGravity uint8) ptr uint8
 /func
 
 
-func issueToError(issue ptr utils:Issue) ptr spring:Error
+func issueToError(issue ptr utils:Issue) ptr base:Error
   mut lineno [21] uint8
   mut pos [21] uint8
 
-  spring:numtostr(issue'where'line, ptr lineno[0], 21)
-  spring:numtostr(issue'where'pos, ptr pos[0], 21)
+  base:numtostr(issue'where'line, ptr lineno[0], 21)
+  base:numtostr(issue'where'pos, ptr pos[0], 21)
 
   mut toglue [10] ptr uint8
   toglue[0] = issue'filename
@@ -111,7 +111,7 @@ func issueToError(issue ptr utils:Issue) ptr spring:Error
   toglue[8] = issue'message
   toglue[9] = null
 
-  mut ret = spring:errorGlue(ptr toglue[0])
+  mut ret = base:errorGlue(ptr toglue[0])
 
   utils:issueFree(issue)
 
@@ -125,12 +125,12 @@ func issueWriteOut(issue ptr utils:Issue, outFn ptr func(err ptr uint8))
 
 
   mut buf [21] uint8
-  spring:numtostr(issue'where'line, ptr buf[0], 21)
+  base:numtostr(issue'where'line, ptr buf[0], 21)
 
   outFn(ptr buf[0])
   outFn(":")
 
-  spring:numtostr(issue'where'pos, ptr buf[0], 21)
+  base:numtostr(issue'where'pos, ptr buf[0], 21)
 
   outFn(ptr buf[0])
   outFn(": ")
@@ -184,16 +184,16 @@ func decRef(refc data)
 
 func tokenizerFree(tkz ptr utils:Tokenizer)
   if tkz != null
-    spring:free(tkz'str)
-    spring:free(tkz)
+    base:free(tkz'str)
+    base:free(tkz)
   /if
 /func
 
 
 func tokenizerNew(str ptr uint8, ch uint8) ptr utils:Tokenizer
-  mut tkz = cast<ptr utils:Tokenizer>(spring:zalloc(size(utils:Tokenizer)))
-  tkz'str = spring:strclone(str)
-  tkz'strlen = spring:strlen(str)
+  mut tkz = cast<ptr utils:Tokenizer>(base:zalloc(size(utils:Tokenizer)))
+  tkz'str = base:strclone(str)
+  tkz'strlen = base:strlen(str)
   tkz'splitChar = ch
 
   return tkz
@@ -212,9 +212,9 @@ func tokenizerNext(tkz ptr utils:Tokenizer) ptr uint8
   /while
 
   mut nextLen = tkz'begin - initialBegin
-  mut ret = cast<ptr uint8>(spring:zalloc(nextLen + 1)) # + 1 is for the null end. God I hate C
+  mut ret = cast<ptr uint8>(base:zalloc(nextLen + 1)) # + 1 is for the null end. God I hate C
 
-  spring:strncpy(ret, tkz'str + initialBegin, nextLen)
+  base:strncpy(ret, tkz'str + initialBegin, nextLen)
 
   if tkz'str[tkz'begin] == tkz'splitChar
     tkz'begin++
@@ -224,21 +224,21 @@ func tokenizerNext(tkz ptr utils:Tokenizer) ptr uint8
 /func
 
 
-func listContains(list ptr spring:List, value ptr uint8) bool
+func listContains(list ptr base:List, value ptr uint8) bool
   mut i uintptr = 0
-  mut len = spring:listLen(list)
+  mut len = base:listLen(list)
 
 
   mut clone = val list
 
-  # this fixes a weird bug in spring:List that I haven't found yet.
-  spring:listSeekZero(list)
+  # this fixes a weird bug in base:List that I haven't found yet.
+  base:listSeekZero(list)
 
   while i < len
-    mut ptrElem = spring:listGet(list, i)
+    mut ptrElem = base:listGet(list, i)
     mut elem = cast<ptr uint8>(val ptrElem)
 
-    if spring:strequals(elem, value)
+    if base:strequals(elem, value)
       return true
     /if
 
@@ -249,10 +249,10 @@ func listContains(list ptr spring:List, value ptr uint8) bool
 /func
 
 
-func listDumpHierarchyIntoCS(list ptr spring:List, cs ptr spring:Charstash)
-  mut len = spring:listLen(list)
+func listDumpHierarchyIntoCS(list ptr base:List, cs ptr base:Charstash)
+  mut len = base:listLen(list)
 
-  spring:csAppendStr(cs, "(")
+  base:csAppendStr(cs, "(")
 
   if len > 1
 
@@ -261,17 +261,17 @@ func listDumpHierarchyIntoCS(list ptr spring:List, cs ptr spring:Charstash)
     while i > 0
       i--
 
-      spring:csAppendStr(cs, cast<ptr uint8>(val spring:listGet(list, i)))
+      base:csAppendStr(cs, cast<ptr uint8>(val base:listGet(list, i)))
 
-      spring:csAppendStr(cs, " => ")
+      base:csAppendStr(cs, " => ")
     /while
 
-    spring:csAppendStr(cs, cast<ptr uint8>(val spring:listGet(list, len - 1)))
+    base:csAppendStr(cs, cast<ptr uint8>(val base:listGet(list, len - 1)))
   else
-    spring:csAppendStr(cs, "alias of itself")
+    base:csAppendStr(cs, "alias of itself")
   /if
 
-  spring:csAppendStr(cs, ")")
+  base:csAppendStr(cs, ")")
 /func
 
 

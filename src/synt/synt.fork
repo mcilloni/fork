@@ -8,15 +8,15 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 import ast
+import base
 import lex
-import spring
 import synt
 import utils
 
 
 func parserNew(filename ptr uint8) ptr synt:Parser
-  mut ret = cast<ptr synt:Parser>(spring:zalloc(size(synt:Parser)))
-  ret'filename = spring:strclone(filename)
+  mut ret = cast<ptr synt:Parser>(base:zalloc(size(synt:Parser)))
+  ret'filename = base:strclone(filename)
 
   return ret
 /func
@@ -24,8 +24,8 @@ func parserNew(filename ptr uint8) ptr synt:Parser
 
 func parserFree(parser ptr synt:Parser)
   if parser != null
-    spring:free(parser'filename)
-    spring:free(parser)
+    base:free(parser'filename)
+    base:free(parser)
   /if
 /func
 
@@ -101,7 +101,7 @@ func parserParseModuleName(ctx ptr synt:ParserContext) ptr ast:StringDef
         return null
       /if
 
-      mut moduleName = spring:strclone(cast<ptr uint8>(name'value))
+      mut moduleName = base:strclone(cast<ptr uint8>(name'value))
       mut end = lex:tokDiscardEnd(name)
 
       return ast:strdefNew(moduleName, begin, end)
@@ -122,7 +122,7 @@ func parserParseImport(ctx ptr synt:ParserContext) ptr ast:StringDef
         return null
       /if
 
-      mut importName = spring:strclone(cast<ptr uint8>(name'value))
+      mut importName = base:strclone(cast<ptr uint8>(name'value))
       mut end = lex:tokDiscardEnd(name)
 
       return ast:strdefNew(importName, begin, end)
@@ -134,12 +134,12 @@ func parserParseImport(ctx ptr synt:ParserContext) ptr ast:StringDef
 
 
 # parses the 'import' statements
-func parserParseImports(ctx ptr synt:ParserContext) ptr spring:List
-  mut ret = spring:listNew()
+func parserParseImports(ctx ptr synt:ParserContext) ptr base:List
+  mut ret = base:listNew()
   mut importLine ptr ast:StringDef
 
   while (importLine = parserParseImport(ctx)) != null
-    spring:listAppend(ret, importLine)
+    base:listAppend(ret, importLine)
   /while
 
   return ret
@@ -159,7 +159,7 @@ func parserParseIdType(ctx ptr synt:ParserContext, name ptr uint8) ptr ast:PType
     /if
 
     moduleName = name
-    name = spring:strclone(cast<ptr uint8>(tok'value))
+    name = base:strclone(cast<ptr uint8>(tok'value))
 
     lex:tokenFree(tok)
   /if
@@ -184,16 +184,16 @@ func parserDiscardNewLine(ctx ptr synt:ParserContext)
   /if
 /func
 
-func parserParseIdList(ctx ptr synt:ParserContext) ptr spring:List
+func parserParseIdList(ctx ptr synt:ParserContext) ptr base:List
   mut tok ptr lex:Token
-  mut ret = spring:listNew()
+  mut ret = base:listNew()
   while true
     tok = expect(ctx, lex:ID)
     if tok == null
       break
     /if
 
-    spring:listAppend(ret, spring:strclone(cast<ptr uint8>(tok'value)))
+    base:listAppend(ret, base:strclone(cast<ptr uint8>(tok'value)))
     lex:tokenFree(tok)
 
     if ctx'next == null
@@ -209,29 +209,29 @@ func parserParseIdList(ctx ptr synt:ParserContext) ptr spring:List
     synt:discardTok(ctx)
   /while
 
-  spring:listFreeAll(ret, ptr spring:free)
+  base:listFreeAll(ret, ptr base:free)
   return null
 /func
 
 
-func makeSymsAndInsertInList(syms ptr spring:List, ids ptr spring:List, type ptr ast:PType)
-  mut len = spring:listLen(ids)
+func makeSymsAndInsertInList(syms ptr base:List, ids ptr base:List, type ptr ast:PType)
+  mut len = base:listLen(ids)
   mut i uintptr = 0
   mut elem ptr uint8
   mut sym ptr ast:PSymbol
 
   while i < len
-    elem = cast<ptr uint8>(val spring:listGet(ids, i))
+    elem = cast<ptr uint8>(val base:listGet(ids, i))
     sym = ast:psymbolNew(elem, type)
-    spring:listAppend(syms, sym)
+    base:listAppend(syms, sym)
     i++
   /while
 
-  spring:listFree(ids)
+  base:listFree(ids)
 /func
 
 
-func parserParseStructBodyVars(ctx ptr synt:ParserContext, syms ptr spring:List) bool
+func parserParseStructBodyVars(ctx ptr synt:ParserContext, syms ptr base:List) bool
 
   # allow multiline struct/function header declarations
   parserDiscardNewLine(ctx)
@@ -252,7 +252,7 @@ func parserParseStructBodyVars(ctx ptr synt:ParserContext, syms ptr spring:List)
 
   mut type = parserParseType(ctx)
   if type == null
-    spring:listFreeAll(ids, ptr spring:free)
+    base:listFreeAll(ids, ptr base:free)
     return false
   /if
 
@@ -262,12 +262,12 @@ func parserParseStructBodyVars(ctx ptr synt:ParserContext, syms ptr spring:List)
 /func
 
 
-func parserParseStructBody(ctx ptr synt:ParserContext, end ptr utils:Line) ptr spring:List
+func parserParseStructBody(ctx ptr synt:ParserContext, end ptr utils:Line) ptr base:List
   if !expectDiscard(ctx, lex:OPAR)
     return null
   /if
 
-  mut strBody = spring:listNew()
+  mut strBody = base:listNew()
 
   # each iteration parses a sequence of 'a,b,c,d type' or a full list (if this is a function header)
   while parserParseStructBodyVars(ctx, strBody)
@@ -279,19 +279,19 @@ func parserParseStructBody(ctx ptr synt:ParserContext, end ptr utils:Line) ptr s
     /if
 
     if !synt:expectDiscard(ctx, lex:COMMA)
-      spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
+      base:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
       return null
     /if
   /while
 
   if theresError(ctx)
-    spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
+    base:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
     return null
   /if
 
   mut endTok = synt:expect(ctx, lex:CPAR)
   if endTok == null
-    spring:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
+    base:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
     return null
   /if
 
@@ -376,7 +376,7 @@ func parserParseType(ctx ptr synt:ParserContext) ptr ast:PType
   /if
 
   if tok'type == lex:ID
-    ret = parserParseIdType(ctx, spring:strclone(cast<ptr uint8>(tok'value)))
+    ret = parserParseIdType(ctx, base:strclone(cast<ptr uint8>(tok'value)))
     ret'end = lex:tokExtractEnd(tok)
   /if
 
@@ -423,13 +423,13 @@ func parserParseDeclaration(ctx ptr synt:ParserContext, declType uint16, externa
     return null
   /if
 
-  mut id = spring:strclone(cast<ptr uint8>(idTok'value))
+  mut id = base:strclone(cast<ptr uint8>(idTok'value))
 
   lex:tokenFree(idTok)
 
   if ctx'next == null
     ctx'prs'err = lex:errorMism(ctx'last, "a type or an '='", "EOF")
-    spring:free(id)
+    base:free(id)
     return null
   /if
 
@@ -439,7 +439,7 @@ func parserParseDeclaration(ctx ptr synt:ParserContext, declType uint16, externa
   if ctx'next'type != lex:ASSIGN
     type = parserParseType(ctx)
     if type == null
-      spring:free(id)
+      base:free(id)
       return null
     /if
 
@@ -787,7 +787,7 @@ func matchEntryEndTok(tok ptr lex:Token) bool
 func parserParseEntry(ctx ptr synt:ParserContext) ptr ast:PNode
   mut begin = lex:tokDiscardBegin(synt:nextTok(ctx))  #discard "entry"
 
-  mut entryNode = parserMakeFunction(ctx, ast:PENTRY, spring:strclone("_fork_entry"), makeEntryType(), lex:ENDENTRY, ptr matchEntryEndTok)
+  mut entryNode = parserMakeFunction(ctx, ast:PENTRY, base:strclone("_fork_entry"), makeEntryType(), lex:ENDENTRY, ptr matchEntryEndTok)
 
   if entryNode == null
     return null
@@ -805,7 +805,7 @@ func parserParseFuncName(ctx ptr synt:ParserContext) ptr uint8
     return null
   /if
 
-  mut name = spring:strclone(cast<ptr uint8>(nameTok'value))
+  mut name = base:strclone(cast<ptr uint8>(nameTok'value))
 
   lex:tokenFree(nameTok)
 
@@ -830,7 +830,7 @@ func parserParseFunc(ctx ptr synt:ParserContext) ptr ast:PNode
   mut type = parserParseFunctionType(ctx)
 
   if type == null
-    spring:free(name)
+    base:free(name)
     return null
   /if
 
@@ -926,8 +926,8 @@ func parserParseProgram(ctx ptr synt:ParserContext) ptr ast:PNode
 
 
 func parserParse(parser ptr synt:Parser) ptr ast:PNode
-  mut lexErr ptr spring:Error = null
-  mut firstLineno = lex:linenoNew(spring:strclone(parser'filename), 1, 1)
+  mut lexErr ptr base:Error = null
+  mut firstLineno = lex:linenoNew(base:strclone(parser'filename), 1, 1)
 
   mut lex = lex:lexerNew(parser'filename, ptr lexErr)
   if lexErr != null

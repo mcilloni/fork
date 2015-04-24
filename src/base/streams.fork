@@ -12,29 +12,29 @@
 #
 #  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
 
-import spring
+import base
 
 mut STREAM_IN uint8 = 1
 mut STREAM_OUT uint8 = 2
 mut STREAM_INOUT uint8 = 3
 
-func streamClose(stream ptr spring:Stream) bool
+func streamClose(stream ptr base:Stream) bool
   mut ret = stream'cookie'cfn(stream'cookie'priv8, ptr stream'error)
 
-  spring:free(stream)
+  base:free(stream)
   return ret
 /func
 
-func streamEnded(stream ptr spring:Stream) bool
+func streamEnded(stream ptr base:Stream) bool
   return stream'eof
 /func
 
-func streamError(stream ptr spring:Stream) ptr spring:Error
+func streamError(stream ptr base:Stream) ptr base:Error
   return stream'error
 /func
 
-func streamNew(priv8 data, rfn ptr spring:readfunc, wfn ptr spring:writefunc, cfn ptr spring:closefunc) ptr spring:Stream
-  mut ret = cast<ptr spring:Stream>(spring:zalloc(size(spring:Stream)))
+func streamNew(priv8 data, rfn ptr base:readfunc, wfn ptr base:writefunc, cfn ptr base:closefunc) ptr base:Stream
+  mut ret = cast<ptr base:Stream>(base:zalloc(size(base:Stream)))
   ret'cookie'priv8 = priv8
 
   if wfn != null
@@ -51,21 +51,21 @@ func streamNew(priv8 data, rfn ptr spring:readfunc, wfn ptr spring:writefunc, cf
   return ret
 /func
 
-func streamRead(stream ptr spring:Stream, string ptr uint8, len intptr) uintptr
+func streamRead(stream ptr base:Stream, string ptr uint8, len intptr) uintptr
   if (stream'inout & STREAM_IN) == 0
-    stream'error = spring:errorNew("Stream opened write-only")
+    stream'error = base:errorNew("Stream opened write-only")
     return 0
   /if
 
   return stream'cookie'rfn(stream'cookie'priv8, string, len, ptr stream'error, ptr stream'eof)
 /func
 
-func streamWrite(stream ptr spring:Stream, string ptr uint8) uintptr
+func streamWrite(stream ptr base:Stream, string ptr uint8) uintptr
   if (stream'inout & STREAM_OUT) == 0
-    stream'error = spring:errorNew("Stream opened read-only")
+    stream'error = base:errorNew("Stream opened read-only")
     return 0
   /if
 
-  return stream'cookie'wfn(stream'cookie'priv8, string, cast<intptr>(spring:strlen(string)), ptr stream'error)
+  return stream'cookie'wfn(stream'cookie'priv8, string, cast<intptr>(base:strlen(string)), ptr stream'error)
 /func
 

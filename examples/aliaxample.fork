@@ -10,49 +10,49 @@
 import ast
 import ctx
 import sema
-import spring
+import base
 import synt
 import utils
 
 entry
-  mut argv = spring:args()
+  mut argv = base:args()
   if argv'len != 1
-    spring:errln("Wrong number of arguments, required: 1")
-    spring:exit(1)
+    base:errln("Wrong number of arguments, required: 1")
+    base:exit(1)
   /if
 
   mut ctx = ctx:contextNew()
   mut ast ptr ast:PNode
   mut errors = sema:semaParse(ctx, argv'args[0], ptr ast)
 
-  mut errLen = spring:listLen(errors)
+  mut errLen = base:listLen(errors)
 
   if errLen > 0
     mut i uintptr = 0
 
     while i < errLen
-      mut issue = cast<ptr utils:Issue>(val spring:listGet(errors, i))
+      mut issue = cast<ptr utils:Issue>(val base:listGet(errors, i))
 
-      utils:issueWriteOut(issue, ptr spring:out)
+      utils:issueWriteOut(issue, ptr base:out)
 
       i++
     /while
     
-    spring:listFree(errors)
-    spring:exit(1)
+    base:listFree(errors)
+    base:exit(1)
   /if
 
-  spring:listFree(errors)
+  base:listFree(errors)
 
-  mut iter = spring:mapiterStart(cast<ptr ast:PRoot>(ast)'aliases'syms)
+  mut iter = base:mapiterStart(cast<ptr ast:PRoot>(ast)'aliases'syms)
 
-  mut pair ptr spring:Pair
+  mut pair ptr base:Pair
 
-  while (pair = spring:mapiterNext(iter)) != null
+  while (pair = base:mapiterNext(iter)) != null
     ast:declDump("alias", cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value))
   /while
 
-  spring:mapiterFree(iter)
+  base:mapiterFree(iter)
 
   ctx:contextFree(ctx)
 

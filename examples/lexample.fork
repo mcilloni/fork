@@ -1,19 +1,19 @@
 import lex
-import spring
+import base
 
 entry
-  mut argv = spring:args()
+  mut argv = base:args()
   if argv'len != 1
-    spring:errln("Wrong number of arguments, required: 1")
-    spring:exit(1)
+    base:errln("Wrong number of arguments, required: 1")
+    base:exit(1)
   /if
 
-  mut err ptr spring:Error
+  mut err ptr base:Error
 
   mut lex = lex:lexerNew(val argv'args, ptr err)
   if err != null
-    spring:errln(spring:errorMsg(err))
-    spring:exit(1)
+    base:errln(base:errorMsg(err))
+    base:exit(1)
   /if
 
   mut tok ptr lex:Token
@@ -21,22 +21,22 @@ entry
   while (tok = lex:lexerNext(lex)) != null
 
     if (err = lex:lexerError(lex)) != null
-      spring:errln(spring:errorMsg(err))
-      spring:exit(2)
+      base:errln(base:errorMsg(err))
+      base:exit(2)
     /if
 
-    spring:out(lex:tokenStr(tok))
+    base:out(lex:tokenStr(tok))
     if tok'type == lex:ID or tok'type == lex:STRING
-      spring:out(": ")
-      spring:out(cast<ptr uint8>(tok'value))
+      base:out(": ")
+      base:out(cast<ptr uint8>(tok'value))
     else
       if tok'type == lex:NUMBER
-        spring:out(": ")
-        spring:outint(tok'value)
+        base:out(": ")
+        base:outint(tok'value)
       /if
     /if
     
-    spring:outch(10)
+    base:outch(10)
 
     lex:tokenFree(tok)
   /while

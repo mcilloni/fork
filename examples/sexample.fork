@@ -9,22 +9,22 @@
 
 import ast
 import synt
-import spring
+import base
 import utils
 
 entry
-  mut argv = spring:args()
+  mut argv = base:args()
   if argv'len != 1
-    spring:errln("Wrong number of arguments, required: 1")
-    spring:exit(1)
+    base:errln("Wrong number of arguments, required: 1")
+    base:exit(1)
   /if
 
   mut prs = synt:parserNew(argv'args[0])
   mut root = synt:parserParse(prs)
 
   if prs'err != null
-    utils:issueWriteOut(prs'err, ptr spring:err)
-    spring:exit(1)
+    utils:issueWriteOut(prs'err, ptr base:err)
+    base:exit(1)
   /if
 
   ast:pnodeDump(root)

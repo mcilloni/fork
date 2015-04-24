@@ -12,17 +12,17 @@
 #
 #  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
 
-import spring
+import base
 
-func pairNew(first,second data) ptr spring:Pair
-  mut pair = cast<ptr spring:Pair>(spring:zalloc(size(spring:Pair)))
+func pairNew(first,second data) ptr base:Pair
+  mut pair = cast<ptr base:Pair>(base:zalloc(size(base:Pair)))
   pair'key = first
   pair'value = second
 
   return pair
 /func
 
-func pairFree(pair ptr spring:Pair)
-  spring:free(pair)
+func pairFree(pair ptr base:Pair)
+  base:free(pair)
 /func
 

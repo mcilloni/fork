@@ -14,7 +14,7 @@ all:
 	@printf "FORKC\t\t%s\n" rt.fork
 	@ FORDPATHS="$(shell pwd)/ford/" $(FORKC_O) -o ../build/rt.o rt.fork
 
-	$(MAKE) -C spring
+	$(MAKE) -C base
 	$(MAKE) -C utils
 	$(MAKE) -C lex
 	$(MAKE) -C ast
@@ -25,7 +25,7 @@ all:
 	$(CCLD) -shared -o ../build/$(SONAME) ../build/*.a
 
 clean:
-	$(MAKE) -C spring clean
+	$(MAKE) -C base clean
 	$(MAKE) -C utils clean
 	$(MAKE) -C lex clean
 	$(MAKE) -C ast clean

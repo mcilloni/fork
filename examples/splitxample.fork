@@ -7,7 +7,7 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
-import spring
+import base
 import utils
 
 entry
@@ -17,8 +17,8 @@ entry
   mut nxt ptr uint8
 
   while (nxt = utils:tokenizerNext(tkz)) != null
-    spring:outln(nxt)
-    spring:free(nxt)
+    base:outln(nxt)
+    base:free(nxt)
   /while
 
   utils:tokenizerFree(tkz)

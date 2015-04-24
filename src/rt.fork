@@ -12,7 +12,7 @@
 #
 #  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
 
-import spring
+import base
 
 decl __fork_entry func()
 
@@ -42,7 +42,7 @@ func __forkpow(base,exp uintptr) uintptr
 
 /func
 
-mut __forkprogArgs spring:Args
+mut __forkprogArgs base:Args
 
 func main(argc intptr, argv ptr ptr uint8) int8
   __forkprogArgs'len = cast<uintptr>(argc - 1)

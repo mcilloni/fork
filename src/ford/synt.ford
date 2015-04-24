@@ -11,7 +11,7 @@ module synt
 
 import ast
 import lex
-import spring
+import base
 import utils
 
 alias Parser struct(

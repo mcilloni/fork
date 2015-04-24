@@ -8,7 +8,7 @@ Checks lex functionality.
   an identifier: synt
   a newline
   import
-  an identifier: spring
+  an identifier: base
   a newline
   import
   an identifier: utils
@@ -18,7 +18,7 @@ Checks lex functionality.
   mut
   an identifier: argv
   =
-  an identifier: spring
+  an identifier: base
   :
   an identifier: args
   (
@@ -31,14 +31,14 @@ Checks lex functionality.
   !=
   a number: 1
   a newline
-  an identifier: spring
+  an identifier: base
   :
   an identifier: errln
   (
   a string: Wrong number of arguments, required: 1
   )
   a newline
-  an identifier: spring
+  an identifier: base
   :
   an identifier: exit
   (
@@ -88,12 +88,12 @@ Checks lex functionality.
   an identifier: err
   ,
   ptr
-  an identifier: spring
+  an identifier: base
   :
   an identifier: err
   )
   a newline
-  an identifier: spring
+  an identifier: base
   :
   an identifier: exit
   (

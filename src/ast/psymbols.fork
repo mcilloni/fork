@@ -8,21 +8,21 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 import ast
-import spring
+import base
 import utils
 
 
 func psymbolFree(sym ptr ast:PSymbol)
   if sym != null
-    spring:free(sym'name)
+    base:free(sym'name)
     utils:decRef(sym'type)
-    spring:free(sym)
+    base:free(sym)
   /if
 /func
 
 
 func psymbolNew(name ptr uint8, type ptr ast:PType) ptr ast:PSymbol
-  mut sym = cast<ptr ast:PSymbol>(spring:zalloc(size(ast:PSymbol)))
+  mut sym = cast<ptr ast:PSymbol>(base:zalloc(size(ast:PSymbol)))
 
   sym'refc'freeFunc = ptr psymbolFree
 
@@ -41,20 +41,20 @@ func ptypeFree(type ptr ast:PType)
     /if
 
     if type'moduleName != null
-      spring:free(type'moduleName)
+      base:free(type'moduleName)
     /if
 
     if type'name != null
-      spring:free(type'name)
+      base:free(type'name)
     /if
 
-    spring:free(type)
+    base:free(type)
   /if
 /func
 
 
 func ptypeNew(name, moduleName ptr uint8, descr ptr ast:PTypeDescr) ptr ast:PType
-  mut type = cast<ptr ast:PType>(spring:zalloc(size(ast:PType)))
+  mut type = cast<ptr ast:PType>(base:zalloc(size(ast:PType)))
 
   type'refc'freeFunc = ptr ptypeFree
 
@@ -74,14 +74,14 @@ func ptypeDescrFree(descr ptr ast:PTypeDescr)
     /if
 
     if descr'arguments != null
-      spring:listFreeAll(descr'arguments, ptr psymbolFree)
+      base:listFreeAll(descr'arguments, ptr psymbolFree)
     /if
   /if
 /func
 
 
-func ptypeDescrNew(type uint16, retType ptr ast:PType, params ptr spring:List) ptr ast:PTypeDescr
-  mut descr = cast<ptr ast:PTypeDescr>(spring:zalloc(size(ast:PTypeDescr)))
+func ptypeDescrNew(type uint16, retType ptr ast:PType, params ptr base:List) ptr ast:PTypeDescr
+  mut descr = cast<ptr ast:PTypeDescr>(base:zalloc(size(ast:PTypeDescr)))
 
   descr'refc'freeFunc = ptr ptypeDescrFree
 

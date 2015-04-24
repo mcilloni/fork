@@ -12,17 +12,17 @@
 #
 #  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
 
-import spring
+import base
 
-func mapiterStart(map ptr spring:Map) ptr spring:MapIter
-  mut iter = cast<ptr spring:MapIter>(spring:alloc(size(spring:MapIter)))
+func mapiterStart(map ptr base:Map) ptr base:MapIter
+  mut iter = cast<ptr base:MapIter>(base:alloc(size(base:MapIter)))
   iter'map = map
   iter'lastKey = null
   iter'begin = true
   return iter
 /func
 
-func iterIntNext(node ptr spring:Mnode, lastKey data) ptr spring:Pair
+func iterIntNext(node ptr base:Mnode, lastKey data) ptr base:Pair
 
   if node == null
     return null
@@ -37,7 +37,7 @@ func iterIntNext(node ptr spring:Mnode, lastKey data) ptr spring:Pair
       return pair
     /if
 
-    decl nodeMkpair func(node ptr spring:Mnode) ptr spring:Pair
+    decl nodeMkpair func(node ptr base:Mnode) ptr base:Pair
     return nodeMkpair(node)
   /if
 
@@ -45,7 +45,7 @@ func iterIntNext(node ptr spring:Mnode, lastKey data) ptr spring:Pair
 
 /func
 
-func mapiterNext(iter ptr spring:MapIter) ptr spring:Pair
+func mapiterNext(iter ptr base:MapIter) ptr base:Pair
   mut root = iter'map'root
 
   if root == null
@@ -54,7 +54,7 @@ func mapiterNext(iter ptr spring:MapIter) ptr spring:Pair
 
   if iter'begin
     iter'begin = false
-    decl nodeMinpair func(node ptr spring:Mnode) ptr spring:Pair
+    decl nodeMinpair func(node ptr base:Mnode) ptr base:Pair
     mut pair = nodeMinpair(root)
     iter'lastKey = pair'key
     return pair
@@ -70,6 +70,6 @@ func mapiterNext(iter ptr spring:MapIter) ptr spring:Pair
 
 /func
 
-func mapiterFree(iter ptr spring:MapIter)
-  spring:free(iter)
+func mapiterFree(iter ptr base:MapIter)
+  base:free(iter)
 /func

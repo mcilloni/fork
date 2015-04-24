@@ -8,14 +8,14 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 import ast
+import base
 import ctx
 import sema
-import spring
 import synt
 import utils
 
 
-func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr spring:List
+func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr base:List
   if root'type != ast:PROOT
     return null
   /if
@@ -28,7 +28,7 @@ func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr spring:List
 
   ctx:contextSetCurrentFile(ctx, proot'fileName)
 
-  if spring:listLen(errors) != 0
+  if base:listLen(errors) != 0
     return errors
   /if
 
@@ -42,7 +42,7 @@ func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr spring:List
 /func
 
 
-func semaParse(ctx ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr spring:List
+func semaParse(ctx ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr base:List
   mut parser = synt:parserNew(fileName)
 
   val newRoot = synt:parserParse(parser)
@@ -52,8 +52,8 @@ func semaParse(ctx ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNod
   synt:parserFree(parser)
 
   if val newRoot == null
-    mut list = spring:listNew()
-    spring:listAppend(list, error)
+    mut list = base:listNew()
+    base:listAppend(list, error)
 
     return list
   /if

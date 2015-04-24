@@ -10,7 +10,7 @@
 import ast
 import ctx
 import sema
-import spring
+import base
 import utils
 
 
@@ -92,7 +92,7 @@ func rootDeclsRegister(rsv sema:Resolver, name ptr uint8, type ptr ast:Type, dec
 func registerDeclReal(rsv sema:Resolver,
                       pdecl ptr ast:PDecl,
                       recursive bool,
-                      recList,errors ptr spring:List) ptr ast:Type
+                      recList,errors ptr base:List) ptr ast:Type
 
   mut name = pdecl'sym'name
   mut ptype = pdecl'sym'type
@@ -145,10 +145,10 @@ func registerDeclReal(rsv sema:Resolver,
 
     else
 
-      mut hasLeaves = spring:listLen(pdecl'node'leaves) > 0
+      mut hasLeaves = base:listLen(pdecl'node'leaves) > 0
 
       if !hasLeaves and !typeResolved
-        spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, "declaration with neither a type nor an initializer"))
+        base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, "declaration with neither a type nor an initializer"))
 
         return null
       /if
@@ -157,12 +157,12 @@ func registerDeclReal(rsv sema:Resolver,
         if isDecl
           # because we're sure that ptype was null and there's a leaf, then
           # we have a malformed 'decl'
-          spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, "decls can't have initializers"))
+          base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, "decls can't have initializers"))
 
           return null
         /if
 
-        mut pexpr = cast<ptr ast:PExpr>(val spring:listGet(pdecl'node'leaves, 0))
+        mut pexpr = cast<ptr ast:PExpr>(val base:listGet(pdecl'node'leaves, 0))
 
         # if we're are validating the declaration directly and not because of
         # recursive resolution, or if we still have no type, resolve the
@@ -175,18 +175,18 @@ func registerDeclReal(rsv sema:Resolver,
 
           if typeResolved
             if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pdecl), realType, valType)
-              mut cs = spring:csNew(20)
-              spring:csAppendStr(cs, "cannot assign an expression of type '")
+              mut cs = base:csNew(20)
+              base:csAppendStr(cs, "cannot assign an expression of type '")
               ast:typeSummarize(cs, valType)
-              spring:csAppendStr(cs, "' to a variable declared as '")
+              base:csAppendStr(cs, "' to a variable declared as '")
               ast:typeSummarize(cs, realType)
-              spring:csAppendStr(cs, "'")
+              base:csAppendStr(cs, "'")
 
-              mut msg = spring:csUnleash(cs)
+              mut msg = base:csUnleash(cs)
 
-              spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
+              base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
 
-              spring:free(msg)
+              base:free(msg)
 
               return null
             /if
@@ -216,13 +216,13 @@ func registerDeclReal(rsv sema:Resolver,
 
 func registerTopDeclReal(rsv sema:Resolver,
                          pdecl ptr ast:PDecl,
-                         recList,errors ptr spring:List) ptr ast:Type
+                         recList,errors ptr base:List) ptr ast:Type
 
-  spring:listPush(recList, cast<ptr uint8>(pdecl'sym'name))
+  base:listPush(recList, cast<ptr uint8>(pdecl'sym'name))
 
   mut ret = registerDeclReal(rsv, pdecl, false, recList, errors)
 
-  spring:listPop(recList)
+  base:listPop(recList)
 
   return ret
 /func
@@ -230,14 +230,14 @@ func registerTopDeclReal(rsv sema:Resolver,
 
 func registerTopDecl(rsv sema:Resolver,
                      pdecl ptr ast:PDecl,
-                     errors ptr spring:List) ptr ast:Type
+                     errors ptr base:List) ptr ast:Type
 
-  mut recList spring:List
-  spring:listInit(ptr recList)
+  mut recList base:List
+  base:listInit(ptr recList)
 
   mut ret = registerTopDeclReal(rsv, pdecl, ptr recList, errors)
 
-  spring:listDeinit(ptr recList)
+  base:listDeinit(ptr recList)
 
   return ret
 /func
@@ -245,7 +245,7 @@ func registerTopDecl(rsv sema:Resolver,
 func resolveDeclType(rsv sema:Resolver,
                      name ptr uint8,
                      node ptr ast:PNode,
-                     recList,errors ptr spring:List) ptr ast:Type
+                     recList,errors ptr base:List) ptr ast:Type
 
   mut dtype = sema:findSym(node, name)
 
@@ -264,10 +264,10 @@ func resolveDeclType(rsv sema:Resolver,
 
   # The declaration is absent
 
-  mut msg = spring:strappend(name, " is not defined in current scope")
-  spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, node'begin, rsv'root'fileName, msg))
+  mut msg = base:strappend(name, " is not defined in current scope")
+  base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, node'begin, rsv'root'fileName, msg))
 
-  spring:free(msg)
+  base:free(msg)
 
   return null
 /func
@@ -278,22 +278,22 @@ func registerDecl(rsv sema:Resolver,
                   name ptr uint8,
                   type ptr ast:Type,
                   declType uint16,
-                  errors ptr spring:List) ptr ast:Type
+                  errors ptr base:List) ptr ast:Type
 
   mut declNode = cast<ptr ast:PNode>(pdecl)
 
   mut stab = sema:findStab(declNode)
   if ast:stabTypeof(stab, name) != null
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "symbol '")
-    spring:csAppendStr(cs, name)
-    spring:csAppendStr(cs, "' is already defined")
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, "symbol '")
+    base:csAppendStr(cs, name)
+    base:csAppendStr(cs, "' is already defined")
 
-    mut msg = spring:csUnleash(cs)
+    mut msg = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, declNode'begin, rsv'root'fileName, msg))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, declNode'begin, rsv'root'fileName, msg))
 
-    spring:free(msg)
+    base:free(msg)
 
     return null
   /if

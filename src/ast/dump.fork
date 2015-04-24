@@ -9,14 +9,14 @@
 
 import ast
 import lex
-import spring
+import base
 import utils
 
 func printPadding(depth uintptr)
   mut i uintptr = 0
 
   while i < depth
-    spring:out("    ")
+    base:out("    ")
     i++
   /while
 
@@ -24,21 +24,21 @@ func printPadding(depth uintptr)
 
 
 func lineDump(line utils:Line)
-  spring:outint(line'line)
-  spring:out(":")
-  spring:outint(line'pos)
+  base:outint(line'line)
+  base:out(":")
+  base:outint(line'pos)
 /func
 
 func linesDump(begin,end utils:Line)
-  spring:out("(at ")
+  base:out("(at ")
   lineDump(begin)
-  spring:out("-")
+  base:out("-")
   if begin'line == end'line
-    spring:outint(end'pos)
+    base:outint(end'pos)
   else
     lineDump(end)
   /if
-  spring:out(")")
+  base:out(")")
 /func
 
 
@@ -47,62 +47,62 @@ func psymbolDump(psym ptr ast:PSymbol)
     return
   /if
 
-  spring:out(psym'name)
-  spring:out(" :: ")
+  base:out(psym'name)
+  base:out(" :: ")
   if psym'type != null
     ast:ptypeDump(psym'type)
   else
-    spring:out("<inferred>")
+    base:out("<inferred>")
   /if
 /func
 
 
-func ptypeDescrDumpStructuredDataArgs(args ptr spring:List)
+func ptypeDescrDumpStructuredDataArgs(args ptr base:List)
   if args == null
-    spring:out("<null>")
+    base:out("<null>")
     return
   /if
 
-  mut len = spring:listLen(args)
+  mut len = base:listLen(args)
   mut first = true
   mut i uintptr = 0
 
-  spring:out("(")
+  base:out("(")
 
   while i < len
     if first
       first = false
     else
-      spring:out(", ")
+      base:out(", ")
     /if
 
-    mut sym = cast<ptr ast:PSymbol>(val spring:listGet(args, i))
+    mut sym = cast<ptr ast:PSymbol>(val base:listGet(args, i))
     psymbolDump(sym)
 
     i++
   /while
 
-  spring:out(")")
+  base:out(")")
 /func
 
 
 func ptypeDescrDump(ptypeDescr ptr ast:PTypeDescr)
   if ptypeDescr == null
-    spring:out("<null>")
+    base:out("<null>")
     return
   /if
 
   mut ptype = ptypeDescr'type
 
   if ptype == ast:PTYPE_FUNC
-    spring:out("func")
+    base:out("func")
 
     if ptypeDescr'arguments != null
 
       ptypeDescrDumpStructuredDataArgs(ptypeDescr'arguments)
-      spring:outch(32)
+      base:outch(32)
     else
-      spring:out("()")
+      base:out("()")
     /if
 
     if ptypeDescr'retType != null
@@ -115,19 +115,19 @@ func ptypeDescrDump(ptypeDescr ptr ast:PTypeDescr)
   /if
 
   if ptype == ast:PTYPE_LOC
-    spring:out("[")
-    spring:outint(ptypeDescr'length)
-    spring:out("] ")
+    base:out("[")
+    base:outint(ptypeDescr'length)
+    base:out("] ")
     ast:ptypeDump(ptypeDescr'retType)
   /if
 
   if ptype == ast:PTYPE_PTR
-    spring:out("ptr ")
+    base:out("ptr ")
     ast:ptypeDump(ptypeDescr'retType)
   /if
 
   if ptype == ast:PTYPE_STRUCT
-    spring:out("struct ")
+    base:out("struct ")
     ptypeDescrDumpStructuredDataArgs(ptypeDescr'arguments)
   /if
 /func
@@ -135,16 +135,16 @@ func ptypeDescrDump(ptypeDescr ptr ast:PTypeDescr)
 
 func ptypeDump(ptype ptr ast:PType)
   if ptype == null
-    spring:out("<null>")
+    base:out("<null>")
     return
   /if
 
   if ptype'name != null
     if ptype'moduleName != null
-      spring:out(ptype'moduleName)
-      spring:outch(58)
+      base:out(ptype'moduleName)
+      base:outch(58)
     /if
-    spring:out(ptype'name)
+    base:out(ptype'name)
   /if
 
   if ptype'descr != null
@@ -218,30 +218,30 @@ func pnodeTypeToString(ptype uint16) ptr uint8
 
 func prootDumpInfo(proot ptr ast:PRoot, depth uintptr)
   if proot'moduleName != null
-    spring:out(" [module: ")
-    spring:out(proot'moduleName'name)
-    spring:outch(32)
+    base:out(" [module: ")
+    base:out(proot'moduleName'name)
+    base:outch(32)
     linesDump(proot'moduleName'begin, proot'moduleName'end)
-    spring:out("]")
+    base:out("]")
   /if
 
-  spring:outch(10)
+  base:outch(10)
 
-  mut len = spring:listLen(proot'imports)
+  mut len = base:listLen(proot'imports)
   if len > 0
     printPadding(depth)
-    spring:outln("Imports: ")
+    base:outln("Imports: ")
 
     mut i uintptr = 0
 
     while i < len
       printPadding(depth + 1)
-      mut imp = cast<ptr ast:StringDef>(val spring:listGet(proot'imports, i))
+      mut imp = cast<ptr ast:StringDef>(val base:listGet(proot'imports, i))
 
-      spring:out(imp'name)
-      spring:outch(32)
+      base:out(imp'name)
+      base:outch(32)
       linesDump(imp'begin, imp'end)
-      spring:outch(10)
+      base:outch(10)
 
       i++
     /while
@@ -250,7 +250,7 @@ func prootDumpInfo(proot ptr ast:PRoot, depth uintptr)
 
 
 func pdeclDumpInfo(pdecl ptr ast:PDecl, depth uintptr)
-  spring:outch(10)
+  base:outch(10)
   printPadding(depth + 1)
 
   psymbolDump(pdecl'sym)
@@ -261,31 +261,31 @@ func pexprDumpInfo(pexpr ptr ast:PExpr, depth uintptr)
   mut tok lex:Token
   tok'type = pexpr'opType
 
-  spring:out(": ")
+  base:out(": ")
 
   if pexpr'opType == lex:ID
-    spring:out("an id - \"")
-    spring:out(cast<ptr uint8>(pexpr'node'value))
-    spring:out("\"")
+    base:out("an id - \"")
+    base:out(cast<ptr uint8>(pexpr'node'value))
+    base:out("\"")
   else
     if pexpr'opType == lex:NUMBER
-      spring:outint(pexpr'node'value)
+      base:outint(pexpr'node'value)
     else
       if pexpr'opType == lex:STRING
-        spring:out("a string - \"")
-        spring:out(cast<ptr uint8>(pexpr'node'value))
-        spring:out("\"")
+        base:out("a string - \"")
+        base:out(cast<ptr uint8>(pexpr'node'value))
+        base:out("\"")
       else
         if pexpr'opType == lex:OPAR
-          spring:out("a function call")
+          base:out("a function call")
         else
           if pexpr'opType == lex:OBRAC
-            spring:out("an array access")
+            base:out("an array access")
           else
-            spring:out(lex:tokenStr(ptr tok))
+            base:out(lex:tokenStr(ptr tok))
 
             if pexpr'opType == lex:CAST or pexpr'opType == lex:SIZE
-              spring:out(" to ")
+              base:out(" to ")
 
               ptypeDump(cast<ptr ast:PType>(pexpr'node'value))
             /if
@@ -301,10 +301,10 @@ func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
 
   printPadding(depth)
 
-  spring:out(pnodeTypeToString(pnode'type))
-  spring:out(":")
+  base:out(pnodeTypeToString(pnode'type))
+  base:out(":")
 
-  spring:outch(32)
+  base:outch(32)
   linesDump(pnode'begin, pnode'end)
 
   if ast:isPRoot(pnode)
@@ -319,13 +319,13 @@ func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
     pexprDumpInfo(cast<ptr ast:PExpr>(pnode), depth)
   /if
 
-  spring:outch(10)
+  base:outch(10)
 
-  mut len = spring:listLen(pnode'leaves)
+  mut len = base:listLen(pnode'leaves)
   mut i uintptr = 0
 
   while i < len
-    mut child = cast<ptr ast:PNode>(val spring:listGet(pnode'leaves, i))
+    mut child = cast<ptr ast:PNode>(val base:listGet(pnode'leaves, i))
 
     pnodeDumpRec(child, depth + 1)
 
@@ -340,20 +340,20 @@ func pnodeDump(pnode ptr ast:PNode)
 /func
 
 
-func symbolDump(cs ptr spring:Charstash, sym ptr ast:Symbol)
+func symbolDump(cs ptr base:Charstash, sym ptr ast:Symbol)
   if sym == null
     return
   /if
 
-  spring:csAppendStr(cs, sym'name)
-  spring:csAppend(cs, 32)
+  base:csAppendStr(cs, sym'name)
+  base:csAppend(cs, 32)
   ast:typeDump(cs, sym'type)
 /func
 
 
-func symlistDump(cs ptr spring:Charstash, symlist ptr utils:KVList)
+func symlistDump(cs ptr base:Charstash, symlist ptr utils:KVList)
 
-  spring:csAppendStr(cs, "(")
+  base:csAppendStr(cs, "(")
 
   if symlist != null
     mut len = utils:kvLen(symlist)
@@ -369,33 +369,33 @@ func symlistDump(cs ptr spring:Charstash, symlist ptr utils:KVList)
       ast:symbolDump(cs, ptr sym)
 
       if i + 1 < len
-        spring:csAppendStr(cs, ", ")
+        base:csAppendStr(cs, ", ")
       /if
 
       i++
     /while
   /if
 
-  spring:csAppendStr(cs, ")")
+  base:csAppendStr(cs, ")")
 /func
 
 
-func typeDumpName(cs ptr spring:Charstash, type ptr ast:Type)
+func typeDumpName(cs ptr base:Charstash, type ptr ast:Type)
   if type'name != null
-    spring:csAppendStr(cs, "{ ")
+    base:csAppendStr(cs, "{ ")
 
     if type'moduleName != null
-      spring:csAppendStr(cs, type'moduleName)
-      spring:csAppendStr(cs, ":")
+      base:csAppendStr(cs, type'moduleName)
+      base:csAppendStr(cs, ":")
     /if
-    spring:csAppendStr(cs, type'name)
+    base:csAppendStr(cs, type'name)
 
-    spring:csAppendStr(cs, " } ")
+    base:csAppendStr(cs, " } ")
   /if
 /func
 
 
-func typeDump(cs ptr spring:Charstash, type ptr ast:Type)
+func typeDump(cs ptr base:Charstash, type ptr ast:Type)
 
   if type == null
     return
@@ -404,60 +404,60 @@ func typeDump(cs ptr spring:Charstash, type ptr ast:Type)
   if type'type == ast:TYPE_FUNC
     typeDumpName(cs, type)
 
-    spring:csAppendStr(cs, "func")
+    base:csAppendStr(cs, "func")
 
     symlistDump(cs, type'members)
 
     if type'retType != null
-      spring:csAppend(cs, 32)
+      base:csAppend(cs, 32)
 
       typeDump(cs, type'retType)
     /if
   else
     if type'type == ast:TYPE_PTR
-      spring:csAppendStr(cs, "ptr ")
+      base:csAppendStr(cs, "ptr ")
 
       typeDump(cs, type'retType)
     else
       if type'type == ast:TYPE_STRUCT
         typeDumpName(cs, type)
 
-        spring:csAppendStr(cs, "struct")
+        base:csAppendStr(cs, "struct")
 
         symlistDump(cs, type'members)
       else
         if type'type == ast:TYPE_LOC
-          spring:csAppendStr(cs, "[")
-          spring:csAppendInt(cs, type'itemCount)
-          spring:csAppendStr(cs, "] ")
+          base:csAppendStr(cs, "[")
+          base:csAppendInt(cs, type'itemCount)
+          base:csAppendStr(cs, "] ")
 
           typeDump(cs, type'retType)
         else
           if type'type == ast:TYPE_BOOL
-            spring:csAppendStr(cs, "bool")
+            base:csAppendStr(cs, "bool")
           else
             if type'type == ast:TYPE_INT
               if !type'isSigned
-                spring:csAppendStr(cs, "u")
+                base:csAppendStr(cs, "u")
               /if
 
-              spring:csAppendStr(cs, "int")
-              spring:csAppendInt(cs, type'typeSize * 8)
+              base:csAppendStr(cs, "int")
+              base:csAppendInt(cs, type'typeSize * 8)
 
             else
               if type'type == ast:TYPE_DATA
-                spring:csAppendStr(cs, "data")
+                base:csAppendStr(cs, "data")
               else
                 if type'type == ast:TYPE_RECALIAS
-                  spring:csAppendStr(cs, "<< alias to ")
-                  spring:csAppendStr(cs, type'name)
-                  spring:csAppendStr(cs, " >>")
+                  base:csAppendStr(cs, "<< alias to ")
+                  base:csAppendStr(cs, type'name)
+                  base:csAppendStr(cs, " >>")
                 else
                   if type'type == ast:TYPE_NULL
-                    spring:csAppendStr(cs, "null")
+                    base:csAppendStr(cs, "null")
                   else
                     if type'type == ast:TYPE_EMPTY
-                      spring:csAppendStr(cs, "<<empty type>>")
+                      base:csAppendStr(cs, "<<empty type>>")
                     /if
                   /if
                 /if
@@ -472,20 +472,20 @@ func typeDump(cs ptr spring:Charstash, type ptr ast:Type)
 /func
 
 
-func symbolSummarize(cs ptr spring:Charstash, sym ptr ast:Symbol)
+func symbolSummarize(cs ptr base:Charstash, sym ptr ast:Symbol)
   if sym == null
     return
   /if
 
-  spring:csAppendStr(cs, sym'name)
-  spring:csAppend(cs, 32)
+  base:csAppendStr(cs, sym'name)
+  base:csAppend(cs, 32)
   ast:typeSummarize(cs, sym'type)
 /func
 
 
-func symlistSummarize(cs ptr spring:Charstash, symlist ptr utils:KVList)
+func symlistSummarize(cs ptr base:Charstash, symlist ptr utils:KVList)
 
-  spring:csAppendStr(cs, "(")
+  base:csAppendStr(cs, "(")
 
   if symlist != null
     mut len = utils:kvLen(symlist)
@@ -501,54 +501,54 @@ func symlistSummarize(cs ptr spring:Charstash, symlist ptr utils:KVList)
       ast:symbolSummarize(cs, ptr sym)
 
       if i + 1 < len
-        spring:csAppendStr(cs, ", ")
+        base:csAppendStr(cs, ", ")
       /if
 
       i++
     /while
   /if
 
-  spring:csAppendStr(cs, ")")
+  base:csAppendStr(cs, ")")
 /func
 
 
-func typeSummarize(cs ptr spring:Charstash, type ptr ast:Type)
+func typeSummarize(cs ptr base:Charstash, type ptr ast:Type)
   if type == null
-    spring:csAppendStr(cs, "<<null type please report>>")
+    base:csAppendStr(cs, "<<null type please report>>")
     return
   /if
 
   if type'name != null
     if type'moduleName != null
-      spring:csAppendStr(cs, type'moduleName)
-      spring:csAppendStr(cs, ":")
+      base:csAppendStr(cs, type'moduleName)
+      base:csAppendStr(cs, ":")
     /if
 
-    spring:csAppendStr(cs, type'name)
+    base:csAppendStr(cs, type'name)
     return
   /if
 
   if type'type == ast:TYPE_PTR
-    spring:csAppendStr(cs, "ptr ")
+    base:csAppendStr(cs, "ptr ")
     typeSummarize(cs, type'retType)
     return
   /if
 
   if type'type == ast:TYPE_LOC
-    spring:csAppendStr(cs, "loc[")
-    spring:csAppendInt(cs, type'itemCount)
-    spring:csAppendStr(cs, "] ")
+    base:csAppendStr(cs, "loc[")
+    base:csAppendInt(cs, type'itemCount)
+    base:csAppendStr(cs, "] ")
     typeSummarize(cs, type'retType)
     return
   /if
 
   if type'type == ast:TYPE_FUNC
-    spring:csAppendStr(cs, "func")
+    base:csAppendStr(cs, "func")
 
     symlistSummarize(cs, type'members)
 
     if type'retType != null
-      spring:csAppend(cs, 32)
+      base:csAppend(cs, 32)
 
       typeSummarize(cs, type'retType)
     /if
@@ -562,27 +562,27 @@ func typeSummarize(cs ptr spring:Charstash, type ptr ast:Type)
 
 
 func declDump(prefix,name ptr uint8, type ptr ast:Type)
-  spring:out(prefix)
-  spring:outch(32)
+  base:out(prefix)
+  base:outch(32)
 
-  spring:out(name)
-  spring:outch(32)
+  base:out(name)
+  base:outch(32)
 
-  mut cs = spring:csNew(40)
+  mut cs = base:csNew(40)
   ast:typeDump(cs, type)
-  mut str = spring:csUnleash(cs)
+  mut str = base:csUnleash(cs)
 
-  spring:out(str)
+  base:out(str)
 
-  spring:free(str)
+  base:free(str)
 
-  spring:outch(10)
+  base:outch(10)
 
-  spring:out("[[ size: ")
-  spring:outint(type'typeSize)
-  spring:out(", align: ")
-  spring:outint(type'typeAlign)
-  spring:out(" ]]")
+  base:out("[[ size: ")
+  base:outint(type'typeSize)
+  base:out(", align: ")
+  base:outint(type'typeAlign)
+  base:out(" ]]")
 
-  spring:outch(10)
+  base:outch(10)
 /func

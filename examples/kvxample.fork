@@ -1,35 +1,35 @@
-import spring
+import base
 import utils
 
 
 entry
   mut kv = utils:strkvNew()
 
-  utils:kvSetFreeFuncs(kv, ptr spring:free, ptr spring:free)
+  utils:kvSetFreeFuncs(kv, ptr base:free, ptr base:free)
 
-  utils:kvPut(kv, spring:strclone("aaa"), spring:strclone("eee"))
+  utils:kvPut(kv, base:strclone("aaa"), base:strclone("eee"))
   utils:kvPrint(kv)
-  spring:outch(10)
+  base:outch(10)
 
-  utils:kvPut(kv, spring:strclone("aaa"), spring:strclone("rrr"))
+  utils:kvPut(kv, base:strclone("aaa"), base:strclone("rrr"))
   utils:kvPrint(kv)
-  spring:outch(10)
+  base:outch(10)
 
-  utils:kvPut(kv, spring:strclone("ooo"), spring:strclone("uuu"))
+  utils:kvPut(kv, base:strclone("ooo"), base:strclone("uuu"))
   utils:kvPrint(kv)
-  spring:outch(10)
+  base:outch(10)
 
-  utils:kvPut(kv, spring:strclone("uuu"), spring:strclone("ppp"))
+  utils:kvPut(kv, base:strclone("uuu"), base:strclone("ppp"))
   utils:kvPrint(kv)
-  spring:outch(10)
+  base:outch(10)
 
-  utils:kvPut(kv, spring:strclone("qwe"), spring:strclone("rere"))
+  utils:kvPut(kv, base:strclone("qwe"), base:strclone("rere"))
   utils:kvPrint(kv)
-  spring:outch(10)
+  base:outch(10)
 
   utils:kvRemove(kv, "ooo")
   utils:kvPrint(kv)
-  spring:outch(10)
+  base:outch(10)
 
   utils:kvFree(kv)
 /entry

@@ -7,9 +7,10 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 import ast
+import base
 import lex
-import spring
 import synt
 import utils
 

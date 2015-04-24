@@ -9,9 +9,9 @@
 
 
 import ast
+import base
 import ctx
 import sema
-import spring
 import utils
 
 
@@ -24,7 +24,7 @@ func resolverDeinit(rsv sema:Resolver)
 func resolverCollect(rsv ptr sema:Resolver,
                      ctx ptr ctx:Context,
                      root ptr ast:PRoot,
-                     errors ptr spring:List) ptr utils:KVList
+                     errors ptr base:List) ptr utils:KVList
 
   rsv'aliases = utils:strkvNew()
   rsv'decls = utils:strkvNew()
@@ -33,14 +33,14 @@ func resolverCollect(rsv ptr sema:Resolver,
 
   mut ret = utils:strkvNew()
 
-  utils:kvSetFreeFuncs(ret, ptr spring:free, null)
+  utils:kvSetFreeFuncs(ret, ptr base:free, null)
 
-  mut len = spring:listLen(root'node'node'leaves)
+  mut len = base:listLen(root'node'node'leaves)
   mut i uintptr = 0
   mut entryNode ptr ast:PDecl = null
 
   while i < len
-    mut pdecl = cast<ptr ast:PDecl>(val spring:listGet(root'node'node'leaves, i))
+    mut pdecl = cast<ptr ast:PDecl>(val base:listGet(root'node'node'leaves, i))
     mut ntype = pdecl'node'type
     mut name = pdecl'sym'name
     mut kv ptr utils:KVList = null
@@ -52,15 +52,15 @@ func resolverCollect(rsv ptr sema:Resolver,
         if pdecl'node'type != ast:PDECL and existent'node'type != ast:PDECL
           resolverDeinit(val rsv)
 
-          mut cs = spring:csNew(20)
-          spring:csAppendStr(cs, "symbol ")
-          spring:csAppendStr(cs, name)
-          spring:csAppendStr(cs, " defined twice")
+          mut cs = base:csNew(20)
+          base:csAppendStr(cs, "symbol ")
+          base:csAppendStr(cs, name)
+          base:csAppendStr(cs, " defined twice")
 
-          mut str = spring:csUnleash(cs)
-          spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
+          mut str = base:csUnleash(cs)
+          base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
 
-          spring:free(str)
+          base:free(str)
 
           return null
 
@@ -81,12 +81,12 @@ func resolverCollect(rsv ptr sema:Resolver,
         if utils:kvContains(rsv'aliases, name)
           resolverDeinit(val rsv)
 
-          mut cs = spring:csNew(20)
-          spring:csAppendStr(cs, "alias ")
-          spring:csAppendStr(cs, name)
-          spring:csAppendStr(cs, " is already defined")
+          mut cs = base:csNew(20)
+          base:csAppendStr(cs, "alias ")
+          base:csAppendStr(cs, name)
+          base:csAppendStr(cs, " is already defined")
 
-          spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, spring:csUnleash(cs)))
+          base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, base:csUnleash(cs)))
 
           return null
         /if
@@ -98,14 +98,14 @@ func resolverCollect(rsv ptr sema:Resolver,
           if entryNode == null
             entryNode = pdecl
           else
-            spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, "entry declared twice in same file"))
+            base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, "entry declared twice in same file"))
             resolverDeinit(val rsv)
 
             return null
           /if
         else
-          spring:errln("Unreachable: invalid pdecl value")
-          spring:abort()
+          base:errln("Unreachable: invalid pdecl value")
+          base:abort()
         /if
       /if
     /if
@@ -114,7 +114,7 @@ func resolverCollect(rsv ptr sema:Resolver,
       utils:kvPut(kv, name, pdecl)
     /if
 
-    utils:kvPut(ret, spring:strclone(name), pdecl)
+    utils:kvPut(ret, base:strclone(name), pdecl)
 
     i++
   /while

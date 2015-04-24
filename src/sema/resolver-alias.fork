@@ -9,15 +9,15 @@
 
 
 import ast
+import base
 import ctx
 import sema
-import spring
 import utils
 
 
 func rootAliasRegister(rsv sema:Resolver, name ptr uint8, type ptr ast:Type)
-  type'name = spring:strclone(name)
-  type'moduleName = rsv'root'moduleName != null => spring:strclone(rsv'root'moduleName'name) || null
+  type'name = base:strclone(name)
+  type'moduleName = rsv'root'moduleName != null => base:strclone(rsv'root'moduleName'name) || null
   ast:stabAdd(rsv'root'aliases, name, type, ast:PALIAS)
 
   mut pdecl ptr ast:PDecl
@@ -38,18 +38,18 @@ func checkNotFuncType(rsv sema:Resolver, type ptr ast:Type) ptr utils:Issue
 decl registerAliasReal func(rsv sema:Resolver,
                            name ptr uint8,
                            ptype ptr ast:PType,
-                           recList,errors ptr spring:List,
+                           recList,errors ptr base:List,
                            ignoreSize bool) ptr ast:Type
 
 decl resolveTypeReal func(rsv sema:Resolver,
                           ptype ptr ast:PType,
-                          recList,errors ptr spring:List,
+                          recList,errors ptr base:List,
                           ignSize bool) ptr ast:Type
 
 
 func convertRetType(rsv sema:Resolver,
                     retPType ptr ast:PType,
-                    errors,recList ptr spring:List,
+                    errors,recList ptr base:List,
                     isLoc,isPtr bool) ptr ast:Type
 
   mut res ptr ast:Type = null
@@ -64,7 +64,7 @@ func convertRetType(rsv sema:Resolver,
 
   # if this is not the retType of a ptr, then it's an error having a function
   if res != null and res'type == ast:TYPE_FUNC and !isPtr
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, retPType'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, retPType'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
 
     return null
   /if
@@ -76,7 +76,7 @@ func convertRetType(rsv sema:Resolver,
 # Validates a ptr or a loc type.
 func convertPtrLocType(rsv sema:Resolver,
                         ptype ptr ast:PType,
-                        errors,recList ptr spring:List) ptr ast:Type
+                        errors,recList ptr base:List) ptr ast:Type
 
   mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
   mut isLoc = ptdes'type == ast:PTYPE_LOC
@@ -95,7 +95,7 @@ func convertPtrLocType(rsv sema:Resolver,
 
 
 func convertSymbolList(rsv sema:Resolver,
-                       pargs,errors,recList ptr spring:List,
+                       pargs,errors,recList ptr base:List,
                        funcArgs bool) ptr utils:KVList
 
 
@@ -105,14 +105,14 @@ func convertSymbolList(rsv sema:Resolver,
     return members
   /if
 
-  mut errLen = spring:listLen(errors)
+  mut errLen = base:listLen(errors)
 
-  mut plen = spring:listLen(pargs)
+  mut plen = base:listLen(pargs)
   mut i uintptr = 0
-  utils:kvSetFreeFuncs(members, ptr spring:free, null)
+  utils:kvSetFreeFuncs(members, ptr base:free, null)
 
   while i < plen
-    mut member = cast<ptr ast:PSymbol>(val spring:listGet(pargs, i))
+    mut member = cast<ptr ast:PSymbol>(val base:listGet(pargs, i))
     mut ptype = member'type
 
     mut type ptr ast:Type = null
@@ -128,7 +128,7 @@ func convertSymbolList(rsv sema:Resolver,
     if type != null
       # if this is not the retType of a ptr, then it's an error having a function
       if type'type == ast:TYPE_FUNC
-        spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
+        base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
 
         return null
       /if
@@ -139,7 +139,7 @@ func convertSymbolList(rsv sema:Resolver,
     i++
   /while
 
-  if spring:listLen(errors) > errLen
+  if base:listLen(errors) > errLen
     utils:kvFree(members)
     return null
   /if
@@ -150,7 +150,7 @@ func convertSymbolList(rsv sema:Resolver,
 
 func convertStructType(rsv sema:Resolver,
                        ptype ptr ast:PType,
-                       errors,recList ptr spring:List) ptr ast:Type
+                       errors,recList ptr base:List) ptr ast:Type
 
   mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
 
@@ -162,7 +162,7 @@ func convertStructType(rsv sema:Resolver,
 
 func convertFuncType(rsv sema:Resolver,
                      ptype ptr ast:PType,
-                     errors,recList ptr spring:List) ptr ast:Type
+                     errors,recList ptr base:List) ptr ast:Type
 
   mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
 
@@ -210,13 +210,13 @@ func findAliasLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 
 func resolveModuleAlias(rsv sema:Resolver,
                         ptype ptr ast:PType,
-                        errors ptr spring:List) ptr ast:Type
+                        errors ptr base:List) ptr ast:Type
 
 
   if !ast:prootHasImported(rsv'root, ptype'moduleName)
-    mut msg = spring:strappend("no import called ", ptype'moduleName)
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
-    spring:free(msg)
+    mut msg = base:strappend("no import called ", ptype'moduleName)
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
+    base:free(msg)
 
     return null
   /if
@@ -228,15 +228,15 @@ func resolveModuleAlias(rsv sema:Resolver,
 
   # we could not find the type anywhere in the module.
   # Signal the error to the caller.
-  mut cs = spring:csNew(20)
-  spring:csAppendStr(cs, "no alias called ")
-  spring:csAppendStr(cs, ptype'name)
-  spring:csAppendStr(cs, " in module ")
-  spring:csAppendStr(cs, ptype'moduleName)
+  mut cs = base:csNew(20)
+  base:csAppendStr(cs, "no alias called ")
+  base:csAppendStr(cs, ptype'name)
+  base:csAppendStr(cs, " in module ")
+  base:csAppendStr(cs, ptype'moduleName)
 
-  mut msg = spring:csUnleash(cs)
-  spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
-  spring:free(msg)
+  mut msg = base:csUnleash(cs)
+  base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
+  base:free(msg)
 
   return null
 /func
@@ -244,7 +244,7 @@ func resolveModuleAlias(rsv sema:Resolver,
 
 func resolveIdType(rsv sema:Resolver,
                     ptype ptr ast:PType,
-                    errors, recList ptr spring:List,
+                    errors, recList ptr base:List,
                     ignoreSize bool) ptr ast:Type
 
   mut builtin = ctx:contextMatchBuiltin(rsv'ctx, ptype'name)
@@ -257,16 +257,16 @@ func resolveIdType(rsv sema:Resolver,
       return ast:typeNewRecursiveAlias(rsv'root'typePool, rsv'root'moduleName != null => rsv'root'moduleName'name || null, ptype'name)
     /if
 
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "alias declaration makes type ")
-    spring:csAppendStr(cs, ptype'name)
-    spring:csAppendStr(cs, " recursive")
-    spring:csAppend(cs, 32)
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, "alias declaration makes type ")
+    base:csAppendStr(cs, ptype'name)
+    base:csAppendStr(cs, " recursive")
+    base:csAppend(cs, 32)
     utils:listDumpHierarchyIntoCS(recList, cs)
 
-    mut msg = spring:csUnleash(cs)
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
-    spring:free(msg)
+    mut msg = base:csUnleash(cs)
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
+    base:free(msg)
 
     return null
   /if
@@ -285,22 +285,22 @@ func resolveIdType(rsv sema:Resolver,
 
   if utils:kvGet(rsv'aliases, ptype'name, ptr whichDecl)
     if whichDecl'node'validated
-      spring:errln("This should not be reachable")
-      spring:abort()
+      base:errln("This should not be reachable")
+      base:abort()
     /if
 
     return registerAliasReal(rsv, ptype'name, whichDecl'sym'type, recList, errors, ignoreSize)
   /if
 
   # no match found, error
-  mut cs = spring:csNew(20)
-  spring:csAppendStr(cs, "no type called ")
-  spring:csAppendStr(cs, ptype'name)
-  spring:csAppendStr(cs, " in current scope")
+  mut cs = base:csNew(20)
+  base:csAppendStr(cs, "no type called ")
+  base:csAppendStr(cs, ptype'name)
+  base:csAppendStr(cs, " in current scope")
 
-  mut msg = spring:csUnleash(cs)
-  spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
-  spring:free(msg)
+  mut msg = base:csUnleash(cs)
+  base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
+  base:free(msg)
 
   return null
 /func
@@ -308,7 +308,7 @@ func resolveIdType(rsv sema:Resolver,
 
 func convertType(rsv sema:Resolver,
                  ptype ptr ast:PType,
-                 recList,errors ptr spring:List,
+                 recList,errors ptr base:List,
                  ignoreSize bool) ptr ast:Type
 
   mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
@@ -326,8 +326,8 @@ func convertType(rsv sema:Resolver,
         if ptdes'type == ast:PTYPE_FUNC
           return convertFuncType(rsv, ptype, errors, recList)
         else
-          spring:errln("Unreachable")
-          spring:abort()
+          base:errln("Unreachable")
+          base:abort()
         /if
       /if
     /if
@@ -340,7 +340,7 @@ func convertType(rsv sema:Resolver,
 
 func resolveTypeReal(rsv sema:Resolver,
                      ptype ptr ast:PType,
-                     recList,errors ptr spring:List,
+                     recList,errors ptr base:List,
                      ignSize bool) ptr ast:Type
 
   return ptype'moduleName != null => resolveModuleAlias(rsv, ptype, errors) || convertType(rsv, ptype, recList, errors, ignSize)
@@ -350,19 +350,19 @@ func resolveTypeReal(rsv sema:Resolver,
 func registerAliasReal(rsv sema:Resolver,
                       name ptr uint8,
                       ptype ptr ast:PType,
-                      recList,errors ptr spring:List,
+                      recList,errors ptr base:List,
                       ignSize bool) ptr ast:Type
 
   mut needsList = recList == null
 
   if needsList
-    recList = spring:listNew()
+    recList = base:listNew()
   /if
 
 
-  spring:listPush(recList, name)
+  base:listPush(recList, name)
   mut ret = resolveTypeReal(rsv, ptype, recList, errors, ignSize)
-  spring:listPop(recList)
+  base:listPop(recList)
 
   if ret != null
     rootAliasRegister(rsv, name, ret)
@@ -370,7 +370,7 @@ func registerAliasReal(rsv sema:Resolver,
 
 
   if needsList
-    spring:listFree(recList)
+    base:listFree(recList)
   /if
 
   return ret
@@ -379,14 +379,14 @@ func registerAliasReal(rsv sema:Resolver,
 
 func registerAlias(rsv sema:Resolver,
                   pdecl ptr ast:PDecl,
-                  errors ptr spring:List) ptr ast:Type
+                  errors ptr base:List) ptr ast:Type
 
-  mut recList spring:List
-  spring:listInit(ptr recList)
+  mut recList base:List
+  base:listInit(ptr recList)
 
   mut ret = registerAliasReal(rsv, pdecl'sym'name, pdecl'sym'type, ptr recList, errors, false)
 
-  spring:listDeinit(ptr recList)
+  base:listDeinit(ptr recList)
 
   return ret
 /func
@@ -394,7 +394,7 @@ func registerAlias(rsv sema:Resolver,
 
 func resolveType(rsv sema:Resolver,
                  ptype ptr ast:PType,
-                 errors ptr spring:List) ptr ast:Type
+                 errors ptr base:List) ptr ast:Type
 
   return resolveTypeReal(rsv, ptype, null, errors, false)
 /func

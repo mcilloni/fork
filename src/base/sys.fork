@@ -12,9 +12,9 @@
 #
 #  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
 
-import spring
+import base
 
-func args() ptr spring:Args
-  decl __forkprogArgs spring:Args
+func args() ptr base:Args
+  decl __forkprogArgs base:Args
   return ptr __forkprogArgs
 /func

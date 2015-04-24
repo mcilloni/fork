@@ -12,16 +12,16 @@
 #
 #  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
 
-import spring
+import base
 
 func err(str ptr uint8)
-  decl fputs func(str ptr uint8, file spring:FILE)
-  fputs(str, spring:stderr_file())
+  decl fputs func(str ptr uint8, file base:FILE)
+  fputs(str, base:stderr_file())
 /func
 
 func errch(ch uint8)
-  decl putc func(ch uint8, file spring:FILE)
-  putc(ch, spring:stderr_file())
+  decl putc func(ch uint8, file base:FILE)
+  putc(ch, base:stderr_file())
 /func
 
 func errln(str ptr uint8)
@@ -31,17 +31,17 @@ func errln(str ptr uint8)
 
 func fail(str ptr uint8)
   err(str)
-  spring:exit(1)
+  base:exit(1)
 /func
 
 func failln(str ptr uint8)
   errln(str)
-  spring:exit(1)
+  base:exit(1)
 /func
 
 func out(str ptr uint8)
-  decl fputs func(str ptr uint8, file spring:FILE)
-  fputs(str, spring:stdout_file())
+  decl fputs func(str ptr uint8, file base:FILE)
+  fputs(str, base:stdout_file())
 /func
 
 func outch(ch uint8)

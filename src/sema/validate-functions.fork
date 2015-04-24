@@ -9,9 +9,9 @@
 
 
 import ast
+import base
 import ctx
 import sema
-import spring
 import utils
 
 
@@ -19,16 +19,16 @@ decl validatePBlock func(rsv sema:Resolver,
                          pblock ptr ast:PBlock,
                          funcInfo ast:Symbol,
                          inLoop bool,
-                         errors ptr spring:List) bool
+                         errors ptr base:List) bool
 
 
 func validateBreakContinue(rsv sema:Resolver,
                            stmt ptr ast:PNode,
                            inLoop bool,
-                           errors ptr spring:List) bool
+                           errors ptr base:List) bool
 
   if !inLoop
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, stmt'begin, rsv'root'fileName, "break or continue outside of a loop"))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, stmt'begin, rsv'root'fileName, "break or continue outside of a loop"))
 
     return false
   /if
@@ -39,7 +39,7 @@ func validateBreakContinue(rsv sema:Resolver,
 
 func validateDecl(rsv sema:Resolver,
                   pdecl ptr ast:PDecl,
-                  errors ptr spring:List) bool
+                  errors ptr base:List) bool
 
   mut isDecl = pdecl'node'type == ast:PDECL
   mut type ptr ast:Type = null
@@ -51,18 +51,18 @@ func validateDecl(rsv sema:Resolver,
     /if
   else
     if isDecl
-      spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, rsv'root'fileName, "a decl must have a type"))
+      base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, rsv'root'fileName, "a decl must have a type"))
 
       return false
     /if
   /if
 
-  mut leavLen = spring:listLen(pdecl'node'leaves)
+  mut leavLen = base:listLen(pdecl'node'leaves)
 
   if leavLen > 0
-    mut pexpr = cast<ptr ast:PExpr>(val spring:listGet(pdecl'node'leaves, 0))
+    mut pexpr = cast<ptr ast:PExpr>(val base:listGet(pdecl'node'leaves, 0))
     if isDecl
-      spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "a decl can't have an assignment"))
+      base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "a decl can't have an assignment"))
     /if
 
     mut exprType = sema:validateExpr(rsv, pexpr, errors)
@@ -74,7 +74,7 @@ func validateDecl(rsv sema:Resolver,
   /if
 
   if type == null
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, rsv'root'fileName, "declaration without an explicit or inferrable type"))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, rsv'root'fileName, "declaration without an explicit or inferrable type"))
 
     return false
   /if
@@ -87,9 +87,9 @@ func validateIf(rsv sema:Resolver,
                 stmt ptr ast:PNode,
                 funcInfo ast:Symbol,
                 inLoop bool,
-                errors ptr spring:List) bool
+                errors ptr base:List) bool
 
-  mut cond = cast<ptr ast:PExpr>(val spring:listGet(stmt'leaves, 0))
+  mut cond = cast<ptr ast:PExpr>(val base:listGet(stmt'leaves, 0))
 
   mut condType = sema:validateExpr(rsv, cond, errors)
   if condType == null
@@ -97,27 +97,27 @@ func validateIf(rsv sema:Resolver,
   /if
 
   if !ast:typeIsBool(condType)
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "expected a boolean expression, got type '")
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, "expected a boolean expression, got type '")
     ast:typeSummarize(cs, condType)
-    spring:csAppendStr(cs, "' instead")
+    base:csAppendStr(cs, "' instead")
 
-    mut msg = spring:csUnleash(cs)
+    mut msg = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
 
-    spring:free(msg)
+    base:free(msg)
 
     return false
   /if
 
-  mut firstBlock = cast<ptr ast:PBlock>(val spring:listGet(stmt'leaves, 1))
+  mut firstBlock = cast<ptr ast:PBlock>(val base:listGet(stmt'leaves, 1))
   if !validatePBlock(rsv, firstBlock, funcInfo, inLoop, errors)
     return false
   /if
 
   if stmt'type == ast:PIFELSE
-    mut elseBlock = cast<ptr ast:PBlock>(val spring:listGet(stmt'leaves, 2))
+    mut elseBlock = cast<ptr ast:PBlock>(val base:listGet(stmt'leaves, 2))
     if !validatePBlock(rsv, elseBlock, funcInfo, inLoop, errors)
       return false
     /if
@@ -130,40 +130,40 @@ func validateIf(rsv sema:Resolver,
 func validateReturn(rsv sema:Resolver,
                     stmt ptr ast:PNode,
                     funcInfo ast:Symbol,
-                    errors ptr spring:List) bool
+                    errors ptr base:List) bool
 
-  mut hasRetExpr = spring:listLen(stmt'leaves) == 1
+  mut hasRetExpr = base:listLen(stmt'leaves) == 1
   mut funcRetTypeEmpty = funcInfo'type'retType == null or funcInfo'type'retType'type == ast:TYPE_EMPTY
 
   if !hasRetExpr and !funcRetTypeEmpty
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "function '")
-    spring:csAppendStr(cs, funcInfo'name)
-    spring:csAppendStr(cs, "' has a return value, but no expression is given to return")
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, "function '")
+    base:csAppendStr(cs, funcInfo'name)
+    base:csAppendStr(cs, "' has a return value, but no expression is given to return")
 
-    mut msg = spring:csUnleash(cs)
+    mut msg = base:csUnleash(cs)
 
-    spring:free(msg)
+    base:free(msg)
 
     return false
   /if
 
   if hasRetExpr and funcRetTypeEmpty
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "function '")
-    spring:csAppendStr(cs, funcInfo'name)
-    spring:csAppendStr(cs, "' has no return value, but an expression is given to return")
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, "function '")
+    base:csAppendStr(cs, funcInfo'name)
+    base:csAppendStr(cs, "' has no return value, but an expression is given to return")
 
-    mut msg = spring:csUnleash(cs)
+    mut msg = base:csUnleash(cs)
 
-    spring:free(msg)
+    base:free(msg)
 
     return false
   /if
 
   if hasRetExpr
     mut retType = funcInfo'type'retType
-    mut retExpr = cast<ptr ast:PExpr>(val spring:listGet(stmt'leaves, 0))
+    mut retExpr = cast<ptr ast:PExpr>(val base:listGet(stmt'leaves, 0))
 
     mut exprType = sema:validateExpr(rsv, retExpr, errors)
     if exprType == null
@@ -171,18 +171,18 @@ func validateReturn(rsv sema:Resolver,
     /if
 
     if !sema:typeIsAssignable(rsv'ctx, stmt, retType, exprType)
-      mut cs = spring:csNew(20)
-      spring:csAppendStr(cs, "cannot return type '")
+      mut cs = base:csNew(20)
+      base:csAppendStr(cs, "cannot return type '")
       ast:typeSummarize(cs, exprType)
-      spring:csAppendStr(cs, "' from '")
-      spring:csAppendStr(cs, funcInfo'name)
-      spring:csAppendStr(cs, "', expected '")
+      base:csAppendStr(cs, "' from '")
+      base:csAppendStr(cs, funcInfo'name)
+      base:csAppendStr(cs, "', expected '")
       ast:typeSummarize(cs, retType)
-      spring:csAppendStr(cs, "'")
+      base:csAppendStr(cs, "'")
 
-      mut msg = spring:csUnleash(cs)
+      mut msg = base:csUnleash(cs)
 
-      spring:free(msg)
+      base:free(msg)
 
       return false
     /if
@@ -196,9 +196,9 @@ func validateWhile(rsv sema:Resolver,
                    stmt ptr ast:PNode,
                    funcInfo ast:Symbol,
                    inLoop bool,
-                   errors ptr spring:List) bool
+                   errors ptr base:List) bool
 
-  mut cond = cast<ptr ast:PExpr>(val spring:listGet(stmt'leaves, 0))
+  mut cond = cast<ptr ast:PExpr>(val base:listGet(stmt'leaves, 0))
 
   mut condType = sema:validateExpr(rsv, cond, errors)
   if condType == null
@@ -206,21 +206,21 @@ func validateWhile(rsv sema:Resolver,
   /if
 
   if !ast:typeIsBool(condType)
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "expected a boolean expression, got type '")
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, "expected a boolean expression, got type '")
     ast:typeSummarize(cs, condType)
-    spring:csAppendStr(cs, "' instead")
+    base:csAppendStr(cs, "' instead")
 
-    mut msg = spring:csUnleash(cs)
+    mut msg = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
 
-    spring:free(msg)
+    base:free(msg)
 
     return false
   /if
 
-  mut pblock = cast<ptr ast:PBlock>(val spring:listGet(stmt'leaves, 1))
+  mut pblock = cast<ptr ast:PBlock>(val base:listGet(stmt'leaves, 1))
 
   return validatePBlock(rsv, pblock, funcInfo, true, errors)
 /func
@@ -229,7 +229,7 @@ func validateStmt(rsv sema:Resolver,
                   stmt ptr ast:PNode,
                   funcInfo ast:Symbol,
                   inLoop bool,
-                  errors ptr spring:List) bool
+                  errors ptr base:List) bool
 
   if ast:pnodeIsBreakContinue(stmt)
     return validateBreakContinue(rsv, stmt, inLoop, errors)
@@ -256,8 +256,8 @@ func validateStmt(rsv sema:Resolver,
   /if
 
   # unreachable
-  spring:errln("unknown statement type")
-  spring:abort()
+  base:errln("unknown statement type")
+  base:abort()
   return false
 /func
 
@@ -266,17 +266,17 @@ func validatePBlock(rsv sema:Resolver,
                     pblock ptr ast:PBlock,
                     funcInfo ast:Symbol,
                     inLoop bool,
-                    errors ptr spring:List) bool
+                    errors ptr base:List) bool
 
   if pblock'syms == null
     pblock'syms = ast:stabNew()
   /if
 
-  mut len = spring:listLen(pblock'node'leaves)
+  mut len = base:listLen(pblock'node'leaves)
   mut i uintptr = 0
 
   while i < len
-    mut stmt = cast<ptr ast:PNode>(val spring:listGet(pblock'node'leaves, i))
+    mut stmt = cast<ptr ast:PNode>(val base:listGet(pblock'node'leaves, i))
 
     if !validateStmt(rsv, stmt, funcInfo, inLoop, errors)
       return false
@@ -309,14 +309,14 @@ func addAllSymbolsToStab(stab ptr ast:Symtable, syms ptr utils:KVList)
 func validateFunc(rsv sema:Resolver,
                   pdecl ptr ast:PDecl,
                   funcType ptr ast:Type,
-                  errors ptr spring:List) bool
+                  errors ptr base:List) bool
 
   mut sym ast:Symbol
 
   sym'type = funcType
   sym'name = pdecl'sym'name
 
-  mut pblock = cast<ptr ast:PBlock>(val spring:listGet(pdecl'node'leaves, 0))
+  mut pblock = cast<ptr ast:PBlock>(val base:listGet(pdecl'node'leaves, 0))
 
   pblock'syms = ast:stabNew()
 

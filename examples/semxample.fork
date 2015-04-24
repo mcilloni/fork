@@ -10,83 +10,83 @@
 import ast
 import ctx
 import sema
-import spring
+import base
 import synt
 import utils
 
 entry
-  mut argv = spring:args()
+  mut argv = base:args()
   if argv'len != 1
-    spring:errln("Wrong number of arguments, required: 1")
-    spring:exit(1)
+    base:errln("Wrong number of arguments, required: 1")
+    base:exit(1)
   /if
 
   mut ctx = ctx:contextNew()
   mut ast ptr ast:PNode
   mut errors = sema:semaParse(ctx, argv'args[0], ptr ast)
 
-  mut errLen = spring:listLen(errors)
+  mut errLen = base:listLen(errors)
 
   if errLen > 0
     mut i uintptr = 0
 
     while i < errLen
-      mut issue = cast<ptr utils:Issue>(val spring:listGet(errors, i))
+      mut issue = cast<ptr utils:Issue>(val base:listGet(errors, i))
 
-      utils:issueWriteOut(issue, ptr spring:out)
+      utils:issueWriteOut(issue, ptr base:out)
 
       i++
     /while
 
-    spring:listFree(errors)
-    spring:exit(1)
+    base:listFree(errors)
+    base:exit(1)
   /if
 
   mut root = cast<ptr ast:PRoot>(ast)
 
-  spring:out("== IMPORTS: ")
-  spring:outint(spring:mapLen(ctx'imports))
-  spring:outch(10)
+  base:out("== IMPORTS: ")
+  base:outint(base:mapLen(ctx'imports))
+  base:outch(10)
 
-  mut iter = spring:mapiterStart(ctx'imports)
+  mut iter = base:mapiterStart(ctx'imports)
 
-  mut pair ptr spring:Pair
+  mut pair ptr base:Pair
 
-  while (pair = spring:mapiterNext(iter)) != null
-    spring:out("Imported ")
-    spring:outln(cast<ptr uint8>(pair'key))
+  while (pair = base:mapiterNext(iter)) != null
+    base:out("Imported ")
+    base:outln(cast<ptr uint8>(pair'key))
 
-    spring:pairFree(pair)
+    base:pairFree(pair)
   /while
 
-  spring:mapiterFree(iter)
+  base:mapiterFree(iter)
 
   mut aliasesMap = root'aliases'syms
 
-  spring:out("\n\n== ALIASES: ")
-  spring:outint(spring:mapLen(aliasesMap))
-  spring:outch(10)
+  base:out("\n\n== ALIASES: ")
+  base:outint(base:mapLen(aliasesMap))
+  base:outch(10)
 
-  iter = spring:mapiterStart(aliasesMap)
+  iter = base:mapiterStart(aliasesMap)
 
-  while (pair = spring:mapiterNext(iter)) != null
-    spring:out("alias ")
-    spring:outln(cast<ptr uint8>(pair'key))
+  while (pair = base:mapiterNext(iter)) != null
+    base:out("alias ")
+    base:outln(cast<ptr uint8>(pair'key))
 
-    spring:pairFree(pair)
+    base:pairFree(pair)
   /while
 
-  spring:mapiterFree(iter)
+  base:mapiterFree(iter)
 
   mut declsMap = cast<ptr ast:PRoot>(ast)'node'syms'syms
 
-  spring:out("\n\n== DECLS: ")
-  spring:outint(spring:mapLen(declsMap))
-  spring:outch(10)
+  base:out("\n\n== DECLS: ")
+  base:outint(base:mapLen(declsMap))
+  base:outch(10)
 
-  iter = spring:mapiterStart(declsMap)
+  iter = base:mapiterStart(declsMap)
 
-  while (pair = spring:mapiterNext(iter)) != null
+  while (pair = base:mapiterNext(iter)) != null
     mut dinfo = cast<ptr ast:DeclInfo>(pair'value)
     mut typeStr ptr uint8 = null
 
@@ -104,27 +104,27 @@ entry
       /if
     /if
 
-    spring:out(typeStr)
-    spring:out(cast<ptr uint8>(pair'key))
+    base:out(typeStr)
+    base:out(cast<ptr uint8>(pair'key))
 
-    spring:out(" :: ")
+    base:out(" :: ")
 
-    mut cs = spring:csNew(10)
+    mut cs = base:csNew(10)
     ast:typeSummarize(cs, dinfo'type)
 
-    mut des = spring:csUnleash(cs)
+    mut des = base:csUnleash(cs)
 
-    spring:outln(des)
+    base:outln(des)
 
-    spring:free(des)
-    spring:pairFree(pair)
+    base:free(des)
+    base:pairFree(pair)
   /while
 
-  spring:out("\n\n==> Has entry? ")
+  base:out("\n\n==> Has entry? ")
 
-  spring:outln(root'entryNode != null => "yes" || "no")
+  base:outln(root'entryNode != null => "yes" || "no")
 
-  spring:mapiterFree(iter)
+  base:mapiterFree(iter)
 
   ctx:contextFree(ctx)
 

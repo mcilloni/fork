@@ -10,7 +10,7 @@
 module ast
 
 import lex
-import spring
+import base
 import utils
 
 
@@ -34,7 +34,7 @@ alias PTypeDescr struct (
   retType ptr PType,
   # if type is PTYPE_FUNC, this is the arguments list
   # if type is PTYPE_STRUCT, this is the fields list
-  arguments ptr spring:List,
+  arguments ptr base:List,
   #if type is PTYPE_LOC, this is the number of items allocated
   length uintptr
 )
@@ -43,7 +43,7 @@ decl ptypeDump func(ptype ptr PType)
 decl ptypeNew func(name,moduleName ptr uint8, descr ptr PTypeDescr) ptr PType
 
 decl ptypeDescrDump func(ptype ptr PTypeDescr)
-decl ptypeDescrNew func(ptype uint16, retPType ptr PType, params ptr spring:List) ptr PTypeDescr
+decl ptypeDescrNew func(ptype uint16, retPType ptr PType, params ptr base:List) ptr PTypeDescr
 decl ptypeDescrNewLoc func(innerPType ptr PType, length uintptr) ptr PTypeDescr
 
 alias PSymbol struct(
@@ -99,16 +99,16 @@ alias Symbol struct(
 )
 
 decl symbolClone func(sym ptr Symbol) ptr Symbol
-decl symbolDump func(cs ptr spring:Charstash, sym ptr Symbol)
+decl symbolDump func(cs ptr base:Charstash, sym ptr Symbol)
 decl symbolEquals func(sym1,sym2 ptr Symbol) bool
 decl symbolFree func(sym ptr Symbol)
 decl symbolNew func(name ptr uint8, type ptr Type) ptr Symbol
-decl symbolSummarize func(cs ptr spring:Charstash, sym ptr Symbol)
+decl symbolSummarize func(cs ptr base:Charstash, sym ptr Symbol)
 
-decl builtinSetNew func() ptr spring:Map
+decl builtinSetNew func() ptr base:Map
 
 decl typeClone func(pool ptr utils:FreePool, type ptr Type) ptr Type
-decl typeDump func(cs ptr spring:Charstash, type ptr Type)
+decl typeDump func(cs ptr base:Charstash, type ptr Type)
 decl typeEquals func(type1, type2 ptr Type) bool
 decl typeFree func(type ptr Type)
 decl typeIsBool func(type ptr Type) bool
@@ -126,7 +126,7 @@ decl typeNewRecursiveAlias func(pool ptr utils:FreePool, moduleName, name ptr ui
 decl typeNewStruct func(pool ptr utils:FreePool, moduleName, name ptr uint8, members ptr utils:KVList) ptr Type
 decl typeSetAlias func(type ptr Type, moduleName, name ptr uint8)
 decl typeSetBoundaries func(type ptr Type, begin,end utils:Line)
-decl typeSummarize func(cs ptr spring:Charstash, type ptr Type)
+decl typeSummarize func(cs ptr base:Charstash, type ptr Type)
 
 alias DeclInfo struct(
   declType uint16,
@@ -137,7 +137,7 @@ decl declInfoFree func(declInfo ptr DeclInfo)
 decl declInfoNew func(declType uint16, type ptr Type) ptr DeclInfo
 
 alias Symtable struct(
-  syms ptr spring:Map
+  syms ptr base:Map
 )
 
 decl stabNew func() ptr Symtable
@@ -155,7 +155,7 @@ alias PNode struct(
   type uint16,
   value uintptr,
   parent ptr PNode,
-  leaves ptr spring:List,
+  leaves ptr base:List,
   begin, end utils:Line,
   validated bool
 )
@@ -199,7 +199,7 @@ alias PRoot struct(
   node PBlock,
   moduleName ptr StringDef,
   fileName ptr uint8,
-  imports ptr spring:List,
+  imports ptr base:List,
   aliases ptr Symtable,
   typePool ptr utils:FreePool,
   entryNode ptr PDecl
@@ -207,7 +207,7 @@ alias PRoot struct(
 
 decl isPRoot func(node ptr PNode) bool
 decl prootHasImported func(root ptr PRoot, name ptr uint8) bool
-decl prootNew func(modName ptr StringDef, imports ptr spring:List, fileName ptr uint8) ptr PRoot
+decl prootNew func(modName ptr StringDef, imports ptr base:List, fileName ptr uint8) ptr PRoot
 
 alias PExpr struct(
   node PNode,

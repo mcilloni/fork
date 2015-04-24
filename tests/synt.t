@@ -5,7 +5,7 @@ Checks the parser integrity:
   Imports: 
       ast (at 10:2-10)
       synt (at 11:12-11)
-      spring (at 12:13-13)
+      base (at 12:13-13)
       utils (at 13:15-12)
   
       Entry: (at 15:2-34:6)
@@ -15,7 +15,7 @@ Checks the parser integrity:
                   argv :: <inferred>
                   Expression: (at 16:25-26): a function call
                       Expression: (at 16:14-24): :
-                          Expression: (at 16:14-19): an id - "spring"
+                          Expression: (at 16:14-19): an id - "base"
                           Expression: (at 16:21-24): an id - "args"
               If: (at 17:3-20:5)
                   Expression: (at 17:6-18): !=
@@ -26,12 +26,12 @@ Checks the parser integrity:
                   Block: (at 18:17-19:18)
                       Expression: (at 18:17-58): a function call
                           Expression: (at 18:5-16): :
-                              Expression: (at 18:5-10): an id - "spring"
+                              Expression: (at 18:5-10): an id - "base"
                               Expression: (at 18:12-16): an id - "errln"
                           Expression: (at 18:18-57): a string - "Wrong number of arguments, required: 1"
                       Expression: (at 19:16-18): a function call
                           Expression: (at 19:5-15): :
-                              Expression: (at 19:5-10): an id - "spring"
+                              Expression: (at 19:5-10): an id - "base"
                               Expression: (at 19:12-15): an id - "exit"
                           Expression: (at 19:17-17): 1
               Mut: (at 22:3-40)
@@ -68,11 +68,11 @@ Checks the parser integrity:
                               Expression: (at 26:29-31): an id - "err"
                           Expression: (at 26:34-47): ptr
                               Expression: (at 26:38-47): :
-                                  Expression: (at 26:38-43): an id - "spring"
+                                  Expression: (at 26:38-43): an id - "base"
                                   Expression: (at 26:45-47): an id - "err"
                       Expression: (at 27:16-18): a function call
                           Expression: (at 27:5-15): :
-                              Expression: (at 27:5-10): an id - "spring"
+                              Expression: (at 27:5-10): an id - "base"
                               Expression: (at 27:12-15): an id - "exit"
                           Expression: (at 27:17-17): 1
               Expression: (at 30:16-21): a function call

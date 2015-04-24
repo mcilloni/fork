@@ -12,16 +12,16 @@
 #
 #  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
 
-import spring
+import base
 
-func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr spring:Error, eof ptr bool) uintptr
+func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr base:Error, eof ptr bool) uintptr
   mut fd = cast<int64>(camoFd)
   decl stream_readfileInternal func(fd int64, buf data, len intptr, error ptr uint8, errLen uintptr) intptr
   mut buf [512] uint8
   mut rd = stream_readfileInternal(fd, bytes, len, buf, 512)
 
   if rd < 0
-    val err = spring:errorNew(buf)
+    val err = base:errorNew(buf)
     return 0
   /if
 
@@ -32,7 +32,7 @@ func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr spri
   return rd
 /func
 
-func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr spring:Error) uintptr
+func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr base:Error) uintptr
   mut fd = cast<int64>(camoFd)
   decl stream_writefileInternal func(fd int64, buf data, len intptr, error ptr uint8, errLen uintptr) intptr
   mut buf [512] uint8
@@ -43,7 +43,7 @@ func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr spr
     wt = stream_writefileInternal(fd, bytes + wttot, len - wttot, buf, 512)
 
     if wt < 0
-      val err = spring:errorNew(buf)
+      val err = base:errorNew(buf)
       return 0
     /if
 
@@ -53,7 +53,7 @@ func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr spr
   return wttot
 /func
 
-func filecloseInternal(camoFd data, err ptr ptr spring:Error) bool
+func filecloseInternal(camoFd data, err ptr ptr base:Error) bool
   decl stream_closefileInternal func(fd int64, error ptr uint8, errLen uintptr) uint8
   mut buf [512] uint8
 
@@ -64,7 +64,7 @@ func filecloseInternal(camoFd data, err ptr ptr spring:Error) bool
   return false
 /func
 
-func fileOpen(filename ptr uint8, err ptr ptr spring:Error) ptr spring:Stream
+func fileOpen(filename ptr uint8, err ptr ptr base:Error) ptr base:Stream
   decl open_readfile func(name ptr uint8, error ptr uint8, errlen uintptr) int64
   mut buf [512] uint8
 
@@ -72,22 +72,22 @@ func fileOpen(filename ptr uint8, err ptr ptr spring:Error) ptr spring:Stream
 
   mut fd = open_readfile(filename, buf, 512)
   if fd < 0
-    val err = spring:errorNew(buf)
+    val err = base:errorNew(buf)
     return null
   /if
 
-  return spring:streamNew(cast<data>(fd), ptr filereadInternal, null, ptr filecloseInternal)
+  return base:streamNew(cast<data>(fd), ptr filereadInternal, null, ptr filecloseInternal)
 /func
 
-func fileCreate(filename ptr uint8, err ptr ptr spring:Error) ptr spring:Stream
+func fileCreate(filename ptr uint8, err ptr ptr base:Error) ptr base:Stream
   decl open_writefile func(name ptr uint8, error ptr uint8, errlen uintptr) int64
   mut buf [512] uint8
 
   mut fd = open_writefile(filename, buf, 512)
   if fd < 0
-    val err = spring:errorNew(buf)
+    val err = base:errorNew(buf)
     return null
   /if
 
-  return spring:streamNew(cast<data>(fd), null, ptr filewriteInternal, ptr filecloseInternal)
+  return base:streamNew(cast<data>(fd), null, ptr filewriteInternal, ptr filecloseInternal)
 /func

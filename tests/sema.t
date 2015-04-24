@@ -4,7 +4,7 @@ Checks sema functionality:
   == IMPORTS: 5
   Imported ast
   Imported lex
-  Imported spring
+  Imported base
   Imported synt
   Imported utils
   

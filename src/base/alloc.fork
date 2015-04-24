@@ -12,40 +12,26 @@
 #
 #  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
 
-import spring
+import base
 
-decl path_exists func(path ptr uint8) uintptr
+func alloc(len uintptr) data
+  decl malloc func(cap uintptr) data
+  mut ret = malloc(len)
 
-# path functions
-func pathExists(path ptr uint8) bool
-  mut result = path_exists(path)
-
-  return result != 0
+  if ret == null and len != 0
+    base:abort()
+  /if
+  
+  return ret
 /func
 
-func pathExistsDir(path ptr uint8) bool
-  mut result = path_exists(path)
-
-  return result == 2
-/func
-
-func pathJoin(path1,path2 ptr uint8) ptr uint8
-  mut arr [4] ptr uint8
-
-  arr[0] = path1
-  arr[1] = "/"
-  arr[2] = path2
-  arr[3] = null
-
-  return spring:strglue(arr)
-/func
-
-func pathContains(path,filename ptr uint8) bool
-  mut fullpath = pathJoin(path, filename)
-
-  mut ret = pathExists(fullpath)
-
-  spring:free(fullpath)
-
+func zalloc(len uintptr) data
+  decl calloc func(len uintptr, storageSize uintptr) data
+  mut ret = calloc(1, len)
+  
+  if ret == null and len != 0
+    base:abort()
+  /if
+  
   return ret
 /func

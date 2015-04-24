@@ -9,10 +9,10 @@
 
 
 import ast
+import base
 import ctx
 import lex
 import sema
-import spring
 import synt
 import utils
 
@@ -71,56 +71,56 @@ func ttypeCanBeAssignTarget(tt uint16, type ptr ast:Type) bool
 /func
 
 
-func assignLhsDump(cs ptr spring:Charstash, pexpr ptr ast:PExpr)
+func assignLhsDump(cs ptr base:Charstash, pexpr ptr ast:PExpr)
   mut op = pexpr'opType
 
   if op == lex:ID
-    spring:csAppendStr(cs, cast<ptr uint8>(pexpr'node'value))
+    base:csAppendStr(cs, cast<ptr uint8>(pexpr'node'value))
     return
   /if
 
-  mut left = cast<ptr ast:PExpr>(val spring:listGet(pexpr'node'leaves, 0))
+  mut left = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 0))
 
   if op == lex:VAL
-    spring:csAppendStr(cs, "'val ")
+    base:csAppendStr(cs, "'val ")
 
     assignLhsDump(cs, left)
 
-    spring:csAppendStr(cs, "' ")
+    base:csAppendStr(cs, "' ")
 
     return
   /if
 
   if op == lex:OBRAC
-    spring:csAppendStr(cs, " member of '")
+    base:csAppendStr(cs, " member of '")
     assignLhsDump(cs, left)
-    spring:csAppendStr(cs, "' ")
+    base:csAppendStr(cs, "' ")
 
     return
   /if
 
-  mut right = cast<ptr ast:PExpr>(val spring:listGet(pexpr'node'leaves, 1))
+  mut right = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 1))
 
   if op == lex:APOS or op == lex:COMMA
-    spring:csAppendStr(cs, "'")
+    base:csAppendStr(cs, "'")
 
     assignLhsDump(cs, left)
 
-    spring:csAppendStr(cs, op == lex:APOS => "'" || ":")
+    base:csAppendStr(cs, op == lex:APOS => "'" || ":")
 
     assignLhsDump(cs, right)
 
-    spring:csAppendStr(cs, "' ")
+    base:csAppendStr(cs, "' ")
 
     return
   /if
 
-  spring:csAppendStr(cs, "expr ")
+  base:csAppendStr(cs, "expr ")
 /func
 
 
 func intForVal(ctx ptr ctx:Context, value intptr) ptr ast:Type
-  mut aval = spring:abs(value)
+  mut aval = base:abs(value)
 
   if aval < 2**7
     return ctx:contextMatchBuiltin(ctx, "int8")
@@ -163,10 +163,10 @@ func typeIsAssignable(ctx ptr ctx:Context, scope ptr ast:PNode, dest,src ptr ast
   /if
 
   if dest'name != null and src'name != null and !dest'builtin and !src'builtin
-    mut ret = spring:strequals(dest'name, src'name)
+    mut ret = base:strequals(dest'name, src'name)
 
     if ret and dest'moduleName != null and src'moduleName != null
-      ret = spring:strequals(dest'moduleName, src'moduleName)
+      ret = base:strequals(dest'moduleName, src'moduleName)
     /if
 
     return ret
@@ -285,7 +285,7 @@ func validateExprConst(rsv sema:Resolver,
 
 func validateExprCast(rsv sema:Resolver,
                       pexpr ptr ast:PExpr,
-                      recList,errors ptr spring:List) ptr ast:Type
+                      recList,errors ptr base:List) ptr ast:Type
 
   mut ptype = cast<ptr ast:PType>(pexpr'node'value)
   pexpr'type = sema:resolveType(rsv, ptype, errors)
@@ -294,22 +294,22 @@ func validateExprCast(rsv sema:Resolver,
     return null
   /if
 
-  mut childExpr = cast<ptr ast:PExpr>(val spring:listGet(pexpr'node'leaves, 0))
+  mut childExpr = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 0))
   mut chType = sema:validateExprRecl(rsv, childExpr, recList, errors)
 
   if chType == null or !sema:typeIsCastable(rsv'ctx, cast<ptr ast:PNode>(pexpr), chType, pexpr'type)
-    mut cs = spring:csNew(20)
+    mut cs = base:csNew(20)
 
-    spring:csAppendStr(cs, "can't cast ")
+    base:csAppendStr(cs, "can't cast ")
     ast:typeSummarize(cs, chType)
-    spring:csAppendStr(cs, " to ")
+    base:csAppendStr(cs, " to ")
     ast:typeSummarize(cs, pexpr'type)
 
-    mut str = spring:csUnleash(cs)
+    mut str = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
-    spring:free(str)
+    base:free(str)
     return null
   /if
 
@@ -319,7 +319,7 @@ func validateExprCast(rsv sema:Resolver,
 
 func validateSizeExpr(rsv sema:Resolver,
                       pexpr ptr ast:PExpr,
-                      errors ptr spring:List) ptr ast:Type
+                      errors ptr base:List) ptr ast:Type
 
   mut ptype = cast<ptr ast:PType>(pexpr'node'value)
 
@@ -330,7 +330,7 @@ func validateSizeExpr(rsv sema:Resolver,
 
   if sizeType'type == ast:TYPE_FUNC
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "invalid application of 'size' to a function type"))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "invalid application of 'size' to a function type"))
     return null
   /if
 
@@ -341,44 +341,44 @@ func validateSizeExpr(rsv sema:Resolver,
 decl resolveDeclType func(rsv sema:Resolver,
                           name ptr uint8,
                           node ptr ast:PNode,
-                          recList,errors ptr spring:List) ptr ast:Type
+                          recList,errors ptr base:List) ptr ast:Type
 
 
 func validateExprId(rsv sema:Resolver,
                     pexpr ptr ast:PExpr,
-                    recList,errors ptr spring:List) ptr ast:Type
+                    recList,errors ptr base:List) ptr ast:Type
 
   mut name = cast<ptr uint8>(pexpr'node'value)
   mut type = sema:findSym(cast<ptr ast:PNode>(pexpr), name)
 
   if recList != null and utils:listContains(recList, name)
-    mut cs = spring:csNew(20)
+    mut cs = base:csNew(20)
 
-    spring:csAppendStr(cs, "type ")
-    spring:csAppendStr(cs, name)
-    spring:csAppendStr(cs, " causes an init loop ")
+    base:csAppendStr(cs, "type ")
+    base:csAppendStr(cs, name)
+    base:csAppendStr(cs, " causes an init loop ")
     utils:listDumpHierarchyIntoCS(recList, cs)
 
-    mut str = spring:csUnleash(cs)
+    mut str = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
-    spring:free(str)
+    base:free(str)
 
     return null
   /if
 
   # try searching for a top declaration
   if type == null and (type = resolveDeclType(rsv, name, cast<ptr ast:PNode>(pexpr), recList, errors)) == null
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, name)
-    spring:csAppendStr(cs, " is undefined in current scope")
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, name)
+    base:csAppendStr(cs, " is undefined in current scope")
 
-    mut msg = spring:csUnleash(cs)
+    mut msg = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
-    spring:free(msg)
+    base:free(msg)
 
     return null
   /if
@@ -390,25 +390,25 @@ func validateExprId(rsv sema:Resolver,
 func validateBoolExpr(rsv sema:Resolver,
                       pexpr ptr ast:PExpr,
                       ltype,rtype ptr ast:Type,
-                      recList,errors ptr spring:List) ptr ast:Type
+                      recList,errors ptr base:List) ptr ast:Type
 
   mut op = pexpr'opType
 
   if !ast:typeIsBool(ltype) or !ast:typeIsBool(rtype)
-    mut cs = spring:csNew(20)
+    mut cs = base:csNew(20)
 
-    spring:csAppendStr(cs, "cannot apply ")
-    spring:csAppendStr(cs, lex:ttypeStr(op))
-    spring:csAppendStr(cs, " to types ")
+    base:csAppendStr(cs, "cannot apply ")
+    base:csAppendStr(cs, lex:ttypeStr(op))
+    base:csAppendStr(cs, " to types ")
     ast:typeSummarize(cs, ltype)
-    spring:csAppendStr(cs, " and ")
+    base:csAppendStr(cs, " and ")
     ast:typeSummarize(cs, rtype)
 
-    mut str = spring:csUnleash(cs)
+    mut str = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
-    spring:free(str)
+    base:free(str)
 
     return null
   /if
@@ -420,20 +420,20 @@ func validateBoolExpr(rsv sema:Resolver,
 func validateArithPtrExpr(rsv sema:Resolver,
                           pexpr ptr ast:PExpr,
                           ltype,rtype ptr ast:Type,
-                          recList,errors ptr spring:List) ptr ast:Type
+                          recList,errors ptr base:List) ptr ast:Type
 
   if !ttypeOpCanDoPtrArith(pexpr'opType)
-    mut cs = spring:csNew(20)
+    mut cs = base:csNew(20)
 
-    spring:csAppendStr(cs, "operator ")
-    spring:csAppendStr(cs, lex:ttypeStr(pexpr'opType))
-    spring:csAppendStr(cs, " is not appliable to pointers")
+    base:csAppendStr(cs, "operator ")
+    base:csAppendStr(cs, lex:ttypeStr(pexpr'opType))
+    base:csAppendStr(cs, " is not appliable to pointers")
 
-    mut str = spring:csUnleash(cs)
+    mut str = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
-    spring:free(str)
+    base:free(str)
 
     return null
   /if
@@ -441,26 +441,26 @@ func validateArithPtrExpr(rsv sema:Resolver,
   if ast:typeIsPtr(ltype) and ast:typeIsPtr(rtype)
     if pexpr'opType == lex:MINUS
       if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
-        mut cs = spring:csNew(20)
+        mut cs = base:csNew(20)
 
-        spring:csAppendStr(cs, "types ")
+        base:csAppendStr(cs, "types ")
         ast:typeSummarize(cs, ltype)
-        spring:csAppendStr(cs, " and ")
+        base:csAppendStr(cs, " and ")
         ast:typeSummarize(cs, rtype)
-        spring:csAppendStr(cs, " are not compatible")
+        base:csAppendStr(cs, " are not compatible")
 
-        mut str = spring:csUnleash(cs)
+        mut str = base:csUnleash(cs)
 
-        spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+        base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
-        spring:free(str)
+        base:free(str)
 
         return null
       /if
 
       return ctx:contextMatchBuiltin(rsv'ctx, "intptr")
     else
-      spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "only difference between two pointers can be allowed"))
+      base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "only difference between two pointers can be allowed"))
       return null
     /if
   /if
@@ -475,12 +475,12 @@ func validateArithPtrExpr(rsv sema:Resolver,
 func validateArithExpr(rsv sema:Resolver,
                        pexpr ptr ast:PExpr,
                        ltype,rtype ptr ast:Type,
-                       recList,errors ptr spring:List) ptr ast:Type
+                       recList,errors ptr base:List) ptr ast:Type
 
   mut op = pexpr'opType
 
   if !(ast:typeIsInt(ltype) or ast:typeIsPtr(ltype)) or !(ast:typeIsPtr(rtype) or ast:typeIsInt(rtype))
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "arithmetic operations can only involve pointers and integers"))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "arithmetic operations can only involve pointers and integers"))
 
     return null
   /if
@@ -499,7 +499,7 @@ func validateArithExpr(rsv sema:Resolver,
 func validateEqDiffExpr(rsv sema:Resolver,
                         pexpr ptr ast:PExpr,
                         ltype,rtype ptr ast:Type,
-                        errors ptr spring:List) ptr ast:Type
+                        errors ptr base:List) ptr ast:Type
 
   mut success = true
 
@@ -516,7 +516,7 @@ func validateEqDiffExpr(rsv sema:Resolver,
   /if
 
   if !success
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "cannot evaluate the equivalence of two incompatible types"))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "cannot evaluate the equivalence of two incompatible types"))
   /if
 
   return success => ctx:contextMatchBuiltin(rsv'ctx, "bool") || null
@@ -525,33 +525,33 @@ func validateEqDiffExpr(rsv sema:Resolver,
 
 func validateModuleAccessExpr(rsv sema:Resolver,
                               pexpr ptr ast:PExpr,
-                              errors ptr spring:List) ptr ast:Type
+                              errors ptr base:List) ptr ast:Type
 
-  mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val spring:listGet(pexpr'node'leaves, 0))'value)
+  mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val base:listGet(pexpr'node'leaves, 0))'value)
   if !ast:prootHasImported(rsv'root, modName)
-    mut msg = spring:strappend(modName, " has never been imported")
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
-    spring:free(msg)
+    mut msg = base:strappend(modName, " has never been imported")
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    base:free(msg)
 
     return null
   /if
 
-  mut symName = cast<ptr uint8>(cast<ptr ast:PNode>(val spring:listGet(pexpr'node'leaves, 1))'value)
+  mut symName = cast<ptr uint8>(cast<ptr ast:PNode>(val base:listGet(pexpr'node'leaves, 1))'value)
   mut type = sema:findSymModule(rsv'ctx, modName, symName)
 
   if type == null
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "'")
-    spring:csAppendStr(cs, symName)
-    spring:csAppendStr(cs, "' is not defined in module '")
-    spring:csAppendStr(cs, modName)
-    spring:csAppendStr(cs, "'")
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, "'")
+    base:csAppendStr(cs, symName)
+    base:csAppendStr(cs, "' is not defined in module '")
+    base:csAppendStr(cs, modName)
+    base:csAppendStr(cs, "'")
 
-    mut msg = spring:csUnleash(cs)
+    mut msg = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
-    spring:free(msg)
+    base:free(msg)
 
     return null
   /if
@@ -578,7 +578,7 @@ func resolveRecType(rsv sema:Resolver,
 func validateStructureAccessExpr(rsv sema:Resolver,
                                  pexpr ptr ast:PExpr,
                                  ltype ptr ast:Type,
-                                 errors ptr spring:List) ptr ast:Type
+                                 errors ptr base:List) ptr ast:Type
 
   mut accType = ltype
 
@@ -587,36 +587,36 @@ func validateStructureAccessExpr(rsv sema:Resolver,
   /if
 
   if !ast:typeIsStruct(accType)
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "'")
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, "'")
     ast:typeSummarize(cs, accType)
-    spring:csAppendStr(cs, "' is neither a structure nor a pointer to a structure")
+    base:csAppendStr(cs, "' is neither a structure nor a pointer to a structure")
 
-    mut msg = spring:csUnleash(cs)
+    mut msg = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
-    spring:free(msg)
+    base:free(msg)
 
     return null
   /if
 
-  mut field = cast<ptr uint8>(cast<ptr ast:PNode>(val spring:listGet(pexpr'node'leaves, 1))'value)
+  mut field = cast<ptr uint8>(cast<ptr ast:PNode>(val base:listGet(pexpr'node'leaves, 1))'value)
 
   mut type ptr ast:Type = null
 
   if !utils:kvGet(accType'members, field, ptr type)
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "no field called '")
-    spring:csAppendStr(cs, field)
-    spring:csAppendStr(cs, "' in type ")
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, "no field called '")
+    base:csAppendStr(cs, field)
+    base:csAppendStr(cs, "' in type ")
     ast:typeSummarize(cs, accType)
 
-    mut msg = spring:csUnleash(cs)
+    mut msg = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
-    spring:free(msg)
+    base:free(msg)
 
     return null
   /if
@@ -628,14 +628,14 @@ func validateStructureAccessExpr(rsv sema:Resolver,
 func validateArrayAccess(rsv sema:Resolver,
                          pexpr ptr ast:PExpr,
                          ltype,rtype ptr ast:Type,
-                         errors ptr spring:List) ptr ast:Type
+                         errors ptr base:List) ptr ast:Type
 
   if ltype'type != ast:TYPE_PTR and !ast:typeIsLoc(ltype)
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "array access is allowed only for pointers and locations"))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "array access is allowed only for pointers and locations"))
   /if
 
   if !ast:typeIsInt(rtype)
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "an expression of integer type is required for array access"))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "an expression of integer type is required for array access"))
   /if
 
   # because of first-step bug with recursive types
@@ -651,7 +651,7 @@ func normalizeEmptyType(ctx ptr ctx:Context, type ptr ast:Type) ptr ast:Type
 func validateFunctionCallExpr(rsv sema:Resolver,
                               pexpr ptr ast:PExpr,
                               ltype ptr ast:Type,
-                              recList,errors ptr spring:List) ptr ast:Type
+                              recList,errors ptr base:List) ptr ast:Type
 
   mut accType = ltype
 
@@ -660,7 +660,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
   /if
 
   if !ast:typeIsFunc(accType)
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression is neither a function nor a pointer to a function"))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression is neither a function nor a pointer to a function"))
 
     return null
   /if
@@ -668,36 +668,36 @@ func validateFunctionCallExpr(rsv sema:Resolver,
   mut expParams = accType'members
   mut expLen = utils:kvLen(expParams)
 
-  mut argsLen = spring:listLen(pexpr'node'leaves)
+  mut argsLen = base:listLen(pexpr'node'leaves)
 
   if argsLen != expLen + 1
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "can't call function ")
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, "can't call function ")
 
     if ltype'name != null
-      spring:csAppendStr(cs, "'")
+      base:csAppendStr(cs, "'")
 
       if ltype'moduleName != null
-        spring:csAppendStr(cs, accType'moduleName)
-        spring:csAppendStr(cs, ":")
+        base:csAppendStr(cs, accType'moduleName)
+        base:csAppendStr(cs, ":")
       /if
 
-      spring:csAppendStr(cs, accType'name)
-      spring:csAppendStr(cs, "' ")
+      base:csAppendStr(cs, accType'name)
+      base:csAppendStr(cs, "' ")
     else
       ast:typeSummarize(cs, accType)
     /if
 
-    spring:csAppendStr(cs, ": expected ")
-    spring:csAppendInt(cs, expLen)
-    spring:csAppendStr(cs, " parameters, got ")
-    spring:csAppendInt(cs, argsLen - 1)
+    base:csAppendStr(cs, ": expected ")
+    base:csAppendInt(cs, expLen)
+    base:csAppendStr(cs, " parameters, got ")
+    base:csAppendInt(cs, argsLen - 1)
 
-    mut msg = spring:csUnleash(cs)
+    mut msg = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
-    spring:free(msg)
+    base:free(msg)
 
     return null
   /if
@@ -706,7 +706,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
   mut i uintptr = 0
 
   while i < expLen
-    mut gotParam = cast<ptr ast:PExpr>(val spring:listGet(scope'leaves, i + 1))
+    mut gotParam = cast<ptr ast:PExpr>(val base:listGet(scope'leaves, i + 1))
     mut expPair = utils:kvGetAt(expParams, i)
 
     mut expType = cast<ptr ast:Type>(expPair'value)
@@ -717,24 +717,24 @@ func validateFunctionCallExpr(rsv sema:Resolver,
     /if
 
     if !sema:typeIsAssignable(rsv'ctx, scope, expType, gotType)
-      mut cs = spring:csNew(20)
-      spring:csAppendStr(cs, "passing '")
+      mut cs = base:csNew(20)
+      base:csAppendStr(cs, "passing '")
 
       ast:typeSummarize(cs, gotType)
 
-      spring:csAppendStr(cs, "' to parameter '")
-      spring:csAppendStr(cs, cast<ptr uint8>(expPair'key))
-      spring:csAppendStr(cs, "' of type '")
+      base:csAppendStr(cs, "' to parameter '")
+      base:csAppendStr(cs, cast<ptr uint8>(expPair'key))
+      base:csAppendStr(cs, "' of type '")
 
       ast:typeSummarize(cs, expType)
 
-      spring:csAppendStr(cs, "'")
+      base:csAppendStr(cs, "'")
 
-      mut msg = spring:csUnleash(cs)
+      mut msg = base:csUnleash(cs)
 
-      spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+      base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
-      spring:free(msg)
+      base:free(msg)
 
       return null
     /if
@@ -749,27 +749,27 @@ func validateFunctionCallExpr(rsv sema:Resolver,
 func validateAssignExpr(rsv sema:Resolver,
                         pexpr,left ptr ast:PExpr,
                         ltype,rtype ptr ast:Type,
-                        errors ptr spring:List) ptr ast:Type
+                        errors ptr base:List) ptr ast:Type
 
   if !ttypeCanBeAssignTarget(left'opType, ltype)
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, left'node'begin, rsv'root'fileName, "expression cannot be target of assignment"))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, left'node'begin, rsv'root'fileName, "expression cannot be target of assignment"))
     return null
   /if
 
   if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
-    mut cs = spring:csNew(20)
+    mut cs = base:csNew(20)
 
-    spring:csAppendStr(cs, "cannot assign expression of type '")
+    base:csAppendStr(cs, "cannot assign expression of type '")
     ast:typeSummarize(cs, rtype)
-    spring:csAppendStr(cs, "' to a lvalue of type '")
+    base:csAppendStr(cs, "' to a lvalue of type '")
     ast:typeSummarize(cs, ltype)
-    spring:csAppendStr(cs, "'")
+    base:csAppendStr(cs, "'")
 
-    mut str = spring:csUnleash(cs)
+    mut str = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
-    spring:free(str)
+    base:free(str)
 
     return null
   /if
@@ -780,7 +780,7 @@ func validateAssignExpr(rsv sema:Resolver,
 
 func validateBinaryExpr(rsv sema:Resolver,
                         pexpr ptr ast:PExpr,
-                        recList,errors ptr spring:List) ptr ast:Type
+                        recList,errors ptr base:List) ptr ast:Type
 
   mut op = pexpr'opType
 
@@ -791,7 +791,7 @@ func validateBinaryExpr(rsv sema:Resolver,
     return validateModuleAccessExpr(rsv, pexpr, errors)
   /if
 
-  mut left = cast<ptr ast:PExpr>(val spring:listGet(pexpr'node'leaves, 0))
+  mut left = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 0))
   mut ltype = sema:validateExprRecl(rsv, left, recList, errors)
 
   if ltype == null
@@ -808,7 +808,7 @@ func validateBinaryExpr(rsv sema:Resolver,
     return validateFunctionCallExpr(rsv, pexpr, ltype, recList, errors)
   /if
 
-  mut right = cast<ptr ast:PExpr>(val spring:listGet(pexpr'node'leaves, 1))
+  mut right = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 1))
   mut rtype = sema:validateExprRecl(rsv, right, recList, errors)
 
   if rtype == null
@@ -839,10 +839,10 @@ func validateBinaryExpr(rsv sema:Resolver,
 func validateNotExpr(rsv sema:Resolver,
                      pexpr ptr ast:PExpr,
                      atype ptr ast:Type,
-                     errors ptr spring:List) ptr ast:Type
+                     errors ptr base:List) ptr ast:Type
 
   if !ast:typeIsBool(atype)
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression must be boolean"))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression must be boolean"))
 
     return null
   /if
@@ -855,19 +855,19 @@ func validateNotExpr(rsv sema:Resolver,
 func validateValExpr(rsv sema:Resolver,
                      pexpr ptr ast:PExpr,
                      atype ptr ast:Type,
-                     errors ptr spring:List) ptr ast:Type
+                     errors ptr base:List) ptr ast:Type
 
   if atype'type != ast:TYPE_PTR
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "type '")
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, "type '")
     ast:typeSummarize(cs, atype)
-    spring:csAppendStr(cs, "' is not dereferenceable")
+    base:csAppendStr(cs, "' is not dereferenceable")
 
-    mut msg = spring:csUnleash(cs)
+    mut msg = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
-    spring:free(msg)
+    base:free(msg)
 
     return null
   /if
@@ -879,10 +879,10 @@ func validateValExpr(rsv sema:Resolver,
 func validatePtrExpr(rsv sema:Resolver,
                      pexpr ptr ast:PExpr,
                      atype ptr ast:Type,
-                     errors ptr spring:List) ptr ast:Type
+                     errors ptr base:List) ptr ast:Type
 
   if ast:typeIsNull(atype)
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "can't extract the address of null"))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "can't extract the address of null"))
 
     return null
   /if
@@ -894,34 +894,34 @@ func validatePtrExpr(rsv sema:Resolver,
 func validateUMinusExpr(rsv sema:Resolver,
                         pexpr ptr ast:PExpr,
                         atype ptr ast:Type,
-                        errors ptr spring:List) ptr ast:Type
+                        errors ptr base:List) ptr ast:Type
 
   if !ast:typeIsInt(atype)
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "cannot apply unary '-' to type '")
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, "cannot apply unary '-' to type '")
     ast:typeSummarize(cs, atype)
-    spring:csAppendStr(cs, "'")
+    base:csAppendStr(cs, "'")
 
-    mut msg = spring:csUnleash(cs)
+    mut msg = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
-    spring:free(msg)
+    base:free(msg)
 
     return null
   /if
 
   if !atype'isSigned
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "cannot apply unary '-' to unsigned type '")
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, "cannot apply unary '-' to unsigned type '")
     ast:typeSummarize(cs, atype)
-    spring:csAppendStr(cs, "'")
+    base:csAppendStr(cs, "'")
 
-    mut msg = spring:csUnleash(cs)
+    mut msg = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
-    spring:free(msg)
+    base:free(msg)
 
     return null
   /if
@@ -933,25 +933,25 @@ func validateUMinusExpr(rsv sema:Resolver,
 func validateIncDecExpr(rsv sema:Resolver,
                         pexpr,atarget ptr ast:PExpr,
                         atype ptr ast:Type,
-                        errors ptr spring:List) ptr ast:Type
+                        errors ptr base:List) ptr ast:Type
 
   if !ast:typeIsInt(atype) and !ast:typeIsPtr(atype)
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "type '")
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, "type '")
     ast:typeSummarize(cs, atype)
-    spring:csAppendStr(cs, "' is not an integer or pointer type")
+    base:csAppendStr(cs, "' is not an integer or pointer type")
 
-    mut msg = spring:csUnleash(cs)
+    mut msg = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
-    spring:free(msg)
+    base:free(msg)
 
     return null
   /if
 
   if !ttypeCanBeAssignTarget(atarget'opType, atype)
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, atarget'node'begin, rsv'root'fileName, "expression is not assignable"))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, atarget'node'begin, rsv'root'fileName, "expression is not assignable"))
 
     return null
   /if
@@ -962,11 +962,11 @@ func validateIncDecExpr(rsv sema:Resolver,
 
 func validateUnaryExpr(rsv sema:Resolver,
                        pexpr ptr ast:PExpr,
-                       recList, errors ptr spring:List) ptr ast:Type
+                       recList, errors ptr base:List) ptr ast:Type
 
   mut op = pexpr'opType
 
-  mut arg = cast<ptr ast:PExpr>(val spring:listGet(pexpr'node'leaves, 0))
+  mut arg = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 0))
   mut atype = sema:validateExprRecl(rsv, arg, recList, errors)
 
   if op == lex:NOT
@@ -993,15 +993,15 @@ func validateUnaryExpr(rsv sema:Resolver,
 
 func validateTernaryExpr(rsv sema:Resolver,
                          pexpr ptr ast:PExpr,
-                         recList, errors ptr spring:List) ptr ast:Type
+                         recList, errors ptr base:List) ptr ast:Type
 
-  mut condition = cast<ptr ast:PExpr>(val spring:listGet(pexpr'node'leaves, 0))
+  mut condition = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 0))
   mut condType = sema:validateExprRecl(rsv, condition, recList, errors)
 
-  mut left = cast<ptr ast:PExpr>(val spring:listGet(pexpr'node'leaves, 1))
+  mut left = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 1))
   mut leftType = sema:validateExprRecl(rsv, left, recList, errors)
 
-  mut right = cast<ptr ast:PExpr>(val spring:listGet(pexpr'node'leaves, 1))
+  mut right = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 1))
   mut rightType = sema:validateExprRecl(rsv, right, recList, errors)
 
   if condType == null or leftType == null or rightType == null
@@ -1009,7 +1009,7 @@ func validateTernaryExpr(rsv sema:Resolver,
   /if
 
   if !ast:typeIsBool(condType)
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "non boolean ternary condition"))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "non boolean ternary condition"))
 
     return null
   /if
@@ -1020,18 +1020,18 @@ func validateTernaryExpr(rsv sema:Resolver,
   # for sake of type determination, so we must run it twice with reversed
   # arguments
   if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), leftType, rightType) and !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), rightType, leftType)
-    mut cs = spring:csNew(20)
-    spring:csAppendStr(cs, "ternary expression arguments have incompatible types '")
+    mut cs = base:csNew(20)
+    base:csAppendStr(cs, "ternary expression arguments have incompatible types '")
     ast:typeSummarize(cs, leftType)
-    spring:csAppendStr(cs, "' and '")
+    base:csAppendStr(cs, "' and '")
     ast:typeSummarize(cs, rightType)
-    spring:csAppendStr(cs, "'")
+    base:csAppendStr(cs, "'")
 
-    mut msg = spring:csUnleash(cs)
+    mut msg = base:csUnleash(cs)
 
-    spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
-    spring:free(msg)
+    base:free(msg)
 
     return null
   /if
@@ -1059,7 +1059,7 @@ func validateTernaryExpr(rsv sema:Resolver,
 
 func validateExprRecl(rsv sema:Resolver,
                       pexpr ptr ast:PExpr,
-                      recList,errors ptr spring:List) ptr ast:Type
+                      recList,errors ptr base:List) ptr ast:Type
 
 
   if pexpr'node'validated
@@ -1105,7 +1105,7 @@ func validateExprRecl(rsv sema:Resolver,
 
 func validateExpr(rsv sema:Resolver,
                   pexpr ptr ast:PExpr,
-                  errors ptr spring:List) ptr ast:Type
+                  errors ptr base:List) ptr ast:Type
 
   return validateExprRecl(rsv, pexpr, null, errors)
 /func

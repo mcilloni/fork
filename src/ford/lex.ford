@@ -9,7 +9,7 @@
 
 module lex
 
-import spring
+import base
 import utils
 
 
@@ -24,7 +24,7 @@ decl linenoNew func(file ptr uint8, line,pos uintptr) ptr Lineno
 
 decl lineMake func(lexl ptr Lineno) utils:Line
 
-decl issueFromLexError func(err ptr spring:Error, lineno ptr Lineno) ptr utils:Issue
+decl issueFromLexError func(err ptr base:Error, lineno ptr Lineno) ptr utils:Issue
 
 alias StringTok struct(
   str ptr uint8,
@@ -32,9 +32,9 @@ alias StringTok struct(
 )
 
 alias Lexer struct (
-  file ptr spring:Stream,
+  file ptr base:Stream,
   lineno ptr Lineno,
-  error ptr spring:Error,
+  error ptr base:Error,
   saved ptr StringTok,
   peek uint8,
   newline, firstLineTok, firstLineLetter bool
@@ -50,9 +50,9 @@ alias Token struct (
 
 decl lexerClose func(lex ptr Lexer)
 decl lexerEof func(lex ptr Lexer) bool
-decl lexerError func(lex ptr Lexer) ptr spring:Error
-decl lexerFromStream func(stream ptr spring:Stream, name ptr uint8, err ptr ptr spring:Error) ptr Lexer
-decl lexerNew func(name ptr uint8, err ptr ptr spring:Error) ptr Lexer
+decl lexerError func(lex ptr Lexer) ptr base:Error
+decl lexerFromStream func(stream ptr base:Stream, name ptr uint8, err ptr ptr base:Error) ptr Lexer
+decl lexerNew func(name ptr uint8, err ptr ptr base:Error) ptr Lexer
 decl lexerNext func(lex ptr Lexer) ptr Token
 
 decl tokenFree func(tok ptr Token)
@@ -63,7 +63,7 @@ decl ttypeStr func(tt uint16) ptr uint8
 
 decl error func(line ptr Lineno, msg ptr uint8) ptr utils:Issue
 decl errorMism func(line ptr Lineno, got ptr uint8, expected ptr uint8) ptr utils:Issue
-decl errorLex func(lex ptr Lexer, msg ptr uint8) ptr spring:Error
+decl errorLex func(lex ptr Lexer, msg ptr uint8) ptr base:Error
 
 decl tokExtractBegin func(tok ptr Token) utils:Line
 decl tokExtractEnd func(tok ptr Token) utils:Line

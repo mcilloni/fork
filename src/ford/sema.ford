@@ -11,7 +11,7 @@ module sema
 
 import ast
 import ctx
-import spring
+import base
 import utils
 
 alias Resolver struct (
@@ -23,55 +23,55 @@ alias Resolver struct (
 decl resolverCollect func(rsv ptr Resolver,
                           ctx ptr ctx:Context,
                           root ptr ast:PRoot,
-                          errors ptr spring:List) ptr utils:KVList
+                          errors ptr base:List) ptr utils:KVList
 
 decl resolverDeinit func(rsv Resolver)
 
 
 decl registerAlias func(rsv Resolver,
                         pdecl ptr ast:PDecl,
-                        errors ptr spring:List) ptr ast:Type
+                        errors ptr base:List) ptr ast:Type
 
 decl registerDecl func(rsv Resolver,
                        pdecl ptr ast:PDecl,
                        name ptr uint8,
                        type ptr ast:Type,
                        declType uint16,
-                       errors ptr spring:List) ptr ast:Type
+                       errors ptr base:List) ptr ast:Type
 
 decl registerTopDecl func(rsv Resolver,
                           pdecl ptr ast:PDecl,
-                          errors ptr spring:List) ptr ast:Type
+                          errors ptr base:List) ptr ast:Type
 
 decl resolveType func(rsv Resolver,
                       ptype ptr ast:PType,
-                      errors ptr spring:List) ptr ast:Type
+                      errors ptr base:List) ptr ast:Type
 
 decl validateExprRecl func(rsv Resolver,
                            pexpr ptr ast:PExpr,
-                           recList,errors ptr spring:List) ptr ast:Type
+                           recList,errors ptr base:List) ptr ast:Type
 
 decl validateExpr func(rsv Resolver,
                        pexpr ptr ast:PExpr,
-                       errors ptr spring:List) ptr ast:Type
+                       errors ptr base:List) ptr ast:Type
 
 decl validateFunc func(rsv Resolver,
                        pdecl ptr ast:PDecl,
                        funcType ptr ast:Type,
-                       errors ptr spring:List) bool
+                       errors ptr base:List) bool
 
 
 decl semaValidateAstRoot func(ctx ptr ctx:Context,
                               root ptr ast:PRoot,
-                              errors ptr spring:List) bool
+                              errors ptr base:List) bool
 
 # validates the AST, and returns a list of the issues found.
 decl semaValidateAst func(context ptr ctx:Context,
-                          root ptr ast:PNode) ptr spring:List
+                          root ptr ast:PNode) ptr base:List
 
 decl semaParse func(context ptr ctx:Context,
                     fileName ptr uint8,
-                    newRoot ptr ptr ast:PNode) ptr spring:List
+                    newRoot ptr ptr ast:PNode) ptr base:List
 
 # ast sema operations
 

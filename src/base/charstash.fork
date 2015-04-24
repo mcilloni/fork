@@ -12,14 +12,14 @@
 #
 #  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
 
-import spring
+import base
 
-func csAppend(cs ptr spring:Charstash, ch uint8)
+func csAppend(cs ptr base:Charstash, ch uint8)
   if cs'len == cs'cap
     cs'cap = cs'cap + 10
-    mut new = cast<ptr uint8>(spring:alloc(cs'cap))
-    spring:memmove(new, cs'base, cs'len)
-    spring:free(cs'base)
+    mut new = cast<ptr uint8>(base:alloc(cs'cap))
+    base:memmove(new, cs'base, cs'len)
+    base:free(cs'base)
     cs'base = new
     cs'work = cs'base + cs'len
   /if
@@ -29,44 +29,44 @@ func csAppend(cs ptr spring:Charstash, ch uint8)
   cs'work++
 /func
 
-func csAppendInt(cs ptr spring:Charstash, num uintptr)
+func csAppendInt(cs ptr base:Charstash, num uintptr)
   mut buf [20] int8
 
-  spring:numtostr(num, ptr buf[0], 20)
+  base:numtostr(num, ptr buf[0], 20)
 
-  spring:csAppendStr(cs, buf)
+  base:csAppendStr(cs, buf)
 /func
 
-func csAppendStr(cs ptr spring:Charstash, str ptr uint8)
+func csAppendStr(cs ptr base:Charstash, str ptr uint8)
   while val str != 0
     csAppend(cs, val str)
     str++
   /while
 /func
 
-func csFree(cs ptr spring:Charstash)
-  spring:free(cs'base)
-  spring:free(cs)
+func csFree(cs ptr base:Charstash)
+  base:free(cs'base)
+  base:free(cs)
 /func
 
-func csNew(cap uintptr) ptr spring:Charstash
-  mut cs = cast<ptr spring:Charstash>(spring:zalloc(size(spring:Charstash)))
+func csNew(cap uintptr) ptr base:Charstash
+  mut cs = cast<ptr base:Charstash>(base:zalloc(size(base:Charstash)))
 
-  cs'work = cs'base = cast<ptr uint8>(spring:alloc(cap))
+  cs'work = cs'base = cast<ptr uint8>(base:alloc(cap))
   cs'cap = cap
 
   return cs
 /func
 
-func csUnleash(cs ptr spring:Charstash) ptr uint8
+func csUnleash(cs ptr base:Charstash) ptr uint8
   csAppend(cs, 0)
 
   mut ret = cs'base
-  spring:free(cs)
+  base:free(cs)
 
   return ret
 /func
 
-func csLen(cs ptr spring:Charstash) uintptr
+func csLen(cs ptr base:Charstash) uintptr
   return cs'len
 /func

@@ -10,37 +10,37 @@
 import ast
 import ctx
 import sema
-import spring
+import base
 import synt
 import utils
 
 
-func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr ptr ast:PNode) ptr spring:List
-  mut fordName = spring:strappend(importName'name, ".ford")
+func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr ptr ast:PNode) ptr base:List
+  mut fordName = base:strappend(importName'name, ".ford")
 
-  mut len = spring:listLen(ctx'fordPaths)
+  mut len = base:listLen(ctx'fordPaths)
 
   mut i uintptr = 0
 
   while i < len
-    mut path = cast<ptr uint8>(val spring:listGet(ctx'fordPaths, i))
-    mut joinedPath = spring:pathJoin(path, fordName)
+    mut path = cast<ptr uint8>(val base:listGet(ctx'fordPaths, i))
+    mut joinedPath = base:pathJoin(path, fordName)
 
-    if spring:pathExists(joinedPath)
+    if base:pathExists(joinedPath)
 
       mut ret = sema:semaParse(ctx, joinedPath, importAst)
 
-      spring:free(joinedPath)
-      spring:free(fordName)
+      base:free(joinedPath)
+      base:free(fordName)
       return ret
     /if
 
-    spring:free(joinedPath)
+    base:free(joinedPath)
 
     i++
   /while
 
-  mut errors = spring:listNew()
+  mut errors = base:listNew()
 
   mut toGlue [4] ptr uint8
 
@@ -49,63 +49,63 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
   toGlue[2] = " in the given FORDPATHS"
   toGlue[3] = null
 
-  mut glued = spring:strglue(ptr toGlue[0])
+  mut glued = base:strglue(ptr toGlue[0])
 
-  spring:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, importName'begin, ctx'currentFile, glued))
+  base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, importName'begin, ctx'currentFile, glued))
 
-  spring:free(fordName)
-  spring:free(glued)
+  base:free(fordName)
+  base:free(glued)
 
   return errors
 /func
 
 
-func contextImport(ctx ptr ctx:Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr spring:List
+func contextImport(ctx ptr ctx:Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr base:List
 
-  if !spring:mapGet(ctx'imports, importName, value)
+  if !base:mapGet(ctx'imports, importName, value)
     mut errors = findImport(ctx, importName, value)
-    if spring:listLen(errors) == 0
-      spring:mapPut(ctx'imports, spring:strclone(importName'name), val value, spring:FREE_KEY | spring:FREE_VALUE)
+    if base:listLen(errors) == 0
+      base:mapPut(ctx'imports, base:strclone(importName'name), val value, base:FREE_KEY | base:FREE_VALUE)
     /if
 
     return errors
   else
-    return spring:listNew()
+    return base:listNew()
   /if
 
 /func
 
 
-func contextImportAll(ctx ptr ctx:Context, imports ptr spring:List) ptr spring:List
-  mut len = spring:listLen(imports)
+func contextImportAll(ctx ptr ctx:Context, imports ptr base:List) ptr base:List
+  mut len = base:listLen(imports)
   mut i uintptr = 0
 
   while i < len
     mut value ptr ast:PNode
-    mut importName = cast<ptr ast:StringDef>(val spring:listGet(imports, i))
+    mut importName = cast<ptr ast:StringDef>(val base:listGet(imports, i))
     mut errs = contextImport(ctx, importName, ptr value)
 
-    if spring:listLen(errs) != 0
+    if base:listLen(errs) != 0
       return errs
     /if
 
     i++
   /while
 
-  return spring:listNew()
+  return base:listNew()
 /func
 
 
-func envExtractFordPaths() ptr spring:List
-  mut list = spring:listNew()
+func envExtractFordPaths() ptr base:List
+  mut list = base:listNew()
 
-  mut paths = spring:getenv("FORDPATHS")
+  mut paths = base:getenv("FORDPATHS")
   if paths != null
     mut tkz = utils:tokenizerNew(paths, 58) #`:`
     mut path ptr uint8
 
     while (path = utils:tokenizerNext(tkz)) != null
-      spring:listAppend(list, path)
+      base:listAppend(list, path)
     /while
 
   /if
@@ -117,7 +117,7 @@ func envExtractFordPaths() ptr spring:List
 func contextGetImport(ctx ptr ctx:Context, name ptr uint8) ptr ast:PRoot
   mut ret ptr ast:PRoot = null
 
-  spring:mapGet(ctx'imports, name, ptr ret)
+  base:mapGet(ctx'imports, name, ptr ret)
 
   return ret
 /func
@@ -126,31 +126,31 @@ func contextGetImport(ctx ptr ctx:Context, name ptr uint8) ptr ast:PRoot
 func contextFree(ctx ptr ctx:Context)
   if ctx != null
     if ctx'imports != null
-      spring:mapFreeSpec(ctx'imports, ptr spring:free, cast<ptr func(item data)>(ptr ast:pnodeFree))
+      base:mapFreeSpec(ctx'imports, ptr base:free, cast<ptr func(item data)>(ptr ast:pnodeFree))
     /if
 
     if ctx'fordPaths != null
-      spring:listFreeAll(ctx'fordPaths, ptr spring:free)
+      base:listFreeAll(ctx'fordPaths, ptr base:free)
     /if
 
-    spring:mapFreeSpec(ctx'builtins, null, cast<ptr func(item data)>(ptr ast:typeFree))
+    base:mapFreeSpec(ctx'builtins, null, cast<ptr func(item data)>(ptr ast:typeFree))
 
-    spring:free(ctx'currentFile)
-    spring:free(ctx)
+    base:free(ctx'currentFile)
+    base:free(ctx)
   /if
 /func
 
 
 func contextSetCurrentFile(ctx ptr ctx:Context, filename ptr uint8)
-  spring:free(ctx'currentFile)
+  base:free(ctx'currentFile)
 
-  ctx'currentFile = spring:strclone(filename)
+  ctx'currentFile = base:strclone(filename)
 /func
 
 
 func contextNew() ptr ctx:Context
-  mut ctx = cast<ptr ctx:Context>(spring:zalloc(size(ctx:Context)))
-  ctx'imports = spring:strmapNew()
+  mut ctx = cast<ptr ctx:Context>(base:zalloc(size(ctx:Context)))
+  ctx'imports = base:strmapNew()
 
   ctx'fordPaths = envExtractFordPaths()
   ctx'builtins = ast:builtinSetNew()
@@ -161,6 +161,6 @@ func contextNew() ptr ctx:Context
 func contextMatchBuiltin(ctx ptr ctx:Context, name ptr uint8) ptr ast:Type
   mut value ptr ast:Type = null
 
-  spring:mapGet(ctx'builtins, name, ptr value)
+  base:mapGet(ctx'builtins, name, ptr value)
   return value
 /func

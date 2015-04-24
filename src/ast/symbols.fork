@@ -9,7 +9,7 @@
 
 import ast
 import platform
-import spring
+import base
 import utils
 
 
@@ -18,31 +18,31 @@ func symbolClone(sym ptr ast:Symbol) ptr ast:Symbol
     return null
   /if
 
-  mut newInst = cast<ptr ast:Symbol>(spring:alloc(size(ast:Symbol)))
-  newInst'name = spring:strclone(sym'name)
+  mut newInst = cast<ptr ast:Symbol>(base:alloc(size(ast:Symbol)))
+  newInst'name = base:strclone(sym'name)
   newInst'type = sym'type
 
   return newInst
 /func
 
 func symbolEquals(sym1,sym2 ptr ast:Symbol) bool
-  return spring:strequals(sym1'name, sym2'name) and ast:typeEquals(sym1'type, sym2'type)
+  return base:strequals(sym1'name, sym2'name) and ast:typeEquals(sym1'type, sym2'type)
 /func
 
 
 func symbolFree(sym ptr ast:Symbol)
   if sym != null
-    spring:free(sym'name)
+    base:free(sym'name)
 
-    spring:free(sym)
+    base:free(sym)
   /if
 /func
 
 
 func symbolNew(name ptr uint8, type ptr ast:Type) ptr ast:Symbol
-  mut sym = cast<ptr ast:Symbol>(spring:alloc(size(ast:Symbol)))
+  mut sym = cast<ptr ast:Symbol>(base:alloc(size(ast:Symbol)))
 
-  sym'name = spring:strclone(name)
+  sym'name = base:strclone(name)
   sym'type = type
 
   return sym
@@ -60,7 +60,7 @@ func symbolListClone(pool ptr utils:FreePool, symList ptr utils:KVList) ptr util
 
   while i < len
     mut elem = utils:kvGetAt(symList, i)
-    mut newStr = spring:strclone(cast<ptr uint8>(elem'key))
+    mut newStr = base:strclone(cast<ptr uint8>(elem'key))
     mut newType = ast:typeClone(pool, cast<ptr ast:Type>(elem'value))
 
     utils:kvPut(ret, newStr, newType)
@@ -77,9 +77,9 @@ func typeClone(pool ptr utils:FreePool, type ptr ast:Type) ptr ast:Type
     return null
   /if
 
-  mut newInst = cast<ptr ast:Type>(spring:memcpy(utils:fpAlloc(pool, size(ast:Type)), type, size(ast:Type)))
-  newInst'moduleName = spring:strclone(type'moduleName)
-  newInst'name = spring:strclone(type'name)
+  mut newInst = cast<ptr ast:Type>(base:memcpy(utils:fpAlloc(pool, size(ast:Type)), type, size(ast:Type)))
+  newInst'moduleName = base:strclone(type'moduleName)
+  newInst'name = base:strclone(type'name)
   newInst'retType = ast:typeClone(pool, type'retType)
   newInst'members = symbolListClone(pool, type'members)
 
@@ -106,7 +106,7 @@ func typeEqualsList(list1, list2 ptr utils:KVList) bool
     mut type1 = cast<ptr ast:Type>(pair1'value)
     mut type2 = cast<ptr ast:Type>(pair2'value)
 
-    if !spring:strequals(name1, name2) or !ast:typeEquals(type1, type2)
+    if !base:strequals(name1, name2) or !ast:typeEquals(type1, type2)
       return false
     /if
 
@@ -123,10 +123,10 @@ func typeEquals(type1, type2 ptr ast:Type) bool
   /if
 
   if type1'name != null and type2'name != null
-    mut res = spring:strequals(type1'name, type2'name)
+    mut res = base:strequals(type1'name, type2'name)
 
     if res and type1'moduleName != null and type2'moduleName != null
-      res = spring:strequals(type1'moduleName, type2'moduleName)
+      res = base:strequals(type1'moduleName, type2'moduleName)
     /if
 
     return res
@@ -160,8 +160,8 @@ func typeEquals(type1, type2 ptr ast:Type) bool
                 if type1'type == ast:TYPE_NULL
                   return true
                 else
-                  spring:errln("Unreachable: unknown type comparison")
-                  spring:abort()
+                  base:errln("Unreachable: unknown type comparison")
+                  base:abort()
                 /if
               /if
             /if
@@ -175,14 +175,14 @@ func typeEquals(type1, type2 ptr ast:Type) bool
 
 func typeFree(type ptr ast:Type)
   if type != null
-    spring:free(type'moduleName)
-    spring:free(type'name)
+    base:free(type'moduleName)
+    base:free(type'name)
 
     if type'members != null
       utils:kvFree(type'members)
     /if
 
-    spring:free(type)
+    base:free(type)
   /if
 /func
 
@@ -236,12 +236,12 @@ func typeNew(pool ptr utils:FreePool,
              retType ptr ast:Type,
              members ptr utils:KVList) ptr ast:Type
 
-  mut location = pool != null => utils:fpAlloc(pool, size(ast:Type)) || spring:alloc(size(ast:Type))
+  mut location = pool != null => utils:fpAlloc(pool, size(ast:Type)) || base:alloc(size(ast:Type))
   mut ret = cast<ptr ast:Type>(location)
 
   ret'type = type
-  ret'moduleName = spring:strclone(moduleName)
-  ret'name = spring:strclone(name)
+  ret'moduleName = base:strclone(moduleName)
+  ret'name = base:strclone(name)
   ret'isSigned = isSigned
   ret'typeSize = typeSize
   ret'typeAlign = typeAlign
@@ -298,26 +298,26 @@ func typeNewBuiltinString(uint8t ptr ast:Type) ptr ast:Type
 /func
 
 
-func builtinSetNew() ptr spring:Map
+func builtinSetNew() ptr base:Map
 
-  mut ret = spring:strmapNew()
+  mut ret = base:strmapNew()
   mut uint8t = typeNewBuiltinInt("uint8", 1, false)
 
-  spring:mapPut(ret, "uint8", uint8t, spring:FREE_VALUE)
-  spring:mapPut(ret, "uint16", typeNewBuiltinInt("uint16", 2, false), spring:FREE_VALUE)
-  spring:mapPut(ret, "uint32", typeNewBuiltinInt("uint32", 4, false), spring:FREE_VALUE)
-  spring:mapPut(ret, "uint64", typeNewBuiltinInt("uint64", 8, false), spring:FREE_VALUE)
-  spring:mapPut(ret, "int8", typeNewBuiltinInt("int8", 1, true), spring:FREE_VALUE)
-  spring:mapPut(ret, "int16", typeNewBuiltinInt("int16", 2, true), spring:FREE_VALUE)
-  spring:mapPut(ret, "int32", typeNewBuiltinInt("int32", 4, true), spring:FREE_VALUE)
-  spring:mapPut(ret, "int64", typeNewBuiltinInt("int64", 8, true), spring:FREE_VALUE)
-  spring:mapPut(ret, "uintptr", typeNewBuiltinInt("uintptr", platform:ptrSize, false), spring:FREE_VALUE)
-  spring:mapPut(ret, "intptr", typeNewBuiltinInt("intptr", platform:ptrSize, true), spring:FREE_VALUE)
-  spring:mapPut(ret, "bool", typeNewBuiltinBool(), spring:FREE_VALUE)
-  spring:mapPut(ret, "data", typeNewBuiltinData(), spring:FREE_VALUE)
-  spring:mapPut(ret, "\0", typeNewBuiltinEmpty(), spring:FREE_VALUE)
-  spring:mapPut(ret, "null", typeNewBuiltinNull(), spring:FREE_VALUE)
-  spring:mapPut(ret, "ptr uint8", typeNewBuiltinString(uint8t), spring:FREE_VALUE)
+  base:mapPut(ret, "uint8", uint8t, base:FREE_VALUE)
+  base:mapPut(ret, "uint16", typeNewBuiltinInt("uint16", 2, false), base:FREE_VALUE)
+  base:mapPut(ret, "uint32", typeNewBuiltinInt("uint32", 4, false), base:FREE_VALUE)
+  base:mapPut(ret, "uint64", typeNewBuiltinInt("uint64", 8, false), base:FREE_VALUE)
+  base:mapPut(ret, "int8", typeNewBuiltinInt("int8", 1, true), base:FREE_VALUE)
+  base:mapPut(ret, "int16", typeNewBuiltinInt("int16", 2, true), base:FREE_VALUE)
+  base:mapPut(ret, "int32", typeNewBuiltinInt("int32", 4, true), base:FREE_VALUE)
+  base:mapPut(ret, "int64", typeNewBuiltinInt("int64", 8, true), base:FREE_VALUE)
+  base:mapPut(ret, "uintptr", typeNewBuiltinInt("uintptr", platform:ptrSize, false), base:FREE_VALUE)
+  base:mapPut(ret, "intptr", typeNewBuiltinInt("intptr", platform:ptrSize, true), base:FREE_VALUE)
+  base:mapPut(ret, "bool", typeNewBuiltinBool(), base:FREE_VALUE)
+  base:mapPut(ret, "data", typeNewBuiltinData(), base:FREE_VALUE)
+  base:mapPut(ret, "\0", typeNewBuiltinEmpty(), base:FREE_VALUE)
+  base:mapPut(ret, "null", typeNewBuiltinNull(), base:FREE_VALUE)
+  base:mapPut(ret, "ptr uint8", typeNewBuiltinString(uint8t), base:FREE_VALUE)
 
   return ret
 /func
@@ -395,8 +395,8 @@ func typeNewStruct(pool ptr utils:FreePool, moduleName, name ptr uint8, members 
 
 func typeSetAlias(type ptr ast:Type, moduleName, name ptr uint8)
   if type != null
-    type'moduleName = spring:strclone(moduleName)
-    type'name = spring:strclone(name)
+    type'moduleName = base:strclone(moduleName)
+    type'name = base:strclone(name)
   /if
 /func
 
@@ -410,12 +410,12 @@ func typeSetBoundaries(type ptr ast:Type, begin,end utils:Line)
 
 
 func declInfoFree(declInfo ptr ast:DeclInfo)
-  spring:free(declInfo)
+  base:free(declInfo)
 /func
 
 
 func declInfoNew(declType uint16, type ptr ast:Type) ptr ast:DeclInfo
-  mut ret = cast<ptr ast:DeclInfo>(spring:alloc(size(ast:DeclInfo)))
+  mut ret = cast<ptr ast:DeclInfo>(base:alloc(size(ast:DeclInfo)))
   ret'declType = declType
   ret'type = type
 
@@ -424,23 +424,23 @@ func declInfoNew(declType uint16, type ptr ast:Type) ptr ast:DeclInfo
 
 
 func stabNew() ptr ast:Symtable
-  mut stab = cast<ptr ast:Symtable>(spring:zalloc(size(ast:Symtable)))
+  mut stab = cast<ptr ast:Symtable>(base:zalloc(size(ast:Symtable)))
 
-  stab'syms = spring:strmapNew()
+  stab'syms = base:strmapNew()
 
   return stab
 /func
 
 
 func stabAdd(stab ptr ast:Symtable, name ptr uint8, type ptr ast:Type, symType uint16)
-  spring:mapPut(stab'syms, spring:strclone(name), ast:declInfoNew(symType, type), spring:FREE_KEY | spring:FREE_VALUE)
+  base:mapPut(stab'syms, base:strclone(name), ast:declInfoNew(symType, type), base:FREE_KEY | base:FREE_VALUE)
 /func
 
 
 func stabGet(stab ptr ast:Symtable, name ptr uint8) ptr ast:DeclInfo
   mut value ptr ast:DeclInfo = null
 
-  spring:mapGet(stab'syms, name, ptr value)
+  base:mapGet(stab'syms, name, ptr value)
 
   return value
 /func
@@ -455,8 +455,8 @@ func stabTypeof(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
 
 func stabFree(stab ptr ast:Symtable)
   if stab != null
-    spring:mapFreeSpec(stab'syms, ptr spring:free, ptr ast:declInfoFree)
-    spring:free(stab)
+    base:mapFreeSpec(stab'syms, ptr base:free, ptr ast:declInfoFree)
+    base:free(stab)
   /if
 /func
 

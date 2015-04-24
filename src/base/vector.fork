@@ -12,24 +12,24 @@
 #
 #  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
 
-import spring
+import base
 
-func vectInit(arr ptr spring:Vector, cap uintptr) ptr spring:Vector
-  spring:memset(arr, 0, size(spring:Vector))
+func vectInit(arr ptr base:Vector, cap uintptr) ptr base:Vector
+  base:memset(arr, 0, size(base:Vector))
 
   if cap != 0
-    arr'arr = cast<ptr uintptr>(spring:zalloc(cap * size(uintptr)))
+    arr'arr = cast<ptr uintptr>(base:zalloc(cap * size(uintptr)))
   /if
 
   arr'cap = cap
   return arr
 /func
 
-func vectNew(cap uintptr) ptr spring:Vector
-  return spring:vectInit(cast<ptr spring:Vector>(spring:alloc(size(spring:Vector))), cap)
+func vectNew(cap uintptr) ptr base:Vector
+  return base:vectInit(cast<ptr base:Vector>(base:alloc(size(base:Vector))), cap)
 /func
 
-func vectNewCap(vect ptr spring:Vector, newcap uintptr)
+func vectNewCap(vect ptr base:Vector, newcap uintptr)
 
   mut lowercap uintptr
 
@@ -39,11 +39,11 @@ func vectNewCap(vect ptr spring:Vector, newcap uintptr)
     lowercap = vect'cap
   /if
 
-  mut newarr = cast<ptr uintptr>(spring:zalloc(newcap * size(uintptr)))
+  mut newarr = cast<ptr uintptr>(base:zalloc(newcap * size(uintptr)))
 
-  spring:memmove(newarr, vect'arr, lowercap * size(uintptr))
+  base:memmove(newarr, vect'arr, lowercap * size(uintptr))
 
-  spring:free(vect'arr)
+  base:free(vect'arr)
 
   vect'arr = newarr
   if vect'len > newcap
@@ -54,7 +54,7 @@ func vectNewCap(vect ptr spring:Vector, newcap uintptr)
   vect'isSlice = false
 /func
 
-func vectGetint(vect ptr spring:Vector, index uintptr) ptr uintptr
+func vectGetint(vect ptr base:Vector, index uintptr) ptr uintptr
   if vect'len <= index
     return null
   /if
@@ -63,17 +63,17 @@ func vectGetint(vect ptr spring:Vector, index uintptr) ptr uintptr
 /func
 
 
-func vectCap(vect ptr spring:Vector) uintptr
+func vectCap(vect ptr base:Vector) uintptr
   return vect'cap
 /func
 
 
-func vectLen(vect ptr spring:Vector) uintptr
+func vectLen(vect ptr base:Vector) uintptr
   return vect'len
 /func
 
 
-func vectEnsureCap(vect ptr spring:Vector, newMinCap uintptr)
+func vectEnsureCap(vect ptr base:Vector, newMinCap uintptr)
   if newMinCap > vect'cap
     # prevent overflows
     mut oldCap = vect'cap
@@ -84,12 +84,12 @@ func vectEnsureCap(vect ptr spring:Vector, newMinCap uintptr)
       newCap = newMinCap
     /if
 
-    spring:vectNewCap(vect, newCap)
+    base:vectNewCap(vect, newCap)
   /if
 /func
 
 
-func vectPutint(vect ptr spring:Vector, index uintptr, value uintptr) bool
+func vectPutint(vect ptr base:Vector, index uintptr, value uintptr) bool
   mut newalloc = false
   if vect'cap <= index
     newalloc = true
@@ -109,27 +109,27 @@ func vectPutint(vect ptr spring:Vector, index uintptr, value uintptr) bool
 /func
 
 
-func vectAppendint(vect ptr spring:Vector, value uintptr) bool
+func vectAppendint(vect ptr base:Vector, value uintptr) bool
   return vectPutint(vect, vect'len, value)
 /func
 
-func vectDeinit(vect ptr spring:Vector)
+func vectDeinit(vect ptr base:Vector)
   if !vect'isSlice
-    spring:free(vect'arr)
+    base:free(vect'arr)
   /if
 /func
 
-func vectFree(vect ptr spring:Vector)
+func vectFree(vect ptr base:Vector)
 
   if vect != null
-    spring:vectDeinit(vect)
+    base:vectDeinit(vect)
 
-    spring:free(vect)
+    base:free(vect)
   /if
 
 /func
 
-func vectFreeContents(vect ptr spring:Vector,  freefunc ptr func(item data))
+func vectFreeContents(vect ptr base:Vector,  freefunc ptr func(item data))
 
   if vect != null
 
@@ -138,7 +138,7 @@ func vectFreeContents(vect ptr spring:Vector,  freefunc ptr func(item data))
     /if
 
     if freefunc == null
-      freefunc = ptr spring:free
+      freefunc = ptr base:free
     /if
 
     mut i uintptr = 0
@@ -147,24 +147,24 @@ func vectFreeContents(vect ptr spring:Vector,  freefunc ptr func(item data))
       i++
     /while
 
-    spring:vectPrune(vect)
+    base:vectPrune(vect)
   /if
 
 /func
 
-func vectFreeAll(vect ptr spring:Vector,  freefunc ptr func(item data))
+func vectFreeAll(vect ptr base:Vector,  freefunc ptr func(item data))
   if vect != null
     vectFreeContents(vect, freefunc)
     vectFree(vect)
   /if
 /func
 
-func vectPrune(vect ptr spring:Vector)
-  spring:memset(vect'arr, 0, vect'cap)
+func vectPrune(vect ptr base:Vector)
+  base:memset(vect'arr, 0, vect'cap)
   vect'len = 0
 /func
 
-func vectSlice(vect ptr spring:Vector, start uintptr, len intptr) ptr spring:Vector
+func vectSlice(vect ptr base:Vector, start uintptr, len intptr) ptr base:Vector
   mut ret = vectNew(0)
 
   ret'isSlice = true
@@ -185,27 +185,27 @@ func vectSlice(vect ptr spring:Vector, start uintptr, len intptr) ptr spring:Vec
   return ret
 /func
 
-func vectPrint(vect ptr spring:Vector)
+func vectPrint(vect ptr base:Vector)
   mut inside = false
 
-  spring:out("[ ")
+  base:out("[ ")
   mut len = vectLen(vect)
   mut i uint8 = 0
 
   while i < len
     if inside
-      spring:out(", ")
+      base:out(", ")
     else
       inside = true
     /if
 
-    spring:outint(val vectGetint(vect, i))
+    base:outint(val vectGetint(vect, i))
     i++
   /while
 
-  spring:outln(" ]")
+  base:outln(" ]")
 /func
 
-mut vectAppend = cast<ptr func(vect ptr spring:Vector, item data) bool>(vectAppendint)
-mut vectGet = cast<ptr func(vect ptr spring:Vector, index uintptr) ptr data>(vectGetint)
-mut vectPut = cast<ptr func(vect ptr spring:Vector, index uintptr, value data) bool>(vectPutint)
+mut vectAppend = cast<ptr func(vect ptr base:Vector, item data) bool>(vectAppendint)
+mut vectGet = cast<ptr func(vect ptr base:Vector, index uintptr) ptr data>(vectGetint)
+mut vectPut = cast<ptr func(vect ptr base:Vector, index uintptr, value data) bool>(vectPutint)

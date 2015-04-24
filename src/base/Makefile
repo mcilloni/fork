@@ -1,5 +1,5 @@
-BUILDPATH = ../../build/spring/
-LIBPATH = ../../build/libspring.a
+BUILDPATH = ../../build/base/
+LIBPATH = ../../build/libbase.a
 
 ifndef FORKC
 	FORKC = forkc
