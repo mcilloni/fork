@@ -143,7 +143,7 @@ func parserParseSizeOp(ctx ptr synt:ParserContext) ptr ast:PExpr
 
 
 func tokIsPostfixExpressionSuffixStart(tok ptr lex:Token) bool
-  return tok != null and (tok'type == lex:OPAR or tok'type == lex:OBRAC or tok'type == lex:INC or tok'type == lex:DEC)
+  return tok != null and (tok'type == lex:OPAR or tok'type == lex:OBRAC or tok'type == lex:INC or tok'type == lex:DEC or tok'type == lex:APOS)
 /func
 
 
@@ -214,6 +214,10 @@ func parserParsePrimaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
 
   if ctx'next'type == lex:ID
     return parserParseId(ctx)
+  /if
+
+  if ctx'next'type == lex:CAST
+    return parserParseCastTag(ctx)
   /if
 
   if ctx'next'type != lex:OPAR
@@ -362,9 +366,9 @@ func parserParsePostfixExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
 func parserParseUnaryExprOp(ctx ptr synt:ParserContext) ptr ast:PExpr
   mut operator = synt:nextTok(ctx)
 
-  decl parserParseCastExpr func(ctx ptr synt:ParserContext) ptr ast:PExpr
+  decl parserParseUnaryExpr func(ctx ptr synt:ParserContext) ptr ast:PExpr
 
-  mut result = parserParseCastExpr(ctx)
+  mut result = parserParseUnaryExpr(ctx)
   if result == null
     lex:tokenFree(operator)
     return null
@@ -379,6 +383,11 @@ func parserParseUnaryExprOp(ctx ptr synt:ParserContext) ptr ast:PExpr
 
 
 func parserParseUnaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
+  if ctx'next == null
+    ctx'prs'err = lex:error(ctx'last, "unexpected EOF")
+    return null
+  /if
+
   if ctx'next'type == lex:SIZE
     return parserParseSizeOp(ctx)
   /if
@@ -388,24 +397,6 @@ func parserParseUnaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
   /if
 
   return parserParsePostfixExpr(ctx)
-/func
-
-
-func parserParseCastExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
-  if ctx'next == null
-    ctx'prs'err = lex:error(ctx'last, "unexpected EOF")
-    return null
-  /if
-
-  mut ret ptr ast:PExpr = null
-
-  if ctx'next'type == lex:CAST
-    ret = parserParseCastTag(ctx)
-  else
-    ret = parserParseUnaryExpr(ctx)
-  /if
-
-  return ret
 /func
 
 
@@ -430,6 +421,8 @@ func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri 
         return null
       /if
     /if
+
+    rhs = parserParseUnaryExpr(ctx)
 
     if rhs == null
       return null
@@ -457,7 +450,7 @@ func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri 
 
 
 func parserParseAssignExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
-  mut lhs = parserParseCastExpr(ctx)
+  mut lhs = parserParseUnaryExpr(ctx)
 
   return parserParseBinaryRhs(ctx, lhs, tokTypePrec(lex:ASSIGN))
 /func
