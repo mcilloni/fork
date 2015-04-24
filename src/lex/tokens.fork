@@ -33,8 +33,9 @@ mut MODULE uint16 = 360
 mut MUT uint16 = 370
 mut NULLPTR uint16 = 380
 mut NUMBER uint16 = 390
-mut RETURN uint16 = 470
-mut SEPARATOR uint16 = 480
+mut RETURN uint16 = 450
+mut SEPARATOR uint16 = 460
+mut SIZE uint16 = 470
 mut STRING uint16 = 490
 mut STRUCT uint16 = 500
 mut TRUE uint16 = 510
@@ -62,7 +63,6 @@ mut MINUS uint16 = 14343
 mut NOT uint16 = 14383
 mut PTR uint16 = 14463
 mut VAL uint16 = 14523
-mut SIZE uint16 = 14483
 
 mut POW uint16 = 13450
 

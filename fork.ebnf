@@ -83,17 +83,17 @@ addition ::= ( addition, ('+' | '-'), multiplication ) | multiplication
 
 multiplication ::= ( multiplication, ( '*', '/', 'mod' ), cast ) | cast
 
-unary ::= postfix | (unaryOp, unary) | size
+unary ::= postfix | (unaryOp, unary)
 
 unaryOp ::= '-' | '!' | 'ptr' | 'val'
 
-size ::= 'size', '(', type, ')'
-
-postfix ::= primary |
+postfix ::= primary | postfixTerm
 
 postfixTerm ::= access | call | field | inc
 
-primary ::= idname | constant | ( '(', expr, ')' ) | cast
+primary ::= idname | constant | ( '(', expr, ')' ) | cast | size
+
+size ::= 'size', '(', type, ')'
 
 cast ::= 'cast', '<', type, '>', '(', expr, ')'
 

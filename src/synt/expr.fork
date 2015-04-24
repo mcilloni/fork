@@ -220,6 +220,10 @@ func parserParsePrimaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
     return parserParseCastTag(ctx)
   /if
 
+  if ctx'next'type == lex:SIZE
+    return parserParseSizeOp(ctx)
+  /if
+
   if ctx'next'type != lex:OPAR
     ctx'prs'err = lex:errorMism(ctx'next'lineno, "an identifier, a costant or an expression between ()", lex:tokenStr(ctx'next))
     return null
@@ -386,10 +390,6 @@ func parserParseUnaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
   if ctx'next == null
     ctx'prs'err = lex:error(ctx'last, "unexpected EOF")
     return null
-  /if
-
-  if ctx'next'type == lex:SIZE
-    return parserParseSizeOp(ctx)
   /if
 
   if isUnary(ctx'next)
