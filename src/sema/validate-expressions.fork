@@ -189,7 +189,7 @@ func typeIsAssignable(ctx ptr ctx:Context, scope ptr ast:PNode, dest,src ptr ast
       return true
     /if
 
-    if dest'type == ast:TYPE_DATA and src'type == ast:TYPE_PTR
+    if ast:typeIsData(dest) and (ast:typeIsPtr(src) or ast:typeIsNull(src))
       return true
     /if
 

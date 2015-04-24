@@ -219,6 +219,6 @@ func vectPrint(vect ptr base:Vector)
 /func
 
 
-mut vectAppend = cast<ptr func(vect ptr base:Vector, item data) bool>(vectAppendint)
-mut vectGet = cast<ptr func(vect ptr base:Vector, index uintptr) ptr data>(vectGetint)
-mut vectPut = cast<ptr func(vect ptr base:Vector, index uintptr, value data) bool>(vectPutint)
+mut vectAppend = cast<ptr func(vect ptr base:Vector, item data) bool>(ptr vectAppendint)
+mut vectGet = cast<ptr func(vect ptr base:Vector, index uintptr) ptr data>(ptr vectGetint)
+mut vectPut = cast<ptr func(vect ptr base:Vector, index uintptr, value data) bool>(ptr vectPutint)
