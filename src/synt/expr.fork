@@ -431,8 +431,6 @@ func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri 
       /if
     /if
 
-    rhs = isStructAccess(opTok) =>  || parserParseCastExpr(ctx)
-
     if rhs == null
       return null
     /if
