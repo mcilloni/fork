@@ -159,7 +159,7 @@ func lexExtractString(lex ptr lex:Lexer) ptr lex:StringTok
     got[0] = ch'ch
     got[1] = 0 # `\0` c string terminator
 
-    lex'error = utils:issueToError(lex:errorMism(lex'lineno, "\"", got))
+    lex'error = utils:issueToError(lex:errorMism(lex'lineno, "\"", ptr got[0]))
     return null
   /if
 
@@ -336,7 +336,7 @@ func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr spring:Error
   toglue[2] = msg
   toglue[3] = null
 
-  return spring:errorGlue(toglue)
+  return spring:errorGlue(ptr toglue[0])
 /func
 
 
@@ -921,7 +921,7 @@ func linenoFree(lineno ptr lex:Lineno)
 /func
 
 
-func linenoNew(filename ptr uint8, lineno, pos uint16) ptr lex:Lineno
+func linenoNew(filename ptr uint8, lineno, pos uintptr) ptr lex:Lineno
   mut ret = cast<ptr lex:Lineno>(spring:alloc(size(lex:Lineno)))
 
   ret'filename = filename
@@ -1013,7 +1013,7 @@ func errorMism(lineno ptr lex:Lineno, exp ptr uint8, got ptr uint8) ptr utils:Is
   toglue[3] = got
   toglue[4] = null
 
-  mut glued = spring:strglue(toglue)
+  mut glued = spring:strglue(ptr toglue[0])
   mut ret =  lex:error(lineno, glued)
 
   spring:free(glued)

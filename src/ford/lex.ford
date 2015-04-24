@@ -20,7 +20,7 @@ alias Lineno struct(
 
 decl linenoClone func(line ptr Lineno) ptr Lineno
 decl linenoFree func(line ptr Lineno)
-decl linenoNew func(file ptr uint8, line,pos uint16) ptr Lineno
+decl linenoNew func(file ptr uint8, line,pos uintptr) ptr Lineno
 
 decl lineMake func(lexl ptr Lineno) utils:Line
 

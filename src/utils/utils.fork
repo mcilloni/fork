@@ -96,22 +96,22 @@ func issueToError(issue ptr utils:Issue) ptr spring:Error
   mut lineno [21] uint8
   mut pos [21] uint8
 
-  spring:numtostr(issue'where'line, lineno, 21)
-  spring:numtostr(issue'where'pos, pos, 21)
+  spring:numtostr(issue'where'line, ptr lineno[0], 21)
+  spring:numtostr(issue'where'pos, ptr pos[0], 21)
 
   mut toglue [10] ptr uint8
   toglue[0] = issue'filename
   toglue[1] = ":"
-  toglue[2] = lineno
+  toglue[2] = ptr lineno[0]
   toglue[3] = ":"
-  toglue[4] = pos
+  toglue[4] = ptr pos[0]
   toglue[5] = ": "
   toglue[6] = issueGravityToStr(issue'gravity)
   toglue[7] = ": "
   toglue[8] = issue'message
   toglue[9] = null
 
-  mut ret = spring:errorGlue(toglue)
+  mut ret = spring:errorGlue(ptr toglue[0])
 
   utils:issueFree(issue)
 
@@ -125,14 +125,14 @@ func issueWriteOut(issue ptr utils:Issue, outFn ptr func(err ptr uint8))
 
 
   mut buf [21] uint8
-  spring:numtostr(issue'where'line, buf, 21)
+  spring:numtostr(issue'where'line, ptr buf[0], 21)
 
-  outFn(buf)
+  outFn(ptr buf[0])
   outFn(":")
 
-  spring:numtostr(issue'where'pos, buf, 21)
+  spring:numtostr(issue'where'pos, ptr buf[0], 21)
 
-  outFn(buf)
+  outFn(ptr buf[0])
   outFn(": ")
 
   outFn(issueGravityToStr(issue'gravity))

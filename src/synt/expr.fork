@@ -397,11 +397,15 @@ func parserParseCastExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
     return null
   /if
 
+  mut ret ptr ast:PExpr = null
+
   if ctx'next'type == lex:CAST
-    return parserParseCastTag(ctx)
+    ret = parserParseCastTag(ctx)
+  else
+    ret = parserParseUnaryExpr(ctx)
   /if
 
-  return parserParseUnaryExpr(ctx)
+  return ret
 /func
 
 
@@ -427,7 +431,7 @@ func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri 
       /if
     /if
 
-    rhs = parserParseCastExpr(ctx)
+    rhs = isStructAccess(opTok) =>  || parserParseCastExpr(ctx)
 
     if rhs == null
       return null
