@@ -5,6 +5,8 @@ ifndef FORKC
 	FORKC = forkc
 endif
 
+FORKC_O = $(FORKC) --no-spring
+
 ifndef AR
 	AR=ar
 endif
@@ -24,13 +26,12 @@ all: $(OPATHS)
 	$(RANLIB) $(LIBPATH)
 
 dir:
-	install -d $(BUILDPATH)	
+	install -d $(BUILDPATH)
 
 $(BUILDPATH)/%.o: %.fork dir
 	@printf "FORKC\t\t%s\n" $<
-	@ FORDPATHS="$(shell pwd)/../ford/" $(FORKC) -o $@ $<
+	@ FORDPATHS="$(shell pwd)/../ford/" $(FORKC_O) -o $@ $<
 
 clean:
 	rm -rf $(BUILDPATH)
 	rm -f $(LIBPATH)
-

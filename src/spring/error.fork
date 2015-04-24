@@ -1,0 +1,43 @@
+#  This file is part of First Step.
+#  
+#  First Step is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software 
+#  Foundation, either version 3 of the License, or (at your option) any later version. 
+#
+#  First Step is distributed in the hope that it will be useful, but 
+#  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with First Step.  If not, see <http://www.gnu.org/licenses/>
+#
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+
+import spring
+
+func errorFree(err ptr spring:Error)
+  if err != null
+    spring:free(err'msg)
+    spring:free(err)
+  /if
+/func
+
+func errorMsg(err ptr spring:Error) ptr uint8
+  if err != null
+    return err'msg
+  /if
+
+  return null
+/func
+
+func errorNew(str ptr uint8) ptr spring:Error
+  mut err = cast<ptr spring:Error>(spring:alloc(size(spring:Error)))
+  err'msg = spring:strclone(str)
+  return err
+/func
+
+func errorGlue(strs ptr ptr uint8) ptr spring:Error
+  mut err = cast<ptr spring:Error>(spring:alloc(size(spring:Error)))
+  err'msg = spring:strglue(strs)
+  return err
+/func
+

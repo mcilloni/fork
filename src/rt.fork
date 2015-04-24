@@ -1,0 +1,53 @@
+#  This file is part of First Step.
+#  
+#  First Step is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software 
+#  Foundation, either version 3 of the License, or (at your option) any later version. 
+#
+#  First Step is distributed in the hope that it will be useful, but 
+#  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with First Step.  If not, see <http://www.gnu.org/licenses/>
+#
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+
+import spring
+
+decl __fork_entry func()
+
+func __forkpow(base,exp uintptr) uintptr
+
+  if exp == 0
+    return 1
+  /if
+
+  if base == 1
+    return 1
+  /if
+
+  if base == 0
+    return 0
+  /if
+
+  mut ret uintptr = 1
+  mut i uintptr = 1
+
+  while i <= exp
+    ret = ret * base
+    i++
+  /while
+
+  return ret
+
+/func
+
+mut __forkprogArgs spring:Args
+
+func main(argc intptr, argv ptr ptr uint8) int8
+  __forkprogArgs'len = cast<uintptr>(argc - 1)
+  __forkprogArgs'progname = val argv
+  __forkprogArgs'args = argv + 1
+  __fork_entry()
+  return 0
+/func

@@ -1,0 +1,55 @@
+#  This file is part of First Step.
+#
+#  First Step is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software
+#  Foundation, either version 3 of the License, or (at your option) any later version.
+#
+#  First Step is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with First Step.  If not, see <http://www.gnu.org/licenses/>
+#
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+
+import spring
+
+func err(str ptr uint8)
+  decl fputs func(str ptr uint8, file spring:FILE)
+  fputs(str, spring:stderr_file())
+/func
+
+func errch(ch uint8)
+  decl putc func(ch uint8, file spring:FILE)
+  putc(ch, spring:stderr_file())
+/func
+
+func errln(str ptr uint8)
+  err(str)
+  errch(10)
+/func
+
+func fail(str ptr uint8)
+  err(str)
+  spring:exit(1)
+/func
+
+func failln(str ptr uint8)
+  errln(str)
+  spring:exit(1)
+/func
+
+func out(str ptr uint8)
+  decl fputs func(str ptr uint8, file spring:FILE)
+  fputs(str, spring:stdout_file())
+/func
+
+func outch(ch uint8)
+  decl putchar func(ch uint8)
+  putchar(ch)
+/func
+
+func outln(str ptr uint8)
+  decl puts func(str ptr uint8)
+  puts(str)
+/func

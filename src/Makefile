@@ -2,17 +2,30 @@ ifndef FORKC
 	FORKC = forkc
 endif
 
+FORKC_O = $(FORKC) --no-spring
+
+CCLD = $(CC)
+SONAME = 'libforkc.so'
+
 .PHONY: all clean
 
 all:
+	mkdir -p ../build/
+	@printf "FORKC\t\t%s\n" rt.fork
+	@ FORDPATHS="$(shell pwd)/ford/" $(FORKC_O) -o ../build/rt.o rt.fork
+
+	$(MAKE) -C spring
 	$(MAKE) -C utils
 	$(MAKE) -C lex
 	$(MAKE) -C ast
 	$(MAKE) -C synt
 	$(MAKE) -C sema
 
+	@printf "CCLD\t\t%s\n" $<
+	$(CCLD) -shared -o ../build/$(SONAME) ../build/*.a
 
 clean:
+	$(MAKE) -C spring clean
 	$(MAKE) -C utils clean
 	$(MAKE) -C lex clean
 	$(MAKE) -C ast clean

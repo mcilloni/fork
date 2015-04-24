@@ -1,0 +1,385 @@
+#  This file is part of First Step.
+#
+#  First Step is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software
+#  Foundation, either version 3 of the License, or (at your option) any later version.
+#
+#  First Step is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with First Step.  If not, see <http://www.gnu.org/licenses/>
+#
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+
+import spring
+
+mut BLACK = false
+mut RED = true
+mut FREE_NONE uint8 = 0
+mut FREE_KEY uint8 = 1
+mut FREE_VALUE uint8 = 10
+
+func nodeNew(key data, value data, cmp spring:comparer, freewhat uint8) ptr spring:Mnode
+  mut ret = cast<ptr spring:Mnode>(spring:zalloc(size(spring:Mnode)))
+  ret'key = key
+  ret'value = value
+  ret'color = RED
+  ret'cmp = cmp
+  ret'freewhat = freewhat
+  return ret
+/func
+
+func nodeRotateLeft(node ptr spring:Mnode) ptr spring:Mnode
+  mut ret = node'right
+
+  if ret'color == BLACK
+    spring:errln("rotating left a black node")
+    spring:abort()
+  /if
+
+  node'right = ret'left
+  ret'left = node
+#  ret'color = ret'left'color
+  ret'color = node'color
+  node'color = RED
+
+  return ret
+/func
+
+func nodeRotateRight(node ptr spring:Mnode) ptr spring:Mnode
+  mut ret = node'left
+
+  if ret'color == BLACK
+    spring:errln("rotating right a black node")
+    spring:abort()
+  /if
+
+  node'left = ret'right
+  ret'right = node
+#  ret'color = ret'right'color
+  ret'color = node'color
+#  ret'right'color = RED
+  node'color = RED
+  return ret
+/func
+
+func nodeColorFlip(node ptr spring:Mnode)
+  node'color = !node'color
+  node'left'color = !node'left'color
+  node'right'color = !node'right'color
+/func
+
+func nodeIsRed(node ptr spring:Mnode) bool
+  return (node != null) and (node'color == RED)
+/func
+
+func nodeIsBlack(node ptr spring:Mnode) bool
+  return (node == null) or (node'color == BLACK)
+/func
+
+func nodeFree(node ptr spring:Mnode, freeKey ptr func(item data), freeVal ptr func(item data))
+
+  if node == null
+    return
+  /if
+
+  nodeFree(node'left, freeKey, freeVal)
+  nodeFree(node'right, freeKey, freeVal)
+
+  if (node'freewhat & FREE_KEY) != 0
+    if node'key != null
+      freeKey(node'key)
+    /if
+  /if
+
+  if (node'freewhat & FREE_VALUE) != 0
+    if node'value != null
+      freeVal(node'value)
+    /if
+  /if
+
+  spring:free(node)
+
+/func
+
+func nodeFixUp(node ptr spring:Mnode) ptr spring:Mnode
+  if nodeIsRed(node'right)
+	  node = nodeRotateLeft(node)
+  /if
+
+  if nodeIsRed(node'left) and nodeIsRed(node'left'left)
+	  node = nodeRotateRight(node)
+  /if
+
+  if nodeIsRed(node'left) and nodeIsRed(node'right)
+	  nodeColorFlip(node)
+  /if
+
+  return node
+/func
+
+func nodeAdd(node ptr spring:Mnode, keyV data, value data, cmp spring:comparer, freewhat uint8, oldvalue ptr data) ptr spring:Mnode
+
+  if node == null
+    val oldvalue = null
+    return nodeNew(keyV, value, cmp, freewhat)
+  /if
+
+  mut res = node'cmp(keyV,node'key)
+  if res == 1
+    node'right = nodeAdd(node'right, keyV, value, node'cmp, freewhat, oldvalue)
+  else
+    if res == -1
+      node'left = nodeAdd(node'left, keyV, value, node'cmp, freewhat, oldvalue)
+	  else
+      val oldvalue = node'value
+	    node'value = value
+	  /if
+  /if
+
+  return nodeFixUp(node)
+
+/func
+
+func nodeMoveRedLeft(node ptr spring:Mnode) ptr spring:Mnode
+
+  nodeColorFlip(node)
+
+  if (nodeIsRed(node'right'left))
+    node'right = nodeRotateRight(node'right)
+	  node = nodeRotateLeft(node)
+	  nodeColorFlip(node)
+  /if
+
+  return node
+
+/func
+
+func nodeMoveRedRight(node ptr spring:Mnode) ptr spring:Mnode
+
+  nodeColorFlip(node)
+
+  if nodeIsRed(node'left'left)
+    node = nodeRotateRight(node)
+	  nodeColorFlip(node)
+  /if
+
+  return node
+
+/func
+
+func nodeGetnode(node ptr spring:Mnode, keyV data) ptr spring:Mnode
+  if node == null
+    return null
+  /if
+
+  mut res = node'cmp(keyV, node'key)
+  if res == 0
+    return node
+  else
+    if res == -1
+      return nodeGetnode(node'left, keyV)
+    else
+      return nodeGetnode(node'right, keyV)
+    /if
+  /if
+/func
+
+func nodeGet(node ptr spring:Mnode, keyV data, valueV ptr data) bool
+  mut found = nodeGetnode(node, keyV)
+
+  if found == null
+    return false
+  /if
+
+  val valueV = found'value
+  return true
+/func
+
+func nodeDeleteMin(node ptr spring:Mnode) ptr spring:Mnode
+  if node'left == null
+    return null
+  /if
+
+  if nodeIsBlack(node'left) and nodeIsBlack(node'left'left)
+    node = nodeMoveRedLeft(node)
+  /if
+
+  node'left = nodeDeleteMin(node'left)
+  return nodeFixUp(node)
+/func
+
+func nodeMkpair(node ptr spring:Mnode) ptr spring:Pair
+  if node == null
+    return null
+  /if
+
+  mut ret = cast<ptr spring:Pair>(spring:alloc(size(spring:Pair)))
+  ret'key = node'key
+  ret'value = node'value
+  return ret
+/func
+
+func nodeMinpair(node ptr spring:Mnode) ptr spring:Pair
+  if node'left == null
+    return nodeMkpair(node)
+  else
+    return nodeMinpair(node'left)
+  /if
+/func
+
+func nodeMin(node ptr spring:Mnode) data
+  if node'left == null
+    return node'key
+  else
+    return nodeMin(node'left)
+  /if
+/func
+
+func nodeDelete(node ptr spring:Mnode, keyV data, found ptr bool) ptr spring:Mnode
+
+  if node == null
+    val found = false
+    return null
+  /if
+
+  if node'cmp(keyV,node'key) < 0
+    if node'left == null
+      return null
+    /if
+
+    if nodeIsBlack(node'left) and nodeIsBlack(node'left'left)
+      node = nodeMoveRedLeft(node)
+    /if
+
+    node'left = nodeDelete(node'left, keyV, found)
+  else
+
+    if nodeIsRed(node'left)
+      node = nodeRotateRight(node)
+    /if
+
+    if node'cmp(keyV, node'key) == 0 and node'right == null
+      val found = true
+      return null
+    /if
+
+    if node'right != null and node'right'left != null and nodeIsBlack(node'right) and nodeIsBlack(node'right'left)
+      node = nodeMoveRedRight(node)
+    /if
+
+    if node'cmp(keyV, node'key) == 0
+      nodeGet(node'right, nodeMin(node'right), ptr node'value)
+      node'key = nodeMin(node'right)
+      node'right = nodeDeleteMin(node'right)
+      val found = true
+    else
+      node'right = nodeDelete(node'right, keyV, found)
+    /if
+
+  /if
+
+  return nodeFixUp(node)
+
+/func
+
+func mapInit(map ptr spring:Map, cmp spring:comparer) ptr spring:Map
+  map'cmp = cmp
+  return map
+/func
+
+func mapNew(cmp spring:comparer) ptr spring:Map
+  mut map = cast<ptr spring:Map>(spring:zalloc(size(spring:Map)))
+
+  return spring:mapInit(map, cmp)
+/func
+
+func mapGet(map ptr spring:Map, key data, value ptr data) bool
+  if map'root == null
+    return false
+  /if
+
+  return nodeGet(map'root,key, value)
+/func
+
+func mapPut(map ptr spring:Map, key data, value data, freewhat uint8) data
+  mut oldvalue data = null
+  map'root = nodeAdd(map'root, key, value, map'cmp, freewhat, ptr oldvalue)
+  map'root'color = BLACK
+
+  if oldvalue == null
+    map'len++
+  /if
+
+  return oldvalue
+/func
+
+func mapContains(map ptr spring:Map, key data) bool
+  mut value data #ignored - will be discarded but needed for mapGet to work
+  return spring:mapGet(map, key, ptr value)
+/func
+
+func mapRemove(map ptr spring:Map, key data) bool
+	mut ret = false
+	mut newVal = nodeDelete(map'root, key, ptr ret)
+
+  if ret
+    map'root = newVal
+
+    if map'root != null
+  	  map'root'color = BLACK
+    /if
+
+  	if ret
+  	  map'len--
+    /if
+  /if
+
+	return ret
+/func
+
+func mapFirst(map ptr spring:Map) ptr spring:Pair
+  return map'root != null => nodeMinpair(map'root) || null
+/func
+
+func mapDeinit(map ptr spring:Map)
+  spring:mapDeinitSpec(map, null, null)
+/func
+
+func mapDeinitSpec(map ptr spring:Map, freeKey ptr func(item data), freeVal ptr func(item data))
+  if map == null
+    return
+  /if
+
+  if freeKey == null
+    freeKey = ptr spring:free
+  /if
+
+  if freeVal == null
+    freeVal = ptr spring:free
+  /if
+
+  nodeFree(map'root, freeKey, freeVal)
+/func
+
+func mapFreeSpec(map ptr spring:Map, freeKey ptr func(item data), freeVal ptr func(item data))
+  spring:mapDeinitSpec(map, freeKey, freeVal)
+  spring:free(map)
+/func
+
+func mapFree(map ptr spring:Map)
+  spring:mapFreeSpec(map, null, null)
+/func
+
+func mapLen(map ptr spring:Map) uintptr
+  return map'len
+/func
+
+func strmapInit(map ptr spring:Map) ptr spring:Map
+  return spring:mapInit(map, ptr spring:strcomparer)
+/func
+
+func strmapNew() ptr spring:Map
+  return spring:mapNew(ptr spring:strcomparer)
+/func

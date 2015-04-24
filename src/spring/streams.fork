@@ -1,0 +1,71 @@
+#  This file is part of First Step.
+#  
+#  First Step is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software 
+#  Foundation, either version 3 of the License, or (at your option) any later version. 
+#
+#  First Step is distributed in the hope that it will be useful, but 
+#  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU Lesser General Public License for more details.
+#
+#  You should have received a copy of the GNU Lesser General Public License
+#  along with First Step.  If not, see <http://www.gnu.org/licenses/>
+#
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+
+import spring
+
+mut STREAM_IN uint8 = 1
+mut STREAM_OUT uint8 = 2
+mut STREAM_INOUT uint8 = 3
+
+func streamClose(stream ptr spring:Stream) bool
+  mut ret = stream'cookie'cfn(stream'cookie'priv8, ptr stream'error)
+
+  spring:free(stream)
+  return ret
+/func
+
+func streamEnded(stream ptr spring:Stream) bool
+  return stream'eof
+/func
+
+func streamError(stream ptr spring:Stream) ptr spring:Error
+  return stream'error
+/func
+
+func streamNew(priv8 data, rfn ptr spring:readfunc, wfn ptr spring:writefunc, cfn ptr spring:closefunc) ptr spring:Stream
+  mut ret = cast<ptr spring:Stream>(spring:zalloc(size(spring:Stream)))
+  ret'cookie'priv8 = priv8
+
+  if wfn != null
+    ret'inout = ret'inout | STREAM_OUT
+  /if
+
+  if rfn != null
+    ret'inout = ret'inout | STREAM_IN
+  /if
+
+  ret'cookie'wfn = wfn
+  ret'cookie'rfn = rfn
+  ret'cookie'cfn = cfn
+  return ret
+/func
+
+func streamRead(stream ptr spring:Stream, string ptr uint8, len intptr) uintptr
+  if (stream'inout & STREAM_IN) == 0
+    stream'error = spring:errorNew("Stream opened write-only")
+    return 0
+  /if
+
+  return stream'cookie'rfn(stream'cookie'priv8, string, len, ptr stream'error, ptr stream'eof)
+/func
+
+func streamWrite(stream ptr spring:Stream, string ptr uint8) uintptr
+  if (stream'inout & STREAM_OUT) == 0
+    stream'error = spring:errorNew("Stream opened read-only")
+    return 0
+  /if
+
+  return stream'cookie'wfn(stream'cookie'priv8, string, cast<intptr>(spring:strlen(string)), ptr stream'error)
+/func
+

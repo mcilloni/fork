@@ -5,6 +5,8 @@ ifndef FORKC
 	FORKC = forkc
 endif
 
+FORKC_O = $(FORKC) --no-spring
+
 ifndef AR
 	AR=ar
 endif
@@ -17,7 +19,7 @@ SRCS = $(wildcard *.fork)
 OBJS = $(patsubst %.fork,%.o,$(SRCS))
 OPATHS = $(foreach obj, $(OBJS), $(BUILDPATH)/$(obj))
 
-.PHONY: all clean
+.PHONY: all clean dir
 
 all: $(OPATHS)
 	$(AR) rc $(LIBPATH) $(OPATHS)
@@ -28,7 +30,7 @@ dir:
 
 $(BUILDPATH)/%.o: %.fork dir
 	@printf "FORKC\t\t%s\n" $<
-	@ FORDPATHS="$(shell pwd)/../ford/" $(FORKC) -o $@ $<
+	@ FORDPATHS="$(shell pwd)/../ford/" $(FORKC_O) -o $@ $<
 
 clean:
 	rm -rf $(BUILDPATH)
