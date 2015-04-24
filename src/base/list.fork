@@ -1,18 +1,15 @@
-#  This file is part of First Step.
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
 #
-#  First Step is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software
-#  Foundation, either version 3 of the License, or (at your option) any later version.
-#
-#  First Step is distributed in the hope that it will be useful, but
-#  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with First Step.  If not, see <http://www.gnu.org/licenses/>
-#
-#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
 
 import base
+
 
 func listSeekAhead(list ptr base:List, pos uintptr)
 
@@ -28,6 +25,7 @@ func listSeekAhead(list ptr base:List, pos uintptr)
 
 /func
 
+
 func listSeekBehind(list ptr base:List, pos uintptr)
 
   if (list'current == null) or ((list'len - 1) == pos)
@@ -42,10 +40,12 @@ func listSeekBehind(list ptr base:List, pos uintptr)
 
 /func
 
+
 func listSeekZero(list ptr base:List)
   list'current = list'start
   list'pos = 0
 /func
+
 
 func listSeek(list ptr base:List, pos uintptr)
   if (list'current == null) and (pos == 0)
@@ -60,6 +60,7 @@ func listSeek(list ptr base:List, pos uintptr)
     /if
   /if
 /func
+
 
 func listPushint(list ptr base:List, value uintptr)
   mut new = cast<ptr base:Lnode>(base:zalloc(size(base:Lnode)))
@@ -82,6 +83,7 @@ func listPushint(list ptr base:List, value uintptr)
   list'len++
 /func
 
+
 mut listPush = cast<ptr func(list ptr base:List, item data)>(ptr listPushint)
 
 func listAppendint(list ptr base:List, value uintptr) intptr
@@ -100,6 +102,7 @@ func listAppendint(list ptr base:List, value uintptr) intptr
 
   return cast<intptr>(list'len++)
 /func
+
 
 mut listAppend = cast<ptr func(list ptr base:List, item data) intptr>(ptr listAppendint)
 
@@ -133,6 +136,7 @@ func listAddint(list ptr base:List, pos uintptr, value uintptr) intptr
   return cast<intptr>(pos)
 /func
 
+
 mut listAdd = cast<ptr func(list ptr base:List, index uintptr, item data) intptr>(ptr listAddint)
 
 func listInit(list ptr base:List) ptr base:List
@@ -140,9 +144,11 @@ func listInit(list ptr base:List) ptr base:List
   return list
 /func
 
+
 func listNew() ptr base:List
   return base:listInit(cast<ptr base:List>(base:alloc(size(base:List))))
 /func
+
 
 func listExtract(list ptr base:List, start uintptr, len intptr) ptr base:List
 
@@ -197,6 +203,7 @@ func listExtract(list ptr base:List, start uintptr, len intptr) ptr base:List
 
 /func
 
+
 func lnodeFree(lnode ptr base:Lnode)
   while lnode != null
     mut next = lnode'next
@@ -205,9 +212,11 @@ func lnodeFree(lnode ptr base:Lnode)
   /while
 /func
 
+
 func listDeinit(list ptr base:List)
   lnodeFree(list'start)
 /func
+
 
 func listFree(list ptr base:List)
   if list != null
@@ -216,6 +225,7 @@ func listFree(list ptr base:List)
     base:free(list)
   /if
 /func
+
 
 func lnodeFreeAll(lnode ptr base:Lnode, freefunc ptr func(item data))
   while lnode != null
@@ -226,14 +236,17 @@ func lnodeFreeAll(lnode ptr base:Lnode, freefunc ptr func(item data))
   /while
 /func
 
+
 func listDeinitAll(list ptr base:List, freefunc ptr func(item data))
   lnodeFreeAll(list'start, freefunc)
 /func
+
 
 func listFreeAll(list ptr base:List, freefunc ptr func(item data))
   base:listDeinitAll(list, freefunc)
   base:free(list)
 /func
+
 
 func lnodeFreeContents(lnode ptr base:Lnode, freefunc ptr func(item data))
   while lnode != null
@@ -243,9 +256,11 @@ func lnodeFreeContents(lnode ptr base:Lnode, freefunc ptr func(item data))
   /while
 /func
 
+
 func listFreeContents(list ptr base:List, freefunc ptr func(item data))
   lnodeFreeContents(list'start, freefunc)
 /func
+
 
 func listGetint(list ptr base:List, pos uintptr) ptr uintptr
   if pos >= list'len
@@ -260,6 +275,7 @@ func listGetint(list ptr base:List, pos uintptr) ptr uintptr
 
   return null
 /func
+
 
 mut listGet = cast<ptr func(list ptr base:List, index uintptr) ptr data>(ptr listGetint)
 
@@ -279,11 +295,13 @@ func listInsertint(list ptr base:List, pos uintptr, value uintptr) intptr
   return cast<intptr>(list'pos)
 /func
 
+
 mut listInsert = cast<ptr func(list ptr base:List, index uintptr, item data) intptr>(ptr listInsertint)
 
 func listLen(list ptr base:List) uintptr
   return list'len
 /func
+
 
 func listPopint(list ptr base:List) uintptr
   if list'start == null
@@ -309,12 +327,14 @@ func listPopint(list ptr base:List) uintptr
   return ret
 /func
 
+
 mut listPop = cast<ptr func(list ptr base:List) data>(ptr listPopint)
 
 func listPrune(list ptr base:List)
   lnodeFree(list'start)
   base:memset(list, 0, size(base:List))
 /func
+
 
 func listShallowCopy(list ptr base:List) ptr base:List
   mut new = listNew()
@@ -328,6 +348,7 @@ func listShallowCopy(list ptr base:List) ptr base:List
 
   return new
 /func
+
 
 func listPrint(list ptr base:List)
   mut inside = false
@@ -347,6 +368,7 @@ func listPrint(list ptr base:List)
   /while
   base:outln(" ]")
 /func
+
 
 
 func listRemove(list ptr base:List, item uintptr, freefunc ptr func(item data)) bool

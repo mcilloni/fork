@@ -1,22 +1,20 @@
-#  This file is part of First Step.
-#  
-#  First Step is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software 
-#  Foundation, either version 3 of the License, or (at your option) any later version. 
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
 #
-#  First Step is distributed in the hope that it will be useful, but 
-#  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with First Step.  If not, see <http://www.gnu.org/licenses/>
-#
-#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
 
 import base
+
 
 mut STREAM_IN uint8 = 1
 mut STREAM_OUT uint8 = 2
 mut STREAM_INOUT uint8 = 3
+
 
 func streamClose(stream ptr base:Stream) bool
   mut ret = stream'cookie'cfn(stream'cookie'priv8, ptr stream'error)
@@ -25,13 +23,16 @@ func streamClose(stream ptr base:Stream) bool
   return ret
 /func
 
+
 func streamEnded(stream ptr base:Stream) bool
   return stream'eof
 /func
 
+
 func streamError(stream ptr base:Stream) ptr base:Error
   return stream'error
 /func
+
 
 func streamNew(priv8 data, rfn ptr base:readfunc, wfn ptr base:writefunc, cfn ptr base:closefunc) ptr base:Stream
   mut ret = cast<ptr base:Stream>(base:zalloc(size(base:Stream)))
@@ -51,6 +52,7 @@ func streamNew(priv8 data, rfn ptr base:readfunc, wfn ptr base:writefunc, cfn pt
   return ret
 /func
 
+
 func streamRead(stream ptr base:Stream, string ptr uint8, len intptr) uintptr
   if (stream'inout & STREAM_IN) == 0
     stream'error = base:errorNew("Stream opened write-only")
@@ -60,6 +62,7 @@ func streamRead(stream ptr base:Stream, string ptr uint8, len intptr) uintptr
   return stream'cookie'rfn(stream'cookie'priv8, string, len, ptr stream'error, ptr stream'eof)
 /func
 
+
 func streamWrite(stream ptr base:Stream, string ptr uint8) uintptr
   if (stream'inout & STREAM_OUT) == 0
     stream'error = base:errorNew("Stream opened read-only")
@@ -68,4 +71,3 @@ func streamWrite(stream ptr base:Stream, string ptr uint8) uintptr
 
   return stream'cookie'wfn(stream'cookie'priv8, string, cast<intptr>(base:strlen(string)), ptr stream'error)
 /func
-

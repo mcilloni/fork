@@ -1,18 +1,15 @@
-#  This file is part of First Step.
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
 #
-#  First Step is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software
-#  Foundation, either version 3 of the License, or (at your option) any later version.
-#
-#  First Step is distributed in the hope that it will be useful, but
-#  WITHOUT ANY WARRANTY without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with First Step.  If not, see <http://www.gnu.org/licenses/>
-#
-#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
 
 import base
+
 
 mut BLACK = false
 mut RED = true
@@ -29,6 +26,7 @@ func nodeNew(key data, value data, cmp base:comparer, freewhat uint8) ptr base:M
   ret'freewhat = freewhat
   return ret
 /func
+
 
 func nodeRotateLeft(node ptr base:Mnode) ptr base:Mnode
   mut ret = node'right
@@ -47,6 +45,7 @@ func nodeRotateLeft(node ptr base:Mnode) ptr base:Mnode
   return ret
 /func
 
+
 func nodeRotateRight(node ptr base:Mnode) ptr base:Mnode
   mut ret = node'left
 
@@ -64,19 +63,23 @@ func nodeRotateRight(node ptr base:Mnode) ptr base:Mnode
   return ret
 /func
 
+
 func nodeColorFlip(node ptr base:Mnode)
   node'color = !node'color
   node'left'color = !node'left'color
   node'right'color = !node'right'color
 /func
 
+
 func nodeIsRed(node ptr base:Mnode) bool
   return (node != null) and (node'color == RED)
 /func
 
+
 func nodeIsBlack(node ptr base:Mnode) bool
   return (node == null) or (node'color == BLACK)
 /func
+
 
 func nodeFree(node ptr base:Mnode, freeKey ptr func(item data), freeVal ptr func(item data))
 
@@ -103,6 +106,7 @@ func nodeFree(node ptr base:Mnode, freeKey ptr func(item data), freeVal ptr func
 
 /func
 
+
 func nodeFixUp(node ptr base:Mnode) ptr base:Mnode
   if nodeIsRed(node'right)
 	  node = nodeRotateLeft(node)
@@ -118,6 +122,7 @@ func nodeFixUp(node ptr base:Mnode) ptr base:Mnode
 
   return node
 /func
+
 
 func nodeAdd(node ptr base:Mnode, keyV data, value data, cmp base:comparer, freewhat uint8, oldvalue ptr data) ptr base:Mnode
 
@@ -142,6 +147,7 @@ func nodeAdd(node ptr base:Mnode, keyV data, value data, cmp base:comparer, free
 
 /func
 
+
 func nodeMoveRedLeft(node ptr base:Mnode) ptr base:Mnode
 
   nodeColorFlip(node)
@@ -156,6 +162,7 @@ func nodeMoveRedLeft(node ptr base:Mnode) ptr base:Mnode
 
 /func
 
+
 func nodeMoveRedRight(node ptr base:Mnode) ptr base:Mnode
 
   nodeColorFlip(node)
@@ -168,6 +175,7 @@ func nodeMoveRedRight(node ptr base:Mnode) ptr base:Mnode
   return node
 
 /func
+
 
 func nodeGetnode(node ptr base:Mnode, keyV data) ptr base:Mnode
   if node == null
@@ -186,6 +194,7 @@ func nodeGetnode(node ptr base:Mnode, keyV data) ptr base:Mnode
   /if
 /func
 
+
 func nodeGet(node ptr base:Mnode, keyV data, valueV ptr data) bool
   mut found = nodeGetnode(node, keyV)
 
@@ -196,6 +205,7 @@ func nodeGet(node ptr base:Mnode, keyV data, valueV ptr data) bool
   val valueV = found'value
   return true
 /func
+
 
 func nodeDeleteMin(node ptr base:Mnode) ptr base:Mnode
   if node'left == null
@@ -210,6 +220,7 @@ func nodeDeleteMin(node ptr base:Mnode) ptr base:Mnode
   return nodeFixUp(node)
 /func
 
+
 func nodeMkpair(node ptr base:Mnode) ptr base:Pair
   if node == null
     return null
@@ -221,6 +232,7 @@ func nodeMkpair(node ptr base:Mnode) ptr base:Pair
   return ret
 /func
 
+
 func nodeMinpair(node ptr base:Mnode) ptr base:Pair
   if node'left == null
     return nodeMkpair(node)
@@ -229,6 +241,7 @@ func nodeMinpair(node ptr base:Mnode) ptr base:Pair
   /if
 /func
 
+
 func nodeMin(node ptr base:Mnode) data
   if node'left == null
     return node'key
@@ -236,6 +249,7 @@ func nodeMin(node ptr base:Mnode) data
     return nodeMin(node'left)
   /if
 /func
+
 
 func nodeDelete(node ptr base:Mnode, keyV data, found ptr bool) ptr base:Mnode
 
@@ -284,16 +298,19 @@ func nodeDelete(node ptr base:Mnode, keyV data, found ptr bool) ptr base:Mnode
 
 /func
 
+
 func mapInit(map ptr base:Map, cmp base:comparer) ptr base:Map
   map'cmp = cmp
   return map
 /func
+
 
 func mapNew(cmp base:comparer) ptr base:Map
   mut map = cast<ptr base:Map>(base:zalloc(size(base:Map)))
 
   return base:mapInit(map, cmp)
 /func
+
 
 func mapGet(map ptr base:Map, key data, value ptr data) bool
   if map'root == null
@@ -302,6 +319,7 @@ func mapGet(map ptr base:Map, key data, value ptr data) bool
 
   return nodeGet(map'root,key, value)
 /func
+
 
 func mapPut(map ptr base:Map, key data, value data, freewhat uint8) data
   mut oldvalue data = null
@@ -315,10 +333,12 @@ func mapPut(map ptr base:Map, key data, value data, freewhat uint8) data
   return oldvalue
 /func
 
+
 func mapContains(map ptr base:Map, key data) bool
   mut value data #ignored - will be discarded but needed for mapGet to work
   return base:mapGet(map, key, ptr value)
 /func
+
 
 func mapRemove(map ptr base:Map, key data) bool
 	mut ret = false
@@ -339,13 +359,16 @@ func mapRemove(map ptr base:Map, key data) bool
 	return ret
 /func
 
+
 func mapFirst(map ptr base:Map) ptr base:Pair
   return map'root != null => nodeMinpair(map'root) || null
 /func
 
+
 func mapDeinit(map ptr base:Map)
   base:mapDeinitSpec(map, null, null)
 /func
+
 
 func mapDeinitSpec(map ptr base:Map, freeKey ptr func(item data), freeVal ptr func(item data))
   if map == null
@@ -363,22 +386,27 @@ func mapDeinitSpec(map ptr base:Map, freeKey ptr func(item data), freeVal ptr fu
   nodeFree(map'root, freeKey, freeVal)
 /func
 
+
 func mapFreeSpec(map ptr base:Map, freeKey ptr func(item data), freeVal ptr func(item data))
   base:mapDeinitSpec(map, freeKey, freeVal)
   base:free(map)
 /func
 
+
 func mapFree(map ptr base:Map)
   base:mapFreeSpec(map, null, null)
 /func
+
 
 func mapLen(map ptr base:Map) uintptr
   return map'len
 /func
 
+
 func strmapInit(map ptr base:Map) ptr base:Map
   return base:mapInit(map, ptr base:strcomparer)
 /func
+
 
 func strmapNew() ptr base:Map
   return base:mapNew(ptr base:strcomparer)

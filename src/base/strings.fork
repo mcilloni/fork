@@ -1,18 +1,15 @@
-#  This file is part of First Step.
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
 #
-#  First Step is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software
-#  Foundation, either version 3 of the License, or (at your option) any later version.
-#
-#  First Step is distributed in the hope that it will be useful, but
-#  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with First Step.  If not, see <http://www.gnu.org/licenses/>
-#
-#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
 
 import base
+
 
 func strclone(orig ptr uint8) ptr uint8
   if orig == null
@@ -25,6 +22,7 @@ func strclone(orig ptr uint8) ptr uint8
   return new
 /func
 
+
 func strequals(s1, s2 ptr uint8) bool
   decl strcmp func(str1 ptr uint8, str2 ptr uint8) int32
   if strcmp(s1,s2) == 0
@@ -33,6 +31,7 @@ func strequals(s1, s2 ptr uint8) bool
 
   return false
 /func
+
 
 func strreverse(str ptr uint8, len uintptr)
   mut i uintptr = 0
@@ -46,6 +45,7 @@ while i < end
     i++
   /while
 /func
+
 
 func numtostr(num uintptr, buf ptr uint8, len uintptr) ptr uint8
   if len < 2
@@ -73,6 +73,7 @@ func numtostr(num uintptr, buf ptr uint8, len uintptr) ptr uint8
   return buf
 /func
 
+
 func strglue(strs ptr ptr uint8) ptr uint8
   mut cs = base:csNew(10)
   while val strs != null
@@ -82,6 +83,7 @@ func strglue(strs ptr ptr uint8) ptr uint8
 
   return base:csUnleash(cs)
 /func
+
 
 func strappend(str1 ptr uint8, str2 ptr uint8) ptr uint8
   mut len1 = base:strlen(str1)
@@ -94,6 +96,7 @@ func strappend(str1 ptr uint8, str2 ptr uint8) ptr uint8
 
   return ret
 /func
+
 
 func strtonum(str ptr uint8) intptr
   mut ret uintptr = 0
@@ -119,6 +122,7 @@ func strtonum(str ptr uint8) intptr
 
   return cast<intptr>(ret * sign)
 /func
+
 
 func strcomparer(s1 data, s2 data) int8
   decl strcmp func(str1 data, str2 data) int8

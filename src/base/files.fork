@@ -1,18 +1,15 @@
-#  This file is part of First Step.
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
 #
-#  First Step is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software
-#  Foundation, either version 3 of the License, or (at your option) any later version.
-#
-#  First Step is distributed in the hope that it will be useful, but
-#  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with First Step.  If not, see <http://www.gnu.org/licenses/>
-#
-#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
 
 import base
+
 
 func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr base:Error, eof ptr bool) uintptr
   mut fd = cast<int64>(camoFd)
@@ -31,6 +28,7 @@ func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr base
 
   return rd
 /func
+
 
 func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr base:Error) uintptr
   mut fd = cast<int64>(camoFd)
@@ -53,6 +51,7 @@ func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr bas
   return wttot
 /func
 
+
 func filecloseInternal(camoFd data, err ptr ptr base:Error) bool
   decl stream_closefileInternal func(fd int64, error ptr uint8, errLen uintptr) uint8
   mut buf [512] uint8
@@ -63,6 +62,7 @@ func filecloseInternal(camoFd data, err ptr ptr base:Error) bool
 
   return false
 /func
+
 
 func fileOpen(filename ptr uint8, err ptr ptr base:Error) ptr base:Stream
   decl open_readfile func(name ptr uint8, error ptr uint8, errlen uintptr) int64
@@ -78,6 +78,7 @@ func fileOpen(filename ptr uint8, err ptr ptr base:Error) ptr base:Stream
 
   return base:streamNew(cast<data>(fd), ptr filereadInternal, null, ptr filecloseInternal)
 /func
+
 
 func fileCreate(filename ptr uint8, err ptr ptr base:Error) ptr base:Stream
   decl open_writefile func(name ptr uint8, error ptr uint8, errlen uintptr) int64

@@ -1,18 +1,15 @@
-#  This file is part of First Step.
+#  Second Step - Experimental Fork Compiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
 #
-#  First Step is free software: you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software
-#  Foundation, either version 3 of the License, or (at your option) any later version.
-#
-#  First Step is distributed in the hope that it will be useful, but
-#  WITHOUT ANY WARRANTY without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Lesser General Public License for more details.
-#
-#  You should have received a copy of the GNU Lesser General Public License
-#  along with First Step.  If not, see <http://www.gnu.org/licenses/>
-#
-#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
 
 import base
+
 
 func vectInit(arr ptr base:Vector, cap uintptr) ptr base:Vector
   base:memset(arr, 0, size(base:Vector))
@@ -25,9 +22,11 @@ func vectInit(arr ptr base:Vector, cap uintptr) ptr base:Vector
   return arr
 /func
 
+
 func vectNew(cap uintptr) ptr base:Vector
   return base:vectInit(cast<ptr base:Vector>(base:alloc(size(base:Vector))), cap)
 /func
+
 
 func vectNewCap(vect ptr base:Vector, newcap uintptr)
 
@@ -54,6 +53,7 @@ func vectNewCap(vect ptr base:Vector, newcap uintptr)
   vect'isSlice = false
 /func
 
+
 func vectGetint(vect ptr base:Vector, index uintptr) ptr uintptr
   if vect'len <= index
     return null
@@ -63,14 +63,17 @@ func vectGetint(vect ptr base:Vector, index uintptr) ptr uintptr
 /func
 
 
+
 func vectCap(vect ptr base:Vector) uintptr
   return vect'cap
 /func
 
 
+
 func vectLen(vect ptr base:Vector) uintptr
   return vect'len
 /func
+
 
 
 func vectEnsureCap(vect ptr base:Vector, newMinCap uintptr)
@@ -87,6 +90,7 @@ func vectEnsureCap(vect ptr base:Vector, newMinCap uintptr)
     base:vectNewCap(vect, newCap)
   /if
 /func
+
 
 
 func vectPutint(vect ptr base:Vector, index uintptr, value uintptr) bool
@@ -109,15 +113,18 @@ func vectPutint(vect ptr base:Vector, index uintptr, value uintptr) bool
 /func
 
 
+
 func vectAppendint(vect ptr base:Vector, value uintptr) bool
   return vectPutint(vect, vect'len, value)
 /func
+
 
 func vectDeinit(vect ptr base:Vector)
   if !vect'isSlice
     base:free(vect'arr)
   /if
 /func
+
 
 func vectFree(vect ptr base:Vector)
 
@@ -128,6 +135,7 @@ func vectFree(vect ptr base:Vector)
   /if
 
 /func
+
 
 func vectFreeContents(vect ptr base:Vector,  freefunc ptr func(item data))
 
@@ -152,6 +160,7 @@ func vectFreeContents(vect ptr base:Vector,  freefunc ptr func(item data))
 
 /func
 
+
 func vectFreeAll(vect ptr base:Vector,  freefunc ptr func(item data))
   if vect != null
     vectFreeContents(vect, freefunc)
@@ -159,10 +168,12 @@ func vectFreeAll(vect ptr base:Vector,  freefunc ptr func(item data))
   /if
 /func
 
+
 func vectPrune(vect ptr base:Vector)
   base:memset(vect'arr, 0, vect'cap)
   vect'len = 0
 /func
+
 
 func vectSlice(vect ptr base:Vector, start uintptr, len intptr) ptr base:Vector
   mut ret = vectNew(0)
@@ -185,6 +196,7 @@ func vectSlice(vect ptr base:Vector, start uintptr, len intptr) ptr base:Vector
   return ret
 /func
 
+
 func vectPrint(vect ptr base:Vector)
   mut inside = false
 
@@ -205,6 +217,7 @@ func vectPrint(vect ptr base:Vector)
 
   base:outln(" ]")
 /func
+
 
 mut vectAppend = cast<ptr func(vect ptr base:Vector, item data) bool>(vectAppendint)
 mut vectGet = cast<ptr func(vect ptr base:Vector, index uintptr) ptr data>(vectGetint)
