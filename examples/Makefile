@@ -18,7 +18,7 @@ all: $(BINS)
 
 	@printf "FORKL\t\t%s\n" $<
 
-	@ $(FORKL) -o $@ $< ../build/libsema.a ../build/libsynt.a ../build/libast.a ../build/liblex.a ../build/libutils.a 
+	@ $(CC) -o $@ $< $(shell pwd)/../build/rt.o -L$(shell pwd)/../build/ -lfork
 
 %.o: %.fork
 	@printf "FORKC\t\t%s\n" $<

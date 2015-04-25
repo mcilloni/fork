@@ -22,7 +22,7 @@ all:
 	$(MAKE) -C sema
 
 	@printf "CCLD\t\t%s\n" $<
-	$(CCLD) -shared -o ../build/$(SONAME) ../build/*.a
+	$(CCLD) -shared -o ../build/$(SONAME) ../build/*/*.o
 
 clean:
 	$(MAKE) -C base clean
