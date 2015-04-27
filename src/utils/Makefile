@@ -20,11 +20,9 @@ OPATHS = $(foreach obj, $(OBJS), $(BUILDPATH)/$(obj))
 .PHONY: all clean
 
 all: $(OPATHS)
-	$(AR) rc $(LIBPATH) $(OPATHS)
-	$(RANLIB) $(LIBPATH)
 
 dir:
-	install -d $(BUILDPATH)	
+	install -d $(BUILDPATH)
 
 $(BUILDPATH)/%.o: %.fork dir
 	@printf "FORKC\t\t%s\n" $<
@@ -33,4 +31,3 @@ $(BUILDPATH)/%.o: %.fork dir
 clean:
 	rm -rf $(BUILDPATH)
 	rm -f $(LIBPATH)
-

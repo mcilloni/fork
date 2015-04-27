@@ -5,7 +5,18 @@ endif
 FORKC_O = $(FORKC) --no-spring
 
 CCLD = $(CC)
+
+ifndef AR
+	AR=ar
+endif
+
+ifndef RANLIB
+	RANLIB=ranlib
+endif
+
+
 SONAME = 'libfork.so'
+ARNAME = 'libfork.a'
 
 .PHONY: all clean
 
@@ -21,8 +32,13 @@ all:
 	$(MAKE) -C synt
 	$(MAKE) -C sema
 
-	@printf "CCLD\t\t%s\n" $<
-	$(CCLD) -shared -o ../build/$(SONAME) ../build/*/*.o
+	@printf "AR\t\t%s\n" $(ARNAME)
+	@ $(AR) rc ../build/$(ARNAME) ../build/*/*.o
+	@ $(RANLIB) ../build/$(ARNAME)
+
+	@printf "CCLD\t\t%s\n" $(SONAME)
+	@ $(CCLD) -shared -o ../build/$(SONAME) ../build/*/*.o
+
 
 clean:
 	$(MAKE) -C base clean

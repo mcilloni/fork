@@ -1,5 +1,4 @@
 BUILDPATH = ../../build/sema/
-LIBPATH = ../../build/libsema.a
 
 ifndef FORKC
 	FORKC = forkc
@@ -22,8 +21,6 @@ OPATHS = $(foreach obj, $(OBJS), $(BUILDPATH)/$(obj))
 .PHONY: all clean dir
 
 all: $(OPATHS)
-	$(AR) rc $(LIBPATH) $(OPATHS)
-	$(RANLIB) $(LIBPATH)
 
 dir:
 	install -d $(BUILDPATH)

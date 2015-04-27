@@ -1,5 +1,4 @@
 BUILDPATH = ../../build/base/
-LIBPATH = ../../build/libbase.a
 
 ifndef FORKC
 	FORKC = forkc
@@ -46,8 +45,6 @@ FOBJS = $(patsubst %.fork,%.fork.o,$(FSRCS))
 OPATHS += $(foreach obj, $(FOBJS), $(BUILDPATH)/$(obj))
 
 all: $(OPATHS)
-	$(AR) rc $(LIBPATH) $(OPATHS)
-	$(RANLIB) $(LIBPATH)
 
 dir:
 	install -d $(BUILDPATH)
