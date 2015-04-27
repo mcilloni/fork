@@ -1,13 +1,13 @@
 Checks the parser integrity:
 
-  $ $TESTDIR/../examples/sexample.elf $TESTDIR/../examples/sexample.fork
+  $ $TESTDIR/../examples/ex $TESTDIR/../examples/sexample.elf $TESTDIR/../examples/sexample.fork
   Root: (at 15:2-34:6)
-  Imports: 
+  Imports:
       ast (at 10:2-10)
       synt (at 11:12-11)
       base (at 12:13-13)
       utils (at 13:15-12)
-  
+
       Entry: (at 15:2-34:6)
           _fork_entry :: func()
           Block: (at 16:3-33:21)

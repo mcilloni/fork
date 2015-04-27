@@ -12,7 +12,7 @@ import utils
 
 entry
 
-  mut tkz = utils:tokenizerNew("/home/marco/Workspace/forklift/second-step/examples/../src/ford/:/home/marco/Workspace/forklift/second-step/examples/../../first-step/build/libfork/ford/", 58)
+  mut tkz = utils:tokenizerNew("/home/marco/Workspace/forklift/second-step/examples/../src/ford-int/:/home/marco/Workspace/forklift/second-step/examples/../../first-step/build/libfork/ford-int/", 58)
 
   mut nxt ptr uint8
 

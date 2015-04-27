@@ -1,6 +1,6 @@
 Checks lex functionality.
 
-  $ $TESTDIR/../examples/lexample.elf $TESTDIR/../examples/sexample.fork
+  $ $TESTDIR/../examples/ex $TESTDIR/../examples/lexample.elf $TESTDIR/../examples/sexample.fork
   import
   an identifier: ast
   a newline
