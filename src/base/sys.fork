@@ -11,7 +11,8 @@
 import base
 
 
+mut __forkprogArgs base:Args
+
 func args() ptr base:Args
-  decl __forkprogArgs base:Args
   return ptr __forkprogArgs
 /func

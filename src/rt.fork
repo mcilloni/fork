@@ -9,40 +9,15 @@
 
 import base
 
+
 decl __fork_entry func()
 
-func __forkpow(base,exp uintptr) uintptr
-
-  if exp == 0
-    return 1
-  /if
-
-  if base == 1
-    return 1
-  /if
-
-  if base == 0
-    return 0
-  /if
-
-  mut ret uintptr = 1
-  mut i uintptr = 1
-
-  while i <= exp
-    ret = ret * base
-    i++
-  /while
-
-  return ret
-
-/func
-
-mut __forkprogArgs base:Args
 
 func main(argc intptr, argv ptr ptr uint8) int8
-  __forkprogArgs'len = cast<uintptr>(argc - 1)
-  __forkprogArgs'progname = val argv
-  __forkprogArgs'args = argv + 1
+  mut forkArgs = base:args()
+  forkArgs'len = cast<uintptr>(argc - 1)
+  forkArgs'progname = val argv
+  forkArgs'args = argv + 1
   __fork_entry()
   return 0
 /func
