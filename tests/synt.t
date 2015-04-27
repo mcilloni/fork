@@ -1,39 +1,39 @@
 Checks the parser integrity:
 
-  $ $TESTDIR/../examples/ex $TESTDIR/../examples/sexample.elf $TESTDIR/../examples/sexample.fork
+  $ $TESTDIR/../examples/ex sexample $TESTDIR/../examples/sexample.fork
   Root: (at 15:2-34:6)
-  Imports:
+  Imports: 
       ast (at 10:2-10)
       synt (at 11:12-11)
-      base (at 12:13-13)
-      utils (at 13:15-12)
-
+      base (at 12:13-11)
+      utils (at 13:13-12)
+  
       Entry: (at 15:2-34:6)
           _fork_entry :: func()
           Block: (at 16:3-33:21)
-              Mut: (at 16:3-26)
+              Mut: (at 16:3-24)
                   argv :: <inferred>
-                  Expression: (at 16:25-26): a function call
-                      Expression: (at 16:14-24): :
-                          Expression: (at 16:14-19): an id - "base"
-                          Expression: (at 16:21-24): an id - "args"
+                  Expression: (at 16:23-24): a function call
+                      Expression: (at 16:14-22): :
+                          Expression: (at 16:14-17): an id - "base"
+                          Expression: (at 16:19-22): an id - "args"
               If: (at 17:3-20:5)
                   Expression: (at 17:6-18): !=
                       Expression: (at 17:6-13): '
                           Expression: (at 17:6-9): an id - "argv"
                           Expression: (at 17:11-13): an id - "len"
                       Expression: (at 17:18-18): 1
-                  Block: (at 18:17-19:18)
-                      Expression: (at 18:17-58): a function call
-                          Expression: (at 18:5-16): :
-                              Expression: (at 18:5-10): an id - "base"
-                              Expression: (at 18:12-16): an id - "errln"
-                          Expression: (at 18:18-57): a string - "Wrong number of arguments, required: 1"
-                      Expression: (at 19:16-18): a function call
-                          Expression: (at 19:5-15): :
-                              Expression: (at 19:5-10): an id - "base"
-                              Expression: (at 19:12-15): an id - "exit"
-                          Expression: (at 19:17-17): 1
+                  Block: (at 18:15-19:16)
+                      Expression: (at 18:15-56): a function call
+                          Expression: (at 18:5-14): :
+                              Expression: (at 18:5-8): an id - "base"
+                              Expression: (at 18:10-14): an id - "errln"
+                          Expression: (at 18:16-55): a string - "Wrong number of arguments, required: 1"
+                      Expression: (at 19:14-16): a function call
+                          Expression: (at 19:5-13): :
+                              Expression: (at 19:5-8): an id - "base"
+                              Expression: (at 19:10-13): an id - "exit"
+                          Expression: (at 19:15-15): 1
               Mut: (at 22:3-40)
                   prs :: <inferred>
                   Expression: (at 22:27-40): a function call
@@ -58,23 +58,23 @@ Checks the parser integrity:
                           Expression: (at 25:6-8): an id - "prs"
                           Expression: (at 25:10-12): an id - "err"
                       Expression: (at 25:17-20): null
-                  Block: (at 26:24-27:18)
-                      Expression: (at 26:24-48): a function call
+                  Block: (at 26:24-27:16)
+                      Expression: (at 26:24-46): a function call
                           Expression: (at 26:5-23): :
                               Expression: (at 26:5-9): an id - "utils"
                               Expression: (at 26:11-23): an id - "issueWriteOut"
                           Expression: (at 26:25-31): '
                               Expression: (at 26:25-27): an id - "prs"
                               Expression: (at 26:29-31): an id - "err"
-                          Expression: (at 26:34-47): ptr
-                              Expression: (at 26:38-47): :
-                                  Expression: (at 26:38-43): an id - "base"
-                                  Expression: (at 26:45-47): an id - "err"
-                      Expression: (at 27:16-18): a function call
-                          Expression: (at 27:5-15): :
-                              Expression: (at 27:5-10): an id - "base"
-                              Expression: (at 27:12-15): an id - "exit"
-                          Expression: (at 27:17-17): 1
+                          Expression: (at 26:34-45): ptr
+                              Expression: (at 26:38-45): :
+                                  Expression: (at 26:38-41): an id - "base"
+                                  Expression: (at 26:43-45): an id - "err"
+                      Expression: (at 27:14-16): a function call
+                          Expression: (at 27:5-13): :
+                              Expression: (at 27:5-8): an id - "base"
+                              Expression: (at 27:10-13): an id - "exit"
+                          Expression: (at 27:15-15): 1
               Expression: (at 30:16-21): a function call
                   Expression: (at 30:3-15): :
                       Expression: (at 30:3-5): an id - "ast"
@@ -90,3 +90,4 @@ Checks the parser integrity:
                       Expression: (at 33:3-5): an id - "ast"
                       Expression: (at 33:7-15): an id - "pnodeFree"
                   Expression: (at 33:17-20): an id - "root"
+
