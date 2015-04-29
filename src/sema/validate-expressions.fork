@@ -370,16 +370,6 @@ func validateExprId(rsv sema:Resolver,
 
   # try searching for a top declaration
   if type == null and (type = resolveDeclType(rsv, name, cast<ptr ast:PNode>(pexpr), recList, errors)) == null
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, name)
-    base:csAppendStr(cs, " is undefined in current scope")
-
-    mut msg = base:csUnleash(cs)
-
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
-
-    base:free(msg)
-
     return null
   /if
 
