@@ -453,7 +453,7 @@ func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri 
 func parserParseAssignExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
   mut lhs = parserParseUnaryExpr(ctx)
 
-  return parserParseBinaryRhs(ctx, lhs, tokTypePrec(lex:ASSIGN))
+  return lhs != null => parserParseBinaryRhs(ctx, lhs, tokTypePrec(lex:ASSIGN)) || null
 /func
 
 
