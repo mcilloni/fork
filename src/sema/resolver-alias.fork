@@ -84,6 +84,10 @@ func convertPtrLocType(rsv sema:Resolver,
   # validate ptdes'retType
   mut res = convertRetType(rsv, ptdes'retType, errors, recList, isLoc, !isLoc)
 
+  if res == null
+    return null
+  /if
+
   if isLoc
     res = ast:typeNewLoc(rsv'root'typePool, null, null, ptdes'length, res)
   else
