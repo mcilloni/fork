@@ -880,6 +880,12 @@ func parserParseDefinition(ctx ptr synt:ParserContext) ptr ast:PNode
 # parses the root node
 func parserParseProgram(ctx ptr synt:ParserContext) ptr ast:PNode
 
+  if ctx'next == null
+    ctx'prs'err = lex:error(ctx'last, "empty input")
+    return null
+  /if
+
+
   # parse module name
   mut moduleName = parserParseModuleName(ctx)
 
