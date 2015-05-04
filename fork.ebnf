@@ -1,124 +1,65 @@
 program ::= [module], {import}, { definition }
-
 module ::= 'module', id
-
 import ::= 'import', id
-
 definition ::= entry | function | declaration
-
 entry ::= 'entry', stmtEnd, body, '/entry'
-
 function ::= 'func', id, '(', argList, ')', [type], stmtEnd, body, '/func'
-
 argList ::= {argTypeList, ','}, argTypeList
-
 argTypeList ::= {id, ','}, id, type
-
 body ::= {stmt}
-
 stmt ::= (if | while | declaration | expr | return | 'break' | 'continue'), stmtEnd
-
 return ::= 'return', expr
-
 if ::= 'if', expr, stmtEnd, body, [elseBlock], '/if'
-
 while ::= 'while', expr, stmtEnd, breakBody, '/while'
-
 elseBlock ::= 'else', body
-
 declaration ::= mut | decl | alias
-
 mut ::= 'mut', singleVar
 decl ::= 'decl', declType
 stmtEnd ::= newLine | ';'
-
 singleVar ::= assign | declType
 declType ::= id, type
-
-varDecl ::= id | assign
-
 alias ::= 'alias', id, type
-
 typeModifier ::= 'val' | 'ptr' | ('[', number, ']')
-
 funcType ::= 'func', '(', [type,{',', type}], ')', [type]
-
 structType ::= 'struct', '(', argList, ')'
-
 type ::= [typeModifier], (id | funcType | structType)
-
 idname ::= id | ( idname, ':', id)
-
 id ::= letter, {(letter | cipher)}
-
 expr ::= assignExpr
-
 assignExpr ::= assign | conditional
-
-assign ::= cast, assignOp, assignExpr
-
+assign ::= unary, assignOp, assignExpr
 assignOp ::= '=' | '+=' | '-=' | '*=' | '/=' | '&=' | '|=' | '^=' | '**='
-
 idname ::= id, [':', id]
-
 conditional ::= (or, '=>', expr, '||', conditional) | or
-
 or ::= ( or, 'or', and ) | and
-
 and ::= ( and, 'and', binOr ) | binOr
-
 binOr ::= ( binOr, '|', binAnd ) | binAnd
-
 binAnd ::= ( binAnd, '&', equality ) | equality
-
 equality ::= ( equality, ( '==' | '!=' ), comparison) | comparison
-
 comparison ::= ( comparison, compOp, shift ) | shift
-
 compOp ::= '>' | '<' | '>=' | '<='
-
 shift ::= addiction
-
 addition ::= ( addition, ('+' | '-'), multiplication ) | multiplication
-
 multiplication ::= ( multiplication, ( '*', '/', 'mod' ), cast ) | cast
-
 unary ::= postfix | (unaryOp, unary)
-
 unaryOp ::= '-' | '!' | 'ptr' | 'val'
-
 postfix ::= primary | postfixTerm
-
 postfixTerm ::= access | call | field | inc
-
 primary ::= idname | constant | ( '(', expr, ')' ) | cast | size
-
 size ::= 'size', '(', type, ')'
-
 cast ::= 'cast', '<', type, '>', '(', expr, ')'
-
 access ::= postfix, '[', expr, ']'
-
 call ::= postfix, '(', [ arglist ], ')'
-
 arglist := assignExpr | ( arglist, ',', assignExpr )
-
 field ::= postfix, ''', id
-
 inc ::= postfix, ('++' | '--')
-
 constant ::= number | boolVal | 'null' | string
-
 boolVal ::= 'true' | 'false'
-
 string ::= '"', {letter}, '"'
-
 number ::= decNumber | binNumber | hexNumber
-
 decNumber ::= ? decimal number ?
 hexNumber ::= ? hexadecimal number like 456h, letters A-F can be both cases, h should be lowcase ?
 binNumber ::= ? binary number like 10101b, b should be lowcase ?
-
 letter ::= ? any Unicode letter ?
 cipher ::= ? any cipher ?
 newLine ::= ? new line delimiter ?

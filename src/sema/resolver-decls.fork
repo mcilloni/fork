@@ -191,6 +191,11 @@ func registerDeclReal(rsv sema:Resolver,
               return null
             /if
           else
+            if ast:typeIsNull(valType)
+              base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, "can't declare a variable with type 'null'"))
+              return null
+            /if
+
             realType = valType
           /if
         /if

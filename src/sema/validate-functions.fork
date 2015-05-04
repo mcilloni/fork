@@ -70,7 +70,31 @@ func validateDecl(rsv sema:Resolver,
       return false
     /if
 
-    type = type != null => type || exprType
+    if type != null
+      if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pdecl), type, exprType)
+        mut cs = base:csNew(20)
+        base:csAppendStr(cs, "cannot assign an expression of type '")
+        ast:typeSummarize(cs, exprType)
+        base:csAppendStr(cs, "' to a variable declared as '")
+        ast:typeSummarize(cs, type)
+        base:csAppendStr(cs, "'")
+
+        mut msg = base:csUnleash(cs)
+
+        base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+
+        base:free(msg)
+
+        return false
+      /if
+    else
+      if ast:typeIsNull(exprType)
+        base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "can't declare a variable with type 'null'"))
+        return false
+      /if
+
+      type = exprType
+    /if
   /if
 
   if type == null
