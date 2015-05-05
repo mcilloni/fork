@@ -252,6 +252,11 @@ func parserParseAccessExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr as
 func parserParseCallExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:PExpr
 
   mut opar = synt:nextTok(ctx)
+
+  if opar == null
+    return null
+  /if
+
   mut begin = lex:tokExtractBegin(opar)
   mut callExpr = ast:pexprNew(opar, lhs, null, begin, begin)
   mut callPNode = cast<ptr ast:PNode>(callExpr)
