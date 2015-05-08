@@ -9,16 +9,17 @@
 
 
 import base
+import err
 
 
-func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr base:Error, eof ptr bool) uintptr
+func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err:Error, eof ptr bool) uintptr
   mut fd = cast<int64>(camoFd)
   decl stream_readfileInternal func(fd int64, buf data, len intptr, error ptr uint8, errLen uintptr) intptr
   mut buf [512] uint8
   mut rd = stream_readfileInternal(fd, bytes, len, buf, 512)
 
   if rd < 0
-    val err = base:errorNew(buf)
+    val err = err:errorNew(buf)
     return 0
   /if
 
@@ -30,7 +31,7 @@ func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr base
 /func
 
 
-func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr base:Error) uintptr
+func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err:Error) uintptr
   mut fd = cast<int64>(camoFd)
   decl stream_writefileInternal func(fd int64, buf data, len intptr, error ptr uint8, errLen uintptr) intptr
   mut buf [512] uint8
@@ -41,7 +42,7 @@ func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr bas
     wt = stream_writefileInternal(fd, bytes + wttot, len - wttot, buf, 512)
 
     if wt < 0
-      val err = base:errorNew(buf)
+      val err = err:errorNew(buf)
       return 0
     /if
 
@@ -52,7 +53,7 @@ func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr bas
 /func
 
 
-func filecloseInternal(camoFd data, err ptr ptr base:Error) bool
+func filecloseInternal(camoFd data, err ptr ptr err:Error) bool
   decl stream_closefileInternal func(fd int64, error ptr uint8, errLen uintptr) uint8
   mut buf [512] uint8
 
@@ -64,7 +65,7 @@ func filecloseInternal(camoFd data, err ptr ptr base:Error) bool
 /func
 
 
-func fileOpen(filename ptr uint8, err ptr ptr base:Error) ptr base:Stream
+func fileOpen(filename ptr uint8, err ptr ptr err:Error) ptr base:Stream
   decl open_readfile func(name ptr uint8, error ptr uint8, errlen uintptr) int64
   mut buf [512] uint8
 
@@ -72,7 +73,7 @@ func fileOpen(filename ptr uint8, err ptr ptr base:Error) ptr base:Stream
 
   mut fd = open_readfile(filename, buf, 512)
   if fd < 0
-    val err = base:errorNew(buf)
+    val err = err:errorNew(buf)
     return null
   /if
 
@@ -80,13 +81,13 @@ func fileOpen(filename ptr uint8, err ptr ptr base:Error) ptr base:Stream
 /func
 
 
-func fileCreate(filename ptr uint8, err ptr ptr base:Error) ptr base:Stream
+func fileCreate(filename ptr uint8, err ptr ptr err:Error) ptr base:Stream
   decl open_writefile func(name ptr uint8, error ptr uint8, errlen uintptr) int64
   mut buf [512] uint8
 
   mut fd = open_writefile(filename, buf, 512)
   if fd < 0
-    val err = base:errorNew(buf)
+    val err = err:errorNew(buf)
     return null
   /if
 

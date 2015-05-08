@@ -9,7 +9,7 @@
 
 
 import base
-
+import err
 
 mut STREAM_IN uint8 = 1
 mut STREAM_OUT uint8 = 2
@@ -29,7 +29,7 @@ func streamEnded(stream ptr base:Stream) bool
 /func
 
 
-func streamError(stream ptr base:Stream) ptr base:Error
+func streamError(stream ptr base:Stream) ptr err:Error
   return stream'error
 /func
 
@@ -55,7 +55,7 @@ func streamNew(priv8 data, rfn ptr base:readfunc, wfn ptr base:writefunc, cfn pt
 
 func streamRead(stream ptr base:Stream, string ptr uint8, len intptr) uintptr
   if (stream'inout & STREAM_IN) == 0
-    stream'error = base:errorNew("Stream opened write-only")
+    stream'error = err:errorNew("Stream opened write-only")
     return 0
   /if
 
@@ -65,7 +65,7 @@ func streamRead(stream ptr base:Stream, string ptr uint8, len intptr) uintptr
 
 func streamWrite(stream ptr base:Stream, string ptr uint8) uintptr
   if (stream'inout & STREAM_OUT) == 0
-    stream'error = base:errorNew("Stream opened read-only")
+    stream'error = err:errorNew("Stream opened read-only")
     return 0
   /if
 

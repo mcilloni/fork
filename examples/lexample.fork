@@ -1,5 +1,6 @@
 import lex
 import base
+import err
 
 entry
   mut argv = base:args()
@@ -8,11 +9,11 @@ entry
     base:exit(1)
   /if
 
-  mut err ptr base:Error
+  mut err ptr err:Error
 
   mut lex = lex:lexerNew(val argv'args, ptr err)
   if err != null
-    base:errln(base:errorMsg(err))
+    base:errln(err:errorMsg(err))
     base:exit(1)
   /if
 
@@ -21,7 +22,7 @@ entry
   while (tok = lex:lexerNext(lex)) != null
 
     if (err = lex:lexerError(lex)) != null
-      base:errln(base:errorMsg(err))
+      base:errln(err:errorMsg(err))
       base:exit(2)
     /if
 
@@ -35,7 +36,7 @@ entry
         base:outint(tok'value)
       /if
     /if
-    
+
     base:outch(10)
 
     lex:tokenFree(tok)

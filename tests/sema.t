@@ -1,9 +1,10 @@
 Checks sema functionality:
 
   $ $TESTDIR/../examples/ex semxample $TESTDIR/../examples/sexample.fork
-  == IMPORTS: 5
+  == IMPORTS: 6
   Imported ast
   Imported base
+  Imported err
   Imported lex
   Imported synt
   Imported utils

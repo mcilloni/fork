@@ -8,6 +8,7 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 import base
+import err
 import lex
 import utils
 
@@ -92,7 +93,7 @@ func issueGravityToStr(issueGravity uint8) ptr uint8
 /func
 
 
-func issueToError(issue ptr utils:Issue) ptr base:Error
+func issueToError(issue ptr utils:Issue) ptr err:Error
   mut lineno [21] uint8
   mut pos [21] uint8
 
@@ -111,7 +112,7 @@ func issueToError(issue ptr utils:Issue) ptr base:Error
   toglue[8] = issue'message
   toglue[9] = null
 
-  mut ret = base:errorGlue(ptr toglue[0])
+  mut ret = err:errorGlue(ptr toglue[0])
 
   utils:issueFree(issue)
 

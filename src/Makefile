@@ -25,6 +25,7 @@ all:
 	@printf "FORKC\t\t%s\n" rt.fork
 	@ FORDPATHS="$(shell pwd)/ford/internal/:$(shell pwd)/ford/" $(FORKC_O) -o ../build/rt.o rt.fork
 
+	$(MAKE) -C err
 	$(MAKE) -C base
 	$(MAKE) -C utils
 	$(MAKE) -C lex
@@ -39,11 +40,14 @@ all:
 	@printf "CCLD\t\t%s\n" $(SONAME)
 	@ $(CCLD) -shared -o ../build/$(SONAME) ../build/*/*.o
 
+	cp -r ford/ ../build
 
 clean:
+	$(MAKE) -C err clean
 	$(MAKE) -C base clean
 	$(MAKE) -C utils clean
 	$(MAKE) -C lex clean
 	$(MAKE) -C ast clean
 	$(MAKE) -C synt clean
 	$(MAKE) -C sema clean
+	rm -rf ../build/ford/

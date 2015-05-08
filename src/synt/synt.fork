@@ -9,6 +9,7 @@
 
 import ast
 import base
+import err
 import lex
 import synt
 import utils
@@ -937,7 +938,7 @@ func parserParseProgram(ctx ptr synt:ParserContext) ptr ast:PNode
 
 
 func parserParse(parser ptr synt:Parser) ptr ast:PNode
-  mut lexErr ptr base:Error = null
+  mut lexErr ptr err:Error = null
   mut firstLineno = lex:linenoNew(base:strclone(parser'filename), 1, 1)
 
   mut lex = lex:lexerNew(parser'filename, ptr lexErr)

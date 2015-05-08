@@ -9,6 +9,7 @@
 
 
 import base
+import err
 import lex
 import utils
 
@@ -274,12 +275,12 @@ func lexerClose(lex ptr lex:Lexer)
 /func
 
 
-func lexerError(lexer ptr lex:Lexer) ptr base:Error
+func lexerError(lexer ptr lex:Lexer) ptr err:Error
   return lexer'error
 /func
 
 
-func lexerFromStream(stream ptr base:Stream, name ptr uint8, err ptr ptr base:Error) ptr lex:Lexer
+func lexerFromStream(stream ptr base:Stream, name ptr uint8, err ptr ptr err:Error) ptr lex:Lexer
   mut ret = cast<ptr lex:Lexer>(base:zalloc(size(lex:Lexer)))
 
   ret'file = stream
@@ -295,7 +296,7 @@ func lexerFromStream(stream ptr base:Stream, name ptr uint8, err ptr ptr base:Er
   return ret
 /func
 
-func lexerNew(fname ptr uint8, err ptr ptr base:Error) ptr lex:Lexer
+func lexerNew(fname ptr uint8, err ptr ptr err:Error) ptr lex:Lexer
   mut file = base:fileOpen(fname, err)
 
   if val err != null
@@ -329,7 +330,7 @@ func tokenFree(tok ptr lex:Token)
 /func
 
 
-func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr base:Error
+func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr err:Error
   mut toglue [4] ptr uint8
 
   toglue[0] = lex'lineno'filename
@@ -337,7 +338,7 @@ func errorLex(lex ptr lex:Lexer, msg ptr uint8) ptr base:Error
   toglue[2] = msg
   toglue[3] = null
 
-  return base:errorGlue(ptr toglue[0])
+  return err:errorGlue(ptr toglue[0])
 /func
 
 
@@ -933,7 +934,7 @@ func linenoNew(filename ptr uint8, lineno, pos uintptr) ptr lex:Lineno
 /func
 
 
-func issueFromLexError(err ptr base:Error, lineno ptr lex:Lineno) ptr utils:Issue
+func issueFromLexError(err ptr err:Error, lineno ptr lex:Lineno) ptr utils:Issue
   if err == null
     return null
   /if
@@ -944,7 +945,7 @@ func issueFromLexError(err ptr base:Error, lineno ptr lex:Lineno) ptr utils:Issu
 
   mut ret = utils:issueNew(utils:ISSUE_ERR, where, lineno'filename, err'msg)
 
-  base:errorFree(err)
+  err:errorFree(err)
 
   return ret
 /func

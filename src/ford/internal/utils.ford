@@ -10,6 +10,7 @@
 module utils
 
 import base
+import err
 
 decl charCanBeInString func(ch uint8, escape bool) bool
 decl charIsIdVal func(ch uint8) bool
@@ -32,7 +33,7 @@ alias Issue struct (
 decl issueFree func(issue ptr Issue)
 decl issueNew func(gravity uint8, where Line, filename, message ptr uint8) ptr Issue
 decl issueWriteOut func(issue ptr Issue, out ptr func(err ptr uint8))
-decl issueToError func(issue ptr Issue) ptr base:Error
+decl issueToError func(issue ptr Issue) ptr err:Error
 
 
 decl strIsUInt func(str ptr uint8) bool
