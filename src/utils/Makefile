@@ -26,7 +26,7 @@ dir:
 
 $(BUILDPATH)/%.o: %.fork dir
 	@printf "FORKC\t\t%s\n" $<
-	@ FORDPATHS="$(shell pwd)/../ford-int/" $(FORKC) -o $@ $<
+	@ FORDPATHS="$(shell pwd)/../ford/internal/:$(shell pwd)/../ford/" $(FORKC) -o $@ $<
 
 clean:
 	rm -rf $(BUILDPATH)

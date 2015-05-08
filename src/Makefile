@@ -23,7 +23,7 @@ ARNAME = 'libfork.a'
 all:
 	mkdir -p ../build/
 	@printf "FORKC\t\t%s\n" rt.fork
-	@ FORDPATHS="$(shell pwd)/ford-int/" $(FORKC_O) -o ../build/rt.o rt.fork
+	@ FORDPATHS="$(shell pwd)/ford/internal/:$(shell pwd)/ford/" $(FORKC_O) -o ../build/rt.o rt.fork
 
 	$(MAKE) -C base
 	$(MAKE) -C utils

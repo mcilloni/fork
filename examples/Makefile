@@ -22,7 +22,7 @@ all: $(BINS)
 
 %.o: %.fork
 	@printf "FORKC\t\t%s\n" $<
-	@ FORDPATHS="$(shell pwd)/../src/ford-int/" $(FORKC) -o $@ $<
+	@ FORDPATHS="$(shell pwd)/../src/ford/internal/:$(shell pwd)/../src/ford/" $(FORKC) -o $@ $<
 
 clean:
 	rm -f $(BINS)
