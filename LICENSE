@@ -1,6 +1,6 @@
-Second Step is licensed under the conditions of the Mozilla Public License Version 2
+libfork is licensed under the conditions of the Mozilla Public License Version 2
 as reported below.
-The Exhibit B is NOT attached, and the whole codebase can also be seen as compatible with 
+The Exhibit B is NOT attached, and the whole codebase can also be seen as compatible with
 the Secondary Licenses specified under section 1.12.
 
 Marco Cilloni
@@ -43,7 +43,7 @@ Mozilla Public License Version 2.0
     means any form of the work other than Source Code Form.
 
 1.7. "Larger Work"
-    means a work that combines Covered Software with other material, in 
+    means a work that combines Covered Software with other material, in
     a separate file or files, that is not Covered Software.
 
 1.8. "License"

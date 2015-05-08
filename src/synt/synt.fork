@@ -37,8 +37,13 @@ func theresError(ctx ptr synt:ParserContext) bool
 
 func nextTok(ctx ptr synt:ParserContext) ptr lex:Token
   mut tok = ctx'next
+
   if ctx'last != null
     lex:linenoFree(ctx'last)
+  /if
+
+  if tok == null
+    return null
   /if
 
   ctx'last = lex:linenoClone(tok'lineno)
@@ -113,7 +118,7 @@ func parserParseModuleName(ctx ptr synt:ParserContext) ptr ast:StringDef
 
 
 func parserParseImport(ctx ptr synt:ParserContext) ptr ast:StringDef
-  if ctx'next'type == lex:IMPORT
+  if ctx'next != null and ctx'next'type == lex:IMPORT
     mut begin = lex:tokDiscardBegin(synt:nextTok(ctx)) # discard 'import'
 
     mut name = synt:expect(ctx, lex:ID)
