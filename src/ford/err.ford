@@ -1,0 +1,24 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+module err
+
+# error structure
+
+alias Error struct (
+  msg ptr uint8
+)
+
+# Error functions
+
+decl errorFree func(err ptr Error)
+decl errorGlue func(errs ptr ptr uint8) ptr Error
+decl errorMsg func(err ptr Error) ptr uint8
+decl errorNew func(err ptr uint8) ptr Error
+decl errorNewStrs func(errstrings ptr ptr uint8) ptr Error
