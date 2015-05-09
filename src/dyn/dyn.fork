@@ -69,4 +69,6 @@ func sobjNew(name ptr uint8, err ptr ptr err:Error) ptr dyn:SObj
 
     return null
   /if
+
+  return ret
 /func

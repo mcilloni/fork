@@ -1,0 +1,40 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+import base
+import dyn
+import err
+import utils
+
+entry
+
+  mut error ptr err:Error
+  mut libc = dyn:sobjNew("/lib/libc.so.6", ptr error)
+
+  if libc == null
+    base:err("error: ")
+    base:errln(error'msg)
+
+    base:exit(1)
+  /if
+
+  mut puts = cast<ptr func(str ptr uint8)>(dyn:sobjGetSym(libc, "puts", ptr error))
+
+  if libc == null
+    base:err("error: ")
+    base:errln(error'msg)
+
+    base:exit(2)
+  /if
+
+  puts("test")
+
+  dyn:sobjFree(libc)
+
+/entry
