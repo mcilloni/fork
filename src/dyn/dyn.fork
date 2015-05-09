@@ -7,9 +7,66 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
+import base
 import dyn
+import err
 
 
-func sobjInit(sobj ptr SObj, name ptr uint8) ptr err:Error
+decl load_lib func(name ptr uint8, err ptr uint8, len uintptr) data
+decl load_sym func(handl data, name ptr uint8, err ptr uint8, len uintptr) data
+decl free_lib func(handl data, err ptr uint8, len uintptr) bool
 
+
+func sobjDeinit(sobj ptr dyn:SObj)
+  mut buf [1024] uint8 # ignore the error, though, I don't care about it right now
+
+  free_lib(sobj'handl, ptr buf[0], 1024)
+/func
+
+
+func sobjFree(sobj ptr dyn:SObj)
+  dyn:sobjDeinit(sobj)
+  base:free(sobj)
+/func
+
+
+func sobjGetSym(sobj ptr dyn:SObj, name ptr uint8, err ptr ptr err:Error) data
+  mut buf [1024] uint8
+
+  mut sym = load_sym(sobj'handl, name, ptr buf[0], 1024)
+  if sym == null
+    val err = err:errorNew(buf)
+
+    return null
+  /if
+
+  return sym
+/func
+
+
+func sobjInit(sobj ptr dyn:SObj, name ptr uint8, err ptr ptr err:Error) bool
+  mut buf [1024] uint8
+  sobj'handl = load_lib(name, ptr buf[0], 1024)
+
+  if sobj'handl == null
+    val err = err:errorNew(buf)
+
+    return false
+  /if
+
+  sobj'name = base:strclone(name)
+
+  return true
+/func
+
+
+func sobjNew(name ptr uint8, err ptr ptr err:Error) ptr dyn:SObj
+  mut ret = cast<ptr dyn:SObj>(base:alloc(size(dyn:SObj)))
+
+  if !dyn:sobjInit(ret, name, err)
+    base:free(ret)
+
+    return null
+  /if
 /func

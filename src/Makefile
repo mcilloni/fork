@@ -14,6 +14,9 @@ ifndef RANLIB
 	RANLIB=ranlib
 endif
 
+ifeq ($(shell uname), Linux)
+	LDFLAGS=-ldl
+endif
 
 SONAME = 'libfork.so'
 ARNAME = 'libfork.a'
@@ -27,6 +30,7 @@ all:
 
 	$(MAKE) -C err
 	$(MAKE) -C base
+	$(MAKE) -C dyn
 	$(MAKE) -C utils
 	$(MAKE) -C lex
 	$(MAKE) -C ast
@@ -38,13 +42,14 @@ all:
 	@ $(RANLIB) ../build/$(ARNAME)
 
 	@printf "CCLD\t\t%s\n" $(SONAME)
-	@ $(CCLD) -shared -o ../build/$(SONAME) ../build/*/*.o
+	@ $(CCLD) -shared -o ../build/$(SONAME) ../build/*/*.o $(LDFLAGS)
 
 	cp -r ford/ ../build
 
 clean:
 	$(MAKE) -C err clean
 	$(MAKE) -C base clean
+	$(MAKE) -C dyn clean
 	$(MAKE) -C utils clean
 	$(MAKE) -C lex clean
 	$(MAKE) -C ast clean

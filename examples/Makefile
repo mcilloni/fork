@@ -6,6 +6,10 @@ ifndef FORKL
 	FORKL = forkl
 endif
 
+ifeq ($(shell uname), Linux)
+	LDFLAGS=-ldl
+endif
+
 SRCS = $(wildcard *.fork)
 OBJS = $(patsubst %.fork,%.o,$(SRCS))
 BINS = $(patsubst %.fork,%.elf,$(SRCS))
@@ -18,7 +22,7 @@ all: $(BINS)
 
 	@printf "FORKL\t\t%s\n" $<
 
-	@ $(CC) -o $@ $< $(shell pwd)/../build/rt.o -L$(shell pwd)/../build/ -lfork -static
+	@ $(CC) -o $@ $< $(shell pwd)/../build/rt.o -L$(shell pwd)/../build/ -lfork $(LDFLAGS) -static 
 
 %.o: %.fork
 	@printf "FORKC\t\t%s\n" $<
