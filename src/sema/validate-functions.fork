@@ -14,6 +14,7 @@ import ctx
 import mem
 import sema
 import text
+import tty
 import utils
 
 
@@ -282,7 +283,7 @@ func validateStmt(rsv sema:Resolver,
   /if
 
   # unreachable
-  base:errln("unknown statement type")
+  tty:errln("unknown statement type")
   base:abort()
   return false
 /func

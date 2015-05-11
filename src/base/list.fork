@@ -10,6 +10,7 @@
 
 import base
 import mem
+import tty
 
 
 func listSeekAhead(list ptr base:List, pos uintptr)
@@ -353,21 +354,21 @@ func listShallowCopy(list ptr base:List) ptr base:List
 
 func listPrint(list ptr base:List)
   mut inside = false
-  base:out("[ ")
+  tty:out("[ ")
   mut len = listLen(list)
   mut i uint8 = 0
 
   while i < len
     if inside
-      base:out(", ")
+      tty:out(", ")
     else
       inside = true
     /if
 
-    base:outint(val listGetint(list, i))
+    tty:outint(val listGetint(list, i))
     i++
   /while
-  base:outln(" ]")
+  tty:outln(" ]")
 /func
 
 

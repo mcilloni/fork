@@ -14,6 +14,7 @@ import ctx
 import mem
 import sema
 import text
+import tty
 import utils
 
 
@@ -291,7 +292,7 @@ func resolveIdType(rsv sema:Resolver,
 
   if utils:kvGet(rsv'aliases, ptype'name, ptr whichDecl)
     if whichDecl'node'validated
-      base:errln("This should not be reachable")
+      tty:errln("This should not be reachable")
       base:abort()
     /if
 
@@ -332,7 +333,7 @@ func convertType(rsv sema:Resolver,
         if ptdes'type == ast:PTYPE_FUNC
           return convertFuncType(rsv, ptype, errors, recList)
         else
-          base:errln("Unreachable")
+          tty:errln("Unreachable")
           base:abort()
         /if
       /if

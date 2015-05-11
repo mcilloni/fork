@@ -15,13 +15,14 @@ import mem
 import sema
 import synt
 import text
+import tty
 import utils
 
 
 entry
   mut argv = base:args()
   if argv'len != 1
-    base:errln("Wrong number of arguments, required: 1")
+    tty:errln("Wrong number of arguments, required: 1")
     base:exit(1)
   /if
 
@@ -37,7 +38,7 @@ entry
     while i < errLen
       mut issue = cast<ptr utils:Issue>(val base:listGet(errors, i))
 
-      utils:issueWriteOut(issue, ptr base:out)
+      utils:issueWriteOut(issue, ptr tty:out)
 
       i++
     /while
@@ -48,17 +49,17 @@ entry
 
   mut root = cast<ptr ast:PRoot>(ast)
 
-  base:out("== IMPORTS: ")
-  base:outint(base:mapLen(ctx'imports))
-  base:outch(10)
+  tty:out("== IMPORTS: ")
+  tty:outint(base:mapLen(ctx'imports))
+  tty:outch(10)
 
   mut iter = base:mapiterStart(ctx'imports)
 
   mut pair ptr base:Pair
 
   while (pair = base:mapiterNext(iter)) != null
-    base:out("Imported ")
-    base:outln(cast<ptr uint8>(pair'key))
+    tty:out("Imported ")
+    tty:outln(cast<ptr uint8>(pair'key))
 
     base:pairFree(pair)
   /while
@@ -67,15 +68,15 @@ entry
 
   mut aliasesMap = root'aliases'syms
 
-  base:out("\n\n== ALIASES: ")
-  base:outint(base:mapLen(aliasesMap))
-  base:outch(10)
+  tty:out("\n\n== ALIASES: ")
+  tty:outint(base:mapLen(aliasesMap))
+  tty:outch(10)
 
   iter = base:mapiterStart(aliasesMap)
 
   while (pair = base:mapiterNext(iter)) != null
-    base:out("alias ")
-    base:outln(cast<ptr uint8>(pair'key))
+    tty:out("alias ")
+    tty:outln(cast<ptr uint8>(pair'key))
 
     base:pairFree(pair)
   /while
@@ -84,9 +85,9 @@ entry
 
   mut declsMap = cast<ptr ast:PRoot>(ast)'node'syms'syms
 
-  base:out("\n\n== DECLS: ")
-  base:outint(base:mapLen(declsMap))
-  base:outch(10)
+  tty:out("\n\n== DECLS: ")
+  tty:outint(base:mapLen(declsMap))
+  tty:outch(10)
 
   iter = base:mapiterStart(declsMap)
 
@@ -108,25 +109,25 @@ entry
       /if
     /if
 
-    base:out(typeStr)
-    base:out(cast<ptr uint8>(pair'key))
+    tty:out(typeStr)
+    tty:out(cast<ptr uint8>(pair'key))
 
-    base:out(" :: ")
+    tty:out(" :: ")
 
     mut cs = text:csNew(10)
     ast:typeSummarize(cs, dinfo'type)
 
     mut des = text:csUnwrap(cs)
 
-    base:outln(des)
+    tty:outln(des)
 
     mem:free(des)
     base:pairFree(pair)
   /while
 
-  base:out("\n\n==> Has entry? ")
+  tty:out("\n\n==> Has entry? ")
 
-  base:outln(root'entryNode != null => "yes" || "no")
+  tty:outln(root'entryNode != null => "yes" || "no")
 
   base:mapiterFree(iter)
 

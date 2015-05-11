@@ -19,6 +19,7 @@
 import base
 import mem
 import text
+import tty
 import utils
 
 
@@ -156,29 +157,29 @@ func kvLen(kv ptr utils:KVList) uintptr
 
 func kvPrint(kv ptr utils:KVList)
   if kv == null
-    base:outln("<null>")
+    tty:outln("<null>")
   else
 
-    base:out("[ ")
+    tty:out("[ ")
 
     mut len = utils:kvLen(kv)
     mut i uintptr = 0
 
     while i < len
       if i > 0
-        base:out(", ")
+        tty:out(", ")
       /if
 
       mut pair = utils:kvGetAt(kv, i)
 
-      base:out(cast<ptr uint8>(pair'key))
-      base:out(": ")
-      base:out(cast<ptr uint8>(pair'value))
+      tty:out(cast<ptr uint8>(pair'key))
+      tty:out(": ")
+      tty:out(cast<ptr uint8>(pair'value))
 
       i++
     /while
 
-    base:out(" ]")
+    tty:out(" ]")
 
   /if
 /func

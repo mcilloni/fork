@@ -14,6 +14,7 @@ import ctx
 import mem
 import sema
 import text
+import tty
 import utils
 
 
@@ -106,7 +107,7 @@ func resolverCollect(rsv ptr sema:Resolver,
             return null
           /if
         else
-          base:errln("Unreachable: invalid pdecl value")
+          tty:errln("Unreachable: invalid pdecl value")
           base:abort()
         /if
       /if

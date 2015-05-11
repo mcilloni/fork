@@ -8,16 +8,17 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 import ast
+import base
 import ctx
 import sema
-import base
 import synt
+import tty
 import utils
 
 entry
   mut argv = base:args()
   if argv'len != 1
-    base:errln("Wrong number of arguments, required: 1")
+    tty:errln("Wrong number of arguments, required: 1")
     base:exit(1)
   /if
 
@@ -33,11 +34,11 @@ entry
     while i < errLen
       mut issue = cast<ptr utils:Issue>(val base:listGet(errors, i))
 
-      utils:issueWriteOut(issue, ptr base:out)
+      utils:issueWriteOut(issue, ptr tty:out)
 
       i++
     /while
-    
+
     base:listFree(errors)
     base:exit(1)
   /if

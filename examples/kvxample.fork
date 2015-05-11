@@ -1,6 +1,7 @@
 import base
 import mem
 import text
+import tty
 import utils
 
 
@@ -11,27 +12,27 @@ entry
 
   utils:kvPut(kv, text:strclone("aaa"), text:strclone("eee"))
   utils:kvPrint(kv)
-  base:outch(10)
+  tty:outch(10)
 
   utils:kvPut(kv, text:strclone("aaa"), text:strclone("rrr"))
   utils:kvPrint(kv)
-  base:outch(10)
+  tty:outch(10)
 
   utils:kvPut(kv, text:strclone("ooo"), text:strclone("uuu"))
   utils:kvPrint(kv)
-  base:outch(10)
+  tty:outch(10)
 
   utils:kvPut(kv, text:strclone("uuu"), text:strclone("ppp"))
   utils:kvPrint(kv)
-  base:outch(10)
+  tty:outch(10)
 
   utils:kvPut(kv, text:strclone("qwe"), text:strclone("rere"))
   utils:kvPrint(kv)
-  base:outch(10)
+  tty:outch(10)
 
   utils:kvRemove(kv, "ooo")
   utils:kvPrint(kv)
-  base:outch(10)
+  tty:outch(10)
 
   utils:kvFree(kv)
 /entry

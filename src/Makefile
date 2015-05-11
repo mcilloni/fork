@@ -28,10 +28,12 @@ all:
 	@printf "FORKC\t\t%s\n" rt.fork
 	@ FORDPATHS="$(shell pwd)/ford/internal/:$(shell pwd)/ford/" $(FORKC_O) -o ../build/rt.o rt.fork
 
+	$(MAKE) -C c
 	$(MAKE) -C err
 	$(MAKE) -C mem
 	$(MAKE) -C base
 	$(MAKE) -C text
+	$(MAKE) -C tty
 	$(MAKE) -C dyn
 	$(MAKE) -C utils
 	$(MAKE) -C lex
@@ -49,10 +51,12 @@ all:
 	cp -r ford/ ../build
 
 clean:
+	$(MAKE) -C c clean
 	$(MAKE) -C err clean
 	$(MAKE) -C mem clean
 	$(MAKE) -C base clean
 	$(MAKE) -C text clean
+	$(MAKE) -C tty clean
 	$(MAKE) -C dyn clean
 	$(MAKE) -C utils clean
 	$(MAKE) -C lex clean

@@ -5,10 +5,13 @@ Checks lex functionality.
   an identifier: ast
   a newline
   import
+  an identifier: base
+  a newline
+  import
   an identifier: synt
   a newline
   import
-  an identifier: base
+  an identifier: tty
   a newline
   import
   an identifier: utils
@@ -31,7 +34,7 @@ Checks lex functionality.
   !=
   a number: 1
   a newline
-  an identifier: base
+  an identifier: tty
   :
   an identifier: errln
   (
@@ -88,7 +91,7 @@ Checks lex functionality.
   an identifier: err
   ,
   ptr
-  an identifier: base
+  an identifier: tty
   :
   an identifier: err
   )

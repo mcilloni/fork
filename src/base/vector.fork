@@ -10,6 +10,7 @@
 
 import base
 import mem
+import tty
 
 
 func vectInit(arr ptr base:Vector, cap uintptr) ptr base:Vector
@@ -201,22 +202,22 @@ func vectSlice(vect ptr base:Vector, start uintptr, len intptr) ptr base:Vector
 func vectPrint(vect ptr base:Vector)
   mut inside = false
 
-  base:out("[ ")
+  tty:out("[ ")
   mut len = vectLen(vect)
   mut i uint8 = 0
 
   while i < len
     if inside
-      base:out(", ")
+      tty:out(", ")
     else
       inside = true
     /if
 
-    base:outint(val vectGetint(vect, i))
+    tty:outint(val vectGetint(vect, i))
     i++
   /while
 
-  base:outln(" ]")
+  tty:outln(" ]")
 /func
 
 

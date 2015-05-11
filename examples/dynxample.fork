@@ -10,6 +10,7 @@
 import base
 import dyn
 import err
+import tty
 import utils
 
 entry
@@ -18,8 +19,8 @@ entry
   mut libc = dyn:sobjNew("/lib/libc.so.6", ptr error)
 
   if libc == null
-    base:err("error: ")
-    base:errln(error'msg)
+    tty:err("error: ")
+    tty:errln(error'msg)
 
     base:exit(1)
   /if
@@ -27,8 +28,8 @@ entry
   mut puts = cast<ptr func(str ptr uint8)>(dyn:sobjGetSym(libc, "puts", ptr error))
 
   if libc == null
-    base:err("error: ")
-    base:errln(error'msg)
+    tty:err("error: ")
+    tty:errln(error'msg)
 
     base:exit(2)
   /if

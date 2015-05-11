@@ -11,6 +11,7 @@
 import base
 import mem
 import text
+import tty
 
 
 entry
@@ -20,7 +21,7 @@ entry
   mut nxt ptr uint8
 
   while (nxt = text:tokenizerNext(tkz)) != null
-    base:outln(nxt)
+    tty:outln(nxt)
     mem:free(nxt)
   /while
 

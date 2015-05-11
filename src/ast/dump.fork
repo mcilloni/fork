@@ -13,6 +13,7 @@ import base
 import lex
 import mem
 import text
+import tty
 import utils
 
 
@@ -20,7 +21,7 @@ func printPadding(depth uintptr)
   mut i uintptr = 0
 
   while i < depth
-    base:out("    ")
+    tty:out("    ")
     i++
   /while
 
@@ -28,21 +29,21 @@ func printPadding(depth uintptr)
 
 
 func lineDump(line utils:Line)
-  base:outint(line'line)
-  base:out(":")
-  base:outint(line'pos)
+  tty:outint(line'line)
+  tty:out(":")
+  tty:outint(line'pos)
 /func
 
 func linesDump(begin,end utils:Line)
-  base:out("(at ")
+  tty:out("(at ")
   lineDump(begin)
-  base:out("-")
+  tty:out("-")
   if begin'line == end'line
-    base:outint(end'pos)
+    tty:outint(end'pos)
   else
     lineDump(end)
   /if
-  base:out(")")
+  tty:out(")")
 /func
 
 
@@ -51,19 +52,19 @@ func psymbolDump(psym ptr ast:PSymbol)
     return
   /if
 
-  base:out(psym'name)
-  base:out(" :: ")
+  tty:out(psym'name)
+  tty:out(" :: ")
   if psym'type != null
     ast:ptypeDump(psym'type)
   else
-    base:out("<inferred>")
+    tty:out("<inferred>")
   /if
 /func
 
 
 func ptypeDescrDumpStructuredDataArgs(args ptr base:List)
   if args == null
-    base:out("<null>")
+    tty:out("<null>")
     return
   /if
 
@@ -71,13 +72,13 @@ func ptypeDescrDumpStructuredDataArgs(args ptr base:List)
   mut first = true
   mut i uintptr = 0
 
-  base:out("(")
+  tty:out("(")
 
   while i < len
     if first
       first = false
     else
-      base:out(", ")
+      tty:out(", ")
     /if
 
     mut sym = cast<ptr ast:PSymbol>(val base:listGet(args, i))
@@ -86,27 +87,27 @@ func ptypeDescrDumpStructuredDataArgs(args ptr base:List)
     i++
   /while
 
-  base:out(")")
+  tty:out(")")
 /func
 
 
 func ptypeDescrDump(ptypeDescr ptr ast:PTypeDescr)
   if ptypeDescr == null
-    base:out("<null>")
+    tty:out("<null>")
     return
   /if
 
   mut ptype = ptypeDescr'type
 
   if ptype == ast:PTYPE_FUNC
-    base:out("func")
+    tty:out("func")
 
     if ptypeDescr'arguments != null
 
       ptypeDescrDumpStructuredDataArgs(ptypeDescr'arguments)
-      base:outch(32)
+      tty:outch(32)
     else
-      base:out("()")
+      tty:out("()")
     /if
 
     if ptypeDescr'retType != null
@@ -119,19 +120,19 @@ func ptypeDescrDump(ptypeDescr ptr ast:PTypeDescr)
   /if
 
   if ptype == ast:PTYPE_LOC
-    base:out("[")
-    base:outint(ptypeDescr'length)
-    base:out("] ")
+    tty:out("[")
+    tty:outint(ptypeDescr'length)
+    tty:out("] ")
     ast:ptypeDump(ptypeDescr'retType)
   /if
 
   if ptype == ast:PTYPE_PTR
-    base:out("ptr ")
+    tty:out("ptr ")
     ast:ptypeDump(ptypeDescr'retType)
   /if
 
   if ptype == ast:PTYPE_STRUCT
-    base:out("struct ")
+    tty:out("struct ")
     ptypeDescrDumpStructuredDataArgs(ptypeDescr'arguments)
   /if
 /func
@@ -139,16 +140,16 @@ func ptypeDescrDump(ptypeDescr ptr ast:PTypeDescr)
 
 func ptypeDump(ptype ptr ast:PType)
   if ptype == null
-    base:out("<null>")
+    tty:out("<null>")
     return
   /if
 
   if ptype'name != null
     if ptype'moduleName != null
-      base:out(ptype'moduleName)
-      base:outch(58)
+      tty:out(ptype'moduleName)
+      tty:outch(58)
     /if
-    base:out(ptype'name)
+    tty:out(ptype'name)
   /if
 
   if ptype'descr != null
@@ -222,19 +223,19 @@ func pnodeTypeToString(ptype uint16) ptr uint8
 
 func prootDumpInfo(proot ptr ast:PRoot, depth uintptr)
   if proot'moduleName != null
-    base:out(" [module: ")
-    base:out(proot'moduleName'name)
-    base:outch(32)
+    tty:out(" [module: ")
+    tty:out(proot'moduleName'name)
+    tty:outch(32)
     linesDump(proot'moduleName'begin, proot'moduleName'end)
-    base:out("]")
+    tty:out("]")
   /if
 
-  base:outch(10)
+  tty:outch(10)
 
   mut len = base:listLen(proot'imports)
   if len > 0
     printPadding(depth)
-    base:outln("Imports: ")
+    tty:outln("Imports: ")
 
     mut i uintptr = 0
 
@@ -242,10 +243,10 @@ func prootDumpInfo(proot ptr ast:PRoot, depth uintptr)
       printPadding(depth + 1)
       mut imp = cast<ptr ast:StringDef>(val base:listGet(proot'imports, i))
 
-      base:out(imp'name)
-      base:outch(32)
+      tty:out(imp'name)
+      tty:outch(32)
       linesDump(imp'begin, imp'end)
-      base:outch(10)
+      tty:outch(10)
 
       i++
     /while
@@ -254,7 +255,7 @@ func prootDumpInfo(proot ptr ast:PRoot, depth uintptr)
 
 
 func pdeclDumpInfo(pdecl ptr ast:PDecl, depth uintptr)
-  base:outch(10)
+  tty:outch(10)
   printPadding(depth + 1)
 
   psymbolDump(pdecl'sym)
@@ -265,31 +266,31 @@ func pexprDumpInfo(pexpr ptr ast:PExpr, depth uintptr)
   mut tok lex:Token
   tok'type = pexpr'opType
 
-  base:out(": ")
+  tty:out(": ")
 
   if pexpr'opType == lex:ID
-    base:out("an id - \"")
-    base:out(cast<ptr uint8>(pexpr'node'value))
-    base:out("\"")
+    tty:out("an id - \"")
+    tty:out(cast<ptr uint8>(pexpr'node'value))
+    tty:out("\"")
   else
     if pexpr'opType == lex:NUMBER
-      base:outint(pexpr'node'value)
+      tty:outint(pexpr'node'value)
     else
       if pexpr'opType == lex:STRING
-        base:out("a string - \"")
-        base:out(cast<ptr uint8>(pexpr'node'value))
-        base:out("\"")
+        tty:out("a string - \"")
+        tty:out(cast<ptr uint8>(pexpr'node'value))
+        tty:out("\"")
       else
         if pexpr'opType == lex:OPAR
-          base:out("a function call")
+          tty:out("a function call")
         else
           if pexpr'opType == lex:OBRAC
-            base:out("an array access")
+            tty:out("an array access")
           else
-            base:out(lex:tokenStr(ptr tok))
+            tty:out(lex:tokenStr(ptr tok))
 
             if pexpr'opType == lex:CAST or pexpr'opType == lex:SIZE
-              base:out(" to ")
+              tty:out(" to ")
 
               ptypeDump(cast<ptr ast:PType>(pexpr'node'value))
             /if
@@ -305,10 +306,10 @@ func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
 
   printPadding(depth)
 
-  base:out(pnodeTypeToString(pnode'type))
-  base:out(":")
+  tty:out(pnodeTypeToString(pnode'type))
+  tty:out(":")
 
-  base:outch(32)
+  tty:outch(32)
   linesDump(pnode'begin, pnode'end)
 
   if ast:isPRoot(pnode)
@@ -323,7 +324,7 @@ func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
     pexprDumpInfo(cast<ptr ast:PExpr>(pnode), depth)
   /if
 
-  base:outch(10)
+  tty:outch(10)
 
   mut len = base:listLen(pnode'leaves)
   mut i uintptr = 0
@@ -566,27 +567,27 @@ func typeSummarize(cs ptr text:Charstash, type ptr ast:Type)
 
 
 func declDump(prefix,name ptr uint8, type ptr ast:Type)
-  base:out(prefix)
-  base:outch(32)
+  tty:out(prefix)
+  tty:outch(32)
 
-  base:out(name)
-  base:outch(32)
+  tty:out(name)
+  tty:outch(32)
 
   mut cs = text:csNew(40)
   ast:typeDump(cs, type)
   mut str = text:csUnwrap(cs)
 
-  base:out(str)
+  tty:out(str)
 
   mem:free(str)
 
-  base:outch(10)
+  tty:outch(10)
 
-  base:out("[[ size: ")
-  base:outint(type'typeSize)
-  base:out(", align: ")
-  base:outint(type'typeAlign)
-  base:out(" ]]")
+  tty:out("[[ size: ")
+  tty:outint(type'typeSize)
+  tty:out(", align: ")
+  tty:outint(type'typeAlign)
+  tty:out(" ]]")
 
-  base:outch(10)
+  tty:outch(10)
 /func

@@ -13,6 +13,7 @@ import base
 import mem
 import platform
 import text
+import tty
 import utils
 
 
@@ -163,7 +164,7 @@ func typeEquals(type1, type2 ptr ast:Type) bool
                 if type1'type == ast:TYPE_NULL
                   return true
                 else
-                  base:errln("Unreachable: unknown type comparison")
+                  tty:errln("Unreachable: unknown type comparison")
                   base:abort()
                 /if
               /if

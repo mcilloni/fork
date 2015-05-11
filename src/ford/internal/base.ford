@@ -14,7 +14,6 @@ module base
 import err
 
 
-alias FILE data
 alias comparer ptr func(val1, val2 data) int8
 
 
@@ -126,25 +125,6 @@ decl streamWrite func(stream ptr Stream, str ptr uint8) uintptr
 # File stream functions
 decl fileOpen func(name ptr uint8, error ptr ptr err:Error) ptr Stream
 decl fileCreate func(name ptr uint8, error ptr ptr err:Error) ptr Stream
-
-
-# Console output functions
-decl err func(msg ptr uint8)
-decl errch func(ch uint8)
-decl errln func(msg ptr uint8)
-decl fail func(msg ptr uint8)
-decl failln func(msg ptr uint8)
-decl out func(msg ptr uint8)
-decl outch func(ch uint8)
-decl outint func(num uint64)
-decl outln func(msg ptr uint8)
-
-
-# libc std streams wrapper functions
-decl stderr_file func() FILE
-decl stdin_file func() FILE
-decl stdout_file func() FILE
-
 
 # path functions
 decl pathContains func(path,filename ptr uint8) bool

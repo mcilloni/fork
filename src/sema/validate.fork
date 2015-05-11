@@ -11,6 +11,7 @@ import ast
 import base
 import ctx
 import sema
+import tty
 import utils
 
 
@@ -26,7 +27,7 @@ func validatePDecl(rsv sema:Resolver, pdecl ptr ast:PDecl, errors ptr base:List)
     if ntype == ast:PALIAS
       return sema:registerAlias(rsv, pdecl, errors) != null
     else
-      base:errln("Unreachable: invalid pdecl value")
+      tty:errln("Unreachable: invalid pdecl value")
       base:abort()
     /if
   /if

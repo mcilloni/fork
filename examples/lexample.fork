@@ -1,11 +1,13 @@
-import lex
 import base
 import err
+import lex
+import tty
+
 
 entry
   mut argv = base:args()
   if argv'len != 1
-    base:errln("Wrong number of arguments, required: 1")
+    tty:errln("Wrong number of arguments, required: 1")
     base:exit(1)
   /if
 
@@ -13,7 +15,7 @@ entry
 
   mut lex = lex:lexerNew(val argv'args, ptr err)
   if err != null
-    base:errln(err:errorMsg(err))
+    tty:errln(err:errorMsg(err))
     base:exit(1)
   /if
 
@@ -22,22 +24,22 @@ entry
   while (tok = lex:lexerNext(lex)) != null
 
     if (err = lex:lexerError(lex)) != null
-      base:errln(err:errorMsg(err))
+      tty:errln(err:errorMsg(err))
       base:exit(2)
     /if
 
-    base:out(lex:tokenStr(tok))
+    tty:out(lex:tokenStr(tok))
     if tok'type == lex:ID or tok'type == lex:STRING
-      base:out(": ")
-      base:out(cast<ptr uint8>(tok'value))
+      tty:out(": ")
+      tty:out(cast<ptr uint8>(tok'value))
     else
       if tok'type == lex:NUMBER
-        base:out(": ")
-        base:outint(tok'value)
+        tty:out(": ")
+        tty:outint(tok'value)
       /if
     /if
 
-    base:outch(10)
+    tty:outch(10)
 
     lex:tokenFree(tok)
   /while

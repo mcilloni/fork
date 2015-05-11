@@ -11,6 +11,7 @@
 import base
 import mem
 import text
+import tty
 
 
 mut BLACK = false
@@ -34,7 +35,7 @@ func nodeRotateLeft(node ptr base:Mnode) ptr base:Mnode
   mut ret = node'right
 
   if ret'color == BLACK
-    base:errln("rotating left a black node")
+    tty:errln("rotating left a black node")
     base:abort()
   /if
 
@@ -52,7 +53,7 @@ func nodeRotateRight(node ptr base:Mnode) ptr base:Mnode
   mut ret = node'left
 
   if ret'color == BLACK
-    base:errln("rotating right a black node")
+    tty:errln("rotating right a black node")
     base:abort()
   /if
 

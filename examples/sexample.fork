@@ -8,14 +8,15 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 import ast
-import synt
 import base
+import synt
+import tty
 import utils
 
 entry
   mut argv = base:args()
   if argv'len != 1
-    base:errln("Wrong number of arguments, required: 1")
+    tty:errln("Wrong number of arguments, required: 1")
     base:exit(1)
   /if
 
@@ -23,7 +24,7 @@ entry
   mut root = synt:parserParse(prs)
 
   if prs'err != null
-    utils:issueWriteOut(prs'err, ptr base:err)
+    utils:issueWriteOut(prs'err, ptr tty:err)
     base:exit(1)
   /if
 
