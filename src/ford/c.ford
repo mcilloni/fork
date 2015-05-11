@@ -1,0 +1,32 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+module c
+
+alias cuchar uint8
+alias cushort uint16
+alias cuint uint32
+alias culong uint64
+alias culonglong uint64
+
+alias cchar int8
+alias cshort int16
+alias cint int32
+alias clong int64
+alias clonglong int64
+
+alias csizet uintptr
+
+alias CFILE data
+
+
+# libc std streams wrapper functions
+decl stderr_file func() CFILE
+decl stdin_file func() CFILE
+decl stdout_file func() CFILE
