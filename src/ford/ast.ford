@@ -12,6 +12,7 @@ module ast
 
 import lex
 import base
+import text
 import utils
 
 
@@ -100,16 +101,16 @@ alias Symbol struct(
 )
 
 decl symbolClone func(sym ptr Symbol) ptr Symbol
-decl symbolDump func(cs ptr base:Charstash, sym ptr Symbol)
+decl symbolDump func(cs ptr text:Charstash, sym ptr Symbol)
 decl symbolEquals func(sym1,sym2 ptr Symbol) bool
 decl symbolFree func(sym ptr Symbol)
 decl symbolNew func(name ptr uint8, type ptr Type) ptr Symbol
-decl symbolSummarize func(cs ptr base:Charstash, sym ptr Symbol)
+decl symbolSummarize func(cs ptr text:Charstash, sym ptr Symbol)
 
 decl builtinSetNew func() ptr base:Map
 
 decl typeClone func(pool ptr utils:FreePool, type ptr Type) ptr Type
-decl typeDump func(cs ptr base:Charstash, type ptr Type)
+decl typeDump func(cs ptr text:Charstash, type ptr Type)
 decl typeEquals func(type1, type2 ptr Type) bool
 decl typeFree func(type ptr Type)
 decl typeIsBool func(type ptr Type) bool
@@ -127,7 +128,7 @@ decl typeNewRecursiveAlias func(pool ptr utils:FreePool, moduleName, name ptr ui
 decl typeNewStruct func(pool ptr utils:FreePool, moduleName, name ptr uint8, members ptr utils:KVList) ptr Type
 decl typeSetAlias func(type ptr Type, moduleName, name ptr uint8)
 decl typeSetBoundaries func(type ptr Type, begin,end utils:Line)
-decl typeSummarize func(cs ptr base:Charstash, type ptr Type)
+decl typeSummarize func(cs ptr text:Charstash, type ptr Type)
 
 alias DeclInfo struct(
   declType uint16,

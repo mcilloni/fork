@@ -14,6 +14,7 @@ import ctx
 import lex
 import sema
 import synt
+import text
 import utils
 
 
@@ -71,30 +72,30 @@ func ttypeCanBeAssignTarget(tt uint16, type ptr ast:Type) bool
 /func
 
 
-func assignLhsDump(cs ptr base:Charstash, pexpr ptr ast:PExpr)
+func assignLhsDump(cs ptr text:Charstash, pexpr ptr ast:PExpr)
   mut op = pexpr'opType
 
   if op == lex:ID
-    base:csAppendStr(cs, cast<ptr uint8>(pexpr'node'value))
+    text:csAppendStr(cs, cast<ptr uint8>(pexpr'node'value))
     return
   /if
 
   mut left = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 0))
 
   if op == lex:VAL
-    base:csAppendStr(cs, "'val ")
+    text:csAppendStr(cs, "'val ")
 
     assignLhsDump(cs, left)
 
-    base:csAppendStr(cs, "' ")
+    text:csAppendStr(cs, "' ")
 
     return
   /if
 
   if op == lex:OBRAC
-    base:csAppendStr(cs, " member of '")
+    text:csAppendStr(cs, " member of '")
     assignLhsDump(cs, left)
-    base:csAppendStr(cs, "' ")
+    text:csAppendStr(cs, "' ")
 
     return
   /if
@@ -102,20 +103,20 @@ func assignLhsDump(cs ptr base:Charstash, pexpr ptr ast:PExpr)
   mut right = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 1))
 
   if op == lex:APOS or op == lex:COMMA
-    base:csAppendStr(cs, "'")
+    text:csAppendStr(cs, "'")
 
     assignLhsDump(cs, left)
 
-    base:csAppendStr(cs, op == lex:APOS => "'" || ":")
+    text:csAppendStr(cs, op == lex:APOS => "'" || ":")
 
     assignLhsDump(cs, right)
 
-    base:csAppendStr(cs, "' ")
+    text:csAppendStr(cs, "' ")
 
     return
   /if
 
-  base:csAppendStr(cs, "expr ")
+  text:csAppendStr(cs, "expr ")
 /func
 
 
@@ -163,10 +164,10 @@ func typeIsAssignable(ctx ptr ctx:Context, scope ptr ast:PNode, dest,src ptr ast
   /if
 
   if dest'name != null and src'name != null and !dest'builtin and !src'builtin
-    mut ret = base:strequals(dest'name, src'name)
+    mut ret = text:strequals(dest'name, src'name)
 
     if ret and dest'moduleName != null and src'moduleName != null
-      ret = base:strequals(dest'moduleName, src'moduleName)
+      ret = text:strequals(dest'moduleName, src'moduleName)
     /if
 
     return ret
@@ -298,14 +299,14 @@ func validateExprCast(rsv sema:Resolver,
   mut chType = sema:validateExprRecl(rsv, childExpr, recList, errors)
 
   if chType == null or !sema:typeIsCastable(rsv'ctx, cast<ptr ast:PNode>(pexpr), chType, pexpr'type)
-    mut cs = base:csNew(20)
+    mut cs = text:csNew(20)
 
-    base:csAppendStr(cs, "can't cast ")
+    text:csAppendStr(cs, "can't cast ")
     ast:typeSummarize(cs, chType)
-    base:csAppendStr(cs, " to ")
+    text:csAppendStr(cs, " to ")
     ast:typeSummarize(cs, pexpr'type)
 
-    mut str = base:csUnleash(cs)
+    mut str = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
@@ -352,14 +353,14 @@ func validateExprId(rsv sema:Resolver,
   mut type = sema:findSym(cast<ptr ast:PNode>(pexpr), name)
 
   if recList != null and utils:listContains(recList, name)
-    mut cs = base:csNew(20)
+    mut cs = text:csNew(20)
 
-    base:csAppendStr(cs, "type ")
-    base:csAppendStr(cs, name)
-    base:csAppendStr(cs, " causes an init loop ")
+    text:csAppendStr(cs, "type ")
+    text:csAppendStr(cs, name)
+    text:csAppendStr(cs, " causes an init loop ")
     utils:listDumpHierarchyIntoCS(recList, cs)
 
-    mut str = base:csUnleash(cs)
+    mut str = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
@@ -385,16 +386,16 @@ func validateBoolExpr(rsv sema:Resolver,
   mut op = pexpr'opType
 
   if !ast:typeIsBool(ltype) or !ast:typeIsBool(rtype)
-    mut cs = base:csNew(20)
+    mut cs = text:csNew(20)
 
-    base:csAppendStr(cs, "cannot apply ")
-    base:csAppendStr(cs, lex:ttypeStr(op))
-    base:csAppendStr(cs, " to types ")
+    text:csAppendStr(cs, "cannot apply ")
+    text:csAppendStr(cs, lex:ttypeStr(op))
+    text:csAppendStr(cs, " to types ")
     ast:typeSummarize(cs, ltype)
-    base:csAppendStr(cs, " and ")
+    text:csAppendStr(cs, " and ")
     ast:typeSummarize(cs, rtype)
 
-    mut str = base:csUnleash(cs)
+    mut str = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
@@ -413,13 +414,13 @@ func validateArithPtrExpr(rsv sema:Resolver,
                           recList,errors ptr base:List) ptr ast:Type
 
   if !ttypeOpCanDoPtrArith(pexpr'opType)
-    mut cs = base:csNew(20)
+    mut cs = text:csNew(20)
 
-    base:csAppendStr(cs, "operator ")
-    base:csAppendStr(cs, lex:ttypeStr(pexpr'opType))
-    base:csAppendStr(cs, " is not appliable to pointers")
+    text:csAppendStr(cs, "operator ")
+    text:csAppendStr(cs, lex:ttypeStr(pexpr'opType))
+    text:csAppendStr(cs, " is not appliable to pointers")
 
-    mut str = base:csUnleash(cs)
+    mut str = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
@@ -431,15 +432,15 @@ func validateArithPtrExpr(rsv sema:Resolver,
   if ast:typeIsPtr(ltype) and ast:typeIsPtr(rtype)
     if pexpr'opType == lex:MINUS
       if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
-        mut cs = base:csNew(20)
+        mut cs = text:csNew(20)
 
-        base:csAppendStr(cs, "types ")
+        text:csAppendStr(cs, "types ")
         ast:typeSummarize(cs, ltype)
-        base:csAppendStr(cs, " and ")
+        text:csAppendStr(cs, " and ")
         ast:typeSummarize(cs, rtype)
-        base:csAppendStr(cs, " are not compatible")
+        text:csAppendStr(cs, " are not compatible")
 
-        mut str = base:csUnleash(cs)
+        mut str = text:csUnwrap(cs)
 
         base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
@@ -519,7 +520,7 @@ func validateModuleAccessExpr(rsv sema:Resolver,
 
   mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val base:listGet(pexpr'node'leaves, 0))'value)
   if !ast:prootHasImported(rsv'root, modName)
-    mut msg = base:strappend(modName, " has never been imported")
+    mut msg = text:strappend(modName, " has never been imported")
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
     base:free(msg)
 
@@ -530,14 +531,14 @@ func validateModuleAccessExpr(rsv sema:Resolver,
   mut type = sema:findSymModule(rsv'ctx, modName, symName)
 
   if type == null
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, "'")
-    base:csAppendStr(cs, symName)
-    base:csAppendStr(cs, "' is not defined in module '")
-    base:csAppendStr(cs, modName)
-    base:csAppendStr(cs, "'")
+    mut cs = text:csNew(20)
+    text:csAppendStr(cs, "'")
+    text:csAppendStr(cs, symName)
+    text:csAppendStr(cs, "' is not defined in module '")
+    text:csAppendStr(cs, modName)
+    text:csAppendStr(cs, "'")
 
-    mut msg = base:csUnleash(cs)
+    mut msg = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -577,12 +578,12 @@ func validateStructureAccessExpr(rsv sema:Resolver,
   /if
 
   if !ast:typeIsStruct(accType)
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, "'")
+    mut cs = text:csNew(20)
+    text:csAppendStr(cs, "'")
     ast:typeSummarize(cs, accType)
-    base:csAppendStr(cs, "' is neither a structure nor a pointer to a structure")
+    text:csAppendStr(cs, "' is neither a structure nor a pointer to a structure")
 
-    mut msg = base:csUnleash(cs)
+    mut msg = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -596,13 +597,13 @@ func validateStructureAccessExpr(rsv sema:Resolver,
   mut type ptr ast:Type = null
 
   if !utils:kvGet(accType'members, field, ptr type)
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, "no field called '")
-    base:csAppendStr(cs, field)
-    base:csAppendStr(cs, "' in type ")
+    mut cs = text:csNew(20)
+    text:csAppendStr(cs, "no field called '")
+    text:csAppendStr(cs, field)
+    text:csAppendStr(cs, "' in type ")
     ast:typeSummarize(cs, accType)
 
-    mut msg = base:csUnleash(cs)
+    mut msg = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -661,29 +662,29 @@ func validateFunctionCallExpr(rsv sema:Resolver,
   mut argsLen = base:listLen(pexpr'node'leaves)
 
   if argsLen != expLen + 1
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, "can't call function ")
+    mut cs = text:csNew(20)
+    text:csAppendStr(cs, "can't call function ")
 
     if ltype'name != null
-      base:csAppendStr(cs, "'")
+      text:csAppendStr(cs, "'")
 
       if ltype'moduleName != null
-        base:csAppendStr(cs, accType'moduleName)
-        base:csAppendStr(cs, ":")
+        text:csAppendStr(cs, accType'moduleName)
+        text:csAppendStr(cs, ":")
       /if
 
-      base:csAppendStr(cs, accType'name)
-      base:csAppendStr(cs, "' ")
+      text:csAppendStr(cs, accType'name)
+      text:csAppendStr(cs, "' ")
     else
       ast:typeSummarize(cs, accType)
     /if
 
-    base:csAppendStr(cs, ": expected ")
-    base:csAppendInt(cs, expLen)
-    base:csAppendStr(cs, " parameters, got ")
-    base:csAppendInt(cs, argsLen - 1)
+    text:csAppendStr(cs, ": expected ")
+    text:csAppendInt(cs, expLen)
+    text:csAppendStr(cs, " parameters, got ")
+    text:csAppendInt(cs, argsLen - 1)
 
-    mut msg = base:csUnleash(cs)
+    mut msg = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -707,20 +708,20 @@ func validateFunctionCallExpr(rsv sema:Resolver,
     /if
 
     if !sema:typeIsAssignable(rsv'ctx, scope, expType, gotType)
-      mut cs = base:csNew(20)
-      base:csAppendStr(cs, "passing '")
+      mut cs = text:csNew(20)
+      text:csAppendStr(cs, "passing '")
 
       ast:typeSummarize(cs, gotType)
 
-      base:csAppendStr(cs, "' to parameter '")
-      base:csAppendStr(cs, cast<ptr uint8>(expPair'key))
-      base:csAppendStr(cs, "' of type '")
+      text:csAppendStr(cs, "' to parameter '")
+      text:csAppendStr(cs, cast<ptr uint8>(expPair'key))
+      text:csAppendStr(cs, "' of type '")
 
       ast:typeSummarize(cs, expType)
 
-      base:csAppendStr(cs, "'")
+      text:csAppendStr(cs, "'")
 
-      mut msg = base:csUnleash(cs)
+      mut msg = text:csUnwrap(cs)
 
       base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -747,15 +748,15 @@ func validateAssignExpr(rsv sema:Resolver,
   /if
 
   if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
-    mut cs = base:csNew(20)
+    mut cs = text:csNew(20)
 
-    base:csAppendStr(cs, "cannot assign expression of type '")
+    text:csAppendStr(cs, "cannot assign expression of type '")
     ast:typeSummarize(cs, rtype)
-    base:csAppendStr(cs, "' to a lvalue of type '")
+    text:csAppendStr(cs, "' to a lvalue of type '")
     ast:typeSummarize(cs, ltype)
-    base:csAppendStr(cs, "'")
+    text:csAppendStr(cs, "'")
 
-    mut str = base:csUnleash(cs)
+    mut str = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
@@ -848,12 +849,12 @@ func validateValExpr(rsv sema:Resolver,
                      errors ptr base:List) ptr ast:Type
 
   if atype'type != ast:TYPE_PTR
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, "type '")
+    mut cs = text:csNew(20)
+    text:csAppendStr(cs, "type '")
     ast:typeSummarize(cs, atype)
-    base:csAppendStr(cs, "' is not dereferenceable")
+    text:csAppendStr(cs, "' is not dereferenceable")
 
-    mut msg = base:csUnleash(cs)
+    mut msg = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -887,12 +888,12 @@ func validateUMinusExpr(rsv sema:Resolver,
                         errors ptr base:List) ptr ast:Type
 
   if !ast:typeIsInt(atype)
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, "cannot apply unary '-' to type '")
+    mut cs = text:csNew(20)
+    text:csAppendStr(cs, "cannot apply unary '-' to type '")
     ast:typeSummarize(cs, atype)
-    base:csAppendStr(cs, "'")
+    text:csAppendStr(cs, "'")
 
-    mut msg = base:csUnleash(cs)
+    mut msg = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -902,12 +903,12 @@ func validateUMinusExpr(rsv sema:Resolver,
   /if
 
   if !atype'isSigned
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, "cannot apply unary '-' to unsigned type '")
+    mut cs = text:csNew(20)
+    text:csAppendStr(cs, "cannot apply unary '-' to unsigned type '")
     ast:typeSummarize(cs, atype)
-    base:csAppendStr(cs, "'")
+    text:csAppendStr(cs, "'")
 
-    mut msg = base:csUnleash(cs)
+    mut msg = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -926,12 +927,12 @@ func validateIncDecExpr(rsv sema:Resolver,
                         errors ptr base:List) ptr ast:Type
 
   if !ast:typeIsInt(atype) and !ast:typeIsPtr(atype)
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, "type '")
+    mut cs = text:csNew(20)
+    text:csAppendStr(cs, "type '")
     ast:typeSummarize(cs, atype)
-    base:csAppendStr(cs, "' is not an integer or pointer type")
+    text:csAppendStr(cs, "' is not an integer or pointer type")
 
-    mut msg = base:csUnleash(cs)
+    mut msg = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -1010,14 +1011,14 @@ func validateTernaryExpr(rsv sema:Resolver,
   # for sake of type determination, so we must run it twice with reversed
   # arguments
   if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), leftType, rightType) and !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), rightType, leftType)
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, "ternary expression arguments have incompatible types '")
+    mut cs = text:csNew(20)
+    text:csAppendStr(cs, "ternary expression arguments have incompatible types '")
     ast:typeSummarize(cs, leftType)
-    base:csAppendStr(cs, "' and '")
+    text:csAppendStr(cs, "' and '")
     ast:typeSummarize(cs, rightType)
-    base:csAppendStr(cs, "'")
+    text:csAppendStr(cs, "'")
 
-    mut msg = base:csUnleash(cs)
+    mut msg = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 

@@ -9,6 +9,7 @@
 
 
 import base
+import text
 
 
 decl path_exists func(path ptr uint8) uintptr
@@ -37,7 +38,7 @@ func pathJoin(path1,path2 ptr uint8) ptr uint8
   arr[2] = path2
   arr[3] = null
 
-  return base:strglue(ptr arr[0])
+  return text:strglue(ptr arr[0])
 /func
 
 

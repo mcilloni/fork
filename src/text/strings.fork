@@ -9,6 +9,7 @@
 
 
 import base
+import text
 
 
 func strclone(orig ptr uint8) ptr uint8
@@ -16,9 +17,9 @@ func strclone(orig ptr uint8) ptr uint8
     return null
   /if
 
-  mut len = base:strlen(orig)
+  mut len = text:strlen(orig)
   mut new = cast<ptr uint8>(base:zalloc(len + 1))
-  base:strncpy(new, orig, len)
+  text:strncpy(new, orig, len)
   return new
 /func
 
@@ -75,19 +76,19 @@ func numtostr(num uintptr, buf ptr uint8, len uintptr) ptr uint8
 
 
 func strglue(strs ptr ptr uint8) ptr uint8
-  mut cs = base:csNew(10)
+  mut cs = text:csNew(10)
   while val strs != null
-    base:csAppendStr(cs, val strs)
+    text:csAppendStr(cs, val strs)
     strs++
   /while
 
-  return base:csUnleash(cs)
+  return text:csUnwrap(cs)
 /func
 
 
 func strappend(str1 ptr uint8, str2 ptr uint8) ptr uint8
-  mut len1 = base:strlen(str1)
-  mut len2 = base:strlen(str2)
+  mut len1 = text:strlen(str1)
+  mut len2 = text:strlen(str2)
   mut ret = cast<ptr uint8>(base:zalloc(len1 + len2 + 1))
 
   base:memmove(ret, str1, len1)
@@ -101,7 +102,7 @@ func strappend(str1 ptr uint8, str2 ptr uint8) ptr uint8
 func strtonum(str ptr uint8) intptr
   mut ret uintptr = 0
   mut sign int8 = 1
-  mut len = base:strlen(str)
+  mut len = text:strlen(str)
 
   if len == 0
     return 0
@@ -124,7 +125,7 @@ func strtonum(str ptr uint8) intptr
 /func
 
 
-func strcomparer(s1 data, s2 data) int8
+func strcompare(s1 data, s2 data) int8
   decl strcmp func(str1 data, str2 data) int8
   mut comp = strcmp(s1, s2)
 

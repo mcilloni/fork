@@ -12,6 +12,7 @@ import ast
 import base
 import ctx
 import sema
+import text
 import utils
 
 
@@ -52,12 +53,12 @@ func resolverCollect(rsv ptr sema:Resolver,
         if pdecl'node'type != ast:PDECL and existent'node'type != ast:PDECL
           resolverDeinit(val rsv)
 
-          mut cs = base:csNew(20)
-          base:csAppendStr(cs, "symbol ")
-          base:csAppendStr(cs, name)
-          base:csAppendStr(cs, " defined twice")
+          mut cs = text:csNew(20)
+          text:csAppendStr(cs, "symbol ")
+          text:csAppendStr(cs, name)
+          text:csAppendStr(cs, " defined twice")
 
-          mut str = base:csUnleash(cs)
+          mut str = text:csUnwrap(cs)
           base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
 
           base:free(str)
@@ -81,12 +82,12 @@ func resolverCollect(rsv ptr sema:Resolver,
         if utils:kvContains(rsv'aliases, name)
           resolverDeinit(val rsv)
 
-          mut cs = base:csNew(20)
-          base:csAppendStr(cs, "alias ")
-          base:csAppendStr(cs, name)
-          base:csAppendStr(cs, " is already defined")
+          mut cs = text:csNew(20)
+          text:csAppendStr(cs, "alias ")
+          text:csAppendStr(cs, name)
+          text:csAppendStr(cs, " is already defined")
 
-          base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, base:csUnleash(cs)))
+          base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, text:csUnwrap(cs)))
 
           return null
         /if
@@ -114,7 +115,7 @@ func resolverCollect(rsv ptr sema:Resolver,
       utils:kvPut(kv, name, pdecl)
     /if
 
-    utils:kvPut(ret, base:strclone(name), pdecl)
+    utils:kvPut(ret, text:strclone(name), pdecl)
 
     i++
   /while

@@ -7,13 +7,16 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 module err
+
 
 # error structure
 
 alias Error struct (
   msg ptr uint8
 )
+
 
 # Error functions
 

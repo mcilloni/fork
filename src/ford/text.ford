@@ -1,8 +1,44 @@
 #  libfork, a base library for the Fork language
-#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
 #
 #  This Source Code Form is subject to the terms of the Mozilla Public
 #  License, v. 2.0. If a copy of the MPL was not distributed with this
 #  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module text
+
+
+import err
+
+
+# charstash structure
+alias Charstash struct (
+  base, work ptr uint8,
+  len, cap uintptr
+)
+
+
+# string functions
+decl numtostr func(num uintptr, str ptr uint8, strLen uintptr) ptr uint8
+decl strappend func(str1 ptr uint8, str2 ptr uint8) ptr uint8
+decl strclone func(str ptr uint8) ptr uint8
+decl strcompare func(s1 data, s2 data) int8
+decl strequals func(str1 ptr uint8, str2 ptr uint8) bool
+decl strglue func(toGlue ptr ptr uint8) ptr uint8
+decl strlen func(str ptr uint8) uintptr
+decl strncpy func(dest ptr uint8, source ptr uint8, cap uintptr) ptr uint8
+decl strreverse func(str ptr uint8, len uintptr)
+decl strtonum func(str ptr uint8) intptr
+
+
+# charstash functions
+decl csAppend func(cs ptr Charstash, ch uint8)
+decl csAppendInt func(cs ptr Charstash, num uintptr)
+decl csAppendStr func(cs ptr Charstash, str ptr uint8)
+decl csFree func(cs ptr Charstash)
+decl csLen func(cs ptr Charstash) uintptr
+decl csNew func(cap uintptr) ptr Charstash
+decl csUnwrap func(cs ptr Charstash) ptr uint8

@@ -8,15 +8,16 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 import ast
+import base
 import ctx
 import sema
-import base
 import synt
+import text
 import utils
 
 
 func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr ptr ast:PNode) ptr base:List
-  mut fordName = base:strappend(importName'name, ".ford")
+  mut fordName = text:strappend(importName'name, ".ford")
 
   mut len = base:listLen(ctx'fordPaths)
 
@@ -49,7 +50,7 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
   toGlue[2] = " in the given FORDPATHS"
   toGlue[3] = null
 
-  mut glued = base:strglue(ptr toGlue[0])
+  mut glued = text:strglue(ptr toGlue[0])
 
   base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, importName'begin, ctx'currentFile, glued))
 
@@ -65,7 +66,7 @@ func contextImport(ctx ptr ctx:Context, importName ptr ast:StringDef, value ptr 
   if !base:mapGet(ctx'imports, importName, value)
     mut errors = findImport(ctx, importName, value)
     if base:listLen(errors) == 0
-      base:mapPut(ctx'imports, base:strclone(importName'name), val value, base:FREE_KEY | base:FREE_VALUE)
+      base:mapPut(ctx'imports, text:strclone(importName'name), val value, base:FREE_KEY | base:FREE_VALUE)
     /if
 
     return errors
@@ -144,7 +145,7 @@ func contextFree(ctx ptr ctx:Context)
 func contextSetCurrentFile(ctx ptr ctx:Context, filename ptr uint8)
   base:free(ctx'currentFile)
 
-  ctx'currentFile = base:strclone(filename)
+  ctx'currentFile = text:strclone(filename)
 /func
 
 

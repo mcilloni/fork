@@ -15,7 +15,9 @@
 # 2. this structure mantains the insertion order, adding new values at the end
 # 3. it's cheap to iterate on it.
 
+
 import base
+import text
 import utils
 
 
@@ -220,10 +222,10 @@ func kvSetFreeFuncs(kv ptr utils:KVList, freeKey ptr func(item data), freeVal pt
 
 
 func strkvInit(kv ptr utils:KVList) ptr utils:KVList
-  return utils:kvInit(kv, ptr base:strcomparer)
+  return utils:kvInit(kv, ptr text:strcompare)
 /func
 
 
 func strkvNew() ptr utils:KVList
-  return utils:kvNew(ptr base:strcomparer)
+  return utils:kvNew(ptr text:strcompare)
 /func

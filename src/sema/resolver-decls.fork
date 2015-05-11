@@ -7,10 +7,12 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 import ast
+import base
 import ctx
 import sema
-import base
+import text
 import utils
 
 
@@ -175,14 +177,14 @@ func registerDeclReal(rsv sema:Resolver,
 
           if typeResolved
             if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pdecl), realType, valType)
-              mut cs = base:csNew(20)
-              base:csAppendStr(cs, "cannot assign an expression of type '")
+              mut cs = text:csNew(20)
+              text:csAppendStr(cs, "cannot assign an expression of type '")
               ast:typeSummarize(cs, valType)
-              base:csAppendStr(cs, "' to a variable declared as '")
+              text:csAppendStr(cs, "' to a variable declared as '")
               ast:typeSummarize(cs, realType)
-              base:csAppendStr(cs, "'")
+              text:csAppendStr(cs, "'")
 
-              mut msg = base:csUnleash(cs)
+              mut msg = text:csUnwrap(cs)
 
               base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
 
@@ -269,7 +271,7 @@ func resolveDeclType(rsv sema:Resolver,
 
   # The declaration is absent
 
-  mut msg = base:strappend(name, " is not defined in current scope")
+  mut msg = text:strappend(name, " is not defined in current scope")
   base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, node'begin, rsv'root'fileName, msg))
 
   base:free(msg)
@@ -289,12 +291,12 @@ func registerDecl(rsv sema:Resolver,
 
   mut stab = sema:findStab(declNode)
   if ast:stabTypeof(stab, name) != null
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, "symbol '")
-    base:csAppendStr(cs, name)
-    base:csAppendStr(cs, "' is already defined")
+    mut cs = text:csNew(20)
+    text:csAppendStr(cs, "symbol '")
+    text:csAppendStr(cs, name)
+    text:csAppendStr(cs, "' is already defined")
 
-    mut msg = base:csUnleash(cs)
+    mut msg = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, declNode'begin, rsv'root'fileName, msg))
 

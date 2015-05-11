@@ -12,12 +12,13 @@ import ast
 import base
 import ctx
 import sema
+import text
 import utils
 
 
 func rootAliasRegister(rsv sema:Resolver, name ptr uint8, type ptr ast:Type)
-  type'name = base:strclone(name)
-  type'moduleName = rsv'root'moduleName != null => base:strclone(rsv'root'moduleName'name) || null
+  type'name = text:strclone(name)
+  type'moduleName = rsv'root'moduleName != null => text:strclone(rsv'root'moduleName'name) || null
   ast:stabAdd(rsv'root'aliases, name, type, ast:PALIAS)
 
   mut pdecl ptr ast:PDecl
@@ -218,7 +219,7 @@ func resolveModuleAlias(rsv sema:Resolver,
 
 
   if !ast:prootHasImported(rsv'root, ptype'moduleName)
-    mut msg = base:strappend("no import called ", ptype'moduleName)
+    mut msg = text:strappend("no import called ", ptype'moduleName)
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
     base:free(msg)
 
@@ -232,13 +233,13 @@ func resolveModuleAlias(rsv sema:Resolver,
 
   # we could not find the type anywhere in the module.
   # Signal the error to the caller.
-  mut cs = base:csNew(20)
-  base:csAppendStr(cs, "no alias called ")
-  base:csAppendStr(cs, ptype'name)
-  base:csAppendStr(cs, " in module ")
-  base:csAppendStr(cs, ptype'moduleName)
+  mut cs = text:csNew(20)
+  text:csAppendStr(cs, "no alias called ")
+  text:csAppendStr(cs, ptype'name)
+  text:csAppendStr(cs, " in module ")
+  text:csAppendStr(cs, ptype'moduleName)
 
-  mut msg = base:csUnleash(cs)
+  mut msg = text:csUnwrap(cs)
   base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
   base:free(msg)
 
@@ -261,14 +262,14 @@ func resolveIdType(rsv sema:Resolver,
       return ast:typeNewRecursiveAlias(rsv'root'typePool, rsv'root'moduleName != null => rsv'root'moduleName'name || null, ptype'name)
     /if
 
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, "alias declaration makes type ")
-    base:csAppendStr(cs, ptype'name)
-    base:csAppendStr(cs, " recursive")
-    base:csAppend(cs, 32)
+    mut cs = text:csNew(20)
+    text:csAppendStr(cs, "alias declaration makes type ")
+    text:csAppendStr(cs, ptype'name)
+    text:csAppendStr(cs, " recursive")
+    text:csAppend(cs, 32)
     utils:listDumpHierarchyIntoCS(recList, cs)
 
-    mut msg = base:csUnleash(cs)
+    mut msg = text:csUnwrap(cs)
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
     base:free(msg)
 
@@ -297,12 +298,12 @@ func resolveIdType(rsv sema:Resolver,
   /if
 
   # no match found, error
-  mut cs = base:csNew(20)
-  base:csAppendStr(cs, "no type called ")
-  base:csAppendStr(cs, ptype'name)
-  base:csAppendStr(cs, " in current scope")
+  mut cs = text:csNew(20)
+  text:csAppendStr(cs, "no type called ")
+  text:csAppendStr(cs, ptype'name)
+  text:csAppendStr(cs, " in current scope")
 
-  mut msg = base:csUnleash(cs)
+  mut msg = text:csUnwrap(cs)
   base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
   base:free(msg)
 

@@ -7,10 +7,14 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 module utils
+
 
 import base
 import err
+import text
+
 
 decl charCanBeInString func(ch uint8, escape bool) bool
 decl charIsIdVal func(ch uint8) bool
@@ -96,7 +100,7 @@ decl strkvInit func(kv ptr KVList) ptr KVList
 decl strkvNew func() ptr KVList
 
 decl listContains func(list ptr base:List, value ptr uint8) bool
-decl listDumpHierarchyIntoCS func(list ptr base:List, cs ptr base:Charstash)
+decl listDumpHierarchyIntoCS func(list ptr base:List, cs ptr text:Charstash)
 
 decl ISSUE_ERR uint8
 decl ISSUE_WARN uint8

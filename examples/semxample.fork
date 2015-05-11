@@ -7,12 +7,15 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 import ast
 import ctx
 import sema
 import base
 import synt
+import text
 import utils
+
 
 entry
   mut argv = base:args()
@@ -109,10 +112,10 @@ entry
 
     base:out(" :: ")
 
-    mut cs = base:csNew(10)
+    mut cs = text:csNew(10)
     ast:typeSummarize(cs, dinfo'type)
 
-    mut des = base:csUnleash(cs)
+    mut des = text:csUnwrap(cs)
 
     base:outln(des)
 

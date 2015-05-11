@@ -9,6 +9,7 @@
 
 
 import base
+import text
 
 
 mut BLACK = false
@@ -404,10 +405,10 @@ func mapLen(map ptr base:Map) uintptr
 
 
 func strmapInit(map ptr base:Map) ptr base:Map
-  return base:mapInit(map, ptr base:strcomparer)
+  return base:mapInit(map, ptr text:strcompare)
 /func
 
 
 func strmapNew() ptr base:Map
-  return base:mapNew(ptr base:strcomparer)
+  return base:mapNew(ptr text:strcompare)
 /func

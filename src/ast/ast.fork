@@ -7,10 +7,13 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 import ast
 import lex
 import base
+import text
 import utils
+
 
 func pnodeAppendChild(pnode, child ptr ast:PNode) ptr ast:PNode
 
@@ -168,7 +171,7 @@ func prootNew(moduleName ptr ast:StringDef, imports ptr base:List, fileName ptr 
 
   proot'moduleName = moduleName
   proot'imports = imports
-  proot'fileName = base:strclone(fileName)
+  proot'fileName = text:strclone(fileName)
 
   return proot
 
@@ -182,7 +185,7 @@ func prootHasImported(root ptr ast:PRoot, name ptr uint8) bool
   while i < len
     mut elem = cast<ptr ast:StringDef>(val base:listGet(root'imports, i))
 
-    if base:strequals(elem'name, name)
+    if text:strequals(elem'name, name)
       return true
     /if
 

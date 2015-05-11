@@ -1,4 +1,5 @@
 import base
+import text
 import utils
 
 
@@ -7,23 +8,23 @@ entry
 
   utils:kvSetFreeFuncs(kv, ptr base:free, ptr base:free)
 
-  utils:kvPut(kv, base:strclone("aaa"), base:strclone("eee"))
+  utils:kvPut(kv, text:strclone("aaa"), text:strclone("eee"))
   utils:kvPrint(kv)
   base:outch(10)
 
-  utils:kvPut(kv, base:strclone("aaa"), base:strclone("rrr"))
+  utils:kvPut(kv, text:strclone("aaa"), text:strclone("rrr"))
   utils:kvPrint(kv)
   base:outch(10)
 
-  utils:kvPut(kv, base:strclone("ooo"), base:strclone("uuu"))
+  utils:kvPut(kv, text:strclone("ooo"), text:strclone("uuu"))
   utils:kvPrint(kv)
   base:outch(10)
 
-  utils:kvPut(kv, base:strclone("uuu"), base:strclone("ppp"))
+  utils:kvPut(kv, text:strclone("uuu"), text:strclone("ppp"))
   utils:kvPrint(kv)
   base:outch(10)
 
-  utils:kvPut(kv, base:strclone("qwe"), base:strclone("rere"))
+  utils:kvPut(kv, text:strclone("qwe"), text:strclone("rere"))
   utils:kvPrint(kv)
   base:outch(10)
 

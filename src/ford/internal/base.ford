@@ -24,12 +24,14 @@ alias closefunc func(handl data, err ptr ptr err:Error) bool
 alias readfunc func(handl data, buf ptr uint8, bufSize intptr, err ptr ptr err:Error, eof ptr bool) uintptr
 alias writefunc func(handl data, buf ptr uint8, bufSize intptr, err ptr ptr err:Error) uintptr
 
+
 alias Cookie struct (
   priv8 data,
   cfn ptr closefunc,
   rfn ptr readfunc,
   wfn ptr writefunc
 )
+
 
 # stream structure
 
@@ -43,10 +45,12 @@ alias Stream struct (
   inout uint8
 )
 
+
 # pair structure
 alias Pair struct (
   key, value data
 )
+
 
 # map structures
 
@@ -58,11 +62,13 @@ alias Mnode struct (
   cmp comparer
 )
 
+
 alias Map struct (
   root ptr Mnode,
   len uintptr,
   cmp comparer
 )
+
 
 alias MapIter struct (
   map ptr Map,
@@ -70,11 +76,13 @@ alias MapIter struct (
   begin bool
 )
 
+
 # list structures
 alias Lnode struct(
   prec, next ptr Lnode,
   value uintptr
 )
+
 
 alias List struct(
   start, end ptr Lnode,
@@ -84,6 +92,7 @@ alias List struct(
   pos uintptr
 )
 
+
 # vector structure
 alias Vector struct (
   arr ptr uintptr,
@@ -91,11 +100,6 @@ alias Vector struct (
   isSlice bool
 )
 
-# charstash structure
-alias Charstash struct (
-  base, work ptr uint8,
-  len, cap uintptr
-)
 
 # args structure
 alias Args struct (
@@ -112,9 +116,11 @@ decl memmove func(dest data, src data, len uintptr) data
 decl memset func(dest data, value uintptr, len uintptr) data
 decl zalloc func(bytes uintptr) data
 
+
 # System functions
 decl abort func()
 decl exit func(retval int16)
+
 
 # Stream functions
 decl streamClose func(stream ptr Stream) bool
@@ -124,9 +130,11 @@ decl streamNew func(priv8 data, rfn ptr readfunc, wfn ptr writefunc, cfn ptr clo
 decl streamRead func(stream ptr Stream, str ptr uint8, len intptr) uintptr
 decl streamWrite func(stream ptr Stream, str ptr uint8) uintptr
 
+
 # File stream functions
 decl fileOpen func(name ptr uint8, error ptr ptr err:Error) ptr Stream
 decl fileCreate func(name ptr uint8, error ptr ptr err:Error) ptr Stream
+
 
 # Console output functions
 decl err func(msg ptr uint8)
@@ -139,22 +147,12 @@ decl outch func(ch uint8)
 decl outint func(num uint64)
 decl outln func(msg ptr uint8)
 
+
 # libc std streams wrapper functions
 decl stderr_file func() FILE
 decl stdin_file func() FILE
 decl stdout_file func() FILE
 
-# string functions
-decl numtostr func(num uintptr, str ptr uint8, strLen uintptr) ptr uint8
-decl strappend func(str1 ptr uint8, str2 ptr uint8) ptr uint8
-decl strclone func(str ptr uint8) ptr uint8
-decl strcomparer func(s1 data, s2 data) int8
-decl strequals func(str1 ptr uint8, str2 ptr uint8) bool
-decl strglue func(toGlue ptr ptr uint8) ptr uint8
-decl strlen func(str ptr uint8) uintptr
-decl strncpy func(dest ptr uint8, source ptr uint8, cap uintptr) ptr uint8
-decl strreverse func(str ptr uint8, len uintptr)
-decl strtonum func(str ptr uint8) intptr
 
 # path functions
 decl pathContains func(path,filename ptr uint8) bool
@@ -162,10 +160,12 @@ decl pathExists func(path ptr uint8) bool
 decl pathExistsDir func(path ptr uint8) bool
 decl pathJoin func(path1,path2 ptr uint8) ptr uint8
 
+
 # pair functions
 
 decl pairFree func(pair ptr Pair)
 decl pairNew func(item1,item2 data) ptr Pair
+
 
 # lists functions
 
@@ -197,6 +197,7 @@ decl listSeek func(list ptr List, pos uintptr)
 decl listSeekZero func(list ptr List)
 decl listShallowCopy func(list ptr List) ptr List
 
+
 # vector functions
 
 decl vectAppend ptr func(vect ptr Vector, item data) bool
@@ -220,6 +221,7 @@ decl vectPut ptr func(vect ptr Vector, index uintptr, item data) bool
 decl vectPutint func(vect ptr Vector, index uintptr, item uintptr) bool
 decl vectSlice func(vect ptr Vector, from uintptr, len intptr) ptr Vector
 
+
 # map functions
 
 decl mapContains func(map ptr Map, key data) bool
@@ -238,29 +240,24 @@ decl mapRemove func(map ptr Map, key data) bool
 decl strmapInit func(map ptr Map) ptr Map
 decl strmapNew func() ptr Map
 
+
 # mapiter functions
 
 decl mapiterStart func(map ptr Map) ptr MapIter
 decl mapiterNext func(map ptr MapIter) ptr Pair
 decl mapiterFree func(map ptr MapIter)
 
+
 # map values
 decl FREE_NONE uint8
 decl FREE_KEY uint8
 decl FREE_VALUE uint8
 
-# charstash functions
-decl csAppend func(cs ptr Charstash, ch uint8)
-decl csAppendInt func(cs ptr Charstash, num uintptr)
-decl csAppendStr func(cs ptr Charstash, str ptr uint8)
-decl csFree func(cs ptr Charstash)
-decl csLen func(cs ptr Charstash) uintptr
-decl csNew func(cap uintptr) ptr Charstash
-decl csUnleash func(cs ptr Charstash) ptr uint8
 
 # args functions
 decl args func() ptr Args
 
-# generical libc declarations
+
+# generical declarations
 decl abs func(num intptr) uintptr
 decl getenv func(variable ptr uint8) ptr uint8

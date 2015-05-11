@@ -12,12 +12,13 @@ import base
 import err
 import lex
 import synt
+import text
 import utils
 
 
 func parserNew(filename ptr uint8) ptr synt:Parser
   mut ret = cast<ptr synt:Parser>(base:zalloc(size(synt:Parser)))
-  ret'filename = base:strclone(filename)
+  ret'filename = text:strclone(filename)
 
   return ret
 /func
@@ -107,7 +108,7 @@ func parserParseModuleName(ctx ptr synt:ParserContext) ptr ast:StringDef
         return null
       /if
 
-      mut moduleName = base:strclone(cast<ptr uint8>(name'value))
+      mut moduleName = text:strclone(cast<ptr uint8>(name'value))
       mut end = lex:tokDiscardEnd(name)
 
       return ast:strdefNew(moduleName, begin, end)
@@ -128,7 +129,7 @@ func parserParseImport(ctx ptr synt:ParserContext) ptr ast:StringDef
         return null
       /if
 
-      mut importName = base:strclone(cast<ptr uint8>(name'value))
+      mut importName = text:strclone(cast<ptr uint8>(name'value))
       mut end = lex:tokDiscardEnd(name)
 
       return ast:strdefNew(importName, begin, end)
@@ -165,7 +166,7 @@ func parserParseIdType(ctx ptr synt:ParserContext, name ptr uint8) ptr ast:PType
     /if
 
     moduleName = name
-    name = base:strclone(cast<ptr uint8>(tok'value))
+    name = text:strclone(cast<ptr uint8>(tok'value))
 
     lex:tokenFree(tok)
   /if
@@ -199,7 +200,7 @@ func parserParseIdList(ctx ptr synt:ParserContext) ptr base:List
       break
     /if
 
-    base:listAppend(ret, base:strclone(cast<ptr uint8>(tok'value)))
+    base:listAppend(ret, text:strclone(cast<ptr uint8>(tok'value)))
     lex:tokenFree(tok)
 
     if ctx'next == null
@@ -382,7 +383,7 @@ func parserParseType(ctx ptr synt:ParserContext) ptr ast:PType
   /if
 
   if tok'type == lex:ID
-    ret = parserParseIdType(ctx, base:strclone(cast<ptr uint8>(tok'value)))
+    ret = parserParseIdType(ctx, text:strclone(cast<ptr uint8>(tok'value)))
     ret'end = lex:tokExtractEnd(tok)
   /if
 
@@ -429,7 +430,7 @@ func parserParseDeclaration(ctx ptr synt:ParserContext, declType uint16, externa
     return null
   /if
 
-  mut id = base:strclone(cast<ptr uint8>(idTok'value))
+  mut id = text:strclone(cast<ptr uint8>(idTok'value))
 
   lex:tokenFree(idTok)
 
@@ -793,7 +794,7 @@ func matchEntryEndTok(tok ptr lex:Token) bool
 func parserParseEntry(ctx ptr synt:ParserContext) ptr ast:PNode
   mut begin = lex:tokDiscardBegin(synt:nextTok(ctx))  #discard "entry"
 
-  mut entryNode = parserMakeFunction(ctx, ast:PENTRY, base:strclone("_fork_entry"), makeEntryType(), lex:ENDENTRY, ptr matchEntryEndTok)
+  mut entryNode = parserMakeFunction(ctx, ast:PENTRY, text:strclone("_fork_entry"), makeEntryType(), lex:ENDENTRY, ptr matchEntryEndTok)
 
   if entryNode == null
     return null
@@ -811,7 +812,7 @@ func parserParseFuncName(ctx ptr synt:ParserContext) ptr uint8
     return null
   /if
 
-  mut name = base:strclone(cast<ptr uint8>(nameTok'value))
+  mut name = text:strclone(cast<ptr uint8>(nameTok'value))
 
   lex:tokenFree(nameTok)
 
@@ -939,7 +940,7 @@ func parserParseProgram(ctx ptr synt:ParserContext) ptr ast:PNode
 
 func parserParse(parser ptr synt:Parser) ptr ast:PNode
   mut lexErr ptr err:Error = null
-  mut firstLineno = lex:linenoNew(base:strclone(parser'filename), 1, 1)
+  mut firstLineno = lex:linenoNew(text:strclone(parser'filename), 1, 1)
 
   mut lex = lex:lexerNew(parser'filename, ptr lexErr)
   if lexErr != null

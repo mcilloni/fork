@@ -12,6 +12,7 @@ import ast
 import base
 import ctx
 import sema
+import text
 import utils
 
 
@@ -72,14 +73,14 @@ func validateDecl(rsv sema:Resolver,
 
     if type != null
       if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pdecl), type, exprType)
-        mut cs = base:csNew(20)
-        base:csAppendStr(cs, "cannot assign an expression of type '")
+        mut cs = text:csNew(20)
+        text:csAppendStr(cs, "cannot assign an expression of type '")
         ast:typeSummarize(cs, exprType)
-        base:csAppendStr(cs, "' to a variable declared as '")
+        text:csAppendStr(cs, "' to a variable declared as '")
         ast:typeSummarize(cs, type)
-        base:csAppendStr(cs, "'")
+        text:csAppendStr(cs, "'")
 
-        mut msg = base:csUnleash(cs)
+        mut msg = text:csUnwrap(cs)
 
         base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -121,12 +122,12 @@ func validateIf(rsv sema:Resolver,
   /if
 
   if !ast:typeIsBool(condType)
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, "expected a boolean expression, got type '")
+    mut cs = text:csNew(20)
+    text:csAppendStr(cs, "expected a boolean expression, got type '")
     ast:typeSummarize(cs, condType)
-    base:csAppendStr(cs, "' instead")
+    text:csAppendStr(cs, "' instead")
 
-    mut msg = base:csUnleash(cs)
+    mut msg = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
 
@@ -160,12 +161,12 @@ func validateReturn(rsv sema:Resolver,
   mut funcRetTypeEmpty = funcInfo'type'retType == null or funcInfo'type'retType'type == ast:TYPE_EMPTY
 
   if !hasRetExpr and !funcRetTypeEmpty
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, "function '")
-    base:csAppendStr(cs, funcInfo'name)
-    base:csAppendStr(cs, "' has a return value, but no expression is given to return")
+    mut cs = text:csNew(20)
+    text:csAppendStr(cs, "function '")
+    text:csAppendStr(cs, funcInfo'name)
+    text:csAppendStr(cs, "' has a return value, but no expression is given to return")
 
-    mut msg = base:csUnleash(cs)
+    mut msg = text:csUnwrap(cs)
 
     base:free(msg)
 
@@ -173,12 +174,12 @@ func validateReturn(rsv sema:Resolver,
   /if
 
   if hasRetExpr and funcRetTypeEmpty
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, "function '")
-    base:csAppendStr(cs, funcInfo'name)
-    base:csAppendStr(cs, "' has no return value, but an expression is given to return")
+    mut cs = text:csNew(20)
+    text:csAppendStr(cs, "function '")
+    text:csAppendStr(cs, funcInfo'name)
+    text:csAppendStr(cs, "' has no return value, but an expression is given to return")
 
-    mut msg = base:csUnleash(cs)
+    mut msg = text:csUnwrap(cs)
 
     base:free(msg)
 
@@ -195,16 +196,16 @@ func validateReturn(rsv sema:Resolver,
     /if
 
     if !sema:typeIsAssignable(rsv'ctx, stmt, retType, exprType)
-      mut cs = base:csNew(20)
-      base:csAppendStr(cs, "cannot return type '")
+      mut cs = text:csNew(20)
+      text:csAppendStr(cs, "cannot return type '")
       ast:typeSummarize(cs, exprType)
-      base:csAppendStr(cs, "' from '")
-      base:csAppendStr(cs, funcInfo'name)
-      base:csAppendStr(cs, "', expected '")
+      text:csAppendStr(cs, "' from '")
+      text:csAppendStr(cs, funcInfo'name)
+      text:csAppendStr(cs, "', expected '")
       ast:typeSummarize(cs, retType)
-      base:csAppendStr(cs, "'")
+      text:csAppendStr(cs, "'")
 
-      mut msg = base:csUnleash(cs)
+      mut msg = text:csUnwrap(cs)
 
       base:free(msg)
 
@@ -230,12 +231,12 @@ func validateWhile(rsv sema:Resolver,
   /if
 
   if !ast:typeIsBool(condType)
-    mut cs = base:csNew(20)
-    base:csAppendStr(cs, "expected a boolean expression, got type '")
+    mut cs = text:csNew(20)
+    text:csAppendStr(cs, "expected a boolean expression, got type '")
     ast:typeSummarize(cs, condType)
-    base:csAppendStr(cs, "' instead")
+    text:csAppendStr(cs, "' instead")
 
-    mut msg = base:csUnleash(cs)
+    mut msg = text:csUnwrap(cs)
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
 

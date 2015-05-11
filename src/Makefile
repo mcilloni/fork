@@ -30,6 +30,7 @@ all:
 
 	$(MAKE) -C err
 	$(MAKE) -C base
+	$(MAKE) -C text
 	$(MAKE) -C dyn
 	$(MAKE) -C utils
 	$(MAKE) -C lex
@@ -49,6 +50,7 @@ all:
 clean:
 	$(MAKE) -C err clean
 	$(MAKE) -C base clean
+	$(MAKE) -C text clean
 	$(MAKE) -C dyn clean
 	$(MAKE) -C utils clean
 	$(MAKE) -C lex clean

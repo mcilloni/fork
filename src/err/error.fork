@@ -10,6 +10,7 @@
 
 import base
 import err
+import text
 
 
 func errorFree(err ptr err:Error)
@@ -31,13 +32,13 @@ func errorMsg(err ptr err:Error) ptr uint8
 
 func errorNew(str ptr uint8) ptr err:Error
   mut err = cast<ptr err:Error>(base:alloc(size(err:Error)))
-  err'msg = base:strclone(str)
+  err'msg = text:strclone(str)
   return err
 /func
 
 
 func errorGlue(strs ptr ptr uint8) ptr err:Error
   mut err = cast<ptr err:Error>(base:alloc(size(err:Error)))
-  err'msg = base:strglue(strs)
+  err'msg = text:strglue(strs)
   return err
 /func

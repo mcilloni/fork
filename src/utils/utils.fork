@@ -10,6 +10,7 @@
 import base
 import err
 import lex
+import text
 import utils
 
 
@@ -69,8 +70,8 @@ func issueNew(gravity uint8, where utils:Line, filename, message ptr uint8)  ptr
 
   issue'gravity = gravity
   issue'where = where
-  issue'filename = base:strclone(filename)
-  issue'message = base:strclone(message)
+  issue'filename = text:strclone(filename)
+  issue'message = text:strclone(message)
 
   return issue
 /func
@@ -97,8 +98,8 @@ func issueToError(issue ptr utils:Issue) ptr err:Error
   mut lineno [21] uint8
   mut pos [21] uint8
 
-  base:numtostr(issue'where'line, ptr lineno[0], 21)
-  base:numtostr(issue'where'pos, ptr pos[0], 21)
+  text:numtostr(issue'where'line, ptr lineno[0], 21)
+  text:numtostr(issue'where'pos, ptr pos[0], 21)
 
   mut toglue [10] ptr uint8
   toglue[0] = issue'filename
@@ -126,12 +127,12 @@ func issueWriteOut(issue ptr utils:Issue, outFn ptr func(err ptr uint8))
 
 
   mut buf [21] uint8
-  base:numtostr(issue'where'line, ptr buf[0], 21)
+  text:numtostr(issue'where'line, ptr buf[0], 21)
 
   outFn(ptr buf[0])
   outFn(":")
 
-  base:numtostr(issue'where'pos, ptr buf[0], 21)
+  text:numtostr(issue'where'pos, ptr buf[0], 21)
 
   outFn(ptr buf[0])
   outFn(": ")
@@ -193,8 +194,8 @@ func tokenizerFree(tkz ptr utils:Tokenizer)
 
 func tokenizerNew(str ptr uint8, ch uint8) ptr utils:Tokenizer
   mut tkz = cast<ptr utils:Tokenizer>(base:zalloc(size(utils:Tokenizer)))
-  tkz'str = base:strclone(str)
-  tkz'strlen = base:strlen(str)
+  tkz'str = text:strclone(str)
+  tkz'strlen = text:strlen(str)
   tkz'splitChar = ch
 
   return tkz
@@ -215,7 +216,7 @@ func tokenizerNext(tkz ptr utils:Tokenizer) ptr uint8
   mut nextLen = tkz'begin - initialBegin
   mut ret = cast<ptr uint8>(base:zalloc(nextLen + 1)) # + 1 is for the null end. God I hate C
 
-  base:strncpy(ret, tkz'str + initialBegin, nextLen)
+  text:strncpy(ret, tkz'str + initialBegin, nextLen)
 
   if tkz'str[tkz'begin] == tkz'splitChar
     tkz'begin++
@@ -239,7 +240,7 @@ func listContains(list ptr base:List, value ptr uint8) bool
     mut ptrElem = base:listGet(list, i)
     mut elem = cast<ptr uint8>(val ptrElem)
 
-    if base:strequals(elem, value)
+    if text:strequals(elem, value)
       return true
     /if
 
@@ -250,10 +251,10 @@ func listContains(list ptr base:List, value ptr uint8) bool
 /func
 
 
-func listDumpHierarchyIntoCS(list ptr base:List, cs ptr base:Charstash)
+func listDumpHierarchyIntoCS(list ptr base:List, cs ptr text:Charstash)
   mut len = base:listLen(list)
 
-  base:csAppendStr(cs, "(")
+  text:csAppendStr(cs, "(")
 
   if len > 1
 
@@ -262,17 +263,17 @@ func listDumpHierarchyIntoCS(list ptr base:List, cs ptr base:Charstash)
     while i > 0
       i--
 
-      base:csAppendStr(cs, cast<ptr uint8>(val base:listGet(list, i)))
+      text:csAppendStr(cs, cast<ptr uint8>(val base:listGet(list, i)))
 
-      base:csAppendStr(cs, " => ")
+      text:csAppendStr(cs, " => ")
     /while
 
-    base:csAppendStr(cs, cast<ptr uint8>(val base:listGet(list, len - 1)))
+    text:csAppendStr(cs, cast<ptr uint8>(val base:listGet(list, len - 1)))
   else
-    base:csAppendStr(cs, "alias of itself")
+    text:csAppendStr(cs, "alias of itself")
   /if
 
-  base:csAppendStr(cs, ")")
+  text:csAppendStr(cs, ")")
 /func
 
 
