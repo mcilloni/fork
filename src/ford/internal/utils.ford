@@ -50,17 +50,6 @@ alias Ref struct (
 decl incRef func(item data)
 decl decRef func(item data)
 
-alias Tokenizer struct (
-  str ptr uint8,
-  strlen uintptr,
-  begin intptr,
-  splitChar uint8
-)
-
-decl tokenizerFree func(tkz ptr Tokenizer)
-decl tokenizerNew func(str ptr uint8, ch uint8) ptr Tokenizer
-decl tokenizerNext func(tkz ptr Tokenizer) ptr uint8
-
 
 alias FreePool struct(
   ptrs ptr base:List,

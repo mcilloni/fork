@@ -8,18 +8,18 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 import base
-import utils
+import text
 
 entry
 
-  mut tkz = utils:tokenizerNew("/home/marco/Workspace/forklift/second-step/examples/../src/ford/internal/:/home/marco/Workspace/forklift/second-step/examples/../../first-step/build/libfork/ford/internal/", 58)
+  mut tkz = text:tokenizerNew("/home/marco/Workspace/forklift/second-step/examples/../src/ford/internal/:/home/marco/Workspace/forklift/second-step/examples/../../first-step/build/libfork/ford/internal/", 58)
 
   mut nxt ptr uint8
 
-  while (nxt = utils:tokenizerNext(tkz)) != null
+  while (nxt = text:tokenizerNext(tkz)) != null
     base:outln(nxt)
     base:free(nxt)
   /while
 
-  utils:tokenizerFree(tkz)
+  text:tokenizerFree(tkz)
 /entry

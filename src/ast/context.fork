@@ -102,10 +102,10 @@ func envExtractFordPaths() ptr base:List
 
   mut paths = base:getenv("FORDPATHS")
   if paths != null
-    mut tkz = utils:tokenizerNew(paths, 58) #`:`
+    mut tkz = text:tokenizerNew(paths, 58) #`:`
     mut path ptr uint8
 
-    while (path = utils:tokenizerNext(tkz)) != null
+    while (path = text:tokenizerNext(tkz)) != null
       base:listAppend(list, path)
     /while
 

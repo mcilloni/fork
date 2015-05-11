@@ -22,7 +22,7 @@ all: $(BINS)
 
 	@printf "FORKL\t\t%s\n" $<
 
-	@ $(CC) -o $@ $< $(shell pwd)/../build/rt.o -L$(shell pwd)/../build/ -lfork $(LDFLAGS) -static 
+	@ $(CC) -o $@ $< $(shell pwd)/../build/rt.o $(shell pwd)/../build/libfork.a $(LDFLAGS)  
 
 %.o: %.fork
 	@printf "FORKC\t\t%s\n" $<
