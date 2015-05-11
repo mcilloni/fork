@@ -9,10 +9,11 @@
 
 
 import base
+import mem
 
 
 func mapiterStart(map ptr base:Map) ptr base:MapIter
-  mut iter = cast<ptr base:MapIter>(base:alloc(size(base:MapIter)))
+  mut iter = cast<ptr base:MapIter>(mem:alloc(size(base:MapIter)))
   iter'map = map
   iter'lastKey = null
   iter'begin = true
@@ -71,5 +72,5 @@ func mapiterNext(iter ptr base:MapIter) ptr base:Pair
 
 
 func mapiterFree(iter ptr base:MapIter)
-  base:free(iter)
+  mem:free(iter)
 /func

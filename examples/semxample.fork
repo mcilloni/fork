@@ -9,9 +9,10 @@
 
 
 import ast
-import ctx
-import sema
 import base
+import ctx
+import mem
+import sema
 import synt
 import text
 import utils
@@ -119,7 +120,7 @@ entry
 
     base:outln(des)
 
-    base:free(des)
+    mem:free(des)
     base:pairFree(pair)
   /while
 

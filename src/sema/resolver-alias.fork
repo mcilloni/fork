@@ -11,6 +11,7 @@
 import ast
 import base
 import ctx
+import mem
 import sema
 import text
 import utils
@@ -114,7 +115,7 @@ func convertSymbolList(rsv sema:Resolver,
 
   mut plen = base:listLen(pargs)
   mut i uintptr = 0
-  utils:kvSetFreeFuncs(members, ptr base:free, null)
+  utils:kvSetFreeFuncs(members, ptr mem:free, null)
 
   while i < plen
     mut member = cast<ptr ast:PSymbol>(val base:listGet(pargs, i))
@@ -221,7 +222,7 @@ func resolveModuleAlias(rsv sema:Resolver,
   if !ast:prootHasImported(rsv'root, ptype'moduleName)
     mut msg = text:strappend("no import called ", ptype'moduleName)
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
-    base:free(msg)
+    mem:free(msg)
 
     return null
   /if
@@ -241,7 +242,7 @@ func resolveModuleAlias(rsv sema:Resolver,
 
   mut msg = text:csUnwrap(cs)
   base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
-  base:free(msg)
+  mem:free(msg)
 
   return null
 /func
@@ -271,7 +272,7 @@ func resolveIdType(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
-    base:free(msg)
+    mem:free(msg)
 
     return null
   /if
@@ -305,7 +306,7 @@ func resolveIdType(rsv sema:Resolver,
 
   mut msg = text:csUnwrap(cs)
   base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
-  base:free(msg)
+  mem:free(msg)
 
   return null
 /func

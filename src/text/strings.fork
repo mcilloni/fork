@@ -9,6 +9,7 @@
 
 
 import base
+import mem
 import text
 
 
@@ -18,7 +19,7 @@ func strclone(orig ptr uint8) ptr uint8
   /if
 
   mut len = text:strlen(orig)
-  mut new = cast<ptr uint8>(base:zalloc(len + 1))
+  mut new = cast<ptr uint8>(mem:zalloc(len + 1))
   text:strncpy(new, orig, len)
   return new
 /func
@@ -89,10 +90,10 @@ func strglue(strs ptr ptr uint8) ptr uint8
 func strappend(str1 ptr uint8, str2 ptr uint8) ptr uint8
   mut len1 = text:strlen(str1)
   mut len2 = text:strlen(str2)
-  mut ret = cast<ptr uint8>(base:zalloc(len1 + len2 + 1))
+  mut ret = cast<ptr uint8>(mem:zalloc(len1 + len2 + 1))
 
-  base:memmove(ret, str1, len1)
-  base:memmove(ret + len1, str2, len2)
+  mem:memmove(ret, str1, len1)
+  mem:memmove(ret + len1, str2, len2)
   ret[len1 + len2] = 0
 
   return ret

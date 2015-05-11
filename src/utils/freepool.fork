@@ -7,11 +7,14 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 import base
+import mem
 import utils
 
+
 func fpAlloc(fp ptr utils:FreePool, len uintptr) data
-  mut ret = base:alloc(len)
+  mut ret = mem:alloc(len)
   base:listAppend(fp'ptrs, ret)
 
   return ret
@@ -20,12 +23,12 @@ func fpAlloc(fp ptr utils:FreePool, len uintptr) data
 func fpFree(fp ptr utils:FreePool)
   if fp != null
     base:listFreeAll(fp'ptrs, fp'freeFunc)
-    base:free(fp)
+    mem:free(fp)
   /if
 /func
 
 func fpNew(freeFunc ptr func(item data)) ptr utils:FreePool
-  mut ret = cast<ptr utils:FreePool>(base:alloc(size(utils:FreePool)))
+  mut ret = cast<ptr utils:FreePool>(mem:alloc(size(utils:FreePool)))
   ret'ptrs = base:listNew()
   ret'freeFunc = freeFunc
 
@@ -33,7 +36,7 @@ func fpNew(freeFunc ptr func(item data)) ptr utils:FreePool
 /func
 
 func fpZAlloc(fp ptr utils:FreePool, len uintptr) data
-  mut ret = base:zalloc(len)
+  mut ret = mem:zalloc(len)
   base:listAppend(fp'ptrs, ret)
 
   return ret

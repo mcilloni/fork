@@ -9,15 +9,16 @@
 
 
 import base
+import mem
 import text
 
 
 func csAppend(cs ptr text:Charstash, ch uint8)
   if cs'len == cs'cap
     cs'cap = cs'cap + 10
-    mut new = cast<ptr uint8>(base:alloc(cs'cap))
-    base:memmove(new, cs'base, cs'len)
-    base:free(cs'base)
+    mut new = cast<ptr uint8>(mem:alloc(cs'cap))
+    mem:memmove(new, cs'base, cs'len)
+    mem:free(cs'base)
     cs'base = new
     cs'work = cs'base + cs'len
   /if
@@ -46,15 +47,15 @@ func csAppendStr(cs ptr text:Charstash, str ptr uint8)
 
 
 func csFree(cs ptr text:Charstash)
-  base:free(cs'base)
-  base:free(cs)
+  mem:free(cs'base)
+  mem:free(cs)
 /func
 
 
 func csNew(cap uintptr) ptr text:Charstash
-  mut cs = cast<ptr text:Charstash>(base:zalloc(size(text:Charstash)))
+  mut cs = cast<ptr text:Charstash>(mem:zalloc(size(text:Charstash)))
 
-  cs'work = cs'base = cast<ptr uint8>(base:alloc(cap))
+  cs'work = cs'base = cast<ptr uint8>(mem:alloc(cap))
   cs'cap = cap
 
   return cs
@@ -65,7 +66,7 @@ func csUnwrap(cs ptr text:Charstash) ptr uint8
   csAppend(cs, 0)
 
   mut ret = cs'base
-  base:free(cs)
+  mem:free(cs)
 
   return ret
 /func

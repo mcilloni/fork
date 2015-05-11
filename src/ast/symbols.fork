@@ -7,8 +7,10 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 import ast
 import base
+import mem
 import platform
 import text
 import utils
@@ -19,7 +21,7 @@ func symbolClone(sym ptr ast:Symbol) ptr ast:Symbol
     return null
   /if
 
-  mut newInst = cast<ptr ast:Symbol>(base:alloc(size(ast:Symbol)))
+  mut newInst = cast<ptr ast:Symbol>(mem:alloc(size(ast:Symbol)))
   newInst'name = text:strclone(sym'name)
   newInst'type = sym'type
 
@@ -33,15 +35,15 @@ func symbolEquals(sym1,sym2 ptr ast:Symbol) bool
 
 func symbolFree(sym ptr ast:Symbol)
   if sym != null
-    base:free(sym'name)
+    mem:free(sym'name)
 
-    base:free(sym)
+    mem:free(sym)
   /if
 /func
 
 
 func symbolNew(name ptr uint8, type ptr ast:Type) ptr ast:Symbol
-  mut sym = cast<ptr ast:Symbol>(base:alloc(size(ast:Symbol)))
+  mut sym = cast<ptr ast:Symbol>(mem:alloc(size(ast:Symbol)))
 
   sym'name = text:strclone(name)
   sym'type = type
@@ -78,7 +80,7 @@ func typeClone(pool ptr utils:FreePool, type ptr ast:Type) ptr ast:Type
     return null
   /if
 
-  mut newInst = cast<ptr ast:Type>(base:memcpy(utils:fpAlloc(pool, size(ast:Type)), type, size(ast:Type)))
+  mut newInst = cast<ptr ast:Type>(mem:memcpy(utils:fpAlloc(pool, size(ast:Type)), type, size(ast:Type)))
   newInst'moduleName = text:strclone(type'moduleName)
   newInst'name = text:strclone(type'name)
   newInst'retType = ast:typeClone(pool, type'retType)
@@ -176,14 +178,14 @@ func typeEquals(type1, type2 ptr ast:Type) bool
 
 func typeFree(type ptr ast:Type)
   if type != null
-    base:free(type'moduleName)
-    base:free(type'name)
+    mem:free(type'moduleName)
+    mem:free(type'name)
 
     if type'members != null
       utils:kvFree(type'members)
     /if
 
-    base:free(type)
+    mem:free(type)
   /if
 /func
 
@@ -237,7 +239,7 @@ func typeNew(pool ptr utils:FreePool,
              retType ptr ast:Type,
              members ptr utils:KVList) ptr ast:Type
 
-  mut location = pool != null => utils:fpAlloc(pool, size(ast:Type)) || base:alloc(size(ast:Type))
+  mut location = pool != null => utils:fpAlloc(pool, size(ast:Type)) || mem:alloc(size(ast:Type))
   mut ret = cast<ptr ast:Type>(location)
 
   ret'type = type
@@ -411,12 +413,12 @@ func typeSetBoundaries(type ptr ast:Type, begin,end utils:Line)
 
 
 func declInfoFree(declInfo ptr ast:DeclInfo)
-  base:free(declInfo)
+  mem:free(declInfo)
 /func
 
 
 func declInfoNew(declType uint16, type ptr ast:Type) ptr ast:DeclInfo
-  mut ret = cast<ptr ast:DeclInfo>(base:alloc(size(ast:DeclInfo)))
+  mut ret = cast<ptr ast:DeclInfo>(mem:alloc(size(ast:DeclInfo)))
   ret'declType = declType
   ret'type = type
 
@@ -425,7 +427,7 @@ func declInfoNew(declType uint16, type ptr ast:Type) ptr ast:DeclInfo
 
 
 func stabNew() ptr ast:Symtable
-  mut stab = cast<ptr ast:Symtable>(base:zalloc(size(ast:Symtable)))
+  mut stab = cast<ptr ast:Symtable>(mem:zalloc(size(ast:Symtable)))
 
   stab'syms = base:strmapNew()
 
@@ -456,8 +458,8 @@ func stabTypeof(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
 
 func stabFree(stab ptr ast:Symtable)
   if stab != null
-    base:mapFreeSpec(stab'syms, ptr base:free, ptr ast:declInfoFree)
-    base:free(stab)
+    base:mapFreeSpec(stab'syms, ptr mem:free, ptr ast:declInfoFree)
+    mem:free(stab)
   /if
 /func
 

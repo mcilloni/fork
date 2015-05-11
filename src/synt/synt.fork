@@ -7,17 +7,19 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 import ast
 import base
 import err
 import lex
+import mem
 import synt
 import text
 import utils
 
 
 func parserNew(filename ptr uint8) ptr synt:Parser
-  mut ret = cast<ptr synt:Parser>(base:zalloc(size(synt:Parser)))
+  mut ret = cast<ptr synt:Parser>(mem:zalloc(size(synt:Parser)))
   ret'filename = text:strclone(filename)
 
   return ret
@@ -26,8 +28,8 @@ func parserNew(filename ptr uint8) ptr synt:Parser
 
 func parserFree(parser ptr synt:Parser)
   if parser != null
-    base:free(parser'filename)
-    base:free(parser)
+    mem:free(parser'filename)
+    mem:free(parser)
   /if
 /func
 
@@ -216,7 +218,7 @@ func parserParseIdList(ctx ptr synt:ParserContext) ptr base:List
     synt:discardTok(ctx)
   /while
 
-  base:listFreeAll(ret, ptr base:free)
+  base:listFreeAll(ret, ptr mem:free)
   return null
 /func
 
@@ -259,7 +261,7 @@ func parserParseStructBodyVars(ctx ptr synt:ParserContext, syms ptr base:List) b
 
   mut type = parserParseType(ctx)
   if type == null
-    base:listFreeAll(ids, ptr base:free)
+    base:listFreeAll(ids, ptr mem:free)
     return false
   /if
 
@@ -436,7 +438,7 @@ func parserParseDeclaration(ctx ptr synt:ParserContext, declType uint16, externa
 
   if ctx'next == null
     ctx'prs'err = lex:errorMism(ctx'last, "a type or an '='", "EOF")
-    base:free(id)
+    mem:free(id)
     return null
   /if
 
@@ -446,7 +448,7 @@ func parserParseDeclaration(ctx ptr synt:ParserContext, declType uint16, externa
   if ctx'next'type != lex:ASSIGN
     type = parserParseType(ctx)
     if type == null
-      base:free(id)
+      mem:free(id)
       return null
     /if
 
@@ -837,7 +839,7 @@ func parserParseFunc(ctx ptr synt:ParserContext) ptr ast:PNode
   mut type = parserParseFunctionType(ctx)
 
   if type == null
-    base:free(name)
+    mem:free(name)
     return null
   /if
 

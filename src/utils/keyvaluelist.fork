@@ -17,6 +17,7 @@
 
 
 import base
+import mem
 import text
 import utils
 
@@ -53,7 +54,7 @@ func kvDeinit(kv ptr utils:KVList)
 
 
 func kvInit(kv ptr utils:KVList, cmp base:comparer) ptr utils:KVList
-  base:memset(kv, 0, size(utils:KVList))
+  mem:memset(kv, 0, size(utils:KVList))
 
   base:listInit(ptr kv'list)
   kv'cmp = cmp
@@ -63,7 +64,7 @@ func kvInit(kv ptr utils:KVList, cmp base:comparer) ptr utils:KVList
 
 
 func kvNew(cmp base:comparer) ptr utils:KVList
-  return utils:kvInit(cast<ptr utils:KVList>(base:alloc(size(utils:KVList))), cmp)
+  return utils:kvInit(cast<ptr utils:KVList>(mem:alloc(size(utils:KVList))), cmp)
 /func
 
 
@@ -75,7 +76,7 @@ func kvFirst(kv ptr utils:KVList) ptr base:Pair
 func kvFree(kv ptr utils:KVList)
   if kv != null
     utils:kvDeinit(kv)
-    base:free(kv)
+    mem:free(kv)
   /if
 /func
 

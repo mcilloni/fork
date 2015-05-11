@@ -7,22 +7,24 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 import ast
 import base
+import mem
 import utils
 
 
 func psymbolFree(sym ptr ast:PSymbol)
   if sym != null
-    base:free(sym'name)
+    mem:free(sym'name)
     utils:decRef(sym'type)
-    base:free(sym)
+    mem:free(sym)
   /if
 /func
 
 
 func psymbolNew(name ptr uint8, type ptr ast:PType) ptr ast:PSymbol
-  mut sym = cast<ptr ast:PSymbol>(base:zalloc(size(ast:PSymbol)))
+  mut sym = cast<ptr ast:PSymbol>(mem:zalloc(size(ast:PSymbol)))
 
   sym'refc'freeFunc = ptr psymbolFree
 
@@ -41,20 +43,20 @@ func ptypeFree(type ptr ast:PType)
     /if
 
     if type'moduleName != null
-      base:free(type'moduleName)
+      mem:free(type'moduleName)
     /if
 
     if type'name != null
-      base:free(type'name)
+      mem:free(type'name)
     /if
 
-    base:free(type)
+    mem:free(type)
   /if
 /func
 
 
 func ptypeNew(name, moduleName ptr uint8, descr ptr ast:PTypeDescr) ptr ast:PType
-  mut type = cast<ptr ast:PType>(base:zalloc(size(ast:PType)))
+  mut type = cast<ptr ast:PType>(mem:zalloc(size(ast:PType)))
 
   type'refc'freeFunc = ptr ptypeFree
 
@@ -81,7 +83,7 @@ func ptypeDescrFree(descr ptr ast:PTypeDescr)
 
 
 func ptypeDescrNew(type uint16, retType ptr ast:PType, params ptr base:List) ptr ast:PTypeDescr
-  mut descr = cast<ptr ast:PTypeDescr>(base:zalloc(size(ast:PTypeDescr)))
+  mut descr = cast<ptr ast:PTypeDescr>(mem:zalloc(size(ast:PTypeDescr)))
 
   descr'refc'freeFunc = ptr ptypeDescrFree
 

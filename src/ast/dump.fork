@@ -9,8 +9,9 @@
 
 
 import ast
-import lex
 import base
+import lex
+import mem
 import text
 import utils
 
@@ -577,7 +578,7 @@ func declDump(prefix,name ptr uint8, type ptr ast:Type)
 
   base:out(str)
 
-  base:free(str)
+  mem:free(str)
 
   base:outch(10)
 

@@ -9,19 +9,20 @@
 
 
 import base
+import mem
 import text
 
 
 func tokenizerFree(tkz ptr text:Tokenizer)
   if tkz != null
-    base:free(tkz'str)
-    base:free(tkz)
+    mem:free(tkz'str)
+    mem:free(tkz)
   /if
 /func
 
 
 func tokenizerNew(str ptr uint8, ch uint8) ptr text:Tokenizer
-  mut tkz = cast<ptr text:Tokenizer>(base:zalloc(size(text:Tokenizer)))
+  mut tkz = cast<ptr text:Tokenizer>(mem:zalloc(size(text:Tokenizer)))
   tkz'str = text:strclone(str)
   tkz'strlen = text:strlen(str)
   tkz'splitChar = ch
@@ -42,7 +43,7 @@ func tokenizerNext(tkz ptr text:Tokenizer) ptr uint8
   /while
 
   mut nextLen = tkz'begin - initialBegin
-  mut ret = cast<ptr uint8>(base:zalloc(nextLen + 1)) # + 1 is for the null end. God I hate C
+  mut ret = cast<ptr uint8>(mem:zalloc(nextLen + 1)) # + 1 is for the null end. God I hate C
 
   text:strncpy(ret, tkz'str + initialBegin, nextLen)
 

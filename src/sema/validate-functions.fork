@@ -11,6 +11,7 @@
 import ast
 import base
 import ctx
+import mem
 import sema
 import text
 import utils
@@ -84,7 +85,7 @@ func validateDecl(rsv sema:Resolver,
 
         base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
-        base:free(msg)
+        mem:free(msg)
 
         return false
       /if
@@ -131,7 +132,7 @@ func validateIf(rsv sema:Resolver,
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
 
-    base:free(msg)
+    mem:free(msg)
 
     return false
   /if
@@ -168,7 +169,7 @@ func validateReturn(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    base:free(msg)
+    mem:free(msg)
 
     return false
   /if
@@ -181,7 +182,7 @@ func validateReturn(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    base:free(msg)
+    mem:free(msg)
 
     return false
   /if
@@ -207,7 +208,7 @@ func validateReturn(rsv sema:Resolver,
 
       mut msg = text:csUnwrap(cs)
 
-      base:free(msg)
+      mem:free(msg)
 
       return false
     /if
@@ -240,7 +241,7 @@ func validateWhile(rsv sema:Resolver,
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
 
-    base:free(msg)
+    mem:free(msg)
 
     return false
   /if

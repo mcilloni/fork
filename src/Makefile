@@ -29,6 +29,7 @@ all:
 	@ FORDPATHS="$(shell pwd)/ford/internal/:$(shell pwd)/ford/" $(FORKC_O) -o ../build/rt.o rt.fork
 
 	$(MAKE) -C err
+	$(MAKE) -C mem
 	$(MAKE) -C base
 	$(MAKE) -C text
 	$(MAKE) -C dyn
@@ -49,6 +50,7 @@ all:
 
 clean:
 	$(MAKE) -C err clean
+	$(MAKE) -C mem clean
 	$(MAKE) -C base clean
 	$(MAKE) -C text clean
 	$(MAKE) -C dyn clean

@@ -9,8 +9,9 @@
 
 
 import ast
-import lex
 import base
+import lex
+import mem
 import text
 import utils
 
@@ -33,7 +34,7 @@ func pnodeFree(pnode ptr ast:PNode)
 
       mut proot = cast<ptr ast:PRoot>(pnode)
       ast:strdefFree(proot'moduleName)
-      base:free(proot'fileName)
+      mem:free(proot'fileName)
       base:listFreeAll(proot'imports, cast<ptr func(inst data)>(ptr ast:strdefFree))
       ast:stabFree(proot'aliases)
 
@@ -57,14 +58,14 @@ func pnodeFree(pnode ptr ast:PNode)
 
     base:listFreeAll(pnode'leaves, ptr pnodeFree)
 
-    base:free(pnode)
+    mem:free(pnode)
   /if
 /func
 
 
 func pnodeNew(type uint16, value uintptr) ptr ast:PNode
 
-  mut pnode = cast<ptr ast:PNode>(base:zalloc(size(ast:PNode)))
+  mut pnode = cast<ptr ast:PNode>(mem:zalloc(size(ast:PNode)))
   pnode'type = type
   pnode'value = value
   pnode'leaves = base:listNew()
@@ -104,7 +105,7 @@ func pnodeIsWhile(pnode ptr ast:PNode) bool
 
 
 func pblockNew() ptr ast:PBlock
-  mut pblock = cast<ptr ast:PBlock>(base:zalloc(size(ast:PBlock)))
+  mut pblock = cast<ptr ast:PBlock>(mem:zalloc(size(ast:PBlock)))
   mut pnode = cast<ptr ast:PNode>(pblock)
 
   pnode'type = ast:PBLOCK
@@ -116,7 +117,7 @@ func pblockNew() ptr ast:PBlock
 
 func pdeclNew(nodeType uint16, sym ptr ast:PSymbol) ptr ast:PDecl
 
-  mut pdecl = cast<ptr ast:PDecl>(base:zalloc(size(ast:PDecl)))
+  mut pdecl = cast<ptr ast:PDecl>(mem:zalloc(size(ast:PDecl)))
   pdecl'node'type = nodeType
   pdecl'node'leaves = base:listNew()
 
@@ -129,7 +130,7 @@ func pdeclNew(nodeType uint16, sym ptr ast:PSymbol) ptr ast:PDecl
 
 
 func pexprTernaryNew(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end utils:Line) ptr ast:PExpr
-    mut pexpr = cast<ptr ast:PExpr>(base:zalloc(size(ast:PExpr)))
+    mut pexpr = cast<ptr ast:PExpr>(mem:zalloc(size(ast:PExpr)))
     pexpr'node'type = ast:PEXPR
     pexpr'node'value = tok'value
     pexpr'node'leaves = base:listNew()
@@ -162,7 +163,7 @@ func pexprNewSingle(tok ptr lex:Token) ptr ast:PExpr
 
 func prootNew(moduleName ptr ast:StringDef, imports ptr base:List, fileName ptr uint8) ptr ast:PRoot
 
-  mut proot = cast<ptr ast:PRoot>(base:zalloc(size(ast:PRoot)))
+  mut proot = cast<ptr ast:PRoot>(mem:zalloc(size(ast:PRoot)))
   mut pnode = cast<ptr ast:PNode>(proot)
 
   pnode'type = ast:PROOT
@@ -215,14 +216,14 @@ func isPRoot(pnode ptr ast:PNode) bool
 
 func strdefFree(strdef ptr ast:StringDef)
   if strdef != null
-    base:free(strdef'name)
-    base:free(strdef)
+    mem:free(strdef'name)
+    mem:free(strdef)
   /if
 /func
 
 
 func strdefNew(name ptr uint8, begin,end utils:Line) ptr ast:StringDef
-  mut strdef = cast<ptr ast:StringDef>(base:zalloc(size(ast:StringDef)))
+  mut strdef = cast<ptr ast:StringDef>(mem:zalloc(size(ast:StringDef)))
   strdef'name = name
   strdef'begin = begin
   strdef'end = end

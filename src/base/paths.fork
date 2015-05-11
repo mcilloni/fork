@@ -9,6 +9,7 @@
 
 
 import base
+import mem
 import text
 
 
@@ -47,7 +48,7 @@ func pathContains(path,filename ptr uint8) bool
 
   mut ret = pathExists(fullpath)
 
-  base:free(fullpath)
+  mem:free(fullpath)
 
   return ret
 /func

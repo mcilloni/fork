@@ -10,6 +10,7 @@
 
 import base
 import err
+import mem
 import text
 
 
@@ -21,7 +22,7 @@ mut STREAM_INOUT uint8 = 3
 func streamClose(stream ptr base:Stream) bool
   mut ret = stream'cookie'cfn(stream'cookie'priv8, ptr stream'error)
 
-  base:free(stream)
+  mem:free(stream)
   return ret
 /func
 
@@ -37,7 +38,7 @@ func streamError(stream ptr base:Stream) ptr err:Error
 
 
 func streamNew(priv8 data, rfn ptr base:readfunc, wfn ptr base:writefunc, cfn ptr base:closefunc) ptr base:Stream
-  mut ret = cast<ptr base:Stream>(base:zalloc(size(base:Stream)))
+  mut ret = cast<ptr base:Stream>(mem:zalloc(size(base:Stream)))
   ret'cookie'priv8 = priv8
 
   if wfn != null

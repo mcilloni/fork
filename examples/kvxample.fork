@@ -1,4 +1,5 @@
 import base
+import mem
 import text
 import utils
 
@@ -6,7 +7,7 @@ import utils
 entry
   mut kv = utils:strkvNew()
 
-  utils:kvSetFreeFuncs(kv, ptr base:free, ptr base:free)
+  utils:kvSetFreeFuncs(kv, ptr mem:free, ptr mem:free)
 
   utils:kvPut(kv, text:strclone("aaa"), text:strclone("eee"))
   utils:kvPrint(kv)

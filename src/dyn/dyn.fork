@@ -11,6 +11,7 @@
 import base
 import dyn
 import err
+import mem
 import text
 
 
@@ -28,7 +29,7 @@ func sobjDeinit(sobj ptr dyn:SObj)
 
 func sobjFree(sobj ptr dyn:SObj)
   dyn:sobjDeinit(sobj)
-  base:free(sobj)
+  mem:free(sobj)
 /func
 
 
@@ -63,10 +64,10 @@ func sobjInit(sobj ptr dyn:SObj, name ptr uint8, err ptr ptr err:Error) bool
 
 
 func sobjNew(name ptr uint8, err ptr ptr err:Error) ptr dyn:SObj
-  mut ret = cast<ptr dyn:SObj>(base:alloc(size(dyn:SObj)))
+  mut ret = cast<ptr dyn:SObj>(mem:alloc(size(dyn:SObj)))
 
   if !dyn:sobjInit(ret, name, err)
-    base:free(ret)
+    mem:free(ret)
 
     return null
   /if

@@ -108,14 +108,6 @@ alias Args struct (
   args ptr ptr uint8
 )
 
-# Memory functions
-decl alloc func(bytes uintptr) data
-decl free func(location data)
-decl memcpy func(dest data, src data, len uintptr) data
-decl memmove func(dest data, src data, len uintptr) data
-decl memset func(dest data, value uintptr, len uintptr) data
-decl zalloc func(bytes uintptr) data
-
 
 # System functions
 decl abort func()

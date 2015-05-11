@@ -9,13 +9,14 @@
 
 
 import base
+import mem
 
 
 func vectInit(arr ptr base:Vector, cap uintptr) ptr base:Vector
-  base:memset(arr, 0, size(base:Vector))
+  mem:memset(arr, 0, size(base:Vector))
 
   if cap != 0
-    arr'arr = cast<ptr uintptr>(base:zalloc(cap * size(uintptr)))
+    arr'arr = cast<ptr uintptr>(mem:zalloc(cap * size(uintptr)))
   /if
 
   arr'cap = cap
@@ -24,7 +25,7 @@ func vectInit(arr ptr base:Vector, cap uintptr) ptr base:Vector
 
 
 func vectNew(cap uintptr) ptr base:Vector
-  return base:vectInit(cast<ptr base:Vector>(base:alloc(size(base:Vector))), cap)
+  return base:vectInit(cast<ptr base:Vector>(mem:alloc(size(base:Vector))), cap)
 /func
 
 
@@ -38,11 +39,11 @@ func vectNewCap(vect ptr base:Vector, newcap uintptr)
     lowercap = vect'cap
   /if
 
-  mut newarr = cast<ptr uintptr>(base:zalloc(newcap * size(uintptr)))
+  mut newarr = cast<ptr uintptr>(mem:zalloc(newcap * size(uintptr)))
 
-  base:memmove(newarr, vect'arr, lowercap * size(uintptr))
+  mem:memmove(newarr, vect'arr, lowercap * size(uintptr))
 
-  base:free(vect'arr)
+  mem:free(vect'arr)
 
   vect'arr = newarr
   if vect'len > newcap
@@ -121,7 +122,7 @@ func vectAppendint(vect ptr base:Vector, value uintptr) bool
 
 func vectDeinit(vect ptr base:Vector)
   if !vect'isSlice
-    base:free(vect'arr)
+    mem:free(vect'arr)
   /if
 /func
 
@@ -131,7 +132,7 @@ func vectFree(vect ptr base:Vector)
   if vect != null
     base:vectDeinit(vect)
 
-    base:free(vect)
+    mem:free(vect)
   /if
 
 /func
@@ -146,7 +147,7 @@ func vectFreeContents(vect ptr base:Vector,  freefunc ptr func(item data))
     /if
 
     if freefunc == null
-      freefunc = ptr base:free
+      freefunc = ptr mem:free
     /if
 
     mut i uintptr = 0
@@ -170,7 +171,7 @@ func vectFreeAll(vect ptr base:Vector,  freefunc ptr func(item data))
 
 
 func vectPrune(vect ptr base:Vector)
-  base:memset(vect'arr, 0, vect'cap)
+  mem:memset(vect'arr, 0, vect'cap)
   vect'len = 0
 /func
 

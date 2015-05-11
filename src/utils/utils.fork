@@ -10,6 +10,7 @@
 import base
 import err
 import lex
+import mem
 import text
 import utils
 
@@ -59,14 +60,14 @@ func charIsSym(ch uint8) bool
 
 func issueFree(issue ptr utils:Issue)
   if issue != null
-    base:free(issue'filename)
-    base:free(issue'message)
+    mem:free(issue'filename)
+    mem:free(issue'message)
   /if
 /func
 
 
 func issueNew(gravity uint8, where utils:Line, filename, message ptr uint8)  ptr utils:Issue
-  mut issue = cast<ptr utils:Issue>(base:zalloc(size(utils:Issue)))
+  mut issue = cast<ptr utils:Issue>(mem:zalloc(size(utils:Issue)))
 
   issue'gravity = gravity
   issue'where = where

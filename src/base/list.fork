@@ -9,6 +9,7 @@
 
 
 import base
+import mem
 
 
 func listSeekAhead(list ptr base:List, pos uintptr)
@@ -63,7 +64,7 @@ func listSeek(list ptr base:List, pos uintptr)
 
 
 func listPushint(list ptr base:List, value uintptr)
-  mut new = cast<ptr base:Lnode>(base:zalloc(size(base:Lnode)))
+  mut new = cast<ptr base:Lnode>(mem:zalloc(size(base:Lnode)))
 
   new'next = list'start
   if list'start != null
@@ -92,7 +93,7 @@ func listAppendint(list ptr base:List, value uintptr) intptr
     return 1
   /if
 
-  mut new = cast<ptr base:Lnode>(base:zalloc(size(base:Lnode)))
+  mut new = cast<ptr base:Lnode>(mem:zalloc(size(base:Lnode)))
 
   new'value = value
   new'prec = list'end
@@ -117,7 +118,7 @@ func listAddint(list ptr base:List, pos uintptr, value uintptr) intptr
 
   listSeek(list, pos)
 
-  mut new = cast<ptr base:Lnode>(base:zalloc(size(base:Lnode)))
+  mut new = cast<ptr base:Lnode>(mem:zalloc(size(base:Lnode)))
   mut prec = list'current'prec
 
   if prec != null
@@ -140,13 +141,13 @@ func listAddint(list ptr base:List, pos uintptr, value uintptr) intptr
 mut listAdd = cast<ptr func(list ptr base:List, index uintptr, item data) intptr>(ptr listAddint)
 
 func listInit(list ptr base:List) ptr base:List
-  base:memset(list, 0, size(base:List))
+  mem:memset(list, 0, size(base:List))
   return list
 /func
 
 
 func listNew() ptr base:List
-  return base:listInit(cast<ptr base:List>(base:alloc(size(base:List))))
+  return base:listInit(cast<ptr base:List>(mem:alloc(size(base:List))))
 /func
 
 
@@ -207,7 +208,7 @@ func listExtract(list ptr base:List, start uintptr, len intptr) ptr base:List
 func lnodeFree(lnode ptr base:Lnode)
   while lnode != null
     mut next = lnode'next
-    base:free(lnode)
+    mem:free(lnode)
     lnode = next
   /while
 /func
@@ -222,7 +223,7 @@ func listFree(list ptr base:List)
   if list != null
     base:listDeinit(list)
 
-    base:free(list)
+    mem:free(list)
   /if
 /func
 
@@ -231,7 +232,7 @@ func lnodeFreeAll(lnode ptr base:Lnode, freefunc ptr func(item data))
   while lnode != null
     mut next = lnode'next
     freefunc(cast<data>(lnode'value))
-    base:free(lnode)
+    mem:free(lnode)
     lnode = next
   /while
 /func
@@ -244,7 +245,7 @@ func listDeinitAll(list ptr base:List, freefunc ptr func(item data))
 
 func listFreeAll(list ptr base:List, freefunc ptr func(item data))
   base:listDeinitAll(list, freefunc)
-  base:free(list)
+  mem:free(list)
 /func
 
 
@@ -311,14 +312,14 @@ func listPopint(list ptr base:List) uintptr
   mut next = list'start'next
   mut ret = list'start'value
 
-  base:free(list'start)
+  mem:free(list'start)
 
   if next != null
     next'prec = null
   /if
 
   if list'start == list'end
-    base:memset(list, 0, size(base:List))
+    mem:memset(list, 0, size(base:List))
   else
     list'start = next
     list'len--
@@ -332,7 +333,7 @@ mut listPop = cast<ptr func(list ptr base:List) data>(ptr listPopint)
 
 func listPrune(list ptr base:List)
   lnodeFree(list'start)
-  base:memset(list, 0, size(base:List))
+  mem:memset(list, 0, size(base:List))
 /func
 
 
@@ -402,7 +403,7 @@ func listRemove(list ptr base:List, item uintptr, freefunc ptr func(item data)) 
     freefunc(cast<data>(list'current'value))
   /if
 
-  base:free(list'current)
+  mem:free(list'current)
 
   list'len--
 

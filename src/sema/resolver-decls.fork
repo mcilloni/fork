@@ -11,6 +11,7 @@
 import ast
 import base
 import ctx
+import mem
 import sema
 import text
 import utils
@@ -188,7 +189,7 @@ func registerDeclReal(rsv sema:Resolver,
 
               base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
 
-              base:free(msg)
+              mem:free(msg)
 
               return null
             /if
@@ -274,7 +275,7 @@ func resolveDeclType(rsv sema:Resolver,
   mut msg = text:strappend(name, " is not defined in current scope")
   base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, node'begin, rsv'root'fileName, msg))
 
-  base:free(msg)
+  mem:free(msg)
 
   return null
 /func
@@ -300,7 +301,7 @@ func registerDecl(rsv sema:Resolver,
 
     base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, declNode'begin, rsv'root'fileName, msg))
 
-    base:free(msg)
+    mem:free(msg)
 
     return null
   /if

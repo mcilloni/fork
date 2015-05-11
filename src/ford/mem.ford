@@ -7,4 +7,14 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 module mem
+
+
+# Memory functions
+decl alloc func(bytes uintptr) data
+decl free func(location data)
+decl memcpy func(dest data, src data, len uintptr) data
+decl memmove func(dest data, src data, len uintptr) data
+decl memset func(dest data, value uintptr, len uintptr) data
+decl zalloc func(bytes uintptr) data

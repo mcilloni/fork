@@ -7,9 +7,11 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 import ast
 import base
 import ctx
+import mem
 import sema
 import synt
 import text
@@ -31,12 +33,12 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
 
       mut ret = sema:semaParse(ctx, joinedPath, importAst)
 
-      base:free(joinedPath)
-      base:free(fordName)
+      mem:free(joinedPath)
+      mem:free(fordName)
       return ret
     /if
 
-    base:free(joinedPath)
+    mem:free(joinedPath)
 
     i++
   /while
@@ -54,8 +56,8 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
 
   base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, importName'begin, ctx'currentFile, glued))
 
-  base:free(fordName)
-  base:free(glued)
+  mem:free(fordName)
+  mem:free(glued)
 
   return errors
 /func
@@ -127,30 +129,30 @@ func contextGetImport(ctx ptr ctx:Context, name ptr uint8) ptr ast:PRoot
 func contextFree(ctx ptr ctx:Context)
   if ctx != null
     if ctx'imports != null
-      base:mapFreeSpec(ctx'imports, ptr base:free, cast<ptr func(item data)>(ptr ast:pnodeFree))
+      base:mapFreeSpec(ctx'imports, ptr mem:free, cast<ptr func(item data)>(ptr ast:pnodeFree))
     /if
 
     if ctx'fordPaths != null
-      base:listFreeAll(ctx'fordPaths, ptr base:free)
+      base:listFreeAll(ctx'fordPaths, ptr mem:free)
     /if
 
     base:mapFreeSpec(ctx'builtins, null, cast<ptr func(item data)>(ptr ast:typeFree))
 
-    base:free(ctx'currentFile)
-    base:free(ctx)
+    mem:free(ctx'currentFile)
+    mem:free(ctx)
   /if
 /func
 
 
 func contextSetCurrentFile(ctx ptr ctx:Context, filename ptr uint8)
-  base:free(ctx'currentFile)
+  mem:free(ctx'currentFile)
 
   ctx'currentFile = text:strclone(filename)
 /func
 
 
 func contextNew() ptr ctx:Context
-  mut ctx = cast<ptr ctx:Context>(base:zalloc(size(ctx:Context)))
+  mut ctx = cast<ptr ctx:Context>(mem:zalloc(size(ctx:Context)))
   ctx'imports = base:strmapNew()
 
   ctx'fordPaths = envExtractFordPaths()

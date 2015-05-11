@@ -11,6 +11,7 @@
 import ast
 import base
 import ctx
+import mem
 import sema
 import text
 import utils
@@ -34,7 +35,7 @@ func resolverCollect(rsv ptr sema:Resolver,
 
   mut ret = utils:strkvNew()
 
-  utils:kvSetFreeFuncs(ret, ptr base:free, null)
+  utils:kvSetFreeFuncs(ret, ptr mem:free, null)
 
   mut len = base:listLen(root'node'node'leaves)
   mut i uintptr = 0
@@ -61,7 +62,7 @@ func resolverCollect(rsv ptr sema:Resolver,
           mut str = text:csUnwrap(cs)
           base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
 
-          base:free(str)
+          mem:free(str)
 
           return null
 

@@ -9,6 +9,7 @@
 
 
 import base
+import mem
 import text
 
 
@@ -19,7 +20,7 @@ mut FREE_KEY uint8 = 1
 mut FREE_VALUE uint8 = 10
 
 func nodeNew(key data, value data, cmp base:comparer, freewhat uint8) ptr base:Mnode
-  mut ret = cast<ptr base:Mnode>(base:zalloc(size(base:Mnode)))
+  mut ret = cast<ptr base:Mnode>(mem:zalloc(size(base:Mnode)))
   ret'key = key
   ret'value = value
   ret'color = RED
@@ -103,7 +104,7 @@ func nodeFree(node ptr base:Mnode, freeKey ptr func(item data), freeVal ptr func
     /if
   /if
 
-  base:free(node)
+  mem:free(node)
 
 /func
 
@@ -227,7 +228,7 @@ func nodeMkpair(node ptr base:Mnode) ptr base:Pair
     return null
   /if
 
-  mut ret = cast<ptr base:Pair>(base:alloc(size(base:Pair)))
+  mut ret = cast<ptr base:Pair>(mem:alloc(size(base:Pair)))
   ret'key = node'key
   ret'value = node'value
   return ret
@@ -307,7 +308,7 @@ func mapInit(map ptr base:Map, cmp base:comparer) ptr base:Map
 
 
 func mapNew(cmp base:comparer) ptr base:Map
-  mut map = cast<ptr base:Map>(base:zalloc(size(base:Map)))
+  mut map = cast<ptr base:Map>(mem:zalloc(size(base:Map)))
 
   return base:mapInit(map, cmp)
 /func
@@ -377,11 +378,11 @@ func mapDeinitSpec(map ptr base:Map, freeKey ptr func(item data), freeVal ptr fu
   /if
 
   if freeKey == null
-    freeKey = ptr base:free
+    freeKey = ptr mem:free
   /if
 
   if freeVal == null
-    freeVal = ptr base:free
+    freeVal = ptr mem:free
   /if
 
   nodeFree(map'root, freeKey, freeVal)
@@ -390,7 +391,7 @@ func mapDeinitSpec(map ptr base:Map, freeKey ptr func(item data), freeVal ptr fu
 
 func mapFreeSpec(map ptr base:Map, freeKey ptr func(item data), freeVal ptr func(item data))
   base:mapDeinitSpec(map, freeKey, freeVal)
-  base:free(map)
+  mem:free(map)
 /func
 
 

@@ -9,10 +9,11 @@
 
 
 import base
+import mem
 
 
 func pairNew(first,second data) ptr base:Pair
-  mut pair = cast<ptr base:Pair>(base:zalloc(size(base:Pair)))
+  mut pair = cast<ptr base:Pair>(mem:zalloc(size(base:Pair)))
   pair'key = first
   pair'value = second
 
@@ -21,5 +22,5 @@ func pairNew(first,second data) ptr base:Pair
 
 
 func pairFree(pair ptr base:Pair)
-  base:free(pair)
+  mem:free(pair)
 /func
