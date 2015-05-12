@@ -56,7 +56,3 @@ decl listRemove func(list ptr List, item uintptr, freefunc ptr func(item data)) 
 decl listSeek func(list ptr List, pos uintptr)
 decl listSeekZero func(list ptr List)
 decl listShallowCopy func(list ptr List) ptr List
-
-
-# generical declarations
-decl abs func(num intptr) uintptr

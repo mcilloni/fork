@@ -8,9 +8,6 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-import base
-
-
 func abs(num intptr) uintptr
   return num < 0 => -num || num
 /func

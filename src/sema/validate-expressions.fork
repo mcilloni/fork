@@ -12,6 +12,7 @@ import ast
 import base
 import ctx
 import lex
+import math
 import mem
 import sema
 import synt
@@ -122,7 +123,7 @@ func assignLhsDump(cs ptr text:Charstash, pexpr ptr ast:PExpr)
 
 
 func intForVal(ctx ptr ctx:Context, value intptr) ptr ast:Type
-  mut aval = base:abs(value)
+  mut aval = math:abs(value)
 
   if aval < 2**7
     return ctx:contextMatchBuiltin(ctx, "int8")

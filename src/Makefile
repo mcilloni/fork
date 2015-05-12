@@ -29,6 +29,7 @@ all:
 	@ FORDPATHS="$(shell pwd)/ford/internal/:$(shell pwd)/ford/" $(FORKC_O) -o ../build/rt.o rt.fork
 
 	$(MAKE) -C c
+	$(MAKE) -C math
 	$(MAKE) -C err
 	$(MAKE) -C mem
 	$(MAKE) -C io
@@ -58,6 +59,7 @@ all:
 
 clean:
 	$(MAKE) -C c clean
+	$(MAKE) -C math clean
 	$(MAKE) -C err clean
 	$(MAKE) -C mem clean
 	$(MAKE) -C io clean
