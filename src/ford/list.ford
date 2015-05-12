@@ -1,8 +1,58 @@
 #  libfork, a base library for the Fork language
-#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
 #
 #  This Source Code Form is subject to the terms of the Mozilla Public
 #  License, v. 2.0. If a copy of the MPL was not distributed with this
 #  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module list
+
+
+# list structures
+alias Lnode struct(
+  prec, next ptr Lnode,
+  value uintptr
+)
+
+
+alias List struct(
+  start, end ptr Lnode,
+  len uintptr,
+
+  current ptr Lnode,
+  pos uintptr
+)
+
+
+# lists functions
+
+decl listAdd ptr func(list ptr List, index uintptr, item data) intptr
+decl listAddint func(list ptr List, index uintptr, item uintptr) intptr
+decl listAppend ptr func(list ptr List, item data) intptr
+decl listAppendint func(list ptr List, item uintptr) intptr
+decl listDeinit func(list ptr List)
+decl listDeinitAll func(list ptr List, freeFunc ptr func(item data))
+decl listExtract func(list ptr List, from uintptr, len intptr) ptr List
+decl listFree func(list ptr List)
+decl listFreeAll func(list ptr List, freeFunc ptr func(item data))
+decl listFreeContents func(list ptr List, freeFunc ptr func(item data))
+decl listGet ptr func(list ptr List, index uintptr) ptr data
+decl listGetint func(list ptr List, index uintptr) ptr uintptr
+decl listInit func(list ptr List) ptr List
+decl listInsert ptr func(list ptr List, index uintptr, item data) intptr
+decl listInsertint func(list ptr List, index uintptr, item uintptr) intptr
+decl listLen func(list ptr List) uintptr
+decl listNew func() ptr List
+decl listPop ptr func(list ptr List) data
+decl listPopint func(list ptr List) uintptr
+decl listPrint func(list ptr List)
+decl listPrune func(list ptr List)
+decl listPush ptr func(list ptr List, item data)
+decl listPushint func(list ptr List, item uintptr)
+decl listRemove func(list ptr List, item uintptr, freefunc ptr func(item data)) bool
+decl listSeek func(list ptr List, pos uintptr)
+decl listSeekZero func(list ptr List)
+decl listShallowCopy func(list ptr List) ptr List
