@@ -1,0 +1,141 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import mem
+import txt
+
+
+func strclone(orig ptr uint8) ptr uint8
+  if orig == null
+    return null
+  /if
+
+  mut len = txt:strlen(orig)
+  mut new = cast<ptr uint8>(mem:zalloc(len + 1))
+  txt:strncpy(new, orig, len)
+  return new
+/func
+
+
+func strequals(s1, s2 ptr uint8) bool
+  decl strcmp func(str1 ptr uint8, str2 ptr uint8) int32
+  if strcmp(s1,s2) == 0
+    return true
+  /if
+
+  return false
+/func
+
+
+func strreverse(str ptr uint8, len uintptr)
+  mut i uintptr = 0
+  mut end = len / 2
+
+
+while i < end
+    str[i] = str[i] ^ str[len - 1 - i]
+    str[len - 1 - i] = str[i] ^ str[len - 1 - i]
+    str[i] = str[i] ^ str[len - 1 - i]
+    i++
+  /while
+/func
+
+
+func numtostr(num uintptr, buf ptr uint8, len uintptr) ptr uint8
+  if len < 2
+    return null
+  /if
+
+  if num == 0
+    buf[0] = 48
+    buf[1] = 0
+    return buf
+  /if
+
+  mut i uintptr = 0
+  mut digit uintptr
+  while i < (len - 1) and num != 0
+    digit = num mod 10
+    num = num / 10
+    buf[i] = cast<uint8>(digit + 48) #position of 0 in ascii
+    i++
+  /while
+
+  strreverse(buf, i)
+  buf[i] = 0
+
+  return buf
+/func
+
+
+func strglue(strs ptr ptr uint8) ptr uint8
+  mut cs = txt:csNew(10)
+  while val strs != null
+    txt:csAppendStr(cs, val strs)
+    strs++
+  /while
+
+  return txt:csUnwrap(cs)
+/func
+
+
+func strappend(str1 ptr uint8, str2 ptr uint8) ptr uint8
+  mut len1 = txt:strlen(str1)
+  mut len2 = txt:strlen(str2)
+  mut ret = cast<ptr uint8>(mem:zalloc(len1 + len2 + 1))
+
+  mem:memmove(ret, str1, len1)
+  mem:memmove(ret + len1, str2, len2)
+  ret[len1 + len2] = 0
+
+  return ret
+/func
+
+
+func strtonum(str ptr uint8) intptr
+  mut ret uintptr = 0
+  mut sign int8 = 1
+  mut len = txt:strlen(str)
+
+  if len == 0
+    return 0
+  /if
+
+  len--
+
+  if val str == 45 and len > 1
+    sign = -1
+    str++
+  /if
+
+  while val str != 0
+    ret = ret + (val str - 48) * 10 ** len
+    str++
+    len--
+  /while
+
+  return cast<intptr>(ret * sign)
+/func
+
+
+func strcompare(s1 data, s2 data) int8
+  decl strcmp func(str1 data, str2 data) int8
+  mut comp = strcmp(s1, s2)
+
+  if comp > 0
+    return 1
+  else
+    if comp < 0
+      return -1
+    else
+      return 0
+    /if
+  /if
+/func
