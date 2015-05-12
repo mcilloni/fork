@@ -11,7 +11,6 @@ module synt
 
 import ast
 import lex
-import base
 import utils
 
 alias Parser struct(

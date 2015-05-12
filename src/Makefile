@@ -34,11 +34,11 @@ all:
 	$(MAKE) -C mem
 	$(MAKE) -C io
 	$(MAKE) -C file
-	$(MAKE) -C base
 	$(MAKE) -C text
 	$(MAKE) -C tty
 	$(MAKE) -C pair
 	$(MAKE) -C vect
+	$(MAKE) -C list
 	$(MAKE) -C map
 	$(MAKE) -C proc
 	$(MAKE) -C dyn
@@ -64,11 +64,11 @@ clean:
 	$(MAKE) -C mem clean
 	$(MAKE) -C io clean
 	$(MAKE) -C file clean
-	$(MAKE) -C base clean
 	$(MAKE) -C text clean
 	$(MAKE) -C tty clean
 	$(MAKE) -C pair clean
 	$(MAKE) -C vect clean
+	$(MAKE) -C list clean
 	$(MAKE) -C map clean
 	$(MAKE) -C proc clean
 	$(MAKE) -C dyn clean

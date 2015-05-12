@@ -9,7 +9,6 @@
 
 module lex
 
-import base
 import err
 import io
 import utils

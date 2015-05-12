@@ -9,9 +9,9 @@
 
 
 import ast
-import base
 import err
 import lex
+import list
 import mem
 import synt
 import text
@@ -143,12 +143,12 @@ func parserParseImport(ctx ptr synt:ParserContext) ptr ast:StringDef
 
 
 # parses the 'import' statements
-func parserParseImports(ctx ptr synt:ParserContext) ptr base:List
-  mut ret = base:listNew()
+func parserParseImports(ctx ptr synt:ParserContext) ptr list:List
+  mut ret = list:listNew()
   mut importLine ptr ast:StringDef
 
   while (importLine = parserParseImport(ctx)) != null
-    base:listAppend(ret, importLine)
+    list:listAppend(ret, importLine)
   /while
 
   return ret
@@ -193,16 +193,16 @@ func parserDiscardNewLine(ctx ptr synt:ParserContext)
   /if
 /func
 
-func parserParseIdList(ctx ptr synt:ParserContext) ptr base:List
+func parserParseIdList(ctx ptr synt:ParserContext) ptr list:List
   mut tok ptr lex:Token
-  mut ret = base:listNew()
+  mut ret = list:listNew()
   while true
     tok = expect(ctx, lex:ID)
     if tok == null
       break
     /if
 
-    base:listAppend(ret, text:strclone(cast<ptr uint8>(tok'value)))
+    list:listAppend(ret, text:strclone(cast<ptr uint8>(tok'value)))
     lex:tokenFree(tok)
 
     if ctx'next == null
@@ -218,29 +218,29 @@ func parserParseIdList(ctx ptr synt:ParserContext) ptr base:List
     synt:discardTok(ctx)
   /while
 
-  base:listFreeAll(ret, ptr mem:free)
+  list:listFreeAll(ret, ptr mem:free)
   return null
 /func
 
 
-func makeSymsAndInsertInList(syms ptr base:List, ids ptr base:List, type ptr ast:PType)
-  mut len = base:listLen(ids)
+func makeSymsAndInsertInList(syms ptr list:List, ids ptr list:List, type ptr ast:PType)
+  mut len = list:listLen(ids)
   mut i uintptr = 0
   mut elem ptr uint8
   mut sym ptr ast:PSymbol
 
   while i < len
-    elem = cast<ptr uint8>(val base:listGet(ids, i))
+    elem = cast<ptr uint8>(val list:listGet(ids, i))
     sym = ast:psymbolNew(elem, type)
-    base:listAppend(syms, sym)
+    list:listAppend(syms, sym)
     i++
   /while
 
-  base:listFree(ids)
+  list:listFree(ids)
 /func
 
 
-func parserParseStructBodyVars(ctx ptr synt:ParserContext, syms ptr base:List) bool
+func parserParseStructBodyVars(ctx ptr synt:ParserContext, syms ptr list:List) bool
 
   # allow multiline struct/function header declarations
   parserDiscardNewLine(ctx)
@@ -261,7 +261,7 @@ func parserParseStructBodyVars(ctx ptr synt:ParserContext, syms ptr base:List) b
 
   mut type = parserParseType(ctx)
   if type == null
-    base:listFreeAll(ids, ptr mem:free)
+    list:listFreeAll(ids, ptr mem:free)
     return false
   /if
 
@@ -271,12 +271,12 @@ func parserParseStructBodyVars(ctx ptr synt:ParserContext, syms ptr base:List) b
 /func
 
 
-func parserParseStructBody(ctx ptr synt:ParserContext, end ptr utils:Line) ptr base:List
+func parserParseStructBody(ctx ptr synt:ParserContext, end ptr utils:Line) ptr list:List
   if !expectDiscard(ctx, lex:OPAR)
     return null
   /if
 
-  mut strBody = base:listNew()
+  mut strBody = list:listNew()
 
   # each iteration parses a sequence of 'a,b,c,d type' or a full list (if this is a function header)
   while parserParseStructBodyVars(ctx, strBody)
@@ -288,19 +288,19 @@ func parserParseStructBody(ctx ptr synt:ParserContext, end ptr utils:Line) ptr b
     /if
 
     if !synt:expectDiscard(ctx, lex:COMMA)
-      base:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
+      list:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
       return null
     /if
   /while
 
   if theresError(ctx)
-    base:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
+    list:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
     return null
   /if
 
   mut endTok = synt:expect(ctx, lex:CPAR)
   if endTok == null
-    base:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
+    list:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
     return null
   /if
 

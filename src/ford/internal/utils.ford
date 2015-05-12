@@ -11,8 +11,8 @@
 module utils
 
 
-import base
 import err
+import list
 import pair
 import sort
 import text
@@ -54,7 +54,7 @@ decl decRef func(item data)
 
 
 alias FreePool struct(
-  ptrs ptr base:List,
+  ptrs ptr list:List,
   freeFunc ptr func(item data)
 )
 
@@ -66,7 +66,7 @@ decl fpZAlloc func(fp ptr FreePool, len uintptr) data
 
 
 alias KVList struct(
-    list base:List,
+    list list:List,
     cmp sort:comparator,
     freeKey,freeVal ptr func(item data)
 )
@@ -90,8 +90,8 @@ decl kvSetFreeFuncs func(kv ptr KVList, freeKey ptr func(item data), freeVal ptr
 decl strkvInit func(kv ptr KVList) ptr KVList
 decl strkvNew func() ptr KVList
 
-decl listContains func(list ptr base:List, value ptr uint8) bool
-decl listDumpHierarchyIntoCS func(list ptr base:List, cs ptr text:Charstash)
+decl listContains func(list ptr list:List, value ptr uint8) bool
+decl listDumpHierarchyIntoCS func(list ptr list:List, cs ptr text:Charstash)
 
 decl ISSUE_ERR uint8
 decl ISSUE_WARN uint8

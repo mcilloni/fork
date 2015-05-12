@@ -9,7 +9,6 @@
 
 
 import ast
-import base
 import proc
 import synt
 import tty

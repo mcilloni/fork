@@ -7,15 +7,16 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 import ast
-import base
 import ctx
+import list
 import sema
 import synt
 import utils
 
 
-func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr base:List
+func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr list:List
   if root'type != ast:PROOT
     return null
   /if
@@ -28,7 +29,7 @@ func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr base:List
 
   ctx:contextSetCurrentFile(ctx, proot'fileName)
 
-  if base:listLen(errors) != 0
+  if list:listLen(errors) != 0
     return errors
   /if
 
@@ -42,7 +43,7 @@ func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr base:List
 /func
 
 
-func semaParse(ctx ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr base:List
+func semaParse(ctx ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr list:List
   mut parser = synt:parserNew(fileName)
 
   val newRoot = synt:parserParse(parser)
@@ -52,8 +53,8 @@ func semaParse(ctx ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNod
   synt:parserFree(parser)
 
   if val newRoot == null
-    mut list = base:listNew()
-    base:listAppend(list, error)
+    mut list = list:listNew()
+    list:listAppend(list, error)
 
     return list
   /if

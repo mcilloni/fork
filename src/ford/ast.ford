@@ -10,8 +10,9 @@
 
 module ast
 
-import base
+
 import lex
+import list
 import map
 import text
 import utils
@@ -37,7 +38,7 @@ alias PTypeDescr struct (
   retType ptr PType,
   # if type is PTYPE_FUNC, this is the arguments list
   # if type is PTYPE_STRUCT, this is the fields list
-  arguments ptr base:List,
+  arguments ptr list:List,
   #if type is PTYPE_LOC, this is the number of items allocated
   length uintptr
 )
@@ -46,7 +47,7 @@ decl ptypeDump func(ptype ptr PType)
 decl ptypeNew func(name,moduleName ptr uint8, descr ptr PTypeDescr) ptr PType
 
 decl ptypeDescrDump func(ptype ptr PTypeDescr)
-decl ptypeDescrNew func(ptype uint16, retPType ptr PType, params ptr base:List) ptr PTypeDescr
+decl ptypeDescrNew func(ptype uint16, retPType ptr PType, params ptr list:List) ptr PTypeDescr
 decl ptypeDescrNewLoc func(innerPType ptr PType, length uintptr) ptr PTypeDescr
 
 alias PSymbol struct(
@@ -158,7 +159,7 @@ alias PNode struct(
   type uint16,
   value uintptr,
   parent ptr PNode,
-  leaves ptr base:List,
+  leaves ptr list:List,
   begin, end utils:Line,
   validated bool
 )
@@ -202,7 +203,7 @@ alias PRoot struct(
   node PBlock,
   moduleName ptr StringDef,
   fileName ptr uint8,
-  imports ptr base:List,
+  imports ptr list:List,
   aliases ptr Symtable,
   typePool ptr utils:FreePool,
   entryNode ptr PDecl
@@ -210,7 +211,7 @@ alias PRoot struct(
 
 decl isPRoot func(node ptr PNode) bool
 decl prootHasImported func(root ptr PRoot, name ptr uint8) bool
-decl prootNew func(modName ptr StringDef, imports ptr base:List, fileName ptr uint8) ptr PRoot
+decl prootNew func(modName ptr StringDef, imports ptr list:List, fileName ptr uint8) ptr PRoot
 
 alias PExpr struct(
   node PNode,

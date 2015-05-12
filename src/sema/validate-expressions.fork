@@ -9,9 +9,9 @@
 
 
 import ast
-import base
 import ctx
 import lex
+import list
 import math
 import mem
 import sema
@@ -82,7 +82,7 @@ func assignLhsDump(cs ptr text:Charstash, pexpr ptr ast:PExpr)
     return
   /if
 
-  mut left = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 0))
+  mut left = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
 
   if op == lex:VAL
     text:csAppendStr(cs, "'val ")
@@ -102,7 +102,7 @@ func assignLhsDump(cs ptr text:Charstash, pexpr ptr ast:PExpr)
     return
   /if
 
-  mut right = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 1))
+  mut right = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
 
   if op == lex:APOS or op == lex:COMMA
     text:csAppendStr(cs, "'")
@@ -288,7 +288,7 @@ func validateExprConst(rsv sema:Resolver,
 
 func validateExprCast(rsv sema:Resolver,
                       pexpr ptr ast:PExpr,
-                      recList,errors ptr base:List) ptr ast:Type
+                      recList,errors ptr list:List) ptr ast:Type
 
   mut ptype = cast<ptr ast:PType>(pexpr'node'value)
   pexpr'type = sema:resolveType(rsv, ptype, errors)
@@ -297,7 +297,7 @@ func validateExprCast(rsv sema:Resolver,
     return null
   /if
 
-  mut childExpr = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 0))
+  mut childExpr = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
   mut chType = sema:validateExprRecl(rsv, childExpr, recList, errors)
 
   if chType == null or !sema:typeIsCastable(rsv'ctx, cast<ptr ast:PNode>(pexpr), chType, pexpr'type)
@@ -310,7 +310,7 @@ func validateExprCast(rsv sema:Resolver,
 
     mut str = text:csUnwrap(cs)
 
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
     mem:free(str)
     return null
@@ -322,7 +322,7 @@ func validateExprCast(rsv sema:Resolver,
 
 func validateSizeExpr(rsv sema:Resolver,
                       pexpr ptr ast:PExpr,
-                      errors ptr base:List) ptr ast:Type
+                      errors ptr list:List) ptr ast:Type
 
   mut ptype = cast<ptr ast:PType>(pexpr'node'value)
 
@@ -333,7 +333,7 @@ func validateSizeExpr(rsv sema:Resolver,
 
   if sizeType'type == ast:TYPE_FUNC
 
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "invalid application of 'size' to a function type"))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "invalid application of 'size' to a function type"))
     return null
   /if
 
@@ -344,12 +344,12 @@ func validateSizeExpr(rsv sema:Resolver,
 decl resolveDeclType func(rsv sema:Resolver,
                           name ptr uint8,
                           node ptr ast:PNode,
-                          recList,errors ptr base:List) ptr ast:Type
+                          recList,errors ptr list:List) ptr ast:Type
 
 
 func validateExprId(rsv sema:Resolver,
                     pexpr ptr ast:PExpr,
-                    recList,errors ptr base:List) ptr ast:Type
+                    recList,errors ptr list:List) ptr ast:Type
 
   mut name = cast<ptr uint8>(pexpr'node'value)
   mut type = sema:findSym(cast<ptr ast:PNode>(pexpr), name)
@@ -364,7 +364,7 @@ func validateExprId(rsv sema:Resolver,
 
     mut str = text:csUnwrap(cs)
 
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
     mem:free(str)
 
@@ -383,7 +383,7 @@ func validateExprId(rsv sema:Resolver,
 func validateBoolExpr(rsv sema:Resolver,
                       pexpr ptr ast:PExpr,
                       ltype,rtype ptr ast:Type,
-                      recList,errors ptr base:List) ptr ast:Type
+                      recList,errors ptr list:List) ptr ast:Type
 
   mut op = pexpr'opType
 
@@ -399,7 +399,7 @@ func validateBoolExpr(rsv sema:Resolver,
 
     mut str = text:csUnwrap(cs)
 
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
     mem:free(str)
 
@@ -413,7 +413,7 @@ func validateBoolExpr(rsv sema:Resolver,
 func validateArithPtrExpr(rsv sema:Resolver,
                           pexpr ptr ast:PExpr,
                           ltype,rtype ptr ast:Type,
-                          recList,errors ptr base:List) ptr ast:Type
+                          recList,errors ptr list:List) ptr ast:Type
 
   if !ttypeOpCanDoPtrArith(pexpr'opType)
     mut cs = text:csNew(20)
@@ -424,7 +424,7 @@ func validateArithPtrExpr(rsv sema:Resolver,
 
     mut str = text:csUnwrap(cs)
 
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
     mem:free(str)
 
@@ -444,7 +444,7 @@ func validateArithPtrExpr(rsv sema:Resolver,
 
         mut str = text:csUnwrap(cs)
 
-        base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+        list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
         mem:free(str)
 
@@ -453,7 +453,7 @@ func validateArithPtrExpr(rsv sema:Resolver,
 
       return ctx:contextMatchBuiltin(rsv'ctx, "intptr")
     else
-      base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "only difference between two pointers can be allowed"))
+      list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "only difference between two pointers can be allowed"))
       return null
     /if
   /if
@@ -468,12 +468,12 @@ func validateArithPtrExpr(rsv sema:Resolver,
 func validateArithExpr(rsv sema:Resolver,
                        pexpr ptr ast:PExpr,
                        ltype,rtype ptr ast:Type,
-                       recList,errors ptr base:List) ptr ast:Type
+                       recList,errors ptr list:List) ptr ast:Type
 
   mut op = pexpr'opType
 
   if !(ast:typeIsInt(ltype) or ast:typeIsPtr(ltype)) or !(ast:typeIsPtr(rtype) or ast:typeIsInt(rtype))
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "arithmetic operations can only involve pointers and integers"))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "arithmetic operations can only involve pointers and integers"))
 
     return null
   /if
@@ -492,7 +492,7 @@ func validateArithExpr(rsv sema:Resolver,
 func validateEqDiffExpr(rsv sema:Resolver,
                         pexpr ptr ast:PExpr,
                         ltype,rtype ptr ast:Type,
-                        errors ptr base:List) ptr ast:Type
+                        errors ptr list:List) ptr ast:Type
 
   mut success = true
 
@@ -509,7 +509,7 @@ func validateEqDiffExpr(rsv sema:Resolver,
   /if
 
   if !success
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "cannot evaluate the equivalence of two incompatible types"))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "cannot evaluate the equivalence of two incompatible types"))
   /if
 
   return success => ctx:contextMatchBuiltin(rsv'ctx, "bool") || null
@@ -518,18 +518,18 @@ func validateEqDiffExpr(rsv sema:Resolver,
 
 func validateModuleAccessExpr(rsv sema:Resolver,
                               pexpr ptr ast:PExpr,
-                              errors ptr base:List) ptr ast:Type
+                              errors ptr list:List) ptr ast:Type
 
-  mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val base:listGet(pexpr'node'leaves, 0))'value)
+  mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val list:listGet(pexpr'node'leaves, 0))'value)
   if !ast:prootHasImported(rsv'root, modName)
     mut msg = text:strappend(modName, " has never been imported")
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
     mem:free(msg)
 
     return null
   /if
 
-  mut symName = cast<ptr uint8>(cast<ptr ast:PNode>(val base:listGet(pexpr'node'leaves, 1))'value)
+  mut symName = cast<ptr uint8>(cast<ptr ast:PNode>(val list:listGet(pexpr'node'leaves, 1))'value)
   mut type = sema:findSymModule(rsv'ctx, modName, symName)
 
   if type == null
@@ -542,7 +542,7 @@ func validateModuleAccessExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -571,7 +571,7 @@ func resolveRecType(rsv sema:Resolver,
 func validateStructureAccessExpr(rsv sema:Resolver,
                                  pexpr ptr ast:PExpr,
                                  ltype ptr ast:Type,
-                                 errors ptr base:List) ptr ast:Type
+                                 errors ptr list:List) ptr ast:Type
 
   mut accType = ltype
 
@@ -587,14 +587,14 @@ func validateStructureAccessExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
     return null
   /if
 
-  mut field = cast<ptr uint8>(cast<ptr ast:PNode>(val base:listGet(pexpr'node'leaves, 1))'value)
+  mut field = cast<ptr uint8>(cast<ptr ast:PNode>(val list:listGet(pexpr'node'leaves, 1))'value)
 
   mut type ptr ast:Type = null
 
@@ -607,7 +607,7 @@ func validateStructureAccessExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -621,14 +621,14 @@ func validateStructureAccessExpr(rsv sema:Resolver,
 func validateArrayAccess(rsv sema:Resolver,
                          pexpr ptr ast:PExpr,
                          ltype,rtype ptr ast:Type,
-                         errors ptr base:List) ptr ast:Type
+                         errors ptr list:List) ptr ast:Type
 
   if ltype'type != ast:TYPE_PTR and !ast:typeIsLoc(ltype)
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "array access is allowed only for pointers and locations"))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "array access is allowed only for pointers and locations"))
   /if
 
   if !ast:typeIsInt(rtype)
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "an expression of integer type is required for array access"))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "an expression of integer type is required for array access"))
   /if
 
   # because of first-step bug with recursive types
@@ -644,7 +644,7 @@ func normalizeEmptyType(ctx ptr ctx:Context, type ptr ast:Type) ptr ast:Type
 func validateFunctionCallExpr(rsv sema:Resolver,
                               pexpr ptr ast:PExpr,
                               ltype ptr ast:Type,
-                              recList,errors ptr base:List) ptr ast:Type
+                              recList,errors ptr list:List) ptr ast:Type
 
   mut accType = ltype
 
@@ -653,7 +653,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
   /if
 
   if !ast:typeIsFunc(accType)
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression is neither a function nor a pointer to a function"))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression is neither a function nor a pointer to a function"))
 
     return null
   /if
@@ -661,7 +661,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
   mut expParams = accType'members
   mut expLen = utils:kvLen(expParams)
 
-  mut argsLen = base:listLen(pexpr'node'leaves)
+  mut argsLen = list:listLen(pexpr'node'leaves)
 
   if argsLen != expLen + 1
     mut cs = text:csNew(20)
@@ -688,7 +688,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -699,7 +699,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
   mut i uintptr = 0
 
   while i < expLen
-    mut gotParam = cast<ptr ast:PExpr>(val base:listGet(scope'leaves, i + 1))
+    mut gotParam = cast<ptr ast:PExpr>(val list:listGet(scope'leaves, i + 1))
     mut expPair = utils:kvGetAt(expParams, i)
 
     mut expType = cast<ptr ast:Type>(expPair'value)
@@ -725,7 +725,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
 
       mut msg = text:csUnwrap(cs)
 
-      base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+      list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
       mem:free(msg)
 
@@ -742,10 +742,10 @@ func validateFunctionCallExpr(rsv sema:Resolver,
 func validateAssignExpr(rsv sema:Resolver,
                         pexpr,left ptr ast:PExpr,
                         ltype,rtype ptr ast:Type,
-                        errors ptr base:List) ptr ast:Type
+                        errors ptr list:List) ptr ast:Type
 
   if !ttypeCanBeAssignTarget(left'opType, ltype)
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, left'node'begin, rsv'root'fileName, "expression cannot be target of assignment"))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, left'node'begin, rsv'root'fileName, "expression cannot be target of assignment"))
     return null
   /if
 
@@ -760,7 +760,7 @@ func validateAssignExpr(rsv sema:Resolver,
 
     mut str = text:csUnwrap(cs)
 
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
     mem:free(str)
 
@@ -773,7 +773,7 @@ func validateAssignExpr(rsv sema:Resolver,
 
 func validateBinaryExpr(rsv sema:Resolver,
                         pexpr ptr ast:PExpr,
-                        recList,errors ptr base:List) ptr ast:Type
+                        recList,errors ptr list:List) ptr ast:Type
 
   mut op = pexpr'opType
 
@@ -784,7 +784,7 @@ func validateBinaryExpr(rsv sema:Resolver,
     return validateModuleAccessExpr(rsv, pexpr, errors)
   /if
 
-  mut left = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 0))
+  mut left = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
   mut ltype = sema:validateExprRecl(rsv, left, recList, errors)
 
   if ltype == null
@@ -801,7 +801,7 @@ func validateBinaryExpr(rsv sema:Resolver,
     return validateFunctionCallExpr(rsv, pexpr, ltype, recList, errors)
   /if
 
-  mut right = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 1))
+  mut right = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
   mut rtype = sema:validateExprRecl(rsv, right, recList, errors)
 
   if rtype == null
@@ -832,10 +832,10 @@ func validateBinaryExpr(rsv sema:Resolver,
 func validateNotExpr(rsv sema:Resolver,
                      pexpr ptr ast:PExpr,
                      atype ptr ast:Type,
-                     errors ptr base:List) ptr ast:Type
+                     errors ptr list:List) ptr ast:Type
 
   if !ast:typeIsBool(atype)
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression must be boolean"))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression must be boolean"))
 
     return null
   /if
@@ -848,7 +848,7 @@ func validateNotExpr(rsv sema:Resolver,
 func validateValExpr(rsv sema:Resolver,
                      pexpr ptr ast:PExpr,
                      atype ptr ast:Type,
-                     errors ptr base:List) ptr ast:Type
+                     errors ptr list:List) ptr ast:Type
 
   if atype'type != ast:TYPE_PTR
     mut cs = text:csNew(20)
@@ -858,7 +858,7 @@ func validateValExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -872,10 +872,10 @@ func validateValExpr(rsv sema:Resolver,
 func validatePtrExpr(rsv sema:Resolver,
                      pexpr ptr ast:PExpr,
                      atype ptr ast:Type,
-                     errors ptr base:List) ptr ast:Type
+                     errors ptr list:List) ptr ast:Type
 
   if ast:typeIsNull(atype)
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "can't extract the address of null"))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "can't extract the address of null"))
 
     return null
   /if
@@ -887,7 +887,7 @@ func validatePtrExpr(rsv sema:Resolver,
 func validateUMinusExpr(rsv sema:Resolver,
                         pexpr ptr ast:PExpr,
                         atype ptr ast:Type,
-                        errors ptr base:List) ptr ast:Type
+                        errors ptr list:List) ptr ast:Type
 
   if !ast:typeIsInt(atype)
     mut cs = text:csNew(20)
@@ -897,7 +897,7 @@ func validateUMinusExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -912,7 +912,7 @@ func validateUMinusExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -926,7 +926,7 @@ func validateUMinusExpr(rsv sema:Resolver,
 func validateIncDecExpr(rsv sema:Resolver,
                         pexpr,atarget ptr ast:PExpr,
                         atype ptr ast:Type,
-                        errors ptr base:List) ptr ast:Type
+                        errors ptr list:List) ptr ast:Type
 
   if !ast:typeIsInt(atype) and !ast:typeIsPtr(atype)
     mut cs = text:csNew(20)
@@ -936,7 +936,7 @@ func validateIncDecExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -944,7 +944,7 @@ func validateIncDecExpr(rsv sema:Resolver,
   /if
 
   if !ttypeCanBeAssignTarget(atarget'opType, atype)
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, atarget'node'begin, rsv'root'fileName, "expression is not assignable"))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, atarget'node'begin, rsv'root'fileName, "expression is not assignable"))
 
     return null
   /if
@@ -955,11 +955,11 @@ func validateIncDecExpr(rsv sema:Resolver,
 
 func validateUnaryExpr(rsv sema:Resolver,
                        pexpr ptr ast:PExpr,
-                       recList, errors ptr base:List) ptr ast:Type
+                       recList, errors ptr list:List) ptr ast:Type
 
   mut op = pexpr'opType
 
-  mut arg = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 0))
+  mut arg = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
   mut atype = sema:validateExprRecl(rsv, arg, recList, errors)
 
   if op == lex:NOT
@@ -986,15 +986,15 @@ func validateUnaryExpr(rsv sema:Resolver,
 
 func validateTernaryExpr(rsv sema:Resolver,
                          pexpr ptr ast:PExpr,
-                         recList, errors ptr base:List) ptr ast:Type
+                         recList, errors ptr list:List) ptr ast:Type
 
-  mut condition = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 0))
+  mut condition = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
   mut condType = sema:validateExprRecl(rsv, condition, recList, errors)
 
-  mut left = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 1))
+  mut left = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
   mut leftType = sema:validateExprRecl(rsv, left, recList, errors)
 
-  mut right = cast<ptr ast:PExpr>(val base:listGet(pexpr'node'leaves, 1))
+  mut right = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
   mut rightType = sema:validateExprRecl(rsv, right, recList, errors)
 
   if condType == null or leftType == null or rightType == null
@@ -1002,7 +1002,7 @@ func validateTernaryExpr(rsv sema:Resolver,
   /if
 
   if !ast:typeIsBool(condType)
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "non boolean ternary condition"))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "non boolean ternary condition"))
 
     return null
   /if
@@ -1022,7 +1022,7 @@ func validateTernaryExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -1052,7 +1052,7 @@ func validateTernaryExpr(rsv sema:Resolver,
 
 func validateExprRecl(rsv sema:Resolver,
                       pexpr ptr ast:PExpr,
-                      recList,errors ptr base:List) ptr ast:Type
+                      recList,errors ptr list:List) ptr ast:Type
 
 
   if pexpr'node'validated
@@ -1098,7 +1098,7 @@ func validateExprRecl(rsv sema:Resolver,
 
 func validateExpr(rsv sema:Resolver,
                   pexpr ptr ast:PExpr,
-                  errors ptr base:List) ptr ast:Type
+                  errors ptr list:List) ptr ast:Type
 
   return validateExprRecl(rsv, pexpr, null, errors)
 /func

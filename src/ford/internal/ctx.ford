@@ -12,12 +12,12 @@ module ctx
 
 
 import ast
-import base
+import list
 import map
 
 
 alias Context struct (
-  fordPaths ptr base:List,
+  fordPaths ptr list:List,
   imports ptr map:Map,
   currentFile ptr uint8,
   builtins ptr map:Map
@@ -25,8 +25,8 @@ alias Context struct (
 
 decl contextGetImport func(ctx ptr Context, name ptr uint8) ptr ast:PRoot
 decl contextFree func(ctx ptr Context)
-decl contextImport func(ctx ptr Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr base:List
-decl contextImportAll func(ctx ptr Context, imports ptr base:List) ptr base:List
+decl contextImport func(ctx ptr Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr list:List
+decl contextImportAll func(ctx ptr Context, imports ptr list:List) ptr list:List
 decl contextMatchBuiltin func(ctx ptr Context, name ptr uint8) ptr ast:Type
 decl contextNew func() ptr Context
 decl contextSetCurrentFile func(ctx ptr Context, filename ptr uint8)

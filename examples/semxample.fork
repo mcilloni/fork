@@ -9,8 +9,8 @@
 
 
 import ast
-import base
 import ctx
+import list
 import map
 import mem
 import pair
@@ -33,20 +33,20 @@ entry
   mut ast ptr ast:PNode
   mut errors = sema:semaParse(ctx, argv'args[0], ptr ast)
 
-  mut errLen = base:listLen(errors)
+  mut errLen = list:listLen(errors)
 
   if errLen > 0
     mut i uintptr = 0
 
     while i < errLen
-      mut issue = cast<ptr utils:Issue>(val base:listGet(errors, i))
+      mut issue = cast<ptr utils:Issue>(val list:listGet(errors, i))
 
       utils:issueWriteOut(issue, ptr tty:out)
 
       i++
     /while
 
-    base:listFree(errors)
+    list:listFree(errors)
     proc:exit(1)
   /if
 

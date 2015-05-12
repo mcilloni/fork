@@ -7,9 +7,10 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 import ast
-import base
 import ctx
+import list
 import proc
 import sema
 import tty
@@ -19,7 +20,7 @@ import utils
 # This function validates a single declaration.
 # The resolver is used to resolve symbols and aliases; if they are in the global
 # scope, they may be unresolved yet, and are then verified.
-func validatePDecl(rsv sema:Resolver, pdecl ptr ast:PDecl, errors ptr base:List) bool
+func validatePDecl(rsv sema:Resolver, pdecl ptr ast:PDecl, errors ptr list:List) bool
   mut ntype = pdecl'node'type
 
   if ntype == ast:PDECL or ntype == ast:PMUT or ntype == ast:PFUNCTION or ntype == ast:PENTRY
@@ -48,7 +49,7 @@ func validatePDecl(rsv sema:Resolver, pdecl ptr ast:PDecl, errors ptr base:List)
 # If not found, a symbol is looked after and verified out of order, allowing
 # complete visibility of the global scope without any issue with the declaration
 # order of variables, aliases and functions.
-func semaValidateAstRoot(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr base:List) bool
+func semaValidateAstRoot(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr list:List) bool
   if root'node'node'validated
     return true
   /if

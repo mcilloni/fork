@@ -9,9 +9,9 @@
 
 
 import ast
-import base
 import ctx
 import file
+import list
 import map
 import mem
 import proc
@@ -21,15 +21,15 @@ import text
 import utils
 
 
-func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr ptr ast:PNode) ptr base:List
+func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr ptr ast:PNode) ptr list:List
   mut fordName = text:strappend(importName'name, ".ford")
 
-  mut len = base:listLen(ctx'fordPaths)
+  mut len = list:listLen(ctx'fordPaths)
 
   mut i uintptr = 0
 
   while i < len
-    mut path = cast<ptr uint8>(val base:listGet(ctx'fordPaths, i))
+    mut path = cast<ptr uint8>(val list:listGet(ctx'fordPaths, i))
     mut joinedPath = file:pathJoin(path, fordName)
 
     if file:pathExists(joinedPath)
@@ -46,7 +46,7 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
     i++
   /while
 
-  mut errors = base:listNew()
+  mut errors = list:listNew()
 
   mut toGlue [4] ptr uint8
 
@@ -57,7 +57,7 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
 
   mut glued = text:strglue(ptr toGlue[0])
 
-  base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, importName'begin, ctx'currentFile, glued))
+  list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, importName'begin, ctx'currentFile, glued))
 
   mem:free(fordName)
   mem:free(glued)
@@ -66,44 +66,44 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
 /func
 
 
-func contextImport(ctx ptr ctx:Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr base:List
+func contextImport(ctx ptr ctx:Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr list:List
 
   if !map:mapGet(ctx'imports, importName, value)
     mut errors = findImport(ctx, importName, value)
-    if base:listLen(errors) == 0
+    if list:listLen(errors) == 0
       map:mapPut(ctx'imports, text:strclone(importName'name), val value, map:FREE_KEY | map:FREE_VALUE)
     /if
 
     return errors
   else
-    return base:listNew()
+    return list:listNew()
   /if
 
 /func
 
 
-func contextImportAll(ctx ptr ctx:Context, imports ptr base:List) ptr base:List
-  mut len = base:listLen(imports)
+func contextImportAll(ctx ptr ctx:Context, imports ptr list:List) ptr list:List
+  mut len = list:listLen(imports)
   mut i uintptr = 0
 
   while i < len
     mut value ptr ast:PNode
-    mut importName = cast<ptr ast:StringDef>(val base:listGet(imports, i))
+    mut importName = cast<ptr ast:StringDef>(val list:listGet(imports, i))
     mut errs = contextImport(ctx, importName, ptr value)
 
-    if base:listLen(errs) != 0
+    if list:listLen(errs) != 0
       return errs
     /if
 
     i++
   /while
 
-  return base:listNew()
+  return list:listNew()
 /func
 
 
-func envExtractFordPaths() ptr base:List
-  mut list = base:listNew()
+func envExtractFordPaths() ptr list:List
+  mut list = list:listNew()
 
   mut paths = proc:getenv("FORDPATHS")
   if paths != null
@@ -111,7 +111,7 @@ func envExtractFordPaths() ptr base:List
     mut path ptr uint8
 
     while (path = text:tokenizerNext(tkz)) != null
-      base:listAppend(list, path)
+      list:listAppend(list, path)
     /while
 
   /if
@@ -136,7 +136,7 @@ func contextFree(ctx ptr ctx:Context)
     /if
 
     if ctx'fordPaths != null
-      base:listFreeAll(ctx'fordPaths, ptr mem:free)
+      list:listFreeAll(ctx'fordPaths, ptr mem:free)
     /if
 
     map:mapFreeSpec(ctx'builtins, null, cast<ptr func(item data)>(ptr ast:typeFree))

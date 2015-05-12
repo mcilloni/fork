@@ -16,7 +16,7 @@
 # 3. it's cheap to iterate on it.
 
 
-import base
+import list
 import mem
 import pair
 import sort
@@ -52,14 +52,14 @@ decl kvFreeContents func(kv ptr utils:KVList)
 
 func kvDeinit(kv ptr utils:KVList)
   kvFreeContents(kv)
-  base:listDeinitAll(ptr kv'list, ptr pair:pairFree)
+  list:listDeinitAll(ptr kv'list, ptr pair:pairFree)
 /func
 
 
 func kvInit(kv ptr utils:KVList, cmp sort:comparator) ptr utils:KVList
   mem:memset(kv, 0, size(utils:KVList))
 
-  base:listInit(ptr kv'list)
+  list:listInit(ptr kv'list)
   kv'cmp = cmp
 
   return kv
@@ -72,7 +72,7 @@ func kvNew(cmp sort:comparator) ptr utils:KVList
 
 
 func kvFirst(kv ptr utils:KVList) ptr pair:Pair
-  return base:listLen(ptr kv'list) > 0 => cast<ptr pair:Pair>(val base:listGet(ptr kv'list, 0)) || null
+  return list:listLen(ptr kv'list) > 0 => cast<ptr pair:Pair>(val list:listGet(ptr kv'list, 0)) || null
 /func
 
 
@@ -113,7 +113,7 @@ func kvGet(kv ptr utils:KVList, key data, value ptr data) bool
 
 
 func kvGetAt(kv ptr utils:KVList, index uintptr) ptr pair:Pair
-  mut ret = base:listGet(ptr kv'list, index)
+  mut ret = list:listGet(ptr kv'list, index)
   return ret != null => cast<ptr pair:Pair>(val ret) || null
 /func
 
@@ -153,7 +153,7 @@ func kvGetPos(kv ptr utils:KVList, key data, value ptr data) intptr
 
 
 func kvLen(kv ptr utils:KVList) uintptr
-  return base:listLen(ptr kv'list)
+  return list:listLen(ptr kv'list)
 /func
 
 
@@ -192,7 +192,7 @@ func kvPut(kv ptr utils:KVList, key data, value data)
   mut pos = kvGetPairAndPos(kv, key, ptr pair)
 
   if pos < 0
-    base:listAppend(ptr kv'list, pair:pairNew(key, value))
+    list:listAppend(ptr kv'list, pair:pairNew(key, value))
   else
     kvFreePairContents(kv, pair)
 
@@ -210,7 +210,7 @@ func kvRemove(kv ptr utils:KVList, key data) bool
   if pos >= 0
     kvFreePairContents(kv, pair)
 
-    base:listRemove(ptr kv'list, pos, ptr pair:pairFree)
+    list:listRemove(ptr kv'list, pos, ptr pair:pairFree)
 
     return true
   /if

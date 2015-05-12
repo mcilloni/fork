@@ -9,8 +9,8 @@
 
 
 import ast
-import base
 import ctx
+import list
 import mem
 import proc
 import sema
@@ -28,7 +28,7 @@ func resolverDeinit(rsv sema:Resolver)
 func resolverCollect(rsv ptr sema:Resolver,
                      ctx ptr ctx:Context,
                      root ptr ast:PRoot,
-                     errors ptr base:List) ptr utils:KVList
+                     errors ptr list:List) ptr utils:KVList
 
   rsv'aliases = utils:strkvNew()
   rsv'decls = utils:strkvNew()
@@ -39,12 +39,12 @@ func resolverCollect(rsv ptr sema:Resolver,
 
   utils:kvSetFreeFuncs(ret, ptr mem:free, null)
 
-  mut len = base:listLen(root'node'node'leaves)
+  mut len = list:listLen(root'node'node'leaves)
   mut i uintptr = 0
   mut entryNode ptr ast:PDecl = null
 
   while i < len
-    mut pdecl = cast<ptr ast:PDecl>(val base:listGet(root'node'node'leaves, i))
+    mut pdecl = cast<ptr ast:PDecl>(val list:listGet(root'node'node'leaves, i))
     mut ntype = pdecl'node'type
     mut name = pdecl'sym'name
     mut kv ptr utils:KVList = null
@@ -62,7 +62,7 @@ func resolverCollect(rsv ptr sema:Resolver,
           text:csAppendStr(cs, " defined twice")
 
           mut str = text:csUnwrap(cs)
-          base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
+          list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
 
           mem:free(str)
 
@@ -90,7 +90,7 @@ func resolverCollect(rsv ptr sema:Resolver,
           text:csAppendStr(cs, name)
           text:csAppendStr(cs, " is already defined")
 
-          base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, text:csUnwrap(cs)))
+          list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, text:csUnwrap(cs)))
 
           return null
         /if
@@ -102,7 +102,7 @@ func resolverCollect(rsv ptr sema:Resolver,
           if entryNode == null
             entryNode = pdecl
           else
-            base:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, "entry declared twice in same file"))
+            list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, "entry declared twice in same file"))
             resolverDeinit(val rsv)
 
             return null

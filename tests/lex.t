@@ -5,9 +5,6 @@ Checks lex functionality.
   an identifier: ast
   a newline
   import
-  an identifier: base
-  a newline
-  import
   an identifier: proc
   a newline
   import

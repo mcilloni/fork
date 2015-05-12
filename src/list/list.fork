@@ -8,12 +8,12 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-import base
+import list
 import mem
 import tty
 
 
-func listSeekAhead(list ptr base:List, pos uintptr)
+func listSeekAhead(list ptr list:List, pos uintptr)
 
   if (list'current == null) or (pos == 0)
     list'current = list'start
@@ -28,7 +28,7 @@ func listSeekAhead(list ptr base:List, pos uintptr)
 /func
 
 
-func listSeekBehind(list ptr base:List, pos uintptr)
+func listSeekBehind(list ptr list:List, pos uintptr)
 
   if (list'current == null) or ((list'len - 1) == pos)
     list'current = list'end
@@ -43,15 +43,15 @@ func listSeekBehind(list ptr base:List, pos uintptr)
 /func
 
 
-func listSeekZero(list ptr base:List)
+func listSeekZero(list ptr list:List)
   list'current = list'start
   list'pos = 0
 /func
 
 
-func listSeek(list ptr base:List, pos uintptr)
+func listSeek(list ptr list:List, pos uintptr)
   if (list'current == null) and (pos == 0)
-     base:listSeekZero(list)
+     list:listSeekZero(list)
   /if
 
   if pos > list'pos
@@ -64,8 +64,8 @@ func listSeek(list ptr base:List, pos uintptr)
 /func
 
 
-func listPushint(list ptr base:List, value uintptr)
-  mut new = cast<ptr base:Lnode>(mem:zalloc(size(base:Lnode)))
+func listPushint(list ptr list:List, value uintptr)
+  mut new = cast<ptr list:Lnode>(mem:zalloc(size(list:Lnode)))
 
   new'next = list'start
   if list'start != null
@@ -86,15 +86,15 @@ func listPushint(list ptr base:List, value uintptr)
 /func
 
 
-mut listPush = cast<ptr func(list ptr base:List, item data)>(ptr listPushint)
+mut listPush = cast<ptr func(list ptr list:List, item data)>(ptr listPushint)
 
-func listAppendint(list ptr base:List, value uintptr) intptr
+func listAppendint(list ptr list:List, value uintptr) intptr
   if list'start == null
     listPushint(list, value)
     return 1
   /if
 
-  mut new = cast<ptr base:Lnode>(mem:zalloc(size(base:Lnode)))
+  mut new = cast<ptr list:Lnode>(mem:zalloc(size(list:Lnode)))
 
   new'value = value
   new'prec = list'end
@@ -106,9 +106,9 @@ func listAppendint(list ptr base:List, value uintptr) intptr
 /func
 
 
-mut listAppend = cast<ptr func(list ptr base:List, item data) intptr>(ptr listAppendint)
+mut listAppend = cast<ptr func(list ptr list:List, item data) intptr>(ptr listAppendint)
 
-func listAddint(list ptr base:List, pos uintptr, value uintptr) intptr
+func listAddint(list ptr list:List, pos uintptr, value uintptr) intptr
   if pos > list'len
     return -1
   /if
@@ -119,7 +119,7 @@ func listAddint(list ptr base:List, pos uintptr, value uintptr) intptr
 
   listSeek(list, pos)
 
-  mut new = cast<ptr base:Lnode>(mem:zalloc(size(base:Lnode)))
+  mut new = cast<ptr list:Lnode>(mem:zalloc(size(list:Lnode)))
   mut prec = list'current'prec
 
   if prec != null
@@ -131,7 +131,7 @@ func listAddint(list ptr base:List, pos uintptr, value uintptr) intptr
   new'next = list'current
   list'current'prec = new
 
-  list'current = cast<ptr base:Lnode>(list'pos = 0)
+  list'current = cast<ptr list:Lnode>(list'pos = 0)
 
   list'len++
 
@@ -139,20 +139,20 @@ func listAddint(list ptr base:List, pos uintptr, value uintptr) intptr
 /func
 
 
-mut listAdd = cast<ptr func(list ptr base:List, index uintptr, item data) intptr>(ptr listAddint)
+mut listAdd = cast<ptr func(list ptr list:List, index uintptr, item data) intptr>(ptr listAddint)
 
-func listInit(list ptr base:List) ptr base:List
-  mem:memset(list, 0, size(base:List))
+func listInit(list ptr list:List) ptr list:List
+  mem:memset(list, 0, size(list:List))
   return list
 /func
 
 
-func listNew() ptr base:List
-  return base:listInit(cast<ptr base:List>(mem:alloc(size(base:List))))
+func listNew() ptr list:List
+  return list:listInit(cast<ptr list:List>(mem:alloc(size(list:List))))
 /func
 
 
-func listExtract(list ptr base:List, start uintptr, len intptr) ptr base:List
+func listExtract(list ptr list:List, start uintptr, len intptr) ptr list:List
 
   mut extract = listNew()
 
@@ -167,7 +167,7 @@ func listExtract(list ptr base:List, start uintptr, len intptr) ptr base:List
     listSeek(list, start)
 
     mut prec = list'current'prec
-    mut link1 ptr ptr base:Lnode
+    mut link1 ptr ptr list:Lnode
     if prec != null
       link1 = ptr prec'next
     else
@@ -179,7 +179,7 @@ func listExtract(list ptr base:List, start uintptr, len intptr) ptr base:List
     listSeek(list, start + len - 1)
 
     mut next = list'current'next
-    mut link2 ptr ptr base:Lnode
+    mut link2 ptr ptr list:Lnode
     if next != null
       link2 = ptr next'prec
     else
@@ -206,7 +206,7 @@ func listExtract(list ptr base:List, start uintptr, len intptr) ptr base:List
 /func
 
 
-func lnodeFree(lnode ptr base:Lnode)
+func lnodeFree(lnode ptr list:Lnode)
   while lnode != null
     mut next = lnode'next
     mem:free(lnode)
@@ -215,21 +215,21 @@ func lnodeFree(lnode ptr base:Lnode)
 /func
 
 
-func listDeinit(list ptr base:List)
+func listDeinit(list ptr list:List)
   lnodeFree(list'start)
 /func
 
 
-func listFree(list ptr base:List)
+func listFree(list ptr list:List)
   if list != null
-    base:listDeinit(list)
+    list:listDeinit(list)
 
     mem:free(list)
   /if
 /func
 
 
-func lnodeFreeAll(lnode ptr base:Lnode, freefunc ptr func(item data))
+func lnodeFreeAll(lnode ptr list:Lnode, freefunc ptr func(item data))
   while lnode != null
     mut next = lnode'next
     freefunc(cast<data>(lnode'value))
@@ -239,18 +239,18 @@ func lnodeFreeAll(lnode ptr base:Lnode, freefunc ptr func(item data))
 /func
 
 
-func listDeinitAll(list ptr base:List, freefunc ptr func(item data))
+func listDeinitAll(list ptr list:List, freefunc ptr func(item data))
   lnodeFreeAll(list'start, freefunc)
 /func
 
 
-func listFreeAll(list ptr base:List, freefunc ptr func(item data))
-  base:listDeinitAll(list, freefunc)
+func listFreeAll(list ptr list:List, freefunc ptr func(item data))
+  list:listDeinitAll(list, freefunc)
   mem:free(list)
 /func
 
 
-func lnodeFreeContents(lnode ptr base:Lnode, freefunc ptr func(item data))
+func lnodeFreeContents(lnode ptr list:Lnode, freefunc ptr func(item data))
   while lnode != null
     mut next = lnode'next
     freefunc(cast<data>(lnode'value))
@@ -259,12 +259,12 @@ func lnodeFreeContents(lnode ptr base:Lnode, freefunc ptr func(item data))
 /func
 
 
-func listFreeContents(list ptr base:List, freefunc ptr func(item data))
+func listFreeContents(list ptr list:List, freefunc ptr func(item data))
   lnodeFreeContents(list'start, freefunc)
 /func
 
 
-func listGetint(list ptr base:List, pos uintptr) ptr uintptr
+func listGetint(list ptr list:List, pos uintptr) ptr uintptr
   if pos >= list'len
     return null
   /if
@@ -279,9 +279,9 @@ func listGetint(list ptr base:List, pos uintptr) ptr uintptr
 /func
 
 
-mut listGet = cast<ptr func(list ptr base:List, index uintptr) ptr data>(ptr listGetint)
+mut listGet = cast<ptr func(list ptr list:List, index uintptr) ptr data>(ptr listGetint)
 
-func listInsertint(list ptr base:List, pos uintptr, value uintptr) intptr
+func listInsertint(list ptr list:List, pos uintptr, value uintptr) intptr
   if pos > list'len
     return -1
   /if
@@ -298,14 +298,14 @@ func listInsertint(list ptr base:List, pos uintptr, value uintptr) intptr
 /func
 
 
-mut listInsert = cast<ptr func(list ptr base:List, index uintptr, item data) intptr>(ptr listInsertint)
+mut listInsert = cast<ptr func(list ptr list:List, index uintptr, item data) intptr>(ptr listInsertint)
 
-func listLen(list ptr base:List) uintptr
+func listLen(list ptr list:List) uintptr
   return list'len
 /func
 
 
-func listPopint(list ptr base:List) uintptr
+func listPopint(list ptr list:List) uintptr
   if list'start == null
     return 0
   /if
@@ -320,7 +320,7 @@ func listPopint(list ptr base:List) uintptr
   /if
 
   if list'start == list'end
-    mem:memset(list, 0, size(base:List))
+    mem:memset(list, 0, size(list:List))
   else
     list'start = next
     list'len--
@@ -330,15 +330,15 @@ func listPopint(list ptr base:List) uintptr
 /func
 
 
-mut listPop = cast<ptr func(list ptr base:List) data>(ptr listPopint)
+mut listPop = cast<ptr func(list ptr list:List) data>(ptr listPopint)
 
-func listPrune(list ptr base:List)
+func listPrune(list ptr list:List)
   lnodeFree(list'start)
-  mem:memset(list, 0, size(base:List))
+  mem:memset(list, 0, size(list:List))
 /func
 
 
-func listShallowCopy(list ptr base:List) ptr base:List
+func listShallowCopy(list ptr list:List) ptr list:List
   mut new = listNew()
   mut len = listLen(list)
   mut i uintptr = 0
@@ -352,7 +352,7 @@ func listShallowCopy(list ptr base:List) ptr base:List
 /func
 
 
-func listPrint(list ptr base:List)
+func listPrint(list ptr list:List)
   mut inside = false
   tty:out("[ ")
   mut len = listLen(list)
@@ -373,8 +373,8 @@ func listPrint(list ptr base:List)
 
 
 
-func listRemove(list ptr base:List, item uintptr, freefunc ptr func(item data)) bool
-  mut len = base:listLen(list)
+func listRemove(list ptr list:List, item uintptr, freefunc ptr func(item data)) bool
+  mut len = list:listLen(list)
 
   if item >= len
     return false

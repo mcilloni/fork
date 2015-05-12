@@ -11,7 +11,6 @@
 module map
 
 
-import base
 import pair
 import sort
 

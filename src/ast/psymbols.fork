@@ -9,7 +9,7 @@
 
 
 import ast
-import base
+import list
 import mem
 import utils
 
@@ -76,13 +76,13 @@ func ptypeDescrFree(descr ptr ast:PTypeDescr)
     /if
 
     if descr'arguments != null
-      base:listFreeAll(descr'arguments, ptr psymbolFree)
+      list:listFreeAll(descr'arguments, ptr psymbolFree)
     /if
   /if
 /func
 
 
-func ptypeDescrNew(type uint16, retType ptr ast:PType, params ptr base:List) ptr ast:PTypeDescr
+func ptypeDescrNew(type uint16, retType ptr ast:PType, params ptr list:List) ptr ast:PTypeDescr
   mut descr = cast<ptr ast:PTypeDescr>(mem:zalloc(size(ast:PTypeDescr)))
 
   descr'refc'freeFunc = ptr ptypeDescrFree

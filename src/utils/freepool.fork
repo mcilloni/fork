@@ -8,28 +8,28 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-import base
+import list
 import mem
 import utils
 
 
 func fpAlloc(fp ptr utils:FreePool, len uintptr) data
   mut ret = mem:alloc(len)
-  base:listAppend(fp'ptrs, ret)
+  list:listAppend(fp'ptrs, ret)
 
   return ret
 /func
 
 func fpFree(fp ptr utils:FreePool)
   if fp != null
-    base:listFreeAll(fp'ptrs, fp'freeFunc)
+    list:listFreeAll(fp'ptrs, fp'freeFunc)
     mem:free(fp)
   /if
 /func
 
 func fpNew(freeFunc ptr func(item data)) ptr utils:FreePool
   mut ret = cast<ptr utils:FreePool>(mem:alloc(size(utils:FreePool)))
-  ret'ptrs = base:listNew()
+  ret'ptrs = list:listNew()
   ret'freeFunc = freeFunc
 
   return ret
@@ -37,7 +37,7 @@ func fpNew(freeFunc ptr func(item data)) ptr utils:FreePool
 
 func fpZAlloc(fp ptr utils:FreePool, len uintptr) data
   mut ret = mem:zalloc(len)
-  base:listAppend(fp'ptrs, ret)
+  list:listAppend(fp'ptrs, ret)
 
   return ret
 /func
