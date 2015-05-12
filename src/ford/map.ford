@@ -13,6 +13,7 @@ module map
 
 import base
 import pair
+import sort
 
 
 # map structures
@@ -21,14 +22,14 @@ alias Mnode struct (
   key, value data,
   color bool,
   freewhat uint8,
-  cmp base:comparator
+  cmp sort:comparator
 )
 
 
 alias Map struct (
   root ptr Mnode,
   len uintptr,
-  cmp base:comparator
+  cmp sort:comparator
 )
 
 
@@ -47,9 +48,9 @@ decl mapFirst func(map ptr Map) ptr pair:Pair
 decl mapFree func(map ptr Map)
 decl mapFreeSpec func(map ptr Map, freeKey ptr func(item data), freeVal ptr func(item data))
 decl mapGet func(map ptr Map, key data, value ptr data) bool
-decl mapInit func(map ptr Map, cmp base:comparator) ptr Map
+decl mapInit func(map ptr Map, cmp sort:comparator) ptr Map
 decl mapLen func(map ptr Map) uintptr
-decl mapNew func(cmp base:comparator) ptr Map
+decl mapNew func(cmp sort:comparator) ptr Map
 decl mapPut func(map ptr Map, key data, value data, freewhat uint8) data
 decl mapRemove func(map ptr Map, key data) bool
 

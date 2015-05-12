@@ -12,6 +12,7 @@ import base
 import map
 import mem
 import pair
+import sort
 import text
 import tty
 
@@ -22,7 +23,7 @@ mut FREE_NONE uint8 = 0
 mut FREE_KEY uint8 = 1
 mut FREE_VALUE uint8 = 10
 
-func nodeNew(key data, value data, cmp base:comparator, freewhat uint8) ptr map:Mnode
+func nodeNew(key data, value data, cmp sort:comparator, freewhat uint8) ptr map:Mnode
   mut ret = cast<ptr map:Mnode>(mem:zalloc(size(map:Mnode)))
   ret'key = key
   ret'value = value
@@ -129,7 +130,7 @@ func nodeFixUp(node ptr map:Mnode) ptr map:Mnode
 /func
 
 
-func nodeAdd(node ptr map:Mnode, keyV data, value data, cmp base:comparator, freewhat uint8, oldvalue ptr data) ptr map:Mnode
+func nodeAdd(node ptr map:Mnode, keyV data, value data, cmp sort:comparator, freewhat uint8, oldvalue ptr data) ptr map:Mnode
 
   if node == null
     val oldvalue = null
@@ -304,13 +305,13 @@ func nodeDelete(node ptr map:Mnode, keyV data, found ptr bool) ptr map:Mnode
 /func
 
 
-func mapInit(map ptr map:Map, cmp base:comparator) ptr map:Map
+func mapInit(map ptr map:Map, cmp sort:comparator) ptr map:Map
   map'cmp = cmp
   return map
 /func
 
 
-func mapNew(cmp base:comparator) ptr map:Map
+func mapNew(cmp sort:comparator) ptr map:Map
   mut map = cast<ptr map:Map>(mem:zalloc(size(map:Map)))
 
   return map:mapInit(map, cmp)

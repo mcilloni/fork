@@ -14,6 +14,7 @@ module utils
 import base
 import err
 import pair
+import sort
 import text
 
 
@@ -66,7 +67,7 @@ decl fpZAlloc func(fp ptr FreePool, len uintptr) data
 
 alias KVList struct(
     list base:List,
-    cmp base:comparator,
+    cmp sort:comparator,
     freeKey,freeVal ptr func(item data)
 )
 
@@ -78,9 +79,9 @@ decl kvFree func(kv ptr KVList)
 decl kvGet func(kv ptr KVList, key data, value ptr data) bool
 decl kvGetAt func(kv ptr KVList, index uintptr) ptr pair:Pair
 decl kvGetPos func(kv ptr KVList, key data, value ptr data) intptr
-decl kvInit func(kv ptr KVList, cmp base:comparator) ptr KVList
+decl kvInit func(kv ptr KVList, cmp sort:comparator) ptr KVList
 decl kvLen func(kv ptr KVList) uintptr
-decl kvNew func(cmp base:comparator) ptr KVList
+decl kvNew func(cmp sort:comparator) ptr KVList
 decl kvPrint func(kv ptr KVList)
 decl kvPut func(kv ptr KVList, key data, value data)
 decl kvRemove func(kv ptr KVList, key data) bool

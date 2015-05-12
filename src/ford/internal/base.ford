@@ -15,9 +15,6 @@ import err
 import io
 
 
-alias comparator ptr func(val1, val2 data) int8
-
-
 # list structures
 alias Lnode struct(
   prec, next ptr Lnode,
