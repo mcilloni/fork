@@ -1,0 +1,226 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import mem
+import tty
+import vect
+
+
+func vectInit(arr ptr vect:Vect, cap uintptr) ptr vect:Vect
+  mem:memset(arr, 0, size(vect:Vect))
+
+  if cap != 0
+    arr'arr = cast<ptr uintptr>(mem:zalloc(cap * size(uintptr)))
+  /if
+
+  arr'cap = cap
+  return arr
+/func
+
+
+func vectNew(cap uintptr) ptr vect:Vect
+  return vect:vectInit(cast<ptr vect:Vect>(mem:alloc(size(vect:Vect))), cap)
+/func
+
+
+func vectNewCap(vect ptr vect:Vect, newcap uintptr)
+
+  mut lowercap uintptr
+
+  if vect'cap > newcap
+    lowercap = newcap
+  else
+    lowercap = vect'cap
+  /if
+
+  mut newarr = cast<ptr uintptr>(mem:zalloc(newcap * size(uintptr)))
+
+  mem:memmove(newarr, vect'arr, lowercap * size(uintptr))
+
+  mem:free(vect'arr)
+
+  vect'arr = newarr
+  if vect'len > newcap
+    vect'len = newcap
+  /if
+
+  vect'cap = newcap
+  vect'isSlice = false
+/func
+
+
+func vectGetint(vect ptr vect:Vect, index uintptr) ptr uintptr
+  if vect'len <= index
+    return null
+  /if
+
+  return vect'arr + index
+/func
+
+
+
+func vectCap(vect ptr vect:Vect) uintptr
+  return vect'cap
+/func
+
+
+
+func vectLen(vect ptr vect:Vect) uintptr
+  return vect'len
+/func
+
+
+
+func vectEnsureCap(vect ptr vect:Vect, newMinCap uintptr)
+  if newMinCap > vect'cap
+    # prevent overflows
+    mut oldCap = vect'cap
+
+    # exponential growth
+    mut newCap = oldCap + (oldCap / 2)
+    if newCap < newMinCap
+      newCap = newMinCap
+    /if
+
+    vect:vectNewCap(vect, newCap)
+  /if
+/func
+
+
+
+func vectPutint(vect ptr vect:Vect, index uintptr, value uintptr) bool
+  mut newalloc = false
+  if vect'cap <= index
+    newalloc = true
+
+    vectEnsureCap(vect, index + 1)
+  /if
+
+  vect'arr[index] = value
+
+  index++
+
+  if vect'len <= index
+    vect'len = index
+  /if
+
+  return newalloc
+/func
+
+
+
+func vectAppendint(vect ptr vect:Vect, value uintptr) bool
+  return vectPutint(vect, vect'len, value)
+/func
+
+
+func vectDeinit(vect ptr vect:Vect)
+  if !vect'isSlice
+    mem:free(vect'arr)
+  /if
+/func
+
+
+func vectFree(vect ptr vect:Vect)
+
+  if vect != null
+    vect:vectDeinit(vect)
+
+    mem:free(vect)
+  /if
+
+/func
+
+
+func vectFreeContents(vect ptr vect:Vect,  freefunc ptr func(item data))
+
+  if vect != null
+
+    if vect'isSlice
+      return
+    /if
+
+    if freefunc == null
+      freefunc = ptr mem:free
+    /if
+
+    mut i uintptr = 0
+    while i < vect'len
+      freefunc(cast<data>(vect'arr[i]))
+      i++
+    /while
+
+    vect:vectPrune(vect)
+  /if
+
+/func
+
+
+func vectFreeAll(vect ptr vect:Vect,  freefunc ptr func(item data))
+  if vect != null
+    vectFreeContents(vect, freefunc)
+    vectFree(vect)
+  /if
+/func
+
+
+func vectPrune(vect ptr vect:Vect)
+  mem:memset(vect'arr, 0, vect'cap)
+  vect'len = 0
+/func
+
+
+func vectSlice(vect ptr vect:Vect, start uintptr, len intptr) ptr vect:Vect
+  mut ret = vectNew(0)
+
+  ret'isSlice = true
+
+  if len < 0
+    len = cast<intptr>(vect'len - start)
+  /if
+
+  if len > (vect'len - start)
+    len = cast<intptr>(vect'len - start)
+  /if
+
+  ret'cap = len
+  ret'len = len
+
+  ret'arr = vect'arr + start
+
+  return ret
+/func
+
+
+func vectPrint(vect ptr vect:Vect)
+  mut inside = false
+
+  tty:out("[ ")
+  mut len = vectLen(vect)
+  mut i uint8 = 0
+
+  while i < len
+    if inside
+      tty:out(", ")
+    else
+      inside = true
+    /if
+
+    tty:outint(val vectGetint(vect, i))
+    i++
+  /while
+
+  tty:outln(" ]")
+/func
+
+
+mut vectAppend = cast<ptr func(vect ptr vect:Vect, item data) bool>(ptr vectAppendint)
+mut vectGet = cast<ptr func(vect ptr vect:Vect, index uintptr) ptr data>(ptr vectGetint)
+mut vectPut = cast<ptr func(vect ptr vect:Vect, index uintptr, value data) bool>(ptr vectPutint)
