@@ -14,6 +14,7 @@ import list
 import map
 import mem
 import pair
+import parser
 import proc
 import sema
 import synt
@@ -39,9 +40,9 @@ entry
     mut i uintptr = 0
 
     while i < errLen
-      mut issue = cast<ptr utils:Issue>(val list:listGet(errors, i))
+      mut issue = cast<ptr parser:Issue>(val list:listGet(errors, i))
 
-      utils:issueWriteOut(issue, ptr tty:out)
+      parser:issueWriteOut(issue, ptr tty:out)
 
       i++
     /while

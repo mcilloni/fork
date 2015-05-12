@@ -7,15 +7,19 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 module synt
+
 
 import ast
 import lex
+import parser
 import utils
+
 
 alias Parser struct(
   filename ptr uint8,
-  err ptr utils:Issue
+  err ptr parser:Issue
 )
 
 alias ParserContext struct (

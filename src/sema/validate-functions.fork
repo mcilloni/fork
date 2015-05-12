@@ -10,8 +10,10 @@
 
 import ast
 import ctx
+import kv
 import list
 import mem
+import parser
 import proc
 import sema
 import text
@@ -32,7 +34,7 @@ func validateBreakContinue(rsv sema:Resolver,
                            errors ptr list:List) bool
 
   if !inLoop
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, stmt'begin, rsv'root'fileName, "break or continue outside of a loop"))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, stmt'begin, rsv'root'fileName, "break or continue outside of a loop"))
 
     return false
   /if
@@ -55,7 +57,7 @@ func validateDecl(rsv sema:Resolver,
     /if
   else
     if isDecl
-      list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, rsv'root'fileName, "a decl must have a type"))
+      list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, rsv'root'fileName, "a decl must have a type"))
 
       return false
     /if
@@ -66,7 +68,7 @@ func validateDecl(rsv sema:Resolver,
   if leavLen > 0
     mut pexpr = cast<ptr ast:PExpr>(val list:listGet(pdecl'node'leaves, 0))
     if isDecl
-      list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "a decl can't have an assignment"))
+      list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "a decl can't have an assignment"))
     /if
 
     mut exprType = sema:validateExpr(rsv, pexpr, errors)
@@ -85,7 +87,7 @@ func validateDecl(rsv sema:Resolver,
 
         mut msg = text:csUnwrap(cs)
 
-        list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+        list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
         mem:free(msg)
 
@@ -93,7 +95,7 @@ func validateDecl(rsv sema:Resolver,
       /if
     else
       if ast:typeIsNull(exprType)
-        list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "can't declare a variable with type 'null'"))
+        list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "can't declare a variable with type 'null'"))
         return false
       /if
 
@@ -102,7 +104,7 @@ func validateDecl(rsv sema:Resolver,
   /if
 
   if type == null
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, rsv'root'fileName, "declaration without an explicit or inferrable type"))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, rsv'root'fileName, "declaration without an explicit or inferrable type"))
 
     return false
   /if
@@ -132,7 +134,7 @@ func validateIf(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -241,7 +243,7 @@ func validateWhile(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -317,12 +319,12 @@ func validatePBlock(rsv sema:Resolver,
 /func
 
 
-func addAllSymbolsToStab(stab ptr ast:Symtable, syms ptr utils:KVList)
-  mut len = utils:kvLen(syms)
+func addAllSymbolsToStab(stab ptr ast:Symtable, syms ptr kv:KVList)
+  mut len = kv:kvLen(syms)
   mut i uintptr = 0
 
   while i < len
-    mut pair = utils:kvGetAt(syms, i)
+    mut pair = kv:kvGetAt(syms, i)
 
     mut name = cast<ptr uint8>(pair'key)
     mut type = cast<ptr ast:Type>(pair'value)

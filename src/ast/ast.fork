@@ -9,6 +9,7 @@
 
 
 import ast
+import astfn
 import lex
 import list
 import mem
@@ -33,18 +34,18 @@ func pnodeFree(pnode ptr ast:PNode)
     if ast:isPRoot(pnode)
 
       mut proot = cast<ptr ast:PRoot>(pnode)
-      ast:strdefFree(proot'moduleName)
+      astfn:strdefFree(proot'moduleName)
       mem:free(proot'fileName)
-      list:listFreeAll(proot'imports, cast<ptr func(inst data)>(ptr ast:strdefFree))
+      list:listFreeAll(proot'imports, cast<ptr func(inst data)>(ptr astfn:strdefFree))
       ast:stabFree(proot'aliases)
 
-      utils:fpFree(proot'typePool)
+      mem:fpFree(proot'typePool)
     /if
 
     if ast:isPDecl(pnode)
 
       mut pdecl = cast<ptr ast:PDecl>(pnode)
-      utils:decRef(pdecl'sym)
+      mem:decRef(pdecl'sym)
 
     /if
 
@@ -121,7 +122,7 @@ func pdeclNew(nodeType uint16, sym ptr ast:PSymbol) ptr ast:PDecl
   pdecl'node'type = nodeType
   pdecl'node'leaves = list:listNew()
 
-  utils:incRef(sym)
+  mem:incRef(sym)
 
   pdecl'sym = sym
 
@@ -129,7 +130,7 @@ func pdeclNew(nodeType uint16, sym ptr ast:PSymbol) ptr ast:PDecl
 /func
 
 
-func pexprTernaryNew(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end utils:Line) ptr ast:PExpr
+func pexprNewTernary(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end ast:Line) ptr ast:PExpr
     mut pexpr = cast<ptr ast:PExpr>(mem:zalloc(size(ast:PExpr)))
     pexpr'node'type = ast:PEXPR
     pexpr'node'value = tok'value
@@ -141,9 +142,9 @@ func pexprTernaryNew(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end uti
     pnode'begin = begin
     pnode'end = end
 
-    ast:pnodeAppendChild(pnode, ptr lhs'node)
-    ast:pnodeAppendChild(pnode, ptr mid'node)
-    ast:pnodeAppendChild(pnode, ptr rhs'node)
+    astfn:pnodeAppendChild(pnode, ptr lhs'node)
+    astfn:pnodeAppendChild(pnode, ptr mid'node)
+    astfn:pnodeAppendChild(pnode, ptr rhs'node)
 
     lex:tokenFree(tok)
 
@@ -151,8 +152,8 @@ func pexprTernaryNew(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end uti
 /func
 
 
-func pexprNew(tok ptr lex:Token, lhs,rhs ptr ast:PExpr, begin,end utils:Line) ptr ast:PExpr
-  return pexprTernaryNew(tok, lhs, null, rhs, begin, end)
+func pexprNew(tok ptr lex:Token, lhs,rhs ptr ast:PExpr, begin,end ast:Line) ptr ast:PExpr
+  return pexprNewTernary(tok, lhs, null, rhs, begin, end)
 /func
 
 
@@ -222,7 +223,7 @@ func strdefFree(strdef ptr ast:StringDef)
 /func
 
 
-func strdefNew(name ptr uint8, begin,end utils:Line) ptr ast:StringDef
+func strdefNew(name ptr uint8, begin,end ast:Line) ptr ast:StringDef
   mut strdef = cast<ptr ast:StringDef>(mem:zalloc(size(ast:StringDef)))
   strdef'name = name
   strdef'begin = begin

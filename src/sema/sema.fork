@@ -10,7 +10,9 @@
 
 import ast
 import ctx
+import kv
 import list
+import mem
 import sema
 import synt
 import utils
@@ -33,7 +35,7 @@ func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr list:List
     return errors
   /if
 
-  proot'typePool = utils:fpNew(cast<ptr func(item data)>(ptr ast:typeFree))
+  proot'typePool = mem:fpNew(cast<ptr func(item data)>(ptr ast:typeFree))
 
   proot'aliases = ast:stabNew()
 

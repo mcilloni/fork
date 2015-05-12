@@ -9,9 +9,12 @@
 
 
 import ast
+import astfn
 import ctx
-import mem
+import kv
 import list
+import mem
+import parser
 import proc
 import sema
 import text
@@ -26,16 +29,16 @@ func rootAliasRegister(rsv sema:Resolver, name ptr uint8, type ptr ast:Type)
 
   mut pdecl ptr ast:PDecl
 
-  utils:kvGet(rsv'aliases, name, ptr pdecl)
+  kv:kvGet(rsv'aliases, name, ptr pdecl)
 
   pdecl'node'validated = true
 
-  utils:kvRemove(rsv'aliases, name)
+  kv:kvRemove(rsv'aliases, name)
 /func
 
 
-func checkNotFuncType(rsv sema:Resolver, type ptr ast:Type) ptr utils:Issue
-  return type'type == ast:TYPE_FUNC => utils:issueNew(utils:ISSUE_ERR, type'begin, rsv'root'fileName, "a function type is not allowed here") || null
+func checkNotFuncType(rsv sema:Resolver, type ptr ast:Type) ptr parser:Issue
+  return type'type == ast:TYPE_FUNC => parser:issueNew(parser:ISSUE_ERR, type'begin, rsv'root'fileName, "a function type is not allowed here") || null
 /func
 
 
@@ -60,7 +63,7 @@ func convertRetType(rsv sema:Resolver,
 
   # if this condition evaluates to true, than we're in the case of a recursive alias.
   if !isLoc and retPType'moduleName == null and retPType'name != null and recList != null and utils:listContains(recList, retPType'name)
-    res = ast:typeNewRecursiveAlias(rsv'root'typePool, rsv'root'moduleName'name, retPType'name)
+    res = astfn:typeNewRecursiveAlias(rsv'root'typePool, rsv'root'moduleName'name, retPType'name)
   else
     # otherwise, this is a normal type. Validate it with validateAlias.
     res = resolveTypeReal(rsv, retPType, recList, errors, isPtr)
@@ -68,7 +71,7 @@ func convertRetType(rsv sema:Resolver,
 
   # if this is not the retType of a ptr, then it's an error having a function
   if res != null and res'type == ast:TYPE_FUNC and !isPtr
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, retPType'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, retPType'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
 
     return null
   /if
@@ -93,9 +96,9 @@ func convertPtrLocType(rsv sema:Resolver,
   /if
 
   if isLoc
-    res = ast:typeNewLoc(rsv'root'typePool, null, null, ptdes'length, res)
+    res = astfn:typeNewLoc(rsv'root'typePool, null, null, ptdes'length, res)
   else
-    res = ast:typeNewPtr(rsv'root'typePool, null, null, res)
+    res = astfn:typeNewPtr(rsv'root'typePool, null, null, res)
   /if
 
   return res
@@ -104,10 +107,10 @@ func convertPtrLocType(rsv sema:Resolver,
 
 func convertSymbolList(rsv sema:Resolver,
                        pargs,errors,recList ptr list:List,
-                       funcArgs bool) ptr utils:KVList
+                       funcArgs bool) ptr kv:KVList
 
 
-  mut members = utils:strkvNew()
+  mut members = kv:strkvNew()
 
   if pargs == null
     return members
@@ -117,7 +120,7 @@ func convertSymbolList(rsv sema:Resolver,
 
   mut plen = list:listLen(pargs)
   mut i uintptr = 0
-  utils:kvSetFreeFuncs(members, ptr mem:free, null)
+  kv:kvSetFreeFuncs(members, ptr mem:free, null)
 
   while i < plen
     mut member = cast<ptr ast:PSymbol>(val list:listGet(pargs, i))
@@ -128,7 +131,7 @@ func convertSymbolList(rsv sema:Resolver,
     # functions can refer to recursive types, because their arguments and their
     # return types do not affect the size of the function (a function is always sizeless)
     if funcArgs and ptype'moduleName == null and ptype'name != null and recList != null and utils:listContains(recList, ptype'name)
-      type = ast:typeNewRecursiveAlias(rsv'root'typePool, rsv'root'moduleName'name, ptype'name)
+      type = astfn:typeNewRecursiveAlias(rsv'root'typePool, rsv'root'moduleName'name, ptype'name)
     else
       type = resolveTypeReal(rsv, ptype, recList, errors, false)
     /if
@@ -136,19 +139,19 @@ func convertSymbolList(rsv sema:Resolver,
     if type != null
       # if this is not the retType of a ptr, then it's an error having a function
       if type'type == ast:TYPE_FUNC
-        list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
+        list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
 
         return null
       /if
 
-      utils:kvPut(members, member'name, type)
+      kv:kvPut(members, member'name, type)
     /if
 
     i++
   /while
 
   if list:listLen(errors) > errLen
-    utils:kvFree(members)
+    kv:kvFree(members)
     return null
   /if
 
@@ -164,7 +167,7 @@ func convertStructType(rsv sema:Resolver,
 
   mut members = convertSymbolList(rsv, ptdes'arguments, errors, recList, false)
 
-  return members != null => ast:typeNewStruct(rsv'root'typePool, null, null, members) || null
+  return members != null => astfn:typeNewStruct(rsv'root'typePool, null, null, members) || null
 /func
 
 
@@ -187,7 +190,7 @@ func convertFuncType(rsv sema:Resolver,
     return null
   /if
 
-  return ast:typeNewFunc(rsv'root'typePool, null, null, retVal, members)
+  return astfn:typeNewFunc(rsv'root'typePool, null, null, retVal, members)
 /func
 
 
@@ -223,7 +226,7 @@ func resolveModuleAlias(rsv sema:Resolver,
 
   if !ast:prootHasImported(rsv'root, ptype'moduleName)
     mut msg = text:strappend("no import called ", ptype'moduleName)
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
     mem:free(msg)
 
     return null
@@ -231,7 +234,7 @@ func resolveModuleAlias(rsv sema:Resolver,
 
   mut type = sema:findAliasImport(rsv'ctx, ptype'moduleName, ptype'name)
   if type != null
-    return ast:typeClone(rsv'root'typePool, type)
+    return astfn:typeClone(rsv'root'typePool, type)
   /if
 
   # we could not find the type anywhere in the module.
@@ -243,7 +246,7 @@ func resolveModuleAlias(rsv sema:Resolver,
   text:csAppendStr(cs, ptype'moduleName)
 
   mut msg = text:csUnwrap(cs)
-  list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
+  list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
   mem:free(msg)
 
   return null
@@ -257,12 +260,12 @@ func resolveIdType(rsv sema:Resolver,
 
   mut builtin = ctx:contextMatchBuiltin(rsv'ctx, ptype'name)
   if builtin != null
-    return ast:typeClone(rsv'root'typePool, builtin)
+    return astfn:typeClone(rsv'root'typePool, builtin)
   /if
 
   if recList != null and utils:listContains(recList, ptype'name)
     if ignoreSize
-      return ast:typeNewRecursiveAlias(rsv'root'typePool, rsv'root'moduleName != null => rsv'root'moduleName'name || null, ptype'name)
+      return astfn:typeNewRecursiveAlias(rsv'root'typePool, rsv'root'moduleName != null => rsv'root'moduleName'name || null, ptype'name)
     /if
 
     mut cs = text:csNew(20)
@@ -273,7 +276,7 @@ func resolveIdType(rsv sema:Resolver,
     utils:listDumpHierarchyIntoCS(recList, cs)
 
     mut msg = text:csUnwrap(cs)
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
     mem:free(msg)
 
     return null
@@ -282,7 +285,7 @@ func resolveIdType(rsv sema:Resolver,
   # it's not builtin, so it must be a local alias.
   mut type = sema:findAliasLocal(cast<ptr ast:PNode>(rsv'root), ptype'name)
   if type != null
-    return ast:typeClone(rsv'root'typePool, type)
+    return astfn:typeClone(rsv'root'typePool, type)
   /if
 
   # If here, then it's either undefined, or not validated yet.
@@ -291,7 +294,7 @@ func resolveIdType(rsv sema:Resolver,
   mut whichDecl ptr ast:PDecl
   mut missingPType ptr ast:PType
 
-  if utils:kvGet(rsv'aliases, ptype'name, ptr whichDecl)
+  if kv:kvGet(rsv'aliases, ptype'name, ptr whichDecl)
     if whichDecl'node'validated
       tty:errln("This should not be reachable")
       proc:abort()
@@ -307,7 +310,7 @@ func resolveIdType(rsv sema:Resolver,
   text:csAppendStr(cs, " in current scope")
 
   mut msg = text:csUnwrap(cs)
-  list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
+  list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
   mem:free(msg)
 
   return null

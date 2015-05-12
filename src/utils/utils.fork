@@ -8,10 +8,12 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
+import ast
 import err
 import lex
 import list
 import mem
+import parser
 import text
 import utils
 
@@ -59,7 +61,7 @@ func charIsSym(ch uint8) bool
 /func
 
 
-func issueFree(issue ptr utils:Issue)
+func issueFree(issue ptr parser:Issue)
   if issue != null
     mem:free(issue'filename)
     mem:free(issue'message)
@@ -67,8 +69,8 @@ func issueFree(issue ptr utils:Issue)
 /func
 
 
-func issueNew(gravity uint8, where utils:Line, filename, message ptr uint8)  ptr utils:Issue
-  mut issue = cast<ptr utils:Issue>(mem:zalloc(size(utils:Issue)))
+func issueNew(gravity uint8, where ast:Line, filename, message ptr uint8)  ptr parser:Issue
+  mut issue = cast<ptr parser:Issue>(mem:zalloc(size(parser:Issue)))
 
   issue'gravity = gravity
   issue'where = where
@@ -80,15 +82,15 @@ func issueNew(gravity uint8, where utils:Line, filename, message ptr uint8)  ptr
 
 
 func issueGravityToStr(issueGravity uint8) ptr uint8
-  if issueGravity == utils:ISSUE_ERR
+  if issueGravity == parser:ISSUE_ERR
     return "error"
   /if
 
-  if issueGravity == utils:ISSUE_WARN
+  if issueGravity == parser:ISSUE_WARN
     return "warning"
   /if
 
-  if issueGravity == utils:ISSUE_INFO
+  if issueGravity == parser:ISSUE_INFO
     return "info"
   /if
 
@@ -96,7 +98,7 @@ func issueGravityToStr(issueGravity uint8) ptr uint8
 /func
 
 
-func issueToError(issue ptr utils:Issue) ptr err:Error
+func issueToError(issue ptr parser:Issue) ptr err:Error
   mut lineno [21] uint8
   mut pos [21] uint8
 
@@ -117,13 +119,13 @@ func issueToError(issue ptr utils:Issue) ptr err:Error
 
   mut ret = err:errorGlue(ptr toglue[0])
 
-  utils:issueFree(issue)
+  parser:issueFree(issue)
 
   return ret
 /func
 
 
-func issueWriteOut(issue ptr utils:Issue, outFn ptr func(err ptr uint8))
+func issueWriteOut(issue ptr parser:Issue, outFn ptr func(err ptr uint8))
   outFn(issue'filename)
   outFn(":")
 
@@ -165,24 +167,6 @@ func strIsUInt(str ptr uint8) bool
   /while
 
   return true
-/func
-
-
-func incRef(refc data)
-  if refc != null
-    cast<ptr utils:Ref>(refc)'count++
-  /if
-/func
-
-
-func decRef(refc data)
-  if refc != null
-    mut ref = cast<ptr utils:Ref>(refc)
-    ref'count--
-    if ref'count < 1
-      ref'freeFunc(refc)
-    /if
-  /if
 /func
 
 

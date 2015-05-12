@@ -10,6 +10,7 @@
 
 import ast
 import ctx
+import kv
 import list
 import proc
 import sema
@@ -63,13 +64,13 @@ func semaValidateAstRoot(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr lis
     return false
   /if
 
-  mut len = utils:kvLen(decls)
+  mut len = kv:kvLen(decls)
   mut i uintptr = 0
   mut result = true
 
   while i < len
     # PDecl because root can only have pdecl children
-    mut pdecl = cast<ptr ast:PDecl>(utils:kvGetAt(decls, i)'value)
+    mut pdecl = cast<ptr ast:PDecl>(kv:kvGetAt(decls, i)'value)
 
     if !pdecl'node'validated
       if !validatePDecl(rsv, pdecl, errors)
@@ -82,7 +83,7 @@ func semaValidateAstRoot(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr lis
     i++
   /while
 
-  utils:kvFree(decls)
+  kv:kvFree(decls)
   sema:resolverDeinit(rsv)
 
   return result

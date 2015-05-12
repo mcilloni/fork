@@ -10,8 +10,10 @@
 
 import ast
 import ctx
+import kv
 import list
 import mem
+import parser
 import proc
 import sema
 import text
@@ -20,24 +22,24 @@ import utils
 
 
 func resolverDeinit(rsv sema:Resolver)
-  utils:kvFree(rsv'aliases)
-  utils:kvFree(rsv'decls)
+  kv:kvFree(rsv'aliases)
+  kv:kvFree(rsv'decls)
 /func
 
 
 func resolverCollect(rsv ptr sema:Resolver,
                      ctx ptr ctx:Context,
                      root ptr ast:PRoot,
-                     errors ptr list:List) ptr utils:KVList
+                     errors ptr list:List) ptr kv:KVList
 
-  rsv'aliases = utils:strkvNew()
-  rsv'decls = utils:strkvNew()
+  rsv'aliases = kv:strkvNew()
+  rsv'decls = kv:strkvNew()
   rsv'root = root
   rsv'ctx = ctx
 
-  mut ret = utils:strkvNew()
+  mut ret = kv:strkvNew()
 
-  utils:kvSetFreeFuncs(ret, ptr mem:free, null)
+  kv:kvSetFreeFuncs(ret, ptr mem:free, null)
 
   mut len = list:listLen(root'node'node'leaves)
   mut i uintptr = 0
@@ -47,12 +49,12 @@ func resolverCollect(rsv ptr sema:Resolver,
     mut pdecl = cast<ptr ast:PDecl>(val list:listGet(root'node'node'leaves, i))
     mut ntype = pdecl'node'type
     mut name = pdecl'sym'name
-    mut kv ptr utils:KVList = null
+    mut kv ptr kv:KVList = null
 
     if ntype == ast:PDECL or ntype == ast:PMUT or ntype == ast:PFUNCTION
       mut existent ptr ast:PDecl
 
-      if utils:kvGet(rsv'decls, name, ptr existent)
+      if kv:kvGet(rsv'decls, name, ptr existent)
         if pdecl'node'type != ast:PDECL and existent'node'type != ast:PDECL
           resolverDeinit(val rsv)
 
@@ -62,7 +64,7 @@ func resolverCollect(rsv ptr sema:Resolver,
           text:csAppendStr(cs, " defined twice")
 
           mut str = text:csUnwrap(cs)
-          list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
+          list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
 
           mem:free(str)
 
@@ -82,7 +84,7 @@ func resolverCollect(rsv ptr sema:Resolver,
     else
 
       if ntype == ast:PALIAS
-        if utils:kvContains(rsv'aliases, name)
+        if kv:kvContains(rsv'aliases, name)
           resolverDeinit(val rsv)
 
           mut cs = text:csNew(20)
@@ -90,7 +92,7 @@ func resolverCollect(rsv ptr sema:Resolver,
           text:csAppendStr(cs, name)
           text:csAppendStr(cs, " is already defined")
 
-          list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, text:csUnwrap(cs)))
+          list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, text:csUnwrap(cs)))
 
           return null
         /if
@@ -102,7 +104,7 @@ func resolverCollect(rsv ptr sema:Resolver,
           if entryNode == null
             entryNode = pdecl
           else
-            list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pdecl'node'begin, root'fileName, "entry declared twice in same file"))
+            list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, "entry declared twice in same file"))
             resolverDeinit(val rsv)
 
             return null
@@ -115,10 +117,10 @@ func resolverCollect(rsv ptr sema:Resolver,
     /if
 
     if ntype != ast:PENTRY
-      utils:kvPut(kv, name, pdecl)
+      kv:kvPut(kv, name, pdecl)
     /if
 
-    utils:kvPut(ret, text:strclone(name), pdecl)
+    kv:kvPut(ret, text:strclone(name), pdecl)
 
     i++
   /while

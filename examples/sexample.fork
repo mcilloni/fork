@@ -9,6 +9,7 @@
 
 
 import ast
+import parser
 import proc
 import synt
 import tty
@@ -26,7 +27,7 @@ entry
   mut root = synt:parserParse(prs)
 
   if prs'err != null
-    utils:issueWriteOut(prs'err, ptr tty:err)
+    parser:issueWriteOut(prs'err, ptr tty:err)
     proc:exit(1)
   /if
 

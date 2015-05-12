@@ -1,37 +1,47 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import kv
 import mem
 import text
 import tty
-import utils
 
 
 entry
-  mut kv = utils:strkvNew()
+  mut kv = kv:strkvNew()
 
-  utils:kvSetFreeFuncs(kv, ptr mem:free, ptr mem:free)
+  kv:kvSetFreeFuncs(kv, ptr mem:free, ptr mem:free)
 
-  utils:kvPut(kv, text:strclone("aaa"), text:strclone("eee"))
-  utils:kvPrint(kv)
+  kv:kvPut(kv, text:strclone("aaa"), text:strclone("eee"))
+  kv:kvPrint(kv)
   tty:outch(10)
 
-  utils:kvPut(kv, text:strclone("aaa"), text:strclone("rrr"))
-  utils:kvPrint(kv)
+  kv:kvPut(kv, text:strclone("aaa"), text:strclone("rrr"))
+  kv:kvPrint(kv)
   tty:outch(10)
 
-  utils:kvPut(kv, text:strclone("ooo"), text:strclone("uuu"))
-  utils:kvPrint(kv)
+  kv:kvPut(kv, text:strclone("ooo"), text:strclone("uuu"))
+  kv:kvPrint(kv)
   tty:outch(10)
 
-  utils:kvPut(kv, text:strclone("uuu"), text:strclone("ppp"))
-  utils:kvPrint(kv)
+  kv:kvPut(kv, text:strclone("uuu"), text:strclone("ppp"))
+  kv:kvPrint(kv)
   tty:outch(10)
 
-  utils:kvPut(kv, text:strclone("qwe"), text:strclone("rere"))
-  utils:kvPrint(kv)
+  kv:kvPut(kv, text:strclone("qwe"), text:strclone("rere"))
+  kv:kvPrint(kv)
   tty:outch(10)
 
-  utils:kvRemove(kv, "ooo")
-  utils:kvPrint(kv)
+  kv:kvRemove(kv, "ooo")
+  kv:kvPrint(kv)
   tty:outch(10)
 
-  utils:kvFree(kv)
+  kv:kvFree(kv)
 /entry

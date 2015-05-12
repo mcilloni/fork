@@ -11,7 +11,31 @@
 module mem
 
 
-# Memory functions
+import list
+
+
+alias Ref struct (
+  count uintptr,
+  freeFunc ptr func(item data)
+)
+
+
+decl incRef func(item data)
+decl decRef func(item data)
+
+
+alias FreePool struct(
+  ptrs ptr list:List,
+  freeFunc ptr func(item data)
+)
+
+
+decl fpAlloc func(fp ptr FreePool, len uintptr) data
+decl fpFree func(fp ptr FreePool)
+decl fpNew func(freeFunc ptr func(item data)) ptr FreePool
+decl fpZAlloc func(fp ptr FreePool, len uintptr) data
+
+
 decl alloc func(bytes uintptr) data
 decl free func(location data)
 decl memcpy func(dest data, src data, len uintptr) data

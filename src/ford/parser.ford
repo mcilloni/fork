@@ -6,3 +6,28 @@
 #  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module parser
+
+
+import ast
+import err
+
+
+alias Issue struct (
+  gravity uint8,
+  where ast:Line,
+  filename,message ptr uint8
+)
+
+
+decl issueFree func(issue ptr Issue)
+decl issueNew func(gravity uint8, where ast:Line, filename, message ptr uint8) ptr Issue
+decl issueWriteOut func(issue ptr Issue, out ptr func(err ptr uint8))
+decl issueToError func(issue ptr Issue) ptr err:Error
+
+
+decl ISSUE_ERR uint8
+decl ISSUE_WARN uint8
+decl ISSUE_INFO uint8

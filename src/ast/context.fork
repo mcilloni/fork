@@ -9,11 +9,13 @@
 
 
 import ast
+import astfn
 import ctx
 import file
 import list
 import map
 import mem
+import parser
 import proc
 import sema
 import synt
@@ -57,7 +59,7 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
 
   mut glued = text:strglue(ptr toGlue[0])
 
-  list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, importName'begin, ctx'currentFile, glued))
+  list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, importName'begin, ctx'currentFile, glued))
 
   mem:free(fordName)
   mem:free(glued)
@@ -159,7 +161,7 @@ func contextNew() ptr ctx:Context
   ctx'imports = map:strmapNew()
 
   ctx'fordPaths = envExtractFordPaths()
-  ctx'builtins = ast:builtinSetNew()
+  ctx'builtins = astfn:builtinSetNew()
   return ctx
 /func
 

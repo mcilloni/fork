@@ -5,6 +5,9 @@ Checks lex functionality.
   an identifier: ast
   a newline
   import
+  an identifier: parser
+  a newline
+  import
   an identifier: proc
   a newline
   import
@@ -82,7 +85,7 @@ Checks lex functionality.
   !=
   null
   a newline
-  an identifier: utils
+  an identifier: parser
   :
   an identifier: issueWriteOut
   (

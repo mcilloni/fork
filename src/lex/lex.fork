@@ -8,11 +8,13 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
+import ast
 import err
 import file
 import io
 import lex
 import mem
+import parser
 import text
 import utils
 
@@ -164,7 +166,7 @@ func lexExtractString(lex ptr lex:Lexer) ptr lex:StringTok
     got[0] = ch'ch
     got[1] = 0 # `\0` c string terminator
 
-    lex'error = utils:issueToError(lex:errorMism(lex'lineno, "\"", ptr got[0]))
+    lex'error = parser:issueToError(lex:errorMism(lex'lineno, "\"", ptr got[0]))
     return null
   /if
 
@@ -937,16 +939,16 @@ func linenoNew(filename ptr uint8, lineno, pos uintptr) ptr lex:Lineno
 /func
 
 
-func issueFromLexError(err ptr err:Error, lineno ptr lex:Lineno) ptr utils:Issue
+func issueFromLexError(err ptr err:Error, lineno ptr lex:Lineno) ptr parser:Issue
   if err == null
     return null
   /if
 
-  mut where utils:Line
+  mut where ast:Line
   where'line = lineno'lineno
   where'pos = lineno'pos
 
-  mut ret = utils:issueNew(utils:ISSUE_ERR, where, lineno'filename, err'msg)
+  mut ret = parser:issueNew(parser:ISSUE_ERR, where, lineno'filename, err'msg)
 
   err:errorFree(err)
 
@@ -954,8 +956,8 @@ func issueFromLexError(err ptr err:Error, lineno ptr lex:Lineno) ptr utils:Issue
 /func
 
 
-func lineMake(llin ptr lex:Lineno) utils:Line
-  mut ret utils:Line
+func lineMake(llin ptr lex:Lineno) ast:Line
+  mut ret ast:Line
 
   ret'line = llin'lineno
   ret'pos =  llin'pos
@@ -964,8 +966,8 @@ func lineMake(llin ptr lex:Lineno) utils:Line
 /func
 
 
-func tokExtractBegin(tok ptr lex:Token) utils:Line
-  mut ret utils:Line
+func tokExtractBegin(tok ptr lex:Token) ast:Line
+  mut ret ast:Line
   ret'line = tok'lineno'lineno
   ret'pos = tok'lineno'pos
 
@@ -973,8 +975,8 @@ func tokExtractBegin(tok ptr lex:Token) utils:Line
 /func
 
 
-func tokExtractEnd(tok ptr lex:Token) utils:Line
-  mut ret utils:Line
+func tokExtractEnd(tok ptr lex:Token) ast:Line
+  mut ret ast:Line
   ret'line = tok'lineno'lineno
   ret'pos = tok'endPos
 
@@ -982,7 +984,7 @@ func tokExtractEnd(tok ptr lex:Token) utils:Line
 /func
 
 
-func tokDiscardBegin(tok ptr lex:Token) utils:Line
+func tokDiscardBegin(tok ptr lex:Token) ast:Line
   mut ret = tokExtractBegin(tok)
 
   lex:tokenFree(tok)
@@ -991,7 +993,7 @@ func tokDiscardBegin(tok ptr lex:Token) utils:Line
 /func
 
 
-func tokDiscardEnd(tok ptr lex:Token) utils:Line
+func tokDiscardEnd(tok ptr lex:Token) ast:Line
   mut ret = tokExtractEnd(tok)
 
   lex:tokenFree(tok)
@@ -1000,16 +1002,16 @@ func tokDiscardEnd(tok ptr lex:Token) utils:Line
 /func
 
 
-func error(lineno ptr lex:Lineno, msg ptr uint8) ptr utils:Issue
-  mut line utils:Line
+func error(lineno ptr lex:Lineno, msg ptr uint8) ptr parser:Issue
+  mut line ast:Line
   line'line = lineno'lineno
   line'pos = lineno'pos
 
-  return utils:issueNew(utils:ISSUE_ERR, line, lineno'filename, msg)
+  return parser:issueNew(parser:ISSUE_ERR, line, lineno'filename, msg)
 /func
 
 
-func errorMism(lineno ptr lex:Lineno, exp ptr uint8, got ptr uint8) ptr utils:Issue
+func errorMism(lineno ptr lex:Lineno, exp ptr uint8, got ptr uint8) ptr parser:Issue
 
   mut toglue [5] ptr uint8
   toglue[0] = "expected "

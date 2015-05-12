@@ -9,9 +9,12 @@
 
 
 import ast
+import astfn
 import lex
+import mem
 import synt
 import utils
+
 
 mut PTYPE_BINARY uint8 = 0
 mut PTYPE_UNARY uint8 = 2
@@ -87,7 +90,7 @@ func parserParseCastTag(ctx ptr synt:ParserContext) ptr ast:PExpr
 
   if !synt:expectDiscard(ctx, lex:MAJOR) or !synt:expectDiscard(ctx, lex:OPAR)
     lex:tokenFree(castTok)
-    utils:decRef(type)
+    mem:decRef(type)
     return null
   /if
 
@@ -96,17 +99,17 @@ func parserParseCastTag(ctx ptr synt:ParserContext) ptr ast:PExpr
   mut expr = parserParseExpr(ctx)
   if expr == null
     lex:tokenFree(castTok)
-    utils:decRef(type)
+    mem:decRef(type)
   /if
 
   mut cpar = synt:expect(ctx, lex:CPAR)
   if cpar == null
     lex:tokenFree(castTok)
-    utils:decRef(type)
+    mem:decRef(type)
     return null
   /if
 
-  mut pexpr = ast:pexprNew(castTok, expr, null, lex:tokExtractBegin(castTok), lex:tokDiscardEnd(cpar))
+  mut pexpr = astfn:pexprNew(castTok, expr, null, lex:tokExtractBegin(castTok), lex:tokDiscardEnd(cpar))
   pexpr'node'value = cast<uintptr>(type)
 
   return pexpr
@@ -135,7 +138,7 @@ func parserParseSizeOp(ctx ptr synt:ParserContext) ptr ast:PExpr
     return null
   /if
 
-  mut sizeop = ast:pexprNew(sizeTok, null, null, lex:tokExtractBegin(sizeTok), lex:tokDiscardEnd(cpar))
+  mut sizeop = astfn:pexprNew(sizeTok, null, null, lex:tokExtractBegin(sizeTok), lex:tokDiscardEnd(cpar))
   sizeop'node'value = cast<uintptr>(type)
 
   return sizeop
@@ -149,7 +152,7 @@ func tokIsPostfixExpressionSuffixStart(tok ptr lex:Token) bool
 
 func parserParseId(ctx ptr synt:ParserContext) ptr ast:PExpr
   mut first = synt:nextTok(ctx)
-  mut ret = ast:pexprNewSingle(first)
+  mut ret = astfn:pexprNewSingle(first)
 
   if ctx'next != null and ctx'next'type == lex:COLON
     mut colon = synt:nextTok(ctx)
@@ -161,8 +164,8 @@ func parserParseId(ctx ptr synt:ParserContext) ptr ast:PExpr
       return null
     /if
 
-    mut idExpr = ast:pexprNewSingle(id)
-    ret = ast:pexprNew(colon, ret, idExpr, ret'node'begin, idExpr'node'end)
+    mut idExpr = astfn:pexprNewSingle(id)
+    ret = astfn:pexprNew(colon, ret, idExpr, ret'node'begin, idExpr'node'end)
   /if
 
   return ret
@@ -209,7 +212,7 @@ func parserParsePrimaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
   /if
 
   if ctx'next'type == lex:FALSE or ctx'next'type == lex:TRUE or ctx'next'type == lex:STRING or ctx'next'type == lex:NUMBER or ctx'next'type == lex:NULLPTR
-    return ast:pexprNewSingle(synt:nextTok(ctx))
+    return astfn:pexprNewSingle(synt:nextTok(ctx))
   /if
 
   if ctx'next'type == lex:ID
@@ -243,7 +246,7 @@ func parserParseAccessExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr as
       return null
   /if
 
-  return ast:pexprNew(obrac, lhs, expression, lhs'node'begin, expression'node'end)
+  return astfn:pexprNew(obrac, lhs, expression, lhs'node'begin, expression'node'end)
 
 /func
 
@@ -257,7 +260,7 @@ func parserParseCallExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:
   /if
 
   mut begin = lex:tokExtractBegin(opar)
-  mut callExpr = ast:pexprNew(opar, lhs, null, begin, begin)
+  mut callExpr = astfn:pexprNew(opar, lhs, null, begin, begin)
   mut callPNode = cast<ptr ast:PNode>(callExpr)
 
   decl parserParseAssignExpr func(ctx ptr synt:ParserContext) ptr ast:PExpr
@@ -291,7 +294,7 @@ func parserParseCallExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:
       return null
     /if
 
-    ast:pnodeAppendChild(callPNode, cast<ptr ast:PNode>(arg))
+    astfn:pnodeAppendChild(callPNode, cast<ptr ast:PNode>(arg))
 
   /while
 
@@ -318,9 +321,9 @@ func parserParseFieldExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast
     return null
   /if
 
-  mut idExpr = ast:pexprNewSingle(id)
+  mut idExpr = astfn:pexprNewSingle(id)
 
-  return ast:pexprNew(apos, lhs, idExpr, lhs'node'begin, idExpr'node'end)
+  return astfn:pexprNew(apos, lhs, idExpr, lhs'node'begin, idExpr'node'end)
 /func
 
 
@@ -341,7 +344,7 @@ func parserParsePostfixSuffix(ctx ptr synt:ParserContext, primaryLhs ptr ast:PEx
       else
         if ctx'next'type == lex:INC or ctx'next'type == lex:DEC
           mut incDec = synt:nextTok(ctx)
-          lhs = ast:pexprNew(incDec, lhs, null, lhs'node'begin, lex:tokExtractEnd(incDec))
+          lhs = astfn:pexprNew(incDec, lhs, null, lhs'node'begin, lex:tokExtractEnd(incDec))
         else
           if ctx'next'type == lex:APOS
             lhs = parserParseFieldExpr(ctx, lhs)
@@ -387,7 +390,7 @@ func parserParseUnaryExprOp(ctx ptr synt:ParserContext) ptr ast:PExpr
     operator'type = lex:UMINUS
   /if
 
-  return ast:pexprNew(operator, result, null, lex:tokExtractBegin(operator), result'node'end)
+  return astfn:pexprNew(operator, result, null, lex:tokExtractBegin(operator), result'node'end)
 /func
 
 
@@ -447,7 +450,7 @@ func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri 
       /if
     /if
 
-    lhs = ast:pexprTernaryNew(opTok, lhs, ternaryMiddle, rhs, lhs'node'begin, rhs'node'end)
+    lhs = astfn:pexprNewTernary(opTok, lhs, ternaryMiddle, rhs, lhs'node'begin, rhs'node'end)
   /while
 
   return lhs

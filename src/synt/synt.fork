@@ -9,6 +9,7 @@
 
 
 import ast
+import astfn
 import err
 import lex
 import list
@@ -113,7 +114,7 @@ func parserParseModuleName(ctx ptr synt:ParserContext) ptr ast:StringDef
       mut moduleName = text:strclone(cast<ptr uint8>(name'value))
       mut end = lex:tokDiscardEnd(name)
 
-      return ast:strdefNew(moduleName, begin, end)
+      return astfn:strdefNew(moduleName, begin, end)
     /if
   /if
 
@@ -134,7 +135,7 @@ func parserParseImport(ctx ptr synt:ParserContext) ptr ast:StringDef
       mut importName = text:strclone(cast<ptr uint8>(name'value))
       mut end = lex:tokDiscardEnd(name)
 
-      return ast:strdefNew(importName, begin, end)
+      return astfn:strdefNew(importName, begin, end)
     /if
   /if
 
@@ -173,7 +174,7 @@ func parserParseIdType(ctx ptr synt:ParserContext, name ptr uint8) ptr ast:PType
     lex:tokenFree(tok)
   /if
 
-  return ast:ptypeNew(name, moduleName, ast:ptypeDescrNew(ast:PTYPE_ID, null, null))
+  return astfn:ptypeNew(name, moduleName, ast:ptypeDescrNew(ast:PTYPE_ID, null, null))
 /func
 
 
@@ -231,7 +232,7 @@ func makeSymsAndInsertInList(syms ptr list:List, ids ptr list:List, type ptr ast
 
   while i < len
     elem = cast<ptr uint8>(val list:listGet(ids, i))
-    sym = ast:psymbolNew(elem, type)
+    sym = astfn:psymbolNew(elem, type)
     list:listAppend(syms, sym)
     i++
   /while
@@ -271,7 +272,7 @@ func parserParseStructBodyVars(ctx ptr synt:ParserContext, syms ptr list:List) b
 /func
 
 
-func parserParseStructBody(ctx ptr synt:ParserContext, end ptr utils:Line) ptr list:List
+func parserParseStructBody(ctx ptr synt:ParserContext, end ptr ast:Line) ptr list:List
   if !expectDiscard(ctx, lex:OPAR)
     return null
   /if
@@ -288,19 +289,19 @@ func parserParseStructBody(ctx ptr synt:ParserContext, end ptr utils:Line) ptr l
     /if
 
     if !synt:expectDiscard(ctx, lex:COMMA)
-      list:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
+      list:listFreeAll(strBody, cast<ptr func(item data)>(ptr mem:decRef))
       return null
     /if
   /while
 
   if theresError(ctx)
-    list:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
+    list:listFreeAll(strBody, cast<ptr func(item data)>(ptr mem:decRef))
     return null
   /if
 
   mut endTok = synt:expect(ctx, lex:CPAR)
   if endTok == null
-    list:listFreeAll(strBody, cast<ptr func(item data)>(ptr utils:decRef))
+    list:listFreeAll(strBody, cast<ptr func(item data)>(ptr mem:decRef))
     return null
   /if
 
@@ -311,7 +312,7 @@ func parserParseStructBody(ctx ptr synt:ParserContext, end ptr utils:Line) ptr l
 
 
 func parserParseFunctionType(ctx ptr synt:ParserContext) ptr ast:PType
-  mut end utils:Line
+  mut end ast:Line
   mut args = parserParseStructBody(ctx, ptr end)
   if args == null
     return null
@@ -323,7 +324,7 @@ func parserParseFunctionType(ctx ptr synt:ParserContext) ptr ast:PType
     retType = parserParseType(ctx)
   /if
 
-  mut type = ast:ptypeNew(null, null, ast:ptypeDescrNew(ast:PTYPE_FUNC, retType, args))
+  mut type = astfn:ptypeNew(null, null, ast:ptypeDescrNew(ast:PTYPE_FUNC, retType, args))
   type'end = end
 
   return type
@@ -349,7 +350,7 @@ func parserParseLocType(ctx ptr synt:ParserContext) ptr ast:PType
     return null
   /if
 
-  mut type = ast:ptypeNew(null, null, ast:ptypeDescrNewLoc(realType, locLength))
+  mut type = astfn:ptypeNew(null, null, ast:ptypeDescrNewLoc(realType, locLength))
   type'end = realType'end
 
   return type
@@ -357,14 +358,14 @@ func parserParseLocType(ctx ptr synt:ParserContext) ptr ast:PType
 
 
 func parserParseStructType(ctx ptr synt:ParserContext) ptr ast:PType
-  mut end utils:Line
+  mut end ast:Line
 
   mut args = parserParseStructBody(ctx, ptr end)
   if args == null
     return null
   /if
 
-  mut type = ast:ptypeNew(null, null, ast:ptypeDescrNew(ast:PTYPE_STRUCT, null, args))
+  mut type = astfn:ptypeNew(null, null, ast:ptypeDescrNew(ast:PTYPE_STRUCT, null, args))
   type'end = end
 
   return type
@@ -396,7 +397,7 @@ func parserParseType(ctx ptr synt:ParserContext) ptr ast:PType
   if tok'type == lex:PTR
     # parses the real type (after ptr)
     mut realType = parserParseType(ctx)
-    ret = ast:ptypeNew(null, null, ast:ptypeDescrNew(ast:PTYPE_PTR, realType, null))
+    ret = astfn:ptypeNew(null, null, ast:ptypeDescrNew(ast:PTYPE_PTR, realType, null))
     ret'end = realType'end
   /if
 
@@ -443,7 +444,7 @@ func parserParseDeclaration(ctx ptr synt:ParserContext, declType uint16, externa
   /if
 
   mut type ptr ast:PType = null
-  mut end utils:Line
+  mut end ast:Line
 
   if ctx'next'type != lex:ASSIGN
     type = parserParseType(ctx)
@@ -455,7 +456,7 @@ func parserParseDeclaration(ctx ptr synt:ParserContext, declType uint16, externa
     end = type'end
   /if
 
-  mut pdecl = ast:pdeclNew(declType, ast:psymbolNew(id, type))
+  mut pdecl = astfn:pdeclNew(declType, astfn:psymbolNew(id, type))
   mut pnode = cast<ptr ast:PNode>(pdecl)
 
   if ctx'next != null and ctx'next'type == lex:ASSIGN
@@ -475,7 +476,7 @@ func parserParseDeclaration(ctx ptr synt:ParserContext, declType uint16, externa
 
     mut exprPNode = cast<ptr ast:PNode>(expr)
 
-    ast:pnodeAppendChild(pnode, exprPNode)
+    astfn:pnodeAppendChild(pnode, exprPNode)
 
     end = exprPNode'end
   /if
@@ -507,7 +508,7 @@ func parserParseAlias(ctx ptr synt:ParserContext) ptr ast:PNode
       return null
     /if
 
-    mut palias = ast:pdeclNew(ast:PALIAS, ast:psymbolNew(cast<ptr uint8>(name'value), type))
+    mut palias = astfn:pdeclNew(ast:PALIAS, astfn:psymbolNew(cast<ptr uint8>(name'value), type))
     mut pnode = cast<ptr ast:PNode>(palias)
     pnode'begin = begin
     pnode'end = type'end
@@ -543,8 +544,8 @@ func parserParseWhile(ctx ptr synt:ParserContext) ptr ast:PNode
     return null
   /if
 
-  mut whileBlock = ast:pnodeNew(ast:PWHILE, 0)
-  ast:pnodeAppendChild(whileBlock, expr)
+  mut whileBlock = astfn:pnodeNew(ast:PWHILE, 0)
+  astfn:pnodeAppendChild(whileBlock, expr)
 
   mut body = cast<ptr ast:PNode>(parserParseBody(ctx, ptr matchWhileEndTok))
   if body == null
@@ -552,7 +553,7 @@ func parserParseWhile(ctx ptr synt:ParserContext) ptr ast:PNode
     return null
   /if
 
-  ast:pnodeAppendChild(whileBlock, body)
+  astfn:pnodeAppendChild(whileBlock, body)
 
   whileBlock'begin = begin
   whileBlock'end = lex:tokDiscardEnd(synt:nextTok(ctx)) #discard /while
@@ -583,8 +584,8 @@ func parserParseIf(ctx ptr synt:ParserContext) ptr ast:PNode
     return null
   /if
 
-  mut block = ast:pnodeNew(ast:PIF, 0)
-  ast:pnodeAppendChild(block, expr)
+  mut block = astfn:pnodeNew(ast:PIF, 0)
+  astfn:pnodeAppendChild(block, expr)
 
   mut mainBlock = cast<ptr ast:PNode>(parserParseBody(ctx, ptr matchIfElseEndTok))
 
@@ -593,7 +594,7 @@ func parserParseIf(ctx ptr synt:ParserContext) ptr ast:PNode
     return null
   /if
 
-  ast:pnodeAppendChild(block, mainBlock)
+  astfn:pnodeAppendChild(block, mainBlock)
 
   if ctx'next'type == lex:ELSE
     synt:discardTok(ctx) #discard else
@@ -609,7 +610,7 @@ func parserParseIf(ctx ptr synt:ParserContext) ptr ast:PNode
       return null
     /if
 
-    ast:pnodeAppendChild(block, elseBlock)
+    astfn:pnodeAppendChild(block, elseBlock)
 
     block'type = ast:PIFELSE
   /if
@@ -627,14 +628,14 @@ func parserParseReturn(ctx ptr synt:ParserContext) ptr ast:PNode
   mut begin = lex:tokExtractBegin(returnTok) # discard "return"
   mut end = lex:tokDiscardEnd(returnTok)
 
-  mut returnNode = ast:pnodeNew(ast:PRETURN, 0)
+  mut returnNode = astfn:pnodeNew(ast:PRETURN, 0)
   if ctx'next != null and ctx'next'type != lex:NEWLINE
     mut expr = synt:parserParseExpr(ctx)
     if expr == null
       ast:pnodeFree(returnNode)
       return null
     /if
-    ast:pnodeAppendChild(returnNode, cast<ptr ast:PNode>(expr))
+    astfn:pnodeAppendChild(returnNode, cast<ptr ast:PNode>(expr))
 
     end = expr'node'end
   /if
@@ -651,7 +652,7 @@ func parserParseBreakCont(ctx ptr synt:ParserContext, ptype uint16) ptr ast:PNod
 
   mut begin = lex:tokExtractBegin(breakTok) # discard "break" or "continue"
   mut end = lex:tokDiscardEnd(breakTok)
-  mut pnode = ast:pnodeNew(ptype, 0)
+  mut pnode = astfn:pnodeNew(ptype, 0)
 
   pnode'begin = begin
   pnode'end = end
@@ -699,7 +700,7 @@ func parserParseStatement(ctx ptr synt:ParserContext) ptr ast:PNode
 
 
 func parserParseBody(ctx ptr synt:ParserContext, isEndToken ptr func(tok ptr lex:Token) bool) ptr ast:PBlock
-  mut begin utils:Line
+  mut begin ast:Line
 
   # If this block is empty, then begin will remain unset.
   # We avoid this, assigning it to the next token position (usually newline or end of block)
@@ -710,7 +711,7 @@ func parserParseBody(ctx ptr synt:ParserContext, isEndToken ptr func(tok ptr lex
   mut statement ptr ast:PNode = null
   mut first = true
 
-  mut block = ast:pblockNew()
+  mut block = astfn:pblockNew()
   mut pnode = cast<ptr ast:PNode>(block)
 
   while ctx'next != null and !isEndToken(ctx'next)
@@ -720,7 +721,7 @@ func parserParseBody(ctx ptr synt:ParserContext, isEndToken ptr func(tok ptr lex
       return null
     /if
 
-    ast:pnodeAppendChild(pnode, statement)
+    astfn:pnodeAppendChild(pnode, statement)
 
     if first
       begin = statement'begin
@@ -760,7 +761,7 @@ func parserMakeFunction(ctx ptr synt:ParserContext,
     return null
   /if
 
-  mut funcNode = cast<ptr ast:PNode>(ast:pdeclNew(pType, ast:psymbolNew(name, type)))
+  mut funcNode = cast<ptr ast:PNode>(astfn:pdeclNew(pType, astfn:psymbolNew(name, type)))
   mut body = cast<ptr ast:PNode>(parserParseBody(ctx, isEndToken))
 
   if body == null
@@ -768,7 +769,7 @@ func parserMakeFunction(ctx ptr synt:ParserContext,
     return null
   /if
 
-  ast:pnodeAppendChild(funcNode, body)
+  astfn:pnodeAppendChild(funcNode, body)
 
   mut endTok = synt:expect(ctx, endTType)
   if endTok == null
@@ -784,7 +785,7 @@ func parserMakeFunction(ctx ptr synt:ParserContext,
 
 
 func makeEntryType() ptr ast:PType
-  return ast:ptypeNew(null, null,ast:ptypeDescrNew(ast:PTYPE_FUNC, null, null))
+  return astfn:ptypeNew(null, null,ast:ptypeDescrNew(ast:PTYPE_FUNC, null, null))
 /func
 
 
@@ -909,13 +910,13 @@ func parserParseProgram(ctx ptr synt:ParserContext) ptr ast:PNode
     return null
   /if
 
-  mut pnode = cast<ptr ast:PNode>(ast:prootNew(moduleName, imports, ctx'prs'filename))
+  mut pnode = cast<ptr ast:PNode>(astfn:prootNew(moduleName, imports, ctx'prs'filename))
 
   mut definition ptr ast:PNode = null
   mut first = true
 
   while (definition = parserParseDefinition(ctx)) != null
-    ast:pnodeAppendChild(pnode, definition)
+    astfn:pnodeAppendChild(pnode, definition)
 
     if ctx'next != null and !synt:expectDiscard(ctx, lex:NEWLINE)
       ast:pnodeFree(pnode)

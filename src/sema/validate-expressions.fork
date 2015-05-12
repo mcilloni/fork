@@ -9,11 +9,14 @@
 
 
 import ast
+import astfn
 import ctx
+import kv
 import lex
 import list
 import math
 import mem
+import parser
 import sema
 import synt
 import text
@@ -201,15 +204,15 @@ func typeIsAssignable(ctx ptr ctx:Context, scope ptr ast:PNode, dest,src ptr ast
 
   if isFunc or isStruct
     mut i uintptr = 0
-    mut len = utils:kvLen(dest'members)
+    mut len = kv:kvLen(dest'members)
 
-    if len != utils:kvLen(src'members)
+    if len != kv:kvLen(src'members)
       return false
     /if
 
     while i < len
-      mut pair1 = utils:kvGetAt(src'members, i)
-      mut pair2 = utils:kvGetAt(dest'members, i)
+      mut pair1 = kv:kvGetAt(src'members, i)
+      mut pair2 = kv:kvGetAt(dest'members, i)
 
       mut type1 = cast<ptr ast:Type>(pair1'value)
       mut type2 = cast<ptr ast:Type>(pair2'value)
@@ -310,7 +313,7 @@ func validateExprCast(rsv sema:Resolver,
 
     mut str = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
     mem:free(str)
     return null
@@ -333,7 +336,7 @@ func validateSizeExpr(rsv sema:Resolver,
 
   if sizeType'type == ast:TYPE_FUNC
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "invalid application of 'size' to a function type"))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "invalid application of 'size' to a function type"))
     return null
   /if
 
@@ -364,7 +367,7 @@ func validateExprId(rsv sema:Resolver,
 
     mut str = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
     mem:free(str)
 
@@ -399,7 +402,7 @@ func validateBoolExpr(rsv sema:Resolver,
 
     mut str = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
     mem:free(str)
 
@@ -424,7 +427,7 @@ func validateArithPtrExpr(rsv sema:Resolver,
 
     mut str = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
     mem:free(str)
 
@@ -444,7 +447,7 @@ func validateArithPtrExpr(rsv sema:Resolver,
 
         mut str = text:csUnwrap(cs)
 
-        list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+        list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
         mem:free(str)
 
@@ -453,7 +456,7 @@ func validateArithPtrExpr(rsv sema:Resolver,
 
       return ctx:contextMatchBuiltin(rsv'ctx, "intptr")
     else
-      list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "only difference between two pointers can be allowed"))
+      list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "only difference between two pointers can be allowed"))
       return null
     /if
   /if
@@ -473,7 +476,7 @@ func validateArithExpr(rsv sema:Resolver,
   mut op = pexpr'opType
 
   if !(ast:typeIsInt(ltype) or ast:typeIsPtr(ltype)) or !(ast:typeIsPtr(rtype) or ast:typeIsInt(rtype))
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "arithmetic operations can only involve pointers and integers"))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "arithmetic operations can only involve pointers and integers"))
 
     return null
   /if
@@ -509,7 +512,7 @@ func validateEqDiffExpr(rsv sema:Resolver,
   /if
 
   if !success
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "cannot evaluate the equivalence of two incompatible types"))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "cannot evaluate the equivalence of two incompatible types"))
   /if
 
   return success => ctx:contextMatchBuiltin(rsv'ctx, "bool") || null
@@ -523,7 +526,7 @@ func validateModuleAccessExpr(rsv sema:Resolver,
   mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val list:listGet(pexpr'node'leaves, 0))'value)
   if !ast:prootHasImported(rsv'root, modName)
     mut msg = text:strappend(modName, " has never been imported")
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
     mem:free(msg)
 
     return null
@@ -542,7 +545,7 @@ func validateModuleAccessExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -587,7 +590,7 @@ func validateStructureAccessExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -598,7 +601,7 @@ func validateStructureAccessExpr(rsv sema:Resolver,
 
   mut type ptr ast:Type = null
 
-  if !utils:kvGet(accType'members, field, ptr type)
+  if !kv:kvGet(accType'members, field, ptr type)
     mut cs = text:csNew(20)
     text:csAppendStr(cs, "no field called '")
     text:csAppendStr(cs, field)
@@ -607,7 +610,7 @@ func validateStructureAccessExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -624,11 +627,11 @@ func validateArrayAccess(rsv sema:Resolver,
                          errors ptr list:List) ptr ast:Type
 
   if ltype'type != ast:TYPE_PTR and !ast:typeIsLoc(ltype)
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "array access is allowed only for pointers and locations"))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "array access is allowed only for pointers and locations"))
   /if
 
   if !ast:typeIsInt(rtype)
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "an expression of integer type is required for array access"))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "an expression of integer type is required for array access"))
   /if
 
   # because of first-step bug with recursive types
@@ -653,13 +656,13 @@ func validateFunctionCallExpr(rsv sema:Resolver,
   /if
 
   if !ast:typeIsFunc(accType)
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression is neither a function nor a pointer to a function"))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression is neither a function nor a pointer to a function"))
 
     return null
   /if
 
   mut expParams = accType'members
-  mut expLen = utils:kvLen(expParams)
+  mut expLen = kv:kvLen(expParams)
 
   mut argsLen = list:listLen(pexpr'node'leaves)
 
@@ -688,7 +691,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -700,7 +703,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
 
   while i < expLen
     mut gotParam = cast<ptr ast:PExpr>(val list:listGet(scope'leaves, i + 1))
-    mut expPair = utils:kvGetAt(expParams, i)
+    mut expPair = kv:kvGetAt(expParams, i)
 
     mut expType = cast<ptr ast:Type>(expPair'value)
 
@@ -725,7 +728,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
 
       mut msg = text:csUnwrap(cs)
 
-      list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+      list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
       mem:free(msg)
 
@@ -745,7 +748,7 @@ func validateAssignExpr(rsv sema:Resolver,
                         errors ptr list:List) ptr ast:Type
 
   if !ttypeCanBeAssignTarget(left'opType, ltype)
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, left'node'begin, rsv'root'fileName, "expression cannot be target of assignment"))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, left'node'begin, rsv'root'fileName, "expression cannot be target of assignment"))
     return null
   /if
 
@@ -760,7 +763,7 @@ func validateAssignExpr(rsv sema:Resolver,
 
     mut str = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
     mem:free(str)
 
@@ -835,7 +838,7 @@ func validateNotExpr(rsv sema:Resolver,
                      errors ptr list:List) ptr ast:Type
 
   if !ast:typeIsBool(atype)
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression must be boolean"))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression must be boolean"))
 
     return null
   /if
@@ -858,7 +861,7 @@ func validateValExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -875,12 +878,12 @@ func validatePtrExpr(rsv sema:Resolver,
                      errors ptr list:List) ptr ast:Type
 
   if ast:typeIsNull(atype)
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "can't extract the address of null"))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "can't extract the address of null"))
 
     return null
   /if
 
-  return ast:typeNewPtr(rsv'root'typePool, null, null, atype)
+  return astfn:typeNewPtr(rsv'root'typePool, null, null, atype)
 /func
 
 
@@ -897,7 +900,7 @@ func validateUMinusExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -912,7 +915,7 @@ func validateUMinusExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -936,7 +939,7 @@ func validateIncDecExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -944,7 +947,7 @@ func validateIncDecExpr(rsv sema:Resolver,
   /if
 
   if !ttypeCanBeAssignTarget(atarget'opType, atype)
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, atarget'node'begin, rsv'root'fileName, "expression is not assignable"))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, atarget'node'begin, rsv'root'fileName, "expression is not assignable"))
 
     return null
   /if
@@ -1002,7 +1005,7 @@ func validateTernaryExpr(rsv sema:Resolver,
   /if
 
   if !ast:typeIsBool(condType)
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "non boolean ternary condition"))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "non boolean ternary condition"))
 
     return null
   /if
@@ -1022,7 +1025,7 @@ func validateTernaryExpr(rsv sema:Resolver,
 
     mut msg = text:csUnwrap(cs)
 
-    list:listAppend(errors, utils:issueNew(utils:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 

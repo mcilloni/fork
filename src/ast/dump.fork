@@ -9,6 +9,7 @@
 
 
 import ast
+import kv
 import lex
 import list
 import mem
@@ -28,13 +29,13 @@ func printPadding(depth uintptr)
 /func
 
 
-func lineDump(line utils:Line)
+func lineDump(line ast:Line)
   tty:outint(line'line)
   tty:out(":")
   tty:outint(line'pos)
 /func
 
-func linesDump(begin,end utils:Line)
+func linesDump(begin,end ast:Line)
   tty:out("(at ")
   lineDump(begin)
   tty:out("-")
@@ -356,16 +357,16 @@ func symbolDump(cs ptr text:Charstash, sym ptr ast:Symbol)
 /func
 
 
-func symlistDump(cs ptr text:Charstash, symlist ptr utils:KVList)
+func symlistDump(cs ptr text:Charstash, symlist ptr kv:KVList)
 
   text:csAppendStr(cs, "(")
 
   if symlist != null
-    mut len = utils:kvLen(symlist)
+    mut len = kv:kvLen(symlist)
     mut i uintptr = 0
 
     while i < len
-      mut pair = utils:kvGetAt(symlist, i)
+      mut pair = kv:kvGetAt(symlist, i)
       mut sym ast:Symbol
 
       sym'name = cast<ptr uint8>(pair'key)
@@ -488,16 +489,16 @@ func symbolSummarize(cs ptr text:Charstash, sym ptr ast:Symbol)
 /func
 
 
-func symlistSummarize(cs ptr text:Charstash, symlist ptr utils:KVList)
+func symlistSummarize(cs ptr text:Charstash, symlist ptr kv:KVList)
 
   text:csAppendStr(cs, "(")
 
   if symlist != null
-    mut len = utils:kvLen(symlist)
+    mut len = kv:kvLen(symlist)
     mut i uintptr = 0
 
     while i < len
-      mut pair = utils:kvGetAt(symlist, i)
+      mut pair = kv:kvGetAt(symlist, i)
       mut sym ast:Symbol
 
       sym'name = cast<ptr uint8>(pair'key)

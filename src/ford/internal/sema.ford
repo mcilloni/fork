@@ -13,6 +13,7 @@ module sema
 
 import ast
 import ctx
+import kv
 import list
 import utils
 
@@ -20,14 +21,14 @@ import utils
 alias Resolver struct (
   ctx ptr ctx:Context,
   root ptr ast:PRoot,
-  aliases,decls ptr utils:KVList
+  aliases,decls ptr kv:KVList
 )
 
 
 decl resolverCollect func(rsv ptr Resolver,
                           ctx ptr ctx:Context,
                           root ptr ast:PRoot,
-                          errors ptr list:List) ptr utils:KVList
+                          errors ptr list:List) ptr kv:KVList
 
 decl resolverDeinit func(rsv Resolver)
 

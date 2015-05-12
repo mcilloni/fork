@@ -9,6 +9,8 @@
 
 
 import ast
+import astfn
+import kv
 import map
 import mem
 import proc
@@ -54,21 +56,21 @@ func symbolNew(name ptr uint8, type ptr ast:Type) ptr ast:Symbol
 /func
 
 
-func symbolListClone(pool ptr utils:FreePool, symList ptr utils:KVList) ptr utils:KVList
+func symbolListClone(pool ptr mem:FreePool, symList ptr kv:KVList) ptr kv:KVList
   if symList == null
     return null
   /if
 
-  mut len = utils:kvLen(symList)
-  mut ret = utils:strkvNew()
+  mut len = kv:kvLen(symList)
+  mut ret = kv:strkvNew()
   mut i uintptr = 0
 
   while i < len
-    mut elem = utils:kvGetAt(symList, i)
+    mut elem = kv:kvGetAt(symList, i)
     mut newStr = text:strclone(cast<ptr uint8>(elem'key))
-    mut newType = ast:typeClone(pool, cast<ptr ast:Type>(elem'value))
+    mut newType = astfn:typeClone(pool, cast<ptr ast:Type>(elem'value))
 
-    utils:kvPut(ret, newStr, newType)
+    kv:kvPut(ret, newStr, newType)
 
     i++
   /while
@@ -77,33 +79,33 @@ func symbolListClone(pool ptr utils:FreePool, symList ptr utils:KVList) ptr util
 /func
 
 
-func typeClone(pool ptr utils:FreePool, type ptr ast:Type) ptr ast:Type
+func typeClone(pool ptr mem:FreePool, type ptr ast:Type) ptr ast:Type
   if type == null
     return null
   /if
 
-  mut newInst = cast<ptr ast:Type>(mem:memcpy(utils:fpAlloc(pool, size(ast:Type)), type, size(ast:Type)))
+  mut newInst = cast<ptr ast:Type>(mem:memcpy(mem:fpAlloc(pool, size(ast:Type)), type, size(ast:Type)))
   newInst'moduleName = text:strclone(type'moduleName)
   newInst'name = text:strclone(type'name)
-  newInst'retType = ast:typeClone(pool, type'retType)
+  newInst'retType = astfn:typeClone(pool, type'retType)
   newInst'members = symbolListClone(pool, type'members)
 
   return newInst
 /func
 
 
-func typeEqualsList(list1, list2 ptr utils:KVList) bool
-  mut len = utils:kvLen(list1)
+func typeEqualsList(list1, list2 ptr kv:KVList) bool
+  mut len = kv:kvLen(list1)
 
-  if len != utils:kvLen(list2)
+  if len != kv:kvLen(list2)
     return false
   /if
 
   mut i uintptr = 0
 
   while i < len
-    mut pair1 = utils:kvGetAt(list1, i)
-    mut pair2 = utils:kvGetAt(list2, i)
+    mut pair1 = kv:kvGetAt(list1, i)
+    mut pair2 = kv:kvGetAt(list2, i)
 
     mut name1 = cast<ptr uint8>(pair1'key)
     mut name2 = cast<ptr uint8>(pair2'key)
@@ -184,7 +186,7 @@ func typeFree(type ptr ast:Type)
     mem:free(type'name)
 
     if type'members != null
-      utils:kvFree(type'members)
+      kv:kvFree(type'members)
     /if
 
     mem:free(type)
@@ -232,16 +234,16 @@ func typeIsStruct(type ptr ast:Type) bool
 /func
 
 
-func typeNew(pool ptr utils:FreePool,
+func typeNew(pool ptr mem:FreePool,
              type uint16,
              moduleName, name ptr uint8,
              isSigned bool,
              typeSize, typeAlign intptr,
              itemCount uintptr,
              retType ptr ast:Type,
-             members ptr utils:KVList) ptr ast:Type
+             members ptr kv:KVList) ptr ast:Type
 
-  mut location = pool != null => utils:fpAlloc(pool, size(ast:Type)) || mem:alloc(size(ast:Type))
+  mut location = pool != null => mem:fpAlloc(pool, size(ast:Type)) || mem:alloc(size(ast:Type))
   mut ret = cast<ptr ast:Type>(location)
 
   ret'type = type
@@ -264,7 +266,7 @@ func typeNewBuiltin(type uint16,
                     typeSize, typeAlign intptr,
                     itemCount uintptr,
                     retType ptr ast:Type,
-                    members ptr utils:KVList) ptr ast:Type
+                    members ptr kv:KVList) ptr ast:Type
 
   mut ret = typeNew(null, type, null, name, isSigned, typeSize, typeAlign, itemCount, retType, members)
   ret'builtin = true
@@ -299,7 +301,7 @@ func typeNewBuiltinNull() ptr ast:Type
 
 
 func typeNewBuiltinString(uint8t ptr ast:Type) ptr ast:Type
-  return ast:typeNewPtr(null, null, null, uint8t)
+  return astfn:typeNewPtr(null, null, null, uint8t)
 /func
 
 
@@ -328,17 +330,17 @@ func builtinSetNew() ptr map:Map
 /func
 
 
-func typeNewFunc(pool ptr utils:FreePool, moduleName, name ptr uint8, retVal ptr ast:Type, members ptr utils:KVList) ptr ast:Type
+func typeNewFunc(pool ptr mem:FreePool, moduleName, name ptr uint8, retVal ptr ast:Type, members ptr kv:KVList) ptr ast:Type
   return typeNew(pool, ast:TYPE_FUNC, moduleName, name, false, 0, 0, 0, retVal, members)
 /func
 
 
-func typeNewLoc(pool ptr utils:FreePool, moduleName, name ptr uint8, itemCount uintptr, retVal ptr ast:Type) ptr ast:Type
+func typeNewLoc(pool ptr mem:FreePool, moduleName, name ptr uint8, itemCount uintptr, retVal ptr ast:Type) ptr ast:Type
   return typeNew(pool, ast:TYPE_LOC, moduleName, name, false, retVal'typeSize * cast<intptr>(itemCount), retVal'typeAlign, itemCount, retVal, null)
 /func
 
 
-func typeNewPtr(pool ptr utils:FreePool, moduleName, name ptr uint8, retVal ptr ast:Type) ptr ast:Type
+func typeNewPtr(pool ptr mem:FreePool, moduleName, name ptr uint8, retVal ptr ast:Type) ptr ast:Type
   return typeNew(pool, ast:TYPE_PTR, moduleName, name, false, platform:ptrSize, platform:ptrSize, 1, retVal, null)
 /func
 
@@ -346,16 +348,16 @@ func typeNewPtr(pool ptr utils:FreePool, moduleName, name ptr uint8, retVal ptr 
 alias AlignResult struct(typeAlign,typeSize intptr)
 
 # members is a list of ast:Symbol
-func typeCalculateAlign(members ptr utils:KVList) AlignResult
+func typeCalculateAlign(members ptr kv:KVList) AlignResult
   mut ret AlignResult
   ret'typeAlign = 1
   ret'typeSize  = 0
 
   mut i uintptr = 0
-  mut len = utils:kvLen(members)
+  mut len = kv:kvLen(members)
 
   while i < len
-    mut member = cast<ptr ast:Type>(utils:kvGetAt(members, i)'value)
+    mut member = cast<ptr ast:Type>(kv:kvGetAt(members, i)'value)
 
     # calculate the alignment offset of the member against the current starting address.
     mut offset = ret'typeSize mod member'typeAlign
@@ -386,12 +388,12 @@ func typeCalculateAlign(members ptr utils:KVList) AlignResult
 /func
 
 
-func typeNewRecursiveAlias(pool ptr utils:FreePool, moduleName, name ptr uint8) ptr ast:Type
+func typeNewRecursiveAlias(pool ptr mem:FreePool, moduleName, name ptr uint8) ptr ast:Type
   return typeNew(pool, ast:TYPE_RECALIAS, moduleName, name, false, -1, -1, 0, null, null)
 /func
 
 
-func typeNewStruct(pool ptr utils:FreePool, moduleName, name ptr uint8, members ptr utils:KVList) ptr ast:Type
+func typeNewStruct(pool ptr mem:FreePool, moduleName, name ptr uint8, members ptr kv:KVList) ptr ast:Type
   mut alignInfo = typeCalculateAlign(members)
 
   return typeNew(pool, ast:TYPE_STRUCT, moduleName, name, false, alignInfo'typeSize, alignInfo'typeAlign, 1, null, members)
@@ -406,7 +408,7 @@ func typeSetAlias(type ptr ast:Type, moduleName, name ptr uint8)
 /func
 
 
-func typeSetBoundaries(type ptr ast:Type, begin,end utils:Line)
+func typeSetBoundaries(type ptr ast:Type, begin,end ast:Line)
   if type != null
     type'begin = begin
     type'end = end
@@ -438,7 +440,7 @@ func stabNew() ptr ast:Symtable
 
 
 func stabAdd(stab ptr ast:Symtable, name ptr uint8, type ptr ast:Type, symType uint16)
-  map:mapPut(stab'syms, text:strclone(name), ast:declInfoNew(symType, type), map:FREE_KEY | map:FREE_VALUE)
+  map:mapPut(stab'syms, text:strclone(name), astfn:declInfoNew(symType, type), map:FREE_KEY | map:FREE_VALUE)
 /func
 
 
@@ -460,7 +462,7 @@ func stabTypeof(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
 
 func stabFree(stab ptr ast:Symtable)
   if stab != null
-    map:mapFreeSpec(stab'syms, ptr mem:free, ptr ast:declInfoFree)
+    map:mapFreeSpec(stab'syms, ptr mem:free, ptr astfn:declInfoFree)
     mem:free(stab)
   /if
 /func
