@@ -10,6 +10,7 @@
 
 import base
 import err
+import file
 import io
 import lex
 import mem
@@ -300,7 +301,7 @@ func lexerFromStream(stream ptr io:Stream, name ptr uint8, err ptr ptr err:Error
 /func
 
 func lexerNew(fname ptr uint8, err ptr ptr err:Error) ptr lex:Lexer
-  mut file = base:fileOpen(fname, err)
+  mut file = file:fileOpen(fname, err)
 
   if val err != null
     return null

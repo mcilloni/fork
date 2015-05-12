@@ -11,6 +11,7 @@
 import ast
 import base
 import ctx
+import file
 import mem
 import sema
 import synt
@@ -27,9 +28,9 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
 
   while i < len
     mut path = cast<ptr uint8>(val base:listGet(ctx'fordPaths, i))
-    mut joinedPath = base:pathJoin(path, fordName)
+    mut joinedPath = file:pathJoin(path, fordName)
 
-    if base:pathExists(joinedPath)
+    if file:pathExists(joinedPath)
 
       mut ret = sema:semaParse(ctx, joinedPath, importAst)
 

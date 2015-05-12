@@ -86,17 +86,6 @@ decl abort func()
 decl exit func(retval int16)
 
 
-# File stream functions
-decl fileOpen func(name ptr uint8, error ptr ptr err:Error) ptr io:Stream
-decl fileCreate func(name ptr uint8, error ptr ptr err:Error) ptr io:Stream
-
-# path functions
-decl pathContains func(path,filename ptr uint8) bool
-decl pathExists func(path ptr uint8) bool
-decl pathExistsDir func(path ptr uint8) bool
-decl pathJoin func(path1,path2 ptr uint8) ptr uint8
-
-
 # pair functions
 
 decl pairFree func(pair ptr Pair)
