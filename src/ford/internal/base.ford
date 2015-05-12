@@ -65,14 +65,6 @@ alias List struct(
 )
 
 
-# vector structure
-alias Vector struct (
-  arr ptr uintptr,
-  cap,len uintptr,
-  isSlice bool
-)
-
-
 # args structure
 alias Args struct (
   len uintptr,
@@ -121,30 +113,6 @@ decl listRemove func(list ptr List, item uintptr, freefunc ptr func(item data)) 
 decl listSeek func(list ptr List, pos uintptr)
 decl listSeekZero func(list ptr List)
 decl listShallowCopy func(list ptr List) ptr List
-
-
-# vector functions
-
-decl vectAppend ptr func(vect ptr Vector, item data) bool
-decl vectAppendint func(vect ptr Vector, item uintptr) bool
-decl vectCap func(vect ptr Vector) uintptr
-decl vectDeinit func(vect ptr Vector)
-decl vectEnsureCap func(vect ptr Vector, newMinCap uintptr)
-decl vectExtract func(vect ptr Vector, from uintptr, len intptr) ptr Vector
-decl vectFree func(vect ptr Vector)
-decl vectFreeAll func(vect ptr Vector, freeFunc ptr func(item data))
-decl vectFreeContents func(vect ptr Vector, freeFunc ptr func(item data))
-decl vectGet ptr func(vect ptr Vector, item uintptr) ptr data
-decl vectGetint func(vect ptr Vector, item uintptr) ptr uintptr
-decl vectInit func(arr ptr Vector, cap uintptr) ptr Vector
-decl vectLen func(vect ptr Vector) uintptr
-decl vectNew func(cap uintptr) ptr Vector
-decl vectNewCap func(vect ptr Vector, cap uintptr)
-decl vectPrint func(vect ptr Vector)
-decl vectPrune func(vect ptr Vector)
-decl vectPut ptr func(vect ptr Vector, index uintptr, item data) bool
-decl vectPutint func(vect ptr Vector, index uintptr, item uintptr) bool
-decl vectSlice func(vect ptr Vector, from uintptr, len intptr) ptr Vector
 
 
 # map functions
