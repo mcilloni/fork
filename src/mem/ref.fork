@@ -1,0 +1,34 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import err
+import lex
+import list
+import mem
+import text
+import utils
+
+
+func incRef(refc data)
+  if refc != null
+    cast<ptr mem:Ref>(refc)'count++
+  /if
+/func
+
+
+func decRef(refc data)
+  if refc != null
+    mut ref = cast<ptr mem:Ref>(refc)
+    ref'count--
+    if ref'count < 1
+      ref'freeFunc(refc)
+    /if
+  /if
+/func

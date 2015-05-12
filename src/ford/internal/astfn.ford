@@ -1,0 +1,62 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module astfn
+
+
+import ast
+import kv
+import lex
+import list
+import map
+import mem
+
+
+decl psymbolNew func(name ptr uint8, type ptr ast:PType) ptr ast:PSymbol
+
+decl ptypeNew func(name,moduleName ptr uint8, descr ptr ast:PTypeDescr) ptr ast:PType
+
+
+decl symbolClone func(sym ptr ast:Symbol) ptr ast:Symbol
+decl symbolFree func(sym ptr ast:Symbol)
+decl symbolNew func(name ptr uint8, type ptr ast:Type) ptr ast:Symbol
+
+decl builtinSetNew func() ptr map:Map
+
+decl typeClone func(pool ptr mem:FreePool, type ptr ast:Type) ptr ast:Type
+decl typeNewFunc func(pool ptr mem:FreePool, moduleName, name ptr uint8, retVal ptr ast:Type, members ptr kv:KVList) ptr ast:Type
+decl typeNewLoc func(pool ptr mem:FreePool, moduleName, name ptr uint8, itemCount uintptr, retVal ptr ast:Type) ptr ast:Type
+decl typeNewPtr func(pool ptr mem:FreePool, moduleName, name ptr uint8, retVal ptr ast:Type) ptr ast:Type
+decl typeNewRecursiveAlias func(pool ptr mem:FreePool, moduleName, name ptr uint8) ptr ast:Type
+decl typeNewStruct func(pool ptr mem:FreePool, moduleName, name ptr uint8, members ptr kv:KVList) ptr ast:Type
+decl typeSetAlias func(type ptr ast:Type, moduleName, name ptr uint8)
+decl typeSetBoundaries func(type ptr ast:Type, begin,end ast:Line)
+
+
+decl declInfoFree func(declInfo ptr ast:DeclInfo)
+decl declInfoNew func(declType uint16, type ptr ast:Type) ptr ast:DeclInfo
+
+
+decl strdefFree func(strdef ptr ast:StringDef)
+decl strdefNew func(name ptr uint8, begin,end ast:Line) ptr ast:StringDef
+
+
+decl pnodeAppendChild func(parent ptr ast:PNode, child ptr ast:PNode) ptr ast:PNode
+decl pnodeNew func(ptype uint16, value uintptr) ptr ast:PNode
+
+decl pblockNew func() ptr ast:PBlock
+
+decl pdeclNew func(ptype uint16, sym ptr ast:PSymbol) ptr ast:PDecl
+
+decl pexprNew func(tok ptr lex:Token, lhs,rhs ptr ast:PExpr, begin,end ast:Line) ptr ast:PExpr
+decl pexprNewTernary func(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end ast:Line) ptr ast:PExpr
+decl pexprNewSingle func(tok ptr lex:Token) ptr ast:PExpr
+
+decl prootNew func(modName ptr ast:StringDef, imports ptr list:List, fileName ptr uint8) ptr ast:PRoot

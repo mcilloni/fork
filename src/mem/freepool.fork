@@ -1,0 +1,43 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import list
+import mem
+import utils
+
+
+func fpAlloc(fp ptr mem:FreePool, len uintptr) data
+  mut ret = mem:alloc(len)
+  list:listAppend(fp'ptrs, ret)
+
+  return ret
+/func
+
+func fpFree(fp ptr mem:FreePool)
+  if fp != null
+    list:listFreeAll(fp'ptrs, fp'freeFunc)
+    mem:free(fp)
+  /if
+/func
+
+func fpNew(freeFunc ptr func(item data)) ptr mem:FreePool
+  mut ret = cast<ptr mem:FreePool>(mem:alloc(size(mem:FreePool)))
+  ret'ptrs = list:listNew()
+  ret'freeFunc = freeFunc
+
+  return ret
+/func
+
+func fpZAlloc(fp ptr mem:FreePool, len uintptr) data
+  mut ret = mem:zalloc(len)
+  list:listAppend(fp'ptrs, ret)
+
+  return ret
+/func
