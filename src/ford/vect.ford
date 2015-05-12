@@ -1,0 +1,42 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module vect
+
+
+# vector structure
+alias Vect struct (
+  arr ptr uintptr,
+  cap,len uintptr,
+  isSlice bool
+)
+
+
+# vector functions
+decl vectAppend ptr func(vect ptr Vect, item data) bool
+decl vectAppendint func(vect ptr Vect, item uintptr) bool
+decl vectCap func(vect ptr Vect) uintptr
+decl vectDeinit func(vect ptr Vect)
+decl vectEnsureCap func(vect ptr Vect, newMinCap uintptr)
+decl vectExtract func(vect ptr Vect, from uintptr, len intptr) ptr Vect
+decl vectFree func(vect ptr Vect)
+decl vectFreeAll func(vect ptr Vect, freeFunc ptr func(item data))
+decl vectFreeContents func(vect ptr Vect, freeFunc ptr func(item data))
+decl vectGet ptr func(vect ptr Vect, item uintptr) ptr data
+decl vectGetint func(vect ptr Vect, item uintptr) ptr uintptr
+decl vectInit func(arr ptr Vect, cap uintptr) ptr Vect
+decl vectLen func(vect ptr Vect) uintptr
+decl vectNew func(cap uintptr) ptr Vect
+decl vectNewCap func(vect ptr Vect, cap uintptr)
+decl vectPrint func(vect ptr Vect)
+decl vectPrune func(vect ptr Vect)
+decl vectPut ptr func(vect ptr Vect, index uintptr, item data) bool
+decl vectPutint func(vect ptr Vect, index uintptr, item uintptr) bool
+decl vectSlice func(vect ptr Vect, from uintptr, len intptr) ptr Vect
