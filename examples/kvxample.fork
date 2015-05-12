@@ -10,8 +10,8 @@
 
 import kv
 import mem
-import text
 import tty
+import txt
 
 
 entry
@@ -19,23 +19,23 @@ entry
 
   kv:kvSetFreeFuncs(kv, ptr mem:free, ptr mem:free)
 
-  kv:kvPut(kv, text:strclone("aaa"), text:strclone("eee"))
+  kv:kvPut(kv, txt:strclone("aaa"), txt:strclone("eee"))
   kv:kvPrint(kv)
   tty:outch(10)
 
-  kv:kvPut(kv, text:strclone("aaa"), text:strclone("rrr"))
+  kv:kvPut(kv, txt:strclone("aaa"), txt:strclone("rrr"))
   kv:kvPrint(kv)
   tty:outch(10)
 
-  kv:kvPut(kv, text:strclone("ooo"), text:strclone("uuu"))
+  kv:kvPut(kv, txt:strclone("ooo"), txt:strclone("uuu"))
   kv:kvPrint(kv)
   tty:outch(10)
 
-  kv:kvPut(kv, text:strclone("uuu"), text:strclone("ppp"))
+  kv:kvPut(kv, txt:strclone("uuu"), txt:strclone("ppp"))
   kv:kvPrint(kv)
   tty:outch(10)
 
-  kv:kvPut(kv, text:strclone("qwe"), text:strclone("rere"))
+  kv:kvPut(kv, txt:strclone("qwe"), txt:strclone("rere"))
   kv:kvPrint(kv)
   tty:outch(10)
 

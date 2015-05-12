@@ -11,7 +11,7 @@
 import err
 import io
 import mem
-import text
+import txt
 
 
 mut STREAM_IN uint8 = 1
@@ -72,5 +72,5 @@ func streamWrite(stream ptr io:Stream, string ptr uint8) uintptr
     return 0
   /if
 
-  return stream'cookie'wfn(stream'cookie'priv8, string, cast<intptr>(text:strlen(string)), ptr stream'error)
+  return stream'cookie'wfn(stream'cookie'priv8, string, cast<intptr>(txt:strlen(string)), ptr stream'error)
 /func

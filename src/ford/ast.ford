@@ -15,7 +15,7 @@ import kv
 import list
 import map
 import mem
-import text
+import txt
 
 
 alias Line struct(
@@ -106,11 +106,11 @@ alias Symbol struct(
 )
 
 
-decl symbolDump func(cs ptr text:Charstash, sym ptr Symbol)
+decl symbolDump func(cs ptr txt:Charstash, sym ptr Symbol)
 decl symbolEquals func(sym1,sym2 ptr Symbol) bool
-decl symbolSummarize func(cs ptr text:Charstash, sym ptr Symbol)
+decl symbolSummarize func(cs ptr txt:Charstash, sym ptr Symbol)
 
-decl typeDump func(cs ptr text:Charstash, type ptr Type)
+decl typeDump func(cs ptr txt:Charstash, type ptr Type)
 decl typeEquals func(type1, type2 ptr Type) bool
 decl typeFree func(type ptr Type)
 decl typeIsBool func(type ptr Type) bool
@@ -121,7 +121,7 @@ decl typeIsLoc func(type ptr Type) bool
 decl typeIsNull func(type ptr Type) bool
 decl typeIsPtr func(type ptr Type) bool
 decl typeIsStruct func(type ptr Type) bool
-decl typeSummarize func(cs ptr text:Charstash, type ptr Type)
+decl typeSummarize func(cs ptr txt:Charstash, type ptr Type)
 
 
 alias DeclInfo struct(

@@ -14,7 +14,7 @@ import lex
 import list
 import mem
 import parser
-import text
+import txt
 import utils
 
 
@@ -74,8 +74,8 @@ func issueNew(gravity uint8, where ast:Line, filename, message ptr uint8)  ptr p
 
   issue'gravity = gravity
   issue'where = where
-  issue'filename = text:strclone(filename)
-  issue'message = text:strclone(message)
+  issue'filename = txt:strclone(filename)
+  issue'message = txt:strclone(message)
 
   return issue
 /func
@@ -102,8 +102,8 @@ func issueToError(issue ptr parser:Issue) ptr err:Error
   mut lineno [21] uint8
   mut pos [21] uint8
 
-  text:numtostr(issue'where'line, ptr lineno[0], 21)
-  text:numtostr(issue'where'pos, ptr pos[0], 21)
+  txt:numtostr(issue'where'line, ptr lineno[0], 21)
+  txt:numtostr(issue'where'pos, ptr pos[0], 21)
 
   mut toglue [10] ptr uint8
   toglue[0] = issue'filename
@@ -131,12 +131,12 @@ func issueWriteOut(issue ptr parser:Issue, outFn ptr func(err ptr uint8))
 
 
   mut buf [21] uint8
-  text:numtostr(issue'where'line, ptr buf[0], 21)
+  txt:numtostr(issue'where'line, ptr buf[0], 21)
 
   outFn(ptr buf[0])
   outFn(":")
 
-  text:numtostr(issue'where'pos, ptr buf[0], 21)
+  txt:numtostr(issue'where'pos, ptr buf[0], 21)
 
   outFn(ptr buf[0])
   outFn(": ")
@@ -184,7 +184,7 @@ func listContains(list ptr list:List, value ptr uint8) bool
     mut ptrElem = list:listGet(list, i)
     mut elem = cast<ptr uint8>(val ptrElem)
 
-    if text:strequals(elem, value)
+    if txt:strequals(elem, value)
       return true
     /if
 
@@ -195,10 +195,10 @@ func listContains(list ptr list:List, value ptr uint8) bool
 /func
 
 
-func listDumpHierarchyIntoCS(list ptr list:List, cs ptr text:Charstash)
+func listDumpHierarchyIntoCS(list ptr list:List, cs ptr txt:Charstash)
   mut len = list:listLen(list)
 
-  text:csAppendStr(cs, "(")
+  txt:csAppendStr(cs, "(")
 
   if len > 1
 
@@ -207,17 +207,17 @@ func listDumpHierarchyIntoCS(list ptr list:List, cs ptr text:Charstash)
     while i > 0
       i--
 
-      text:csAppendStr(cs, cast<ptr uint8>(val list:listGet(list, i)))
+      txt:csAppendStr(cs, cast<ptr uint8>(val list:listGet(list, i)))
 
-      text:csAppendStr(cs, " => ")
+      txt:csAppendStr(cs, " => ")
     /while
 
-    text:csAppendStr(cs, cast<ptr uint8>(val list:listGet(list, len - 1)))
+    txt:csAppendStr(cs, cast<ptr uint8>(val list:listGet(list, len - 1)))
   else
-    text:csAppendStr(cs, "alias of itself")
+    txt:csAppendStr(cs, "alias of itself")
   /if
 
-  text:csAppendStr(cs, ")")
+  txt:csAppendStr(cs, ")")
 /func
 
 

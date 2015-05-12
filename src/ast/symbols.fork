@@ -15,8 +15,8 @@ import map
 import mem
 import proc
 import platform
-import text
 import tty
+import txt
 import utils
 
 
@@ -26,14 +26,14 @@ func symbolClone(sym ptr ast:Symbol) ptr ast:Symbol
   /if
 
   mut newInst = cast<ptr ast:Symbol>(mem:alloc(size(ast:Symbol)))
-  newInst'name = text:strclone(sym'name)
+  newInst'name = txt:strclone(sym'name)
   newInst'type = sym'type
 
   return newInst
 /func
 
 func symbolEquals(sym1,sym2 ptr ast:Symbol) bool
-  return text:strequals(sym1'name, sym2'name) and ast:typeEquals(sym1'type, sym2'type)
+  return txt:strequals(sym1'name, sym2'name) and ast:typeEquals(sym1'type, sym2'type)
 /func
 
 
@@ -49,7 +49,7 @@ func symbolFree(sym ptr ast:Symbol)
 func symbolNew(name ptr uint8, type ptr ast:Type) ptr ast:Symbol
   mut sym = cast<ptr ast:Symbol>(mem:alloc(size(ast:Symbol)))
 
-  sym'name = text:strclone(name)
+  sym'name = txt:strclone(name)
   sym'type = type
 
   return sym
@@ -67,7 +67,7 @@ func symbolListClone(pool ptr mem:FreePool, symList ptr kv:KVList) ptr kv:KVList
 
   while i < len
     mut elem = kv:kvGetAt(symList, i)
-    mut newStr = text:strclone(cast<ptr uint8>(elem'key))
+    mut newStr = txt:strclone(cast<ptr uint8>(elem'key))
     mut newType = astfn:typeClone(pool, cast<ptr ast:Type>(elem'value))
 
     kv:kvPut(ret, newStr, newType)
@@ -85,8 +85,8 @@ func typeClone(pool ptr mem:FreePool, type ptr ast:Type) ptr ast:Type
   /if
 
   mut newInst = cast<ptr ast:Type>(mem:memcpy(mem:fpAlloc(pool, size(ast:Type)), type, size(ast:Type)))
-  newInst'moduleName = text:strclone(type'moduleName)
-  newInst'name = text:strclone(type'name)
+  newInst'moduleName = txt:strclone(type'moduleName)
+  newInst'name = txt:strclone(type'name)
   newInst'retType = astfn:typeClone(pool, type'retType)
   newInst'members = symbolListClone(pool, type'members)
 
@@ -113,7 +113,7 @@ func typeEqualsList(list1, list2 ptr kv:KVList) bool
     mut type1 = cast<ptr ast:Type>(pair1'value)
     mut type2 = cast<ptr ast:Type>(pair2'value)
 
-    if !text:strequals(name1, name2) or !ast:typeEquals(type1, type2)
+    if !txt:strequals(name1, name2) or !ast:typeEquals(type1, type2)
       return false
     /if
 
@@ -130,10 +130,10 @@ func typeEquals(type1, type2 ptr ast:Type) bool
   /if
 
   if type1'name != null and type2'name != null
-    mut res = text:strequals(type1'name, type2'name)
+    mut res = txt:strequals(type1'name, type2'name)
 
     if res and type1'moduleName != null and type2'moduleName != null
-      res = text:strequals(type1'moduleName, type2'moduleName)
+      res = txt:strequals(type1'moduleName, type2'moduleName)
     /if
 
     return res
@@ -247,8 +247,8 @@ func typeNew(pool ptr mem:FreePool,
   mut ret = cast<ptr ast:Type>(location)
 
   ret'type = type
-  ret'moduleName = text:strclone(moduleName)
-  ret'name = text:strclone(name)
+  ret'moduleName = txt:strclone(moduleName)
+  ret'name = txt:strclone(name)
   ret'isSigned = isSigned
   ret'typeSize = typeSize
   ret'typeAlign = typeAlign
@@ -402,8 +402,8 @@ func typeNewStruct(pool ptr mem:FreePool, moduleName, name ptr uint8, members pt
 
 func typeSetAlias(type ptr ast:Type, moduleName, name ptr uint8)
   if type != null
-    type'moduleName = text:strclone(moduleName)
-    type'name = text:strclone(name)
+    type'moduleName = txt:strclone(moduleName)
+    type'name = txt:strclone(name)
   /if
 /func
 
@@ -440,7 +440,7 @@ func stabNew() ptr ast:Symtable
 
 
 func stabAdd(stab ptr ast:Symtable, name ptr uint8, type ptr ast:Type, symType uint16)
-  map:mapPut(stab'syms, text:strclone(name), astfn:declInfoNew(symType, type), map:FREE_KEY | map:FREE_VALUE)
+  map:mapPut(stab'syms, txt:strclone(name), astfn:declInfoNew(symType, type), map:FREE_KEY | map:FREE_VALUE)
 /func
 
 

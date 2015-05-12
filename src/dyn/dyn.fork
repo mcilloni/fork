@@ -11,7 +11,7 @@
 import dyn
 import err
 import mem
-import text
+import txt
 
 
 decl load_lib func(name ptr uint8, err ptr uint8, len uintptr) data
@@ -56,7 +56,7 @@ func sobjInit(sobj ptr dyn:SObj, name ptr uint8, err ptr ptr err:Error) bool
     return false
   /if
 
-  sobj'name = text:strclone(name)
+  sobj'name = txt:strclone(name)
 
   return true
 /func

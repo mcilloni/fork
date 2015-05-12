@@ -13,8 +13,8 @@ import mem
 import pair
 import proc
 import sort
-import text
 import tty
+import txt
 
 
 mut BLACK = false
@@ -410,10 +410,10 @@ func mapLen(map ptr map:Map) uintptr
 
 
 func strmapInit(map ptr map:Map) ptr map:Map
-  return map:mapInit(map, ptr text:strcompare)
+  return map:mapInit(map, ptr txt:strcompare)
 /func
 
 
 func strmapNew() ptr map:Map
-  return map:mapNew(ptr text:strcompare)
+  return map:mapNew(ptr txt:strcompare)
 /func

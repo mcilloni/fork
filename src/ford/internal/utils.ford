@@ -16,7 +16,7 @@ import err
 import list
 import pair
 import sort
-import text
+import txt
 
 
 decl charCanBeInString func(ch uint8, escape bool) bool
@@ -29,4 +29,4 @@ decl charIsWhite func(ch uint8) bool
 decl strIsUInt func(str ptr uint8) bool
 
 decl listContains func(list ptr list:List, value ptr uint8) bool
-decl listDumpHierarchyIntoCS func(list ptr list:List, cs ptr text:Charstash)
+decl listDumpHierarchyIntoCS func(list ptr list:List, cs ptr txt:Charstash)

@@ -15,7 +15,7 @@ import io
 import lex
 import mem
 import parser
-import text
+import txt
 import utils
 
 
@@ -133,35 +133,35 @@ func lexExtractString(lex ptr lex:Lexer) ptr lex:StringTok
   mut ch = nextChar(lex) #discard the `"`
   mut begin = ch'pos
 
-  mut cs = text:csNew(10) #just a magic number here
+  mut cs = txt:csNew(10) #just a magic number here
   #an STX is added at the beginning, indicating that the content is not a token but a whole string.
-  text:csAppend(cs, STX)
+  txt:csAppend(cs, STX)
 
   mut escape = false
 
   while !lex:lexerEof(lex) and utils:charCanBeInString(lex'peek, escape)
     ch = nextChar(lex)
     if ch'ch == 0
-      text:csFree(cs)
+      txt:csFree(cs)
       return null
     /if
 
     if !escape and ch'ch == 92 # `\\`
       escape = true
     else
-      text:csAppend(cs, applyEscape(ch'ch, escape))
+      txt:csAppend(cs, applyEscape(ch'ch, escape))
       escape = false
     /if
   /while
 
   if lex:lexerEof(lex)
-    text:csFree(cs)
+    txt:csFree(cs)
     lex'error = lex:errorLex(lex, "unexpected EOF in string body")
     return null
   /if
 
   if (ch = nextChar(lex))'ch != 34 # `"`
-    text:csFree(cs)
+    txt:csFree(cs)
     mut got [2] uint8
     got[0] = ch'ch
     got[1] = 0 # `\0` c string terminator
@@ -170,12 +170,12 @@ func lexExtractString(lex ptr lex:Lexer) ptr lex:StringTok
     return null
   /if
 
-  return strtokNew(text:csUnwrap(cs), lex'lineno'lineno, begin, ch'pos)
+  return strtokNew(txt:csUnwrap(cs), lex'lineno'lineno, begin, ch'pos)
 /func
 
 
 func lexExtractSym(lex ptr lex:Lexer) ptr lex:StringTok
-  mut cs = text:csNew(10) #magic number
+  mut cs = txt:csNew(10) #magic number
   mut i uintptr = 0
   mut ch Char
   mut first = true
@@ -184,7 +184,7 @@ func lexExtractSym(lex ptr lex:Lexer) ptr lex:StringTok
   while !lex:lexerEof(lex) and utils:charIsSym(lex'peek) and i < 2
     ch = nextChar(lex)
     if ch'ch == 0
-      text:csFree(cs)
+      txt:csFree(cs)
       return null
     /if
 
@@ -193,15 +193,15 @@ func lexExtractSym(lex ptr lex:Lexer) ptr lex:StringTok
       first = false
     /if
 
-    text:csAppend(cs, ch'ch)
+    txt:csAppend(cs, ch'ch)
   /while
 
-  return strtokNew(text:csUnwrap(cs), lex'lineno'lineno, begin, ch'pos)
+  return strtokNew(txt:csUnwrap(cs), lex'lineno'lineno, begin, ch'pos)
 /func
 
 
 func lexHandleId(lex ptr lex:Lexer) ptr lex:StringTok
-  mut cs = text:csNew(10) #magic number
+  mut cs = txt:csNew(10) #magic number
   mut ch Char
   mut begin uintptr
   mut first = true
@@ -209,7 +209,7 @@ func lexHandleId(lex ptr lex:Lexer) ptr lex:StringTok
   while utils:charIsIdVal(lex'peek)
     ch = nextChar(lex)
     if ch'ch == 0
-      text:csFree(cs)
+      txt:csFree(cs)
       return null
     /if
 
@@ -218,10 +218,10 @@ func lexHandleId(lex ptr lex:Lexer) ptr lex:StringTok
       first = false
     /if
 
-    text:csAppend(cs, ch'ch)
+    txt:csAppend(cs, ch'ch)
   /while
 
-  return strtokNew(text:csUnwrap(cs), lex'lineno'lineno, begin, ch'pos)
+  return strtokNew(txt:csUnwrap(cs), lex'lineno'lineno, begin, ch'pos)
 /func
 
 
@@ -289,7 +289,7 @@ func lexerFromStream(stream ptr io:Stream, name ptr uint8, err ptr ptr err:Error
   mut ret = cast<ptr lex:Lexer>(mem:zalloc(size(lex:Lexer)))
 
   ret'file = stream
-  ret'lineno = lex:linenoNew(text:strclone(name),0,0)
+  ret'lineno = lex:linenoNew(txt:strclone(name),0,0)
   ret'firstLineTok = true
   ret'firstLineLetter = true
 
@@ -399,74 +399,74 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 
   if val strToken == STX # is a constant string
     type = lex:STRING
-    value = cast<uintptr>(text:strclone(strToken + 1))
+    value = cast<uintptr>(txt:strclone(strToken + 1))
   /if
 
-  if text:strequals(strToken, "alias")
+  if txt:strequals(strToken, "alias")
     type = lex:ALIAS
   /if
 
-  if text:strequals(strToken, "&")
+  if txt:strequals(strToken, "&")
     type = lex:AMPER
   /if
 
-  if text:strequals(strToken, "and")
+  if txt:strequals(strToken, "and")
     type = lex:AND
   /if
 
-  if text:strequals(strToken, "'")
+  if txt:strequals(strToken, "'")
     type = lex:APOS
   /if
 
-  if text:strequals(strToken, "=")
+  if txt:strequals(strToken, "=")
     type = lex:ASSIGN
   /if
 
-  if text:strequals(strToken, "break")
+  if txt:strequals(strToken, "break")
     type = lex:BREAK
   /if
 
-  if text:strequals(strToken, "cast")
+  if txt:strequals(strToken, "cast")
     type = lex:CAST
   /if
 
-  if text:strequals(strToken, "]")
+  if txt:strequals(strToken, "]")
     type = lex:CBRAC
   /if
 
-  if text:strequals(strToken, ":")
+  if txt:strequals(strToken, ":")
     type = lex:COLON
   /if
 
-  if text:strequals(strToken, ",")
+  if txt:strequals(strToken, ",")
     type = lex:COMMA
   /if
 
-  if text:strequals(strToken, "continue")
+  if txt:strequals(strToken, "continue")
     type = lex:CONTINUE
   /if
 
-  if text:strequals(strToken, ")")
+  if txt:strequals(strToken, ")")
     type = lex:CPAR
   /if
 
-  if text:strequals(strToken, "--")
+  if txt:strequals(strToken, "--")
     type = lex:DEC
   /if
 
-  if text:strequals(strToken, "decl")
+  if txt:strequals(strToken, "decl")
     type = lex:DECL
   /if
 
-  if text:strequals(strToken, "!=")
+  if txt:strequals(strToken, "!=")
     type = lex:DIFFERENT
   /if
 
-  if text:strequals(strToken, "mod")
+  if txt:strequals(strToken, "mod")
     type = lex:MOD
   /if
 
-  if text:strequals(strToken, "/")
+  if txt:strequals(strToken, "/")
     if utils:charIsIdVal(lex'peek)
       lex'saved = extractNextToken(lex)
       if lexerError(lex) != null
@@ -475,19 +475,19 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 
       mut savedTok = lex'saved'str
 
-      if text:strequals(savedTok, "entry")
+      if txt:strequals(savedTok, "entry")
         type = lex:ENDENTRY
       /if
 
-      if text:strequals(savedTok, "func")
+      if txt:strequals(savedTok, "func")
         type = lex:ENDFUNC
       /if
 
-      if text:strequals(savedTok, "if")
+      if txt:strequals(savedTok, "if")
         type = lex:ENDIF
       /if
 
-      if text:strequals(savedTok, "while")
+      if txt:strequals(savedTok, "while")
         type = lex:ENDWHILE
       /if
 
@@ -503,149 +503,149 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     /if
   /if
 
-  if text:strequals(strToken, "else")
+  if txt:strequals(strToken, "else")
     type = lex:ELSE
   /if
 
-  if text:strequals(strToken, "entry")
+  if txt:strequals(strToken, "entry")
     type = lex:ENTRY
   /if
 
-  if text:strequals(strToken, "==")
+  if txt:strequals(strToken, "==")
     type = lex:EQUAL
   /if
 
-  if text:strequals(strToken, "false")
+  if txt:strequals(strToken, "false")
     type = lex:FALSE
   /if
 
-  if text:strequals(strToken, "=>")
+  if txt:strequals(strToken, "=>")
     type = lex:FATARROW
   /if
 
-  if text:strequals(strToken, "func")
+  if txt:strequals(strToken, "func")
     type = lex:FUNC
   /if
 
-  if text:strequals(strToken, "if")
+  if txt:strequals(strToken, "if")
     type = lex:IF
   /if
 
-  if text:strequals(strToken, "import")
+  if txt:strequals(strToken, "import")
     type = lex:IMPORT
   /if
 
-  if text:strequals(strToken, "++")
+  if txt:strequals(strToken, "++")
     type = lex:INC
   /if
 
-  if text:strequals(strToken, ">=")
+  if txt:strequals(strToken, ">=")
     type = lex:MAJEQ
   /if
 
-  if text:strequals(strToken, ">")
+  if txt:strequals(strToken, ">")
     type = lex:MAJOR
   /if
 
-  if text:strequals(strToken, "<=")
+  if txt:strequals(strToken, "<=")
     type = lex:MINEQ
   /if
 
-  if text:strequals(strToken, "<")
+  if txt:strequals(strToken, "<")
     type = lex:MINOR
   /if
 
-  if text:strequals(strToken, "-")
+  if txt:strequals(strToken, "-")
     type = lex:MINUS
   /if
 
-  if text:strequals(strToken, "module")
+  if txt:strequals(strToken, "module")
     type = lex:MODULE
   /if
 
-  if text:strequals(strToken, "mut")
+  if txt:strequals(strToken, "mut")
     type = lex:MUT
   /if
 
-  if text:strequals(strToken, "!")
+  if txt:strequals(strToken, "!")
     type = lex:NOT
   /if
 
-  if text:strequals(strToken, "null")
+  if txt:strequals(strToken, "null")
     type = lex:NULLPTR
   /if
 
-  if text:strequals(strToken, "[")
+  if txt:strequals(strToken, "[")
     type = lex:OBRAC
   /if
 
-  if text:strequals(strToken, "(")
+  if txt:strequals(strToken, "(")
     type = lex:OPAR
   /if
 
-  if text:strequals(strToken, "or")
+  if txt:strequals(strToken, "or")
     type = lex:OR
   /if
 
-  if text:strequals(strToken, "|")
+  if txt:strequals(strToken, "|")
     type = lex:PIPE
   /if
 
-  if text:strequals(strToken, "+")
+  if txt:strequals(strToken, "+")
     type = lex:PLUS
   /if
 
-  if text:strequals(strToken, "**")
+  if txt:strequals(strToken, "**")
     type = lex:POW
   /if
 
-  if text:strequals(strToken, "ptr")
+  if txt:strequals(strToken, "ptr")
     type = lex:PTR
   /if
 
-  if text:strequals(strToken, "return")
+  if txt:strequals(strToken, "return")
     type = lex:RETURN
   /if
 
-  if text:strequals(strToken, "||")
+  if txt:strequals(strToken, "||")
     type = lex:SEPARATOR
   /if
 
-  if text:strequals(strToken, "size")
+  if txt:strequals(strToken, "size")
     type = lex:SIZE
   /if
 
-  if text:strequals(strToken, "struct")
+  if txt:strequals(strToken, "struct")
     type = lex:STRUCT
   /if
 
-  if text:strequals(strToken, "*")
+  if txt:strequals(strToken, "*")
     type = lex:TIMES
   /if
 
-  if text:strequals(strToken, "true")
+  if txt:strequals(strToken, "true")
     type = lex:TRUE
   /if
 
-  if text:strequals(strToken, "::")
+  if txt:strequals(strToken, "::")
     type = lex:TWOCOLONS
   /if
 
-  if text:strequals(strToken, "val")
+  if txt:strequals(strToken, "val")
     type = lex:VAL
   /if
 
-  if text:strequals(strToken, "while")
+  if txt:strequals(strToken, "while")
     type = lex:WHILE
   /if
 
-  if text:strequals(strToken, "^")
+  if txt:strequals(strToken, "^")
     type = lex:XOR
   /if
 
   if utils:strIsUInt(strToken)
     type = lex:NUMBER
-    value = text:strtonum(strToken)
+    value = txt:strtonum(strToken)
   /if
 
   if type == 0 # if it's still unmodified, then it's an identifier
@@ -916,7 +916,7 @@ func tokenStr(tok ptr lex:Token) ptr uint8
 
 
 func linenoClone(lineno ptr lex:Lineno) ptr lex:Lineno
-  return lex:linenoNew(text:strclone(lineno'filename), lineno'lineno, lineno'pos)
+  return lex:linenoNew(txt:strclone(lineno'filename), lineno'lineno, lineno'pos)
 /func
 
 
@@ -1020,7 +1020,7 @@ func errorMism(lineno ptr lex:Lineno, exp ptr uint8, got ptr uint8) ptr parser:I
   toglue[3] = got
   toglue[4] = null
 
-  mut glued = text:strglue(ptr toglue[0])
+  mut glued = txt:strglue(ptr toglue[0])
   mut ret =  lex:error(lineno, glued)
 
   mem:free(glued)

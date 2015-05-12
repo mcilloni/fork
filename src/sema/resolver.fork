@@ -15,8 +15,8 @@ import mem
 import parser
 import proc
 import sema
-import text
 import tty
+import txt
 import utils
 
 
@@ -57,12 +57,12 @@ func resolverCollect(rsv ptr sema:Resolver,
         if pdecl'node'type != ast:PDECL and existent'node'type != ast:PDECL
           resolverDeinit(val rsv)
 
-          mut cs = text:csNew(20)
-          text:csAppendStr(cs, "symbol ")
-          text:csAppendStr(cs, name)
-          text:csAppendStr(cs, " defined twice")
+          mut cs = txt:csNew(20)
+          txt:csAppendStr(cs, "symbol ")
+          txt:csAppendStr(cs, name)
+          txt:csAppendStr(cs, " defined twice")
 
-          mut str = text:csUnwrap(cs)
+          mut str = txt:csUnwrap(cs)
           list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
 
           mem:free(str)
@@ -86,12 +86,12 @@ func resolverCollect(rsv ptr sema:Resolver,
         if kv:kvContains(rsv'aliases, name)
           resolverDeinit(val rsv)
 
-          mut cs = text:csNew(20)
-          text:csAppendStr(cs, "alias ")
-          text:csAppendStr(cs, name)
-          text:csAppendStr(cs, " is already defined")
+          mut cs = txt:csNew(20)
+          txt:csAppendStr(cs, "alias ")
+          txt:csAppendStr(cs, name)
+          txt:csAppendStr(cs, " is already defined")
 
-          list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, text:csUnwrap(cs)))
+          list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, txt:csUnwrap(cs)))
 
           return null
         /if
@@ -119,7 +119,7 @@ func resolverCollect(rsv ptr sema:Resolver,
       kv:kvPut(kv, name, pdecl)
     /if
 
-    kv:kvPut(ret, text:strclone(name), pdecl)
+    kv:kvPut(ret, txt:strclone(name), pdecl)
 
     i++
   /while

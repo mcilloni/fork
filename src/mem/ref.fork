@@ -12,7 +12,7 @@ import err
 import lex
 import list
 import mem
-import text
+import txt
 import utils
 
 

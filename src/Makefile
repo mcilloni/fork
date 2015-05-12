@@ -34,7 +34,7 @@ all:
 	$(MAKE) -C mem
 	$(MAKE) -C io
 	$(MAKE) -C file
-	$(MAKE) -C text
+	$(MAKE) -C txt
 	$(MAKE) -C tty
 	$(MAKE) -C pair
 	$(MAKE) -C vect
@@ -66,7 +66,7 @@ clean:
 	$(MAKE) -C mem clean
 	$(MAKE) -C io clean
 	$(MAKE) -C file clean
-	$(MAKE) -C text clean
+	$(MAKE) -C txt clean
 	$(MAKE) -C tty clean
 	$(MAKE) -C pair clean
 	$(MAKE) -C vect clean

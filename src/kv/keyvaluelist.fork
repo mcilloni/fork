@@ -21,8 +21,8 @@ import list
 import mem
 import pair
 import sort
-import text
 import tty
+import txt
 import utils
 
 
@@ -227,10 +227,10 @@ func kvSetFreeFuncs(kv ptr kv:KVList, freeKey ptr func(item data), freeVal ptr f
 
 
 func strkvInit(kv ptr kv:KVList) ptr kv:KVList
-  return kv:kvInit(kv, ptr text:strcompare)
+  return kv:kvInit(kv, ptr txt:strcompare)
 /func
 
 
 func strkvNew() ptr kv:KVList
-  return kv:kvNew(ptr text:strcompare)
+  return kv:kvNew(ptr txt:strcompare)
 /func

@@ -13,8 +13,8 @@ import kv
 import lex
 import list
 import mem
-import text
 import tty
+import txt
 import utils
 
 
@@ -346,20 +346,20 @@ func pnodeDump(pnode ptr ast:PNode)
 /func
 
 
-func symbolDump(cs ptr text:Charstash, sym ptr ast:Symbol)
+func symbolDump(cs ptr txt:Charstash, sym ptr ast:Symbol)
   if sym == null
     return
   /if
 
-  text:csAppendStr(cs, sym'name)
-  text:csAppend(cs, 32)
+  txt:csAppendStr(cs, sym'name)
+  txt:csAppend(cs, 32)
   ast:typeDump(cs, sym'type)
 /func
 
 
-func symlistDump(cs ptr text:Charstash, symlist ptr kv:KVList)
+func symlistDump(cs ptr txt:Charstash, symlist ptr kv:KVList)
 
-  text:csAppendStr(cs, "(")
+  txt:csAppendStr(cs, "(")
 
   if symlist != null
     mut len = kv:kvLen(symlist)
@@ -375,33 +375,33 @@ func symlistDump(cs ptr text:Charstash, symlist ptr kv:KVList)
       ast:symbolDump(cs, ptr sym)
 
       if i + 1 < len
-        text:csAppendStr(cs, ", ")
+        txt:csAppendStr(cs, ", ")
       /if
 
       i++
     /while
   /if
 
-  text:csAppendStr(cs, ")")
+  txt:csAppendStr(cs, ")")
 /func
 
 
-func typeDumpName(cs ptr text:Charstash, type ptr ast:Type)
+func typeDumpName(cs ptr txt:Charstash, type ptr ast:Type)
   if type'name != null
-    text:csAppendStr(cs, "{ ")
+    txt:csAppendStr(cs, "{ ")
 
     if type'moduleName != null
-      text:csAppendStr(cs, type'moduleName)
-      text:csAppendStr(cs, ":")
+      txt:csAppendStr(cs, type'moduleName)
+      txt:csAppendStr(cs, ":")
     /if
-    text:csAppendStr(cs, type'name)
+    txt:csAppendStr(cs, type'name)
 
-    text:csAppendStr(cs, " } ")
+    txt:csAppendStr(cs, " } ")
   /if
 /func
 
 
-func typeDump(cs ptr text:Charstash, type ptr ast:Type)
+func typeDump(cs ptr txt:Charstash, type ptr ast:Type)
 
   if type == null
     return
@@ -410,60 +410,60 @@ func typeDump(cs ptr text:Charstash, type ptr ast:Type)
   if type'type == ast:TYPE_FUNC
     typeDumpName(cs, type)
 
-    text:csAppendStr(cs, "func")
+    txt:csAppendStr(cs, "func")
 
     symlistDump(cs, type'members)
 
     if type'retType != null
-      text:csAppend(cs, 32)
+      txt:csAppend(cs, 32)
 
       typeDump(cs, type'retType)
     /if
   else
     if type'type == ast:TYPE_PTR
-      text:csAppendStr(cs, "ptr ")
+      txt:csAppendStr(cs, "ptr ")
 
       typeDump(cs, type'retType)
     else
       if type'type == ast:TYPE_STRUCT
         typeDumpName(cs, type)
 
-        text:csAppendStr(cs, "struct")
+        txt:csAppendStr(cs, "struct")
 
         symlistDump(cs, type'members)
       else
         if type'type == ast:TYPE_LOC
-          text:csAppendStr(cs, "[")
-          text:csAppendInt(cs, type'itemCount)
-          text:csAppendStr(cs, "] ")
+          txt:csAppendStr(cs, "[")
+          txt:csAppendInt(cs, type'itemCount)
+          txt:csAppendStr(cs, "] ")
 
           typeDump(cs, type'retType)
         else
           if type'type == ast:TYPE_BOOL
-            text:csAppendStr(cs, "bool")
+            txt:csAppendStr(cs, "bool")
           else
             if type'type == ast:TYPE_INT
               if !type'isSigned
-                text:csAppendStr(cs, "u")
+                txt:csAppendStr(cs, "u")
               /if
 
-              text:csAppendStr(cs, "int")
-              text:csAppendInt(cs, type'typeSize * 8)
+              txt:csAppendStr(cs, "int")
+              txt:csAppendInt(cs, type'typeSize * 8)
 
             else
               if type'type == ast:TYPE_DATA
-                text:csAppendStr(cs, "data")
+                txt:csAppendStr(cs, "data")
               else
                 if type'type == ast:TYPE_RECALIAS
-                  text:csAppendStr(cs, "<< alias to ")
-                  text:csAppendStr(cs, type'name)
-                  text:csAppendStr(cs, " >>")
+                  txt:csAppendStr(cs, "<< alias to ")
+                  txt:csAppendStr(cs, type'name)
+                  txt:csAppendStr(cs, " >>")
                 else
                   if type'type == ast:TYPE_NULL
-                    text:csAppendStr(cs, "null")
+                    txt:csAppendStr(cs, "null")
                   else
                     if type'type == ast:TYPE_EMPTY
-                      text:csAppendStr(cs, "<<empty type>>")
+                      txt:csAppendStr(cs, "<<empty type>>")
                     /if
                   /if
                 /if
@@ -478,20 +478,20 @@ func typeDump(cs ptr text:Charstash, type ptr ast:Type)
 /func
 
 
-func symbolSummarize(cs ptr text:Charstash, sym ptr ast:Symbol)
+func symbolSummarize(cs ptr txt:Charstash, sym ptr ast:Symbol)
   if sym == null
     return
   /if
 
-  text:csAppendStr(cs, sym'name)
-  text:csAppend(cs, 32)
+  txt:csAppendStr(cs, sym'name)
+  txt:csAppend(cs, 32)
   ast:typeSummarize(cs, sym'type)
 /func
 
 
-func symlistSummarize(cs ptr text:Charstash, symlist ptr kv:KVList)
+func symlistSummarize(cs ptr txt:Charstash, symlist ptr kv:KVList)
 
-  text:csAppendStr(cs, "(")
+  txt:csAppendStr(cs, "(")
 
   if symlist != null
     mut len = kv:kvLen(symlist)
@@ -507,54 +507,54 @@ func symlistSummarize(cs ptr text:Charstash, symlist ptr kv:KVList)
       ast:symbolSummarize(cs, ptr sym)
 
       if i + 1 < len
-        text:csAppendStr(cs, ", ")
+        txt:csAppendStr(cs, ", ")
       /if
 
       i++
     /while
   /if
 
-  text:csAppendStr(cs, ")")
+  txt:csAppendStr(cs, ")")
 /func
 
 
-func typeSummarize(cs ptr text:Charstash, type ptr ast:Type)
+func typeSummarize(cs ptr txt:Charstash, type ptr ast:Type)
   if type == null
-    text:csAppendStr(cs, "<<null type please report>>")
+    txt:csAppendStr(cs, "<<null type please report>>")
     return
   /if
 
   if type'name != null
     if type'moduleName != null
-      text:csAppendStr(cs, type'moduleName)
-      text:csAppendStr(cs, ":")
+      txt:csAppendStr(cs, type'moduleName)
+      txt:csAppendStr(cs, ":")
     /if
 
-    text:csAppendStr(cs, type'name)
+    txt:csAppendStr(cs, type'name)
     return
   /if
 
   if type'type == ast:TYPE_PTR
-    text:csAppendStr(cs, "ptr ")
+    txt:csAppendStr(cs, "ptr ")
     typeSummarize(cs, type'retType)
     return
   /if
 
   if type'type == ast:TYPE_LOC
-    text:csAppendStr(cs, "loc[")
-    text:csAppendInt(cs, type'itemCount)
-    text:csAppendStr(cs, "] ")
+    txt:csAppendStr(cs, "loc[")
+    txt:csAppendInt(cs, type'itemCount)
+    txt:csAppendStr(cs, "] ")
     typeSummarize(cs, type'retType)
     return
   /if
 
   if type'type == ast:TYPE_FUNC
-    text:csAppendStr(cs, "func")
+    txt:csAppendStr(cs, "func")
 
     symlistSummarize(cs, type'members)
 
     if type'retType != null
-      text:csAppend(cs, 32)
+      txt:csAppend(cs, 32)
 
       typeSummarize(cs, type'retType)
     /if
@@ -574,9 +574,9 @@ func declDump(prefix,name ptr uint8, type ptr ast:Type)
   tty:out(name)
   tty:outch(32)
 
-  mut cs = text:csNew(40)
+  mut cs = txt:csNew(40)
   ast:typeDump(cs, type)
-  mut str = text:csUnwrap(cs)
+  mut str = txt:csUnwrap(cs)
 
   tty:out(str)
 

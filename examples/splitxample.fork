@@ -9,20 +9,20 @@
 
 
 import mem
-import text
 import tty
+import txt
 
 
 entry
 
-  mut tkz = text:tokenizerNew("/home/marco/Workspace/forklift/second-step/examples/../src/ford/internal/:/home/marco/Workspace/forklift/second-step/examples/../../first-step/build/libfork/ford/internal/", 58)
+  mut tkz = txt:tokenizerNew("/home/marco/Workspace/forklift/second-step/examples/../src/ford/internal/:/home/marco/Workspace/forklift/second-step/examples/../../first-step/build/libfork/ford/internal/", 58)
 
   mut nxt ptr uint8
 
-  while (nxt = text:tokenizerNext(tkz)) != null
+  while (nxt = txt:tokenizerNext(tkz)) != null
     tty:outln(nxt)
     mem:free(nxt)
   /while
 
-  text:tokenizerFree(tkz)
+  txt:tokenizerFree(tkz)
 /entry

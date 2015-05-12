@@ -14,7 +14,7 @@ import list
 import mem
 import parser
 import sema
-import text
+import txt
 import utils
 
 
@@ -179,14 +179,14 @@ func registerDeclReal(rsv sema:Resolver,
 
           if typeResolved
             if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pdecl), realType, valType)
-              mut cs = text:csNew(20)
-              text:csAppendStr(cs, "cannot assign an expression of type '")
+              mut cs = txt:csNew(20)
+              txt:csAppendStr(cs, "cannot assign an expression of type '")
               ast:typeSummarize(cs, valType)
-              text:csAppendStr(cs, "' to a variable declared as '")
+              txt:csAppendStr(cs, "' to a variable declared as '")
               ast:typeSummarize(cs, realType)
-              text:csAppendStr(cs, "'")
+              txt:csAppendStr(cs, "'")
 
-              mut msg = text:csUnwrap(cs)
+              mut msg = txt:csUnwrap(cs)
 
               list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
 
@@ -273,7 +273,7 @@ func resolveDeclType(rsv sema:Resolver,
 
   # The declaration is absent
 
-  mut msg = text:strappend(name, " is not defined in current scope")
+  mut msg = txt:strappend(name, " is not defined in current scope")
   list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, node'begin, rsv'root'fileName, msg))
 
   mem:free(msg)
@@ -293,12 +293,12 @@ func registerDecl(rsv sema:Resolver,
 
   mut stab = sema:findStab(declNode)
   if ast:stabTypeof(stab, name) != null
-    mut cs = text:csNew(20)
-    text:csAppendStr(cs, "symbol '")
-    text:csAppendStr(cs, name)
-    text:csAppendStr(cs, "' is already defined")
+    mut cs = txt:csNew(20)
+    txt:csAppendStr(cs, "symbol '")
+    txt:csAppendStr(cs, name)
+    txt:csAppendStr(cs, "' is already defined")
 
-    mut msg = text:csUnwrap(cs)
+    mut msg = txt:csUnwrap(cs)
 
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, declNode'begin, rsv'root'fileName, msg))
 

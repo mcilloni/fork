@@ -17,8 +17,8 @@ import parser
 import proc
 import sema
 import synt
-import text
 import tty
+import txt
 import utils
 
 
@@ -117,10 +117,10 @@ entry
 
     tty:out(" :: ")
 
-    mut cs = text:csNew(10)
+    mut cs = txt:csNew(10)
     ast:typeSummarize(cs, dinfo'type)
 
-    mut des = text:csUnwrap(cs)
+    mut des = txt:csUnwrap(cs)
 
     tty:outln(des)
 

@@ -13,7 +13,7 @@ import astfn
 import lex
 import list
 import mem
-import text
+import txt
 import utils
 
 
@@ -173,7 +173,7 @@ func prootNew(moduleName ptr ast:StringDef, imports ptr list:List, fileName ptr 
 
   proot'moduleName = moduleName
   proot'imports = imports
-  proot'fileName = text:strclone(fileName)
+  proot'fileName = txt:strclone(fileName)
 
   return proot
 
@@ -187,7 +187,7 @@ func prootHasImported(root ptr ast:PRoot, name ptr uint8) bool
   while i < len
     mut elem = cast<ptr ast:StringDef>(val list:listGet(root'imports, i))
 
-    if text:strequals(elem'name, name)
+    if txt:strequals(elem'name, name)
       return true
     /if
 

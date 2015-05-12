@@ -10,7 +10,7 @@
 
 import err
 import mem
-import text
+import txt
 
 
 func errorFree(err ptr err:Error)
@@ -32,13 +32,13 @@ func errorMsg(err ptr err:Error) ptr uint8
 
 func errorNew(str ptr uint8) ptr err:Error
   mut err = cast<ptr err:Error>(mem:alloc(size(err:Error)))
-  err'msg = text:strclone(str)
+  err'msg = txt:strclone(str)
   return err
 /func
 
 
 func errorGlue(strs ptr ptr uint8) ptr err:Error
   mut err = cast<ptr err:Error>(mem:alloc(size(err:Error)))
-  err'msg = text:strglue(strs)
+  err'msg = txt:strglue(strs)
   return err
 /func

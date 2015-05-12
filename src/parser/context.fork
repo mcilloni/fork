@@ -18,12 +18,12 @@ import parser
 import proc
 import sema
 import synt
-import text
+import txt
 import utils
 
 
 func findImport(ctx ptr parser:Context, importName ptr ast:StringDef, importAst ptr ptr ast:PNode) ptr list:List
-  mut fordName = text:strappend(importName'name, ".ford")
+  mut fordName = txt:strappend(importName'name, ".ford")
 
   mut len = list:listLen(ctx'fordPaths)
 
@@ -56,7 +56,7 @@ func findImport(ctx ptr parser:Context, importName ptr ast:StringDef, importAst 
   toGlue[2] = " in the given FORDPATHS"
   toGlue[3] = null
 
-  mut glued = text:strglue(ptr toGlue[0])
+  mut glued = txt:strglue(ptr toGlue[0])
 
   list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, importName'begin, ctx'currentFile, glued))
 
@@ -72,7 +72,7 @@ func ctxImport(ctx ptr parser:Context, importName ptr ast:StringDef, value ptr p
   if !map:mapGet(ctx'imports, importName, value)
     mut errors = findImport(ctx, importName, value)
     if list:listLen(errors) == 0
-      map:mapPut(ctx'imports, text:strclone(importName'name), val value, map:FREE_KEY | map:FREE_VALUE)
+      map:mapPut(ctx'imports, txt:strclone(importName'name), val value, map:FREE_KEY | map:FREE_VALUE)
     /if
 
     return errors
@@ -108,10 +108,10 @@ func envExtractFordPaths() ptr list:List
 
   mut paths = proc:getenv("FORDPATHS")
   if paths != null
-    mut tkz = text:tokenizerNew(paths, 58) #`:`
+    mut tkz = txt:tokenizerNew(paths, 58) #`:`
     mut path ptr uint8
 
-    while (path = text:tokenizerNext(tkz)) != null
+    while (path = txt:tokenizerNext(tkz)) != null
       list:listAppend(list, path)
     /while
 
@@ -151,7 +151,7 @@ func ctxFree(ctx ptr parser:Context)
 func ctxSetCurrentFile(ctx ptr parser:Context, filename ptr uint8)
   mem:free(ctx'currentFile)
 
-  ctx'currentFile = text:strclone(filename)
+  ctx'currentFile = txt:strclone(filename)
 /func
 
 
