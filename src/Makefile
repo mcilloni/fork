@@ -31,6 +31,7 @@ all:
 	$(MAKE) -C c
 	$(MAKE) -C err
 	$(MAKE) -C mem
+	$(MAKE) -C io
 	$(MAKE) -C base
 	$(MAKE) -C text
 	$(MAKE) -C tty
@@ -54,6 +55,7 @@ clean:
 	$(MAKE) -C c clean
 	$(MAKE) -C err clean
 	$(MAKE) -C mem clean
+	$(MAKE) -C io clean
 	$(MAKE) -C base clean
 	$(MAKE) -C text clean
 	$(MAKE) -C tty clean

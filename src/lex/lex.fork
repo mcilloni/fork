@@ -10,6 +10,7 @@
 
 import base
 import err
+import io
 import lex
 import mem
 import text
@@ -44,8 +45,8 @@ func nextChar(lex ptr lex:Lexer) Char
   ret'ch = lex'peek
   ret'pos = 0
 
-  base:streamRead(lex'file, ptr lex'peek, 1)
-  if (lex'error = base:streamError(lex'file)) != null
+  io:streamRead(lex'file, ptr lex'peek, 1)
+  if (lex'error = io:streamError(lex'file)) != null
     ret'ch = 0
     return ret
   /if
@@ -54,7 +55,7 @@ func nextChar(lex ptr lex:Lexer) Char
 
   ret'pos = lex'lineno'pos
 
-  if base:streamEnded(lex'file)
+  if io:streamEnded(lex'file)
     lex'peek = 0
   /if
 
@@ -224,7 +225,7 @@ func lexHandleId(lex ptr lex:Lexer) ptr lex:StringTok
 
 func extractNextToken(lex ptr lex:Lexer) ptr lex:StringTok
 
-  if base:streamEnded(lex'file)
+  if io:streamEnded(lex'file)
     return null
   /if
 
@@ -271,7 +272,7 @@ func extractNextToken(lex ptr lex:Lexer) ptr lex:StringTok
 
 
 func lexerClose(lex ptr lex:Lexer)
-  base:streamClose(lex'file)
+  io:streamClose(lex'file)
   lex:linenoFree(lex'lineno)
   mem:free(lex)
 /func
@@ -282,7 +283,7 @@ func lexerError(lexer ptr lex:Lexer) ptr err:Error
 /func
 
 
-func lexerFromStream(stream ptr base:Stream, name ptr uint8, err ptr ptr err:Error) ptr lex:Lexer
+func lexerFromStream(stream ptr io:Stream, name ptr uint8, err ptr ptr err:Error) ptr lex:Lexer
   mut ret = cast<ptr lex:Lexer>(mem:zalloc(size(lex:Lexer)))
 
   ret'file = stream
@@ -290,8 +291,8 @@ func lexerFromStream(stream ptr base:Stream, name ptr uint8, err ptr ptr err:Err
   ret'firstLineTok = true
   ret'firstLineLetter = true
 
-  base:streamRead(stream, ptr ret'peek, 1)
-  if (val err = base:streamError(stream)) != null
+  io:streamRead(stream, ptr ret'peek, 1)
+  if (val err = io:streamError(stream)) != null
     return null
   /if
 
@@ -309,7 +310,7 @@ func lexerNew(fname ptr uint8, err ptr ptr err:Error) ptr lex:Lexer
 /func
 
 func lexerEof(lexer ptr lex:Lexer) bool
-  return base:streamEnded(lexer'file)
+  return io:streamEnded(lexer'file)
 /func
 
 func tokenNew(type uint16, value uintptr, lineno ptr lex:Lineno, end uintptr) ptr lex:Token

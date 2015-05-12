@@ -10,6 +10,7 @@
 
 import base
 import err
+import io
 
 
 func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err:Error, eof ptr bool) uintptr
@@ -65,7 +66,7 @@ func filecloseInternal(camoFd data, err ptr ptr err:Error) bool
 /func
 
 
-func fileOpen(filename ptr uint8, err ptr ptr err:Error) ptr base:Stream
+func fileOpen(filename ptr uint8, err ptr ptr err:Error) ptr io:Stream
   decl open_readfile func(name ptr uint8, error ptr uint8, errlen uintptr) int64
   mut buf [512] uint8
 
@@ -77,11 +78,11 @@ func fileOpen(filename ptr uint8, err ptr ptr err:Error) ptr base:Stream
     return null
   /if
 
-  return base:streamNew(cast<data>(fd), ptr filereadInternal, null, ptr filecloseInternal)
+  return io:streamNew(cast<data>(fd), ptr filereadInternal, null, ptr filecloseInternal)
 /func
 
 
-func fileCreate(filename ptr uint8, err ptr ptr err:Error) ptr base:Stream
+func fileCreate(filename ptr uint8, err ptr ptr err:Error) ptr io:Stream
   decl open_writefile func(name ptr uint8, error ptr uint8, errlen uintptr) int64
   mut buf [512] uint8
 
@@ -91,5 +92,5 @@ func fileCreate(filename ptr uint8, err ptr ptr err:Error) ptr base:Stream
     return null
   /if
 
-  return base:streamNew(cast<data>(fd), null, ptr filewriteInternal, ptr filecloseInternal)
+  return io:streamNew(cast<data>(fd), null, ptr filewriteInternal, ptr filecloseInternal)
 /func

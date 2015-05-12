@@ -12,37 +12,10 @@ module base
 
 
 import err
+import io
 
 
 alias comparer ptr func(val1, val2 data) int8
-
-
-# cookie structure
-
-alias closefunc func(handl data, err ptr ptr err:Error) bool
-alias readfunc func(handl data, buf ptr uint8, bufSize intptr, err ptr ptr err:Error, eof ptr bool) uintptr
-alias writefunc func(handl data, buf ptr uint8, bufSize intptr, err ptr ptr err:Error) uintptr
-
-
-alias Cookie struct (
-  priv8 data,
-  cfn ptr closefunc,
-  rfn ptr readfunc,
-  wfn ptr writefunc
-)
-
-
-# stream structure
-
-decl STREAM_IN uint8
-decl STREAM_OUT uint8
-
-alias Stream struct (
-  cookie Cookie,
-  eof bool,
-  error ptr err:Error,
-  inout uint8
-)
 
 
 # pair structure
@@ -113,18 +86,9 @@ decl abort func()
 decl exit func(retval int16)
 
 
-# Stream functions
-decl streamClose func(stream ptr Stream) bool
-decl streamEnded func(stream ptr Stream) bool
-decl streamError func(stream ptr Stream) ptr err:Error
-decl streamNew func(priv8 data, rfn ptr readfunc, wfn ptr writefunc, cfn ptr closefunc) ptr Stream
-decl streamRead func(stream ptr Stream, str ptr uint8, len intptr) uintptr
-decl streamWrite func(stream ptr Stream, str ptr uint8) uintptr
-
-
 # File stream functions
-decl fileOpen func(name ptr uint8, error ptr ptr err:Error) ptr Stream
-decl fileCreate func(name ptr uint8, error ptr ptr err:Error) ptr Stream
+decl fileOpen func(name ptr uint8, error ptr ptr err:Error) ptr io:Stream
+decl fileCreate func(name ptr uint8, error ptr ptr err:Error) ptr io:Stream
 
 # path functions
 decl pathContains func(path,filename ptr uint8) bool

@@ -11,6 +11,7 @@ module lex
 
 import base
 import err
+import io
 import utils
 
 
@@ -33,7 +34,7 @@ alias StringTok struct(
 )
 
 alias Lexer struct (
-  file ptr base:Stream,
+  file ptr io:Stream,
   lineno ptr Lineno,
   error ptr err:Error,
   saved ptr StringTok,
@@ -52,7 +53,7 @@ alias Token struct (
 decl lexerClose func(lex ptr Lexer)
 decl lexerEof func(lex ptr Lexer) bool
 decl lexerError func(lex ptr Lexer) ptr err:Error
-decl lexerFromStream func(stream ptr base:Stream, name ptr uint8, err ptr ptr err:Error) ptr Lexer
+decl lexerFromStream func(stream ptr io:Stream, name ptr uint8, err ptr ptr err:Error) ptr Lexer
 decl lexerNew func(name ptr uint8, err ptr ptr err:Error) ptr Lexer
 decl lexerNext func(lex ptr Lexer) ptr Token
 
