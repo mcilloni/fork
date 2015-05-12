@@ -9,11 +9,12 @@
 
 
 import base
+import map
 import mem
 
 
-func mapiterStart(map ptr base:Map) ptr base:MapIter
-  mut iter = cast<ptr base:MapIter>(mem:alloc(size(base:MapIter)))
+func mapiterStart(map ptr map:Map) ptr map:MapIter
+  mut iter = cast<ptr map:MapIter>(mem:alloc(size(map:MapIter)))
   iter'map = map
   iter'lastKey = null
   iter'begin = true
@@ -21,7 +22,7 @@ func mapiterStart(map ptr base:Map) ptr base:MapIter
 /func
 
 
-func iterIntNext(node ptr base:Mnode, lastKey data) ptr base:Pair
+func iterIntNext(node ptr map:Mnode, lastKey data) ptr base:Pair
 
   if node == null
     return null
@@ -36,7 +37,7 @@ func iterIntNext(node ptr base:Mnode, lastKey data) ptr base:Pair
       return pair
     /if
 
-    decl nodeMkpair func(node ptr base:Mnode) ptr base:Pair
+    decl nodeMkpair func(node ptr map:Mnode) ptr base:Pair
     return nodeMkpair(node)
   /if
 
@@ -45,7 +46,7 @@ func iterIntNext(node ptr base:Mnode, lastKey data) ptr base:Pair
 /func
 
 
-func mapiterNext(iter ptr base:MapIter) ptr base:Pair
+func mapiterNext(iter ptr map:MapIter) ptr base:Pair
   mut root = iter'map'root
 
   if root == null
@@ -54,7 +55,7 @@ func mapiterNext(iter ptr base:MapIter) ptr base:Pair
 
   if iter'begin
     iter'begin = false
-    decl nodeMinpair func(node ptr base:Mnode) ptr base:Pair
+    decl nodeMinpair func(node ptr map:Mnode) ptr base:Pair
     mut pair = nodeMinpair(root)
     iter'lastKey = pair'key
     return pair
@@ -71,6 +72,6 @@ func mapiterNext(iter ptr base:MapIter) ptr base:Pair
 /func
 
 
-func mapiterFree(iter ptr base:MapIter)
+func mapiterFree(iter ptr map:MapIter)
   mem:free(iter)
 /func

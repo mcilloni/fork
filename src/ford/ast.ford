@@ -10,8 +10,9 @@
 
 module ast
 
-import lex
 import base
+import lex
+import map
 import text
 import utils
 
@@ -107,7 +108,7 @@ decl symbolFree func(sym ptr Symbol)
 decl symbolNew func(name ptr uint8, type ptr Type) ptr Symbol
 decl symbolSummarize func(cs ptr text:Charstash, sym ptr Symbol)
 
-decl builtinSetNew func() ptr base:Map
+decl builtinSetNew func() ptr map:Map
 
 decl typeClone func(pool ptr utils:FreePool, type ptr Type) ptr Type
 decl typeDump func(cs ptr text:Charstash, type ptr Type)
@@ -139,7 +140,7 @@ decl declInfoFree func(declInfo ptr DeclInfo)
 decl declInfoNew func(declType uint16, type ptr Type) ptr DeclInfo
 
 alias Symtable struct(
-  syms ptr base:Map
+  syms ptr map:Map
 )
 
 decl stabNew func() ptr Symtable

@@ -12,6 +12,7 @@ import ast
 import base
 import ctx
 import file
+import map
 import mem
 import sema
 import synt
@@ -66,10 +67,10 @@ func findImport(ctx ptr ctx:Context, importName ptr ast:StringDef, importAst ptr
 
 func contextImport(ctx ptr ctx:Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr base:List
 
-  if !base:mapGet(ctx'imports, importName, value)
+  if !map:mapGet(ctx'imports, importName, value)
     mut errors = findImport(ctx, importName, value)
     if base:listLen(errors) == 0
-      base:mapPut(ctx'imports, text:strclone(importName'name), val value, base:FREE_KEY | base:FREE_VALUE)
+      map:mapPut(ctx'imports, text:strclone(importName'name), val value, map:FREE_KEY | map:FREE_VALUE)
     /if
 
     return errors
@@ -121,7 +122,7 @@ func envExtractFordPaths() ptr base:List
 func contextGetImport(ctx ptr ctx:Context, name ptr uint8) ptr ast:PRoot
   mut ret ptr ast:PRoot = null
 
-  base:mapGet(ctx'imports, name, ptr ret)
+  map:mapGet(ctx'imports, name, ptr ret)
 
   return ret
 /func
@@ -130,14 +131,14 @@ func contextGetImport(ctx ptr ctx:Context, name ptr uint8) ptr ast:PRoot
 func contextFree(ctx ptr ctx:Context)
   if ctx != null
     if ctx'imports != null
-      base:mapFreeSpec(ctx'imports, ptr mem:free, cast<ptr func(item data)>(ptr ast:pnodeFree))
+      map:mapFreeSpec(ctx'imports, ptr mem:free, cast<ptr func(item data)>(ptr ast:pnodeFree))
     /if
 
     if ctx'fordPaths != null
       base:listFreeAll(ctx'fordPaths, ptr mem:free)
     /if
 
-    base:mapFreeSpec(ctx'builtins, null, cast<ptr func(item data)>(ptr ast:typeFree))
+    map:mapFreeSpec(ctx'builtins, null, cast<ptr func(item data)>(ptr ast:typeFree))
 
     mem:free(ctx'currentFile)
     mem:free(ctx)
@@ -154,7 +155,7 @@ func contextSetCurrentFile(ctx ptr ctx:Context, filename ptr uint8)
 
 func contextNew() ptr ctx:Context
   mut ctx = cast<ptr ctx:Context>(mem:zalloc(size(ctx:Context)))
-  ctx'imports = base:strmapNew()
+  ctx'imports = map:strmapNew()
 
   ctx'fordPaths = envExtractFordPaths()
   ctx'builtins = ast:builtinSetNew()
@@ -165,6 +166,6 @@ func contextNew() ptr ctx:Context
 func contextMatchBuiltin(ctx ptr ctx:Context, name ptr uint8) ptr ast:Type
   mut value ptr ast:Type = null
 
-  base:mapGet(ctx'builtins, name, ptr value)
+  map:mapGet(ctx'builtins, name, ptr value)
   return value
 /func

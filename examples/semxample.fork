@@ -11,6 +11,7 @@
 import ast
 import base
 import ctx
+import map
 import mem
 import sema
 import synt
@@ -50,48 +51,48 @@ entry
   mut root = cast<ptr ast:PRoot>(ast)
 
   tty:out("== IMPORTS: ")
-  tty:outint(base:mapLen(ctx'imports))
+  tty:outint(map:mapLen(ctx'imports))
   tty:outch(10)
 
-  mut iter = base:mapiterStart(ctx'imports)
+  mut iter = map:mapiterStart(ctx'imports)
 
   mut pair ptr base:Pair
 
-  while (pair = base:mapiterNext(iter)) != null
+  while (pair = map:mapiterNext(iter)) != null
     tty:out("Imported ")
     tty:outln(cast<ptr uint8>(pair'key))
 
     base:pairFree(pair)
   /while
 
-  base:mapiterFree(iter)
+  map:mapiterFree(iter)
 
   mut aliasesMap = root'aliases'syms
 
   tty:out("\n\n== ALIASES: ")
-  tty:outint(base:mapLen(aliasesMap))
+  tty:outint(map:mapLen(aliasesMap))
   tty:outch(10)
 
-  iter = base:mapiterStart(aliasesMap)
+  iter = map:mapiterStart(aliasesMap)
 
-  while (pair = base:mapiterNext(iter)) != null
+  while (pair = map:mapiterNext(iter)) != null
     tty:out("alias ")
     tty:outln(cast<ptr uint8>(pair'key))
 
     base:pairFree(pair)
   /while
 
-  base:mapiterFree(iter)
+  map:mapiterFree(iter)
 
   mut declsMap = cast<ptr ast:PRoot>(ast)'node'syms'syms
 
   tty:out("\n\n== DECLS: ")
-  tty:outint(base:mapLen(declsMap))
+  tty:outint(map:mapLen(declsMap))
   tty:outch(10)
 
-  iter = base:mapiterStart(declsMap)
+  iter = map:mapiterStart(declsMap)
 
-  while (pair = base:mapiterNext(iter)) != null
+  while (pair = map:mapiterNext(iter)) != null
     mut dinfo = cast<ptr ast:DeclInfo>(pair'value)
     mut typeStr ptr uint8 = null
 
@@ -129,7 +130,7 @@ entry
 
   tty:outln(root'entryNode != null => "yes" || "no")
 
-  base:mapiterFree(iter)
+  map:mapiterFree(iter)
 
   ctx:contextFree(ctx)
 

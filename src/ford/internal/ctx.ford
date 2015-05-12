@@ -7,16 +7,20 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 module ctx
+
 
 import ast
 import base
+import map
+
 
 alias Context struct (
   fordPaths ptr base:List,
-  imports ptr base:Map,
+  imports ptr map:Map,
   currentFile ptr uint8,
-  builtins ptr base:Map
+  builtins ptr map:Map
 )
 
 decl contextGetImport func(ctx ptr Context, name ptr uint8) ptr ast:PRoot

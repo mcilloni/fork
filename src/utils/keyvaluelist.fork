@@ -11,7 +11,7 @@
 # The KeyValueList provides a costant traversal performance and easy deletion
 # at the expense of random access time and search.
 # The main reason for its usage is that
-# 1. the base:Map deletion code has weird bugs
+# 1. the map:Map deletion code has weird bugs
 # 2. this structure mantains the insertion order, adding new values at the end
 # 3. it's cheap to iterate on it.
 
@@ -54,7 +54,7 @@ func kvDeinit(kv ptr utils:KVList)
 /func
 
 
-func kvInit(kv ptr utils:KVList, cmp base:comparer) ptr utils:KVList
+func kvInit(kv ptr utils:KVList, cmp base:comparator) ptr utils:KVList
   mem:memset(kv, 0, size(utils:KVList))
 
   base:listInit(ptr kv'list)
@@ -64,7 +64,7 @@ func kvInit(kv ptr utils:KVList, cmp base:comparer) ptr utils:KVList
 /func
 
 
-func kvNew(cmp base:comparer) ptr utils:KVList
+func kvNew(cmp base:comparator) ptr utils:KVList
   return utils:kvInit(cast<ptr utils:KVList>(mem:alloc(size(utils:KVList))), cmp)
 /func
 

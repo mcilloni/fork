@@ -37,6 +37,7 @@ all:
 	$(MAKE) -C text
 	$(MAKE) -C tty
 	$(MAKE) -C vect
+	$(MAKE) -C map
 	$(MAKE) -C dyn
 	$(MAKE) -C utils
 	$(MAKE) -C lex
@@ -63,6 +64,7 @@ clean:
 	$(MAKE) -C text clean
 	$(MAKE) -C tty clean
 	$(MAKE) -C vect clean
+	$(MAKE) -C map clean
 	$(MAKE) -C dyn clean
 	$(MAKE) -C utils clean
 	$(MAKE) -C lex clean

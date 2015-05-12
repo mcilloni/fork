@@ -10,6 +10,7 @@
 
 import ast
 import base
+import map
 import mem
 import platform
 import text
@@ -302,26 +303,26 @@ func typeNewBuiltinString(uint8t ptr ast:Type) ptr ast:Type
 /func
 
 
-func builtinSetNew() ptr base:Map
+func builtinSetNew() ptr map:Map
 
-  mut ret = base:strmapNew()
+  mut ret = map:strmapNew()
   mut uint8t = typeNewBuiltinInt("uint8", 1, false)
 
-  base:mapPut(ret, "uint8", uint8t, base:FREE_VALUE)
-  base:mapPut(ret, "uint16", typeNewBuiltinInt("uint16", 2, false), base:FREE_VALUE)
-  base:mapPut(ret, "uint32", typeNewBuiltinInt("uint32", 4, false), base:FREE_VALUE)
-  base:mapPut(ret, "uint64", typeNewBuiltinInt("uint64", 8, false), base:FREE_VALUE)
-  base:mapPut(ret, "int8", typeNewBuiltinInt("int8", 1, true), base:FREE_VALUE)
-  base:mapPut(ret, "int16", typeNewBuiltinInt("int16", 2, true), base:FREE_VALUE)
-  base:mapPut(ret, "int32", typeNewBuiltinInt("int32", 4, true), base:FREE_VALUE)
-  base:mapPut(ret, "int64", typeNewBuiltinInt("int64", 8, true), base:FREE_VALUE)
-  base:mapPut(ret, "uintptr", typeNewBuiltinInt("uintptr", platform:ptrSize, false), base:FREE_VALUE)
-  base:mapPut(ret, "intptr", typeNewBuiltinInt("intptr", platform:ptrSize, true), base:FREE_VALUE)
-  base:mapPut(ret, "bool", typeNewBuiltinBool(), base:FREE_VALUE)
-  base:mapPut(ret, "data", typeNewBuiltinData(), base:FREE_VALUE)
-  base:mapPut(ret, "\0", typeNewBuiltinEmpty(), base:FREE_VALUE)
-  base:mapPut(ret, "null", typeNewBuiltinNull(), base:FREE_VALUE)
-  base:mapPut(ret, "ptr uint8", typeNewBuiltinString(uint8t), base:FREE_VALUE)
+  map:mapPut(ret, "uint8", uint8t, map:FREE_VALUE)
+  map:mapPut(ret, "uint16", typeNewBuiltinInt("uint16", 2, false), map:FREE_VALUE)
+  map:mapPut(ret, "uint32", typeNewBuiltinInt("uint32", 4, false), map:FREE_VALUE)
+  map:mapPut(ret, "uint64", typeNewBuiltinInt("uint64", 8, false), map:FREE_VALUE)
+  map:mapPut(ret, "int8", typeNewBuiltinInt("int8", 1, true), map:FREE_VALUE)
+  map:mapPut(ret, "int16", typeNewBuiltinInt("int16", 2, true), map:FREE_VALUE)
+  map:mapPut(ret, "int32", typeNewBuiltinInt("int32", 4, true), map:FREE_VALUE)
+  map:mapPut(ret, "int64", typeNewBuiltinInt("int64", 8, true), map:FREE_VALUE)
+  map:mapPut(ret, "uintptr", typeNewBuiltinInt("uintptr", platform:ptrSize, false), map:FREE_VALUE)
+  map:mapPut(ret, "intptr", typeNewBuiltinInt("intptr", platform:ptrSize, true), map:FREE_VALUE)
+  map:mapPut(ret, "bool", typeNewBuiltinBool(), map:FREE_VALUE)
+  map:mapPut(ret, "data", typeNewBuiltinData(), map:FREE_VALUE)
+  map:mapPut(ret, "\0", typeNewBuiltinEmpty(), map:FREE_VALUE)
+  map:mapPut(ret, "null", typeNewBuiltinNull(), map:FREE_VALUE)
+  map:mapPut(ret, "ptr uint8", typeNewBuiltinString(uint8t), map:FREE_VALUE)
 
   return ret
 /func
@@ -430,21 +431,21 @@ func declInfoNew(declType uint16, type ptr ast:Type) ptr ast:DeclInfo
 func stabNew() ptr ast:Symtable
   mut stab = cast<ptr ast:Symtable>(mem:zalloc(size(ast:Symtable)))
 
-  stab'syms = base:strmapNew()
+  stab'syms = map:strmapNew()
 
   return stab
 /func
 
 
 func stabAdd(stab ptr ast:Symtable, name ptr uint8, type ptr ast:Type, symType uint16)
-  base:mapPut(stab'syms, text:strclone(name), ast:declInfoNew(symType, type), base:FREE_KEY | base:FREE_VALUE)
+  map:mapPut(stab'syms, text:strclone(name), ast:declInfoNew(symType, type), map:FREE_KEY | map:FREE_VALUE)
 /func
 
 
 func stabGet(stab ptr ast:Symtable, name ptr uint8) ptr ast:DeclInfo
   mut value ptr ast:DeclInfo = null
 
-  base:mapGet(stab'syms, name, ptr value)
+  map:mapGet(stab'syms, name, ptr value)
 
   return value
 /func
@@ -459,7 +460,7 @@ func stabTypeof(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
 
 func stabFree(stab ptr ast:Symtable)
   if stab != null
-    base:mapFreeSpec(stab'syms, ptr mem:free, ptr ast:declInfoFree)
+    map:mapFreeSpec(stab'syms, ptr mem:free, ptr ast:declInfoFree)
     mem:free(stab)
   /if
 /func
