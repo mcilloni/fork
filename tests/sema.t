@@ -1,7 +1,7 @@
 Checks sema functionality:
 
   $ $TESTDIR/../examples/ex semxample $TESTDIR/../examples/sexample.fork
-  == IMPORTS: 12
+  == IMPORTS: 13
   Imported ast
   Imported base
   Imported err
@@ -9,6 +9,7 @@ Checks sema functionality:
   Imported lex
   Imported map
   Imported pair
+  Imported proc
   Imported sort
   Imported synt
   Imported text

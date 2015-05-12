@@ -8,6 +8,9 @@ Checks lex functionality.
   an identifier: base
   a newline
   import
+  an identifier: proc
+  a newline
+  import
   an identifier: synt
   a newline
   import
@@ -21,7 +24,7 @@ Checks lex functionality.
   mut
   an identifier: argv
   =
-  an identifier: base
+  an identifier: proc
   :
   an identifier: args
   (
@@ -41,7 +44,7 @@ Checks lex functionality.
   a string: Wrong number of arguments, required: 1
   )
   a newline
-  an identifier: base
+  an identifier: proc
   :
   an identifier: exit
   (
@@ -96,7 +99,7 @@ Checks lex functionality.
   an identifier: err
   )
   a newline
-  an identifier: base
+  an identifier: proc
   :
   an identifier: exit
   (
