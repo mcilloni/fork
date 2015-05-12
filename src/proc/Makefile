@@ -1,4 +1,4 @@
-BUILDPATH = ../../build/vect/
+BUILDPATH = ../../build/proc/
 
 ifndef FORKC
 	FORKC = forkc

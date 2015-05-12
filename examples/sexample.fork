@@ -7,17 +7,20 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 import ast
 import base
+import proc
 import synt
 import tty
 import utils
 
+
 entry
-  mut argv = base:args()
+  mut argv = proc:args()
   if argv'len != 1
     tty:errln("Wrong number of arguments, required: 1")
-    base:exit(1)
+    proc:exit(1)
   /if
 
   mut prs = synt:parserNew(argv'args[0])
@@ -25,7 +28,7 @@ entry
 
   if prs'err != null
     utils:issueWriteOut(prs'err, ptr tty:err)
-    base:exit(1)
+    proc:exit(1)
   /if
 
   ast:pnodeDump(root)

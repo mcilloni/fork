@@ -39,6 +39,7 @@ all:
 	$(MAKE) -C pair
 	$(MAKE) -C vect
 	$(MAKE) -C map
+	$(MAKE) -C proc
 	$(MAKE) -C dyn
 	$(MAKE) -C utils
 	$(MAKE) -C lex
@@ -67,6 +68,7 @@ clean:
 	$(MAKE) -C pair clean
 	$(MAKE) -C vect clean
 	$(MAKE) -C map clean
+	$(MAKE) -C proc clean
 	$(MAKE) -C dyn clean
 	$(MAKE) -C utils clean
 	$(MAKE) -C lex clean

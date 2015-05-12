@@ -11,10 +11,6 @@
 module base
 
 
-import err
-import io
-
-
 # list structures
 alias Lnode struct(
   prec, next ptr Lnode,
@@ -29,19 +25,6 @@ alias List struct(
   current ptr Lnode,
   pos uintptr
 )
-
-
-# args structure
-alias Args struct (
-  len uintptr,
-  progname ptr uint8,
-  args ptr ptr uint8
-)
-
-
-# System functions
-decl abort func()
-decl exit func(retval int16)
 
 
 # lists functions
@@ -75,10 +58,5 @@ decl listSeekZero func(list ptr List)
 decl listShallowCopy func(list ptr List) ptr List
 
 
-# args functions
-decl args func() ptr Args
-
-
 # generical declarations
 decl abs func(num intptr) uintptr
-decl getenv func(variable ptr uint8) ptr uint8

@@ -14,6 +14,7 @@ import ctx
 import file
 import map
 import mem
+import proc
 import sema
 import synt
 import text
@@ -104,7 +105,7 @@ func contextImportAll(ctx ptr ctx:Context, imports ptr base:List) ptr base:List
 func envExtractFordPaths() ptr base:List
   mut list = base:listNew()
 
-  mut paths = base:getenv("FORDPATHS")
+  mut paths = proc:getenv("FORDPATHS")
   if paths != null
     mut tkz = text:tokenizerNew(paths, 58) #`:`
     mut path ptr uint8

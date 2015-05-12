@@ -8,7 +8,7 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-import base
+import proc
 
 
 func alloc(len uintptr) data
@@ -16,7 +16,7 @@ func alloc(len uintptr) data
   mut ret = malloc(len)
 
   if ret == null and len != 0
-    base:abort()
+    proc:abort()
   /if
 
   return ret
@@ -28,7 +28,7 @@ func zalloc(len uintptr) data
   mut ret = calloc(1, len)
 
   if ret == null and len != 0
-    base:abort()
+    proc:abort()
   /if
 
   return ret

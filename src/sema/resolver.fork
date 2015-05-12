@@ -12,6 +12,7 @@ import ast
 import base
 import ctx
 import mem
+import proc
 import sema
 import text
 import tty
@@ -108,7 +109,7 @@ func resolverCollect(rsv ptr sema:Resolver,
           /if
         else
           tty:errln("Unreachable: invalid pdecl value")
-          base:abort()
+          proc:abort()
         /if
       /if
     /if

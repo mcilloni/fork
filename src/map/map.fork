@@ -8,10 +8,10 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-import base
 import map
 import mem
 import pair
+import proc
 import sort
 import text
 import tty
@@ -39,7 +39,7 @@ func nodeRotateLeft(node ptr map:Mnode) ptr map:Mnode
 
   if ret'color == BLACK
     tty:errln("rotating left a black node")
-    base:abort()
+    proc:abort()
   /if
 
   node'right = ret'left
@@ -57,7 +57,7 @@ func nodeRotateRight(node ptr map:Mnode) ptr map:Mnode
 
   if ret'color == BLACK
     tty:errln("rotating right a black node")
-    base:abort()
+    proc:abort()
   /if
 
   node'left = ret'right

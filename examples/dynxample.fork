@@ -7,11 +7,14 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 import base
 import dyn
 import err
+import proc
 import tty
 import utils
+
 
 entry
 
@@ -22,7 +25,7 @@ entry
     tty:err("error: ")
     tty:errln(error'msg)
 
-    base:exit(1)
+    proc:exit(1)
   /if
 
   mut puts = cast<ptr func(str ptr uint8)>(dyn:sobjGetSym(libc, "puts", ptr error))
@@ -31,7 +34,7 @@ entry
     tty:err("error: ")
     tty:errln(error'msg)
 
-    base:exit(2)
+    proc:exit(2)
   /if
 
   puts("test")

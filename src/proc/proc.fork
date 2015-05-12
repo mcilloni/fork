@@ -8,11 +8,11 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-import base
+import proc
 
 
-mut __forkprogArgs base:Args
+mut __forkprogArgs proc:Args
 
-func args() ptr base:Args
+func args() ptr proc:Args
   return ptr __forkprogArgs
 /func

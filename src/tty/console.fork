@@ -8,7 +8,7 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-import base
+import proc
 import c
 
 
@@ -32,13 +32,13 @@ func errln(str ptr uint8)
 
 func fail(str ptr uint8)
   err(str)
-  base:exit(1)
+  proc:exit(1)
 /func
 
 
 func failln(str ptr uint8)
   errln(str)
-  base:exit(1)
+  proc:exit(1)
 /func
 
 

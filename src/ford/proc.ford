@@ -1,5 +1,5 @@
 #  libfork, a base library for the Fork language
-#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
 #
 #  This Source Code Form is subject to the terms of the Mozilla Public
 #  License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,17 +8,22 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-import proc
+module proc
 
 
-decl __fork_entry func()
+# args structure
+alias Args struct (
+  len uintptr,
+  progname ptr uint8,
+  args ptr ptr uint8
+)
 
 
-func main(argc intptr, argv ptr ptr uint8) int8
-  mut forkArgs = proc:args()
-  forkArgs'len = cast<uintptr>(argc - 1)
-  forkArgs'progname = val argv
-  forkArgs'args = argv + 1
-  __fork_entry()
-  return 0
-/func
+# args functions
+decl args func() ptr Args
+
+
+# System functions
+decl abort func()
+decl exit func(retval int16)
+decl getenv func(variable ptr uint8) ptr uint8

@@ -12,6 +12,7 @@ import ast
 import base
 import ctx
 import mem
+import proc
 import sema
 import text
 import tty
@@ -293,7 +294,7 @@ func resolveIdType(rsv sema:Resolver,
   if utils:kvGet(rsv'aliases, ptype'name, ptr whichDecl)
     if whichDecl'node'validated
       tty:errln("This should not be reachable")
-      base:abort()
+      proc:abort()
     /if
 
     return registerAliasReal(rsv, ptype'name, whichDecl'sym'type, recList, errors, ignoreSize)
@@ -334,7 +335,7 @@ func convertType(rsv sema:Resolver,
           return convertFuncType(rsv, ptype, errors, recList)
         else
           tty:errln("Unreachable")
-          base:abort()
+          proc:abort()
         /if
       /if
     /if

@@ -12,6 +12,7 @@ import ast
 import base
 import ctx
 import mem
+import proc
 import sema
 import text
 import tty
@@ -284,7 +285,7 @@ func validateStmt(rsv sema:Resolver,
 
   # unreachable
   tty:errln("unknown statement type")
-  base:abort()
+  proc:abort()
   return false
 /func
 
