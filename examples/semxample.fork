@@ -13,6 +13,7 @@ import base
 import ctx
 import map
 import mem
+import pair
 import sema
 import synt
 import text
@@ -56,13 +57,13 @@ entry
 
   mut iter = map:mapiterStart(ctx'imports)
 
-  mut pair ptr base:Pair
+  mut pair ptr pair:Pair
 
   while (pair = map:mapiterNext(iter)) != null
     tty:out("Imported ")
     tty:outln(cast<ptr uint8>(pair'key))
 
-    base:pairFree(pair)
+    pair:pairFree(pair)
   /while
 
   map:mapiterFree(iter)
@@ -79,7 +80,7 @@ entry
     tty:out("alias ")
     tty:outln(cast<ptr uint8>(pair'key))
 
-    base:pairFree(pair)
+    pair:pairFree(pair)
   /while
 
   map:mapiterFree(iter)
@@ -123,7 +124,7 @@ entry
     tty:outln(des)
 
     mem:free(des)
-    base:pairFree(pair)
+    pair:pairFree(pair)
   /while
 
   tty:out("\n\n==> Has entry? ")

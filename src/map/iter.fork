@@ -11,6 +11,7 @@
 import base
 import map
 import mem
+import pair
 
 
 func mapiterStart(map ptr map:Map) ptr map:MapIter
@@ -22,7 +23,7 @@ func mapiterStart(map ptr map:Map) ptr map:MapIter
 /func
 
 
-func iterIntNext(node ptr map:Mnode, lastKey data) ptr base:Pair
+func iterIntNext(node ptr map:Mnode, lastKey data) ptr pair:Pair
 
   if node == null
     return null
@@ -37,7 +38,7 @@ func iterIntNext(node ptr map:Mnode, lastKey data) ptr base:Pair
       return pair
     /if
 
-    decl nodeMkpair func(node ptr map:Mnode) ptr base:Pair
+    decl nodeMkpair func(node ptr map:Mnode) ptr pair:Pair
     return nodeMkpair(node)
   /if
 
@@ -46,7 +47,7 @@ func iterIntNext(node ptr map:Mnode, lastKey data) ptr base:Pair
 /func
 
 
-func mapiterNext(iter ptr map:MapIter) ptr base:Pair
+func mapiterNext(iter ptr map:MapIter) ptr pair:Pair
   mut root = iter'map'root
 
   if root == null
@@ -55,7 +56,7 @@ func mapiterNext(iter ptr map:MapIter) ptr base:Pair
 
   if iter'begin
     iter'begin = false
-    decl nodeMinpair func(node ptr map:Mnode) ptr base:Pair
+    decl nodeMinpair func(node ptr map:Mnode) ptr pair:Pair
     mut pair = nodeMinpair(root)
     iter'lastKey = pair'key
     return pair

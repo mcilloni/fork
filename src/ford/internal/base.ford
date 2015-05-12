@@ -18,12 +18,6 @@ import io
 alias comparator ptr func(val1, val2 data) int8
 
 
-# pair structure
-alias Pair struct (
-  key, value data
-)
-
-
 # list structures
 alias Lnode struct(
   prec, next ptr Lnode,
@@ -51,12 +45,6 @@ alias Args struct (
 # System functions
 decl abort func()
 decl exit func(retval int16)
-
-
-# pair functions
-
-decl pairFree func(pair ptr Pair)
-decl pairNew func(item1,item2 data) ptr Pair
 
 
 # lists functions

@@ -1,0 +1,26 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import mem
+import pair
+
+
+func pairNew(first,second data) ptr pair:Pair
+  mut pair = cast<ptr pair:Pair>(mem:zalloc(size(pair:Pair)))
+  pair'key = first
+  pair'value = second
+
+  return pair
+/func
+
+
+func pairFree(pair ptr pair:Pair)
+  mem:free(pair)
+/func

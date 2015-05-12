@@ -12,6 +12,7 @@ import ast
 import base
 import ctx
 import map
+import pair
 import sema
 import synt
 import tty
@@ -50,7 +51,7 @@ entry
 
   mut iter = map:mapiterStart(cast<ptr ast:PRoot>(ast)'aliases'syms)
 
-  mut pair ptr base:Pair
+  mut pair ptr pair:Pair
 
   while (pair = map:mapiterNext(iter)) != null
     ast:declDump("alias", cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value))

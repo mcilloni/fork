@@ -13,6 +13,7 @@ module utils
 
 import base
 import err
+import pair
 import text
 
 
@@ -72,10 +73,10 @@ alias KVList struct(
 decl kvClone func(kv ptr KVList) ptr KVList
 decl kvContains func(kv ptr KVList, key data) bool
 decl kvDeinit func(kv ptr KVList)
-decl kvFirst func(kv ptr KVList) ptr base:Pair
+decl kvFirst func(kv ptr KVList) ptr pair:Pair
 decl kvFree func(kv ptr KVList)
 decl kvGet func(kv ptr KVList, key data, value ptr data) bool
-decl kvGetAt func(kv ptr KVList, index uintptr) ptr base:Pair
+decl kvGetAt func(kv ptr KVList, index uintptr) ptr pair:Pair
 decl kvGetPos func(kv ptr KVList, key data, value ptr data) intptr
 decl kvInit func(kv ptr KVList, cmp base:comparator) ptr KVList
 decl kvLen func(kv ptr KVList) uintptr

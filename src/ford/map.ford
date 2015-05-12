@@ -12,6 +12,7 @@ module map
 
 
 import base
+import pair
 
 
 # map structures
@@ -42,7 +43,7 @@ alias MapIter struct (
 decl mapContains func(map ptr Map, key data) bool
 decl mapDeinit func(map ptr Map)
 decl mapDeinitSpec func(map ptr Map, freeKey ptr func(item data), freeVal ptr func(item data))
-decl mapFirst func(map ptr Map) ptr base:Pair
+decl mapFirst func(map ptr Map) ptr pair:Pair
 decl mapFree func(map ptr Map)
 decl mapFreeSpec func(map ptr Map, freeKey ptr func(item data), freeVal ptr func(item data))
 decl mapGet func(map ptr Map, key data, value ptr data) bool
@@ -61,7 +62,7 @@ decl strmapNew func() ptr Map
 # mapiter functions
 
 decl mapiterStart func(map ptr Map) ptr MapIter
-decl mapiterNext func(map ptr MapIter) ptr base:Pair
+decl mapiterNext func(map ptr MapIter) ptr pair:Pair
 decl mapiterFree func(map ptr MapIter)
 
 

@@ -11,6 +11,7 @@
 import base
 import map
 import mem
+import pair
 import text
 import tty
 
@@ -225,19 +226,19 @@ func nodeDeleteMin(node ptr map:Mnode) ptr map:Mnode
 /func
 
 
-func nodeMkpair(node ptr map:Mnode) ptr base:Pair
+func nodeMkpair(node ptr map:Mnode) ptr pair:Pair
   if node == null
     return null
   /if
 
-  mut ret = cast<ptr base:Pair>(mem:alloc(size(base:Pair)))
+  mut ret = cast<ptr pair:Pair>(mem:alloc(size(pair:Pair)))
   ret'key = node'key
   ret'value = node'value
   return ret
 /func
 
 
-func nodeMinpair(node ptr map:Mnode) ptr base:Pair
+func nodeMinpair(node ptr map:Mnode) ptr pair:Pair
   if node'left == null
     return nodeMkpair(node)
   else
@@ -364,7 +365,7 @@ func mapRemove(map ptr map:Map, key data) bool
 /func
 
 
-func mapFirst(map ptr map:Map) ptr base:Pair
+func mapFirst(map ptr map:Map) ptr pair:Pair
   return map'root != null => nodeMinpair(map'root) || null
 /func
 

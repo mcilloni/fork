@@ -36,6 +36,7 @@ all:
 	$(MAKE) -C base
 	$(MAKE) -C text
 	$(MAKE) -C tty
+	$(MAKE) -C pair
 	$(MAKE) -C vect
 	$(MAKE) -C map
 	$(MAKE) -C dyn
@@ -63,6 +64,7 @@ clean:
 	$(MAKE) -C base clean
 	$(MAKE) -C text clean
 	$(MAKE) -C tty clean
+	$(MAKE) -C pair clean
 	$(MAKE) -C vect clean
 	$(MAKE) -C map clean
 	$(MAKE) -C dyn clean
