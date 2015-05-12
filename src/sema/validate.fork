@@ -9,9 +9,9 @@
 
 
 import ast
-import ctx
 import kv
 import list
+import parser
 import proc
 import sema
 import tty
@@ -41,8 +41,8 @@ func validatePDecl(rsv sema:Resolver, pdecl ptr ast:PDecl, errors ptr list:List)
 
 
 # This function validates an AST.
-# Being supposed to be called by semaValidateAst, we may assume that all imports
-# have been already evaluated.
+# Being supposed to be called by semaValidateAst, we may assume that all the
+# imports have been already evaluated.
 #
 # This function initializes a resolver and then parses the children of the given
 # AST root, using the resolver to resolve eventual symbols and aliases.
@@ -50,7 +50,7 @@ func validatePDecl(rsv sema:Resolver, pdecl ptr ast:PDecl, errors ptr list:List)
 # If not found, a symbol is looked after and verified out of order, allowing
 # complete visibility of the global scope without any issue with the declaration
 # order of variables, aliases and functions.
-func semaValidateAstRoot(ctx ptr ctx:Context, root ptr ast:PRoot, errors ptr list:List) bool
+func semaValidateAstRoot(ctx ptr parser:Context, root ptr ast:PRoot, errors ptr list:List) bool
   if root'node'node'validated
     return true
   /if

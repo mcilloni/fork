@@ -9,27 +9,27 @@
 
 
 import ast
-import ctx
 import kv
 import list
 import mem
+import parser
 import sema
 import synt
 import utils
 
 
-func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr list:List
+func semaValidateAst(ctx ptr parser:Context, root ptr ast:PNode) ptr list:List
   if root'type != ast:PROOT
     return null
   /if
 
   mut proot = cast<ptr ast:PRoot>(root)
 
-  ctx:contextSetCurrentFile(ctx, proot'fileName)
+  parser:ctxSetCurrentFile(ctx, proot'fileName)
 
-  mut errors = ctx:contextImportAll(ctx, proot'imports)
+  mut errors = parser:ctxImportAll(ctx, proot'imports)
 
-  ctx:contextSetCurrentFile(ctx, proot'fileName)
+  parser:ctxSetCurrentFile(ctx, proot'fileName)
 
   if list:listLen(errors) != 0
     return errors
@@ -42,24 +42,4 @@ func semaValidateAst(ctx ptr ctx:Context, root ptr ast:PNode) ptr list:List
   sema:semaValidateAstRoot(ctx, proot, errors)
 
   return errors
-/func
-
-
-func semaParse(ctx ptr ctx:Context, fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr list:List
-  mut parser = synt:parserNew(fileName)
-
-  val newRoot = synt:parserParse(parser)
-
-  mut error = parser'err
-
-  synt:parserFree(parser)
-
-  if val newRoot == null
-    mut list = list:listNew()
-    list:listAppend(list, error)
-
-    return list
-  /if
-
-  return sema:semaValidateAst(ctx, val newRoot)
 /func

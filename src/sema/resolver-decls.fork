@@ -9,7 +9,6 @@
 
 
 import ast
-import ctx
 import kv
 import list
 import mem
@@ -19,7 +18,7 @@ import text
 import utils
 
 
-func findRecAlias(ctx ptr ctx:Context, scope ptr ast:PNode, ralias ptr ast:Type) ptr ast:Type
+func findRecAlias(ctx ptr parser:Context, scope ptr ast:PNode, ralias ptr ast:Type) ptr ast:Type
   if ralias'type != ast:TYPE_RECALIAS
     return ralias
   /if
@@ -69,8 +68,8 @@ func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 /func
 
 
-func findSymModule(ctx ptr ctx:Context, moduleName, name ptr uint8) ptr ast:Type
-  mut imp = ctx:contextGetImport(ctx, moduleName)
+func findSymModule(ctx ptr parser:Context, moduleName, name ptr uint8) ptr ast:Type
+  mut imp = parser:ctxGetImport(ctx, moduleName)
   if imp == null
     return null
   /if

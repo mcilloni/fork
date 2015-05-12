@@ -10,7 +10,6 @@
 
 import ast
 import astfn
-import ctx
 import kv
 import list
 import mem
@@ -194,8 +193,8 @@ func convertFuncType(rsv sema:Resolver,
 /func
 
 
-func findAliasImport(ctx ptr ctx:Context, moduleName,name ptr uint8) ptr ast:Type
-  mut imp = ctx:contextGetImport(ctx, moduleName)
+func findAliasImport(ctx ptr parser:Context, moduleName,name ptr uint8) ptr ast:Type
+  mut imp = parser:ctxGetImport(ctx, moduleName)
   if imp == null
     return null
   /if
@@ -258,7 +257,7 @@ func resolveIdType(rsv sema:Resolver,
                     errors, recList ptr list:List,
                     ignoreSize bool) ptr ast:Type
 
-  mut builtin = ctx:contextMatchBuiltin(rsv'ctx, ptype'name)
+  mut builtin = parser:ctxMatchBuiltin(rsv'ctx, ptype'name)
   if builtin != null
     return astfn:typeClone(rsv'root'typePool, builtin)
   /if

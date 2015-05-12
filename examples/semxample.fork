@@ -9,7 +9,6 @@
 
 
 import ast
-import ctx
 import list
 import map
 import mem
@@ -30,9 +29,9 @@ entry
     proc:exit(1)
   /if
 
-  mut ctx = ctx:contextNew()
+  mut ctx = parser:ctxNew()
   mut ast ptr ast:PNode
-  mut errors = sema:semaParse(ctx, argv'args[0], ptr ast)
+  mut errors = parser:ctxParseFile(ctx, argv'args[0], ptr ast)
 
   mut errLen = list:listLen(errors)
 
@@ -135,7 +134,7 @@ entry
 
   map:mapiterFree(iter)
 
-  ctx:contextFree(ctx)
+  parser:ctxFree(ctx)
 
   ast:pnodeFree(ast)
 /entry

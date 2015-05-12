@@ -10,7 +10,6 @@
 
 import ast
 import astfn
-import ctx
 import kv
 import lex
 import list
@@ -125,26 +124,26 @@ func assignLhsDump(cs ptr text:Charstash, pexpr ptr ast:PExpr)
 /func
 
 
-func intForVal(ctx ptr ctx:Context, value intptr) ptr ast:Type
+func intForVal(ctx ptr parser:Context, value intptr) ptr ast:Type
   mut aval = math:abs(value)
 
   if aval < 2**7
-    return ctx:contextMatchBuiltin(ctx, "int8")
+    return parser:ctxMatchBuiltin(ctx, "int8")
   else
     if aval < 2**15
-      return ctx:contextMatchBuiltin(ctx, "int16")
+      return parser:ctxMatchBuiltin(ctx, "int16")
     else
       if aval < 2 ** 31
-        return ctx:contextMatchBuiltin(ctx, "int32")
+        return parser:ctxMatchBuiltin(ctx, "int32")
       /if
     /if
   /if
 
-  return ctx:contextMatchBuiltin(ctx, "int64")
+  return parser:ctxMatchBuiltin(ctx, "int64")
 /func
 
 
-func intTypesFindLargestCompatible(ctx ptr ctx:Context, type1, type2 ptr ast:Type) ptr ast:Type
+func intTypesFindLargestCompatible(ctx ptr parser:Context, type1, type2 ptr ast:Type) ptr ast:Type
 
   mut bothSigned = type1'isSigned and type2'isSigned
   mut bothUnsigned = !type1'isSigned and !type2'isSigned
@@ -155,11 +154,11 @@ func intTypesFindLargestCompatible(ctx ptr ctx:Context, type1, type2 ptr ast:Typ
   /if
 
   # return intptr, must improve in the future
-  return ctx:contextMatchBuiltin(ctx, "intptr")
+  return parser:ctxMatchBuiltin(ctx, "intptr")
 /func
 
 
-func typeIsAssignable(ctx ptr ctx:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
+func typeIsAssignable(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
   if dest == null or src == null
     return dest == src
   /if
@@ -247,7 +246,7 @@ func typeIsAssignable(ctx ptr ctx:Context, scope ptr ast:PNode, dest,src ptr ast
 /func
 
 
-func typeIsCastable(ctx ptr ctx:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
+func typeIsCastable(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
   if dest'type == ast:TYPE_EMPTY or src'type == ast:TYPE_EMPTY
     return false
   /if
@@ -270,7 +269,7 @@ func validateExprConst(rsv sema:Resolver,
   mut op = pexpr'opType
 
   if op == lex:STRING
-    return ctx:contextMatchBuiltin(rsv'ctx, "ptr uint8")
+    return parser:ctxMatchBuiltin(rsv'ctx, "ptr uint8")
   /if
 
   if op == lex:NUMBER
@@ -278,11 +277,11 @@ func validateExprConst(rsv sema:Resolver,
   /if
 
   if op == lex:TRUE or op == lex:FALSE
-    return ctx:contextMatchBuiltin(rsv'ctx, "bool")
+    return parser:ctxMatchBuiltin(rsv'ctx, "bool")
   /if
 
   if op == lex:NULLPTR
-    return ctx:contextMatchBuiltin(rsv'ctx, "null")
+    return parser:ctxMatchBuiltin(rsv'ctx, "null")
   /if
 
   return null
@@ -340,7 +339,7 @@ func validateSizeExpr(rsv sema:Resolver,
     return null
   /if
 
-  return ctx:contextMatchBuiltin(rsv'ctx, "uintptr")
+  return parser:ctxMatchBuiltin(rsv'ctx, "uintptr")
 /func
 
 
@@ -409,7 +408,7 @@ func validateBoolExpr(rsv sema:Resolver,
     return null
   /if
 
-  return ctx:contextMatchBuiltin(rsv'ctx, "bool")
+  return parser:ctxMatchBuiltin(rsv'ctx, "bool")
 /func
 
 
@@ -454,7 +453,7 @@ func validateArithPtrExpr(rsv sema:Resolver,
         return null
       /if
 
-      return ctx:contextMatchBuiltin(rsv'ctx, "intptr")
+      return parser:ctxMatchBuiltin(rsv'ctx, "intptr")
     else
       list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "only difference between two pointers can be allowed"))
       return null
@@ -488,7 +487,7 @@ func validateArithExpr(rsv sema:Resolver,
   # In this case, we only have integers, so we just need to evaluate the larger
   # type or resolve to boolean in case of a major/minor comparison.
 
-  return ttypeIsComparison(op) => ctx:contextMatchBuiltin(rsv'ctx, "bool") || (ltype'typeSize > rtype'typeSize => ltype || rtype)
+  return ttypeIsComparison(op) => parser:ctxMatchBuiltin(rsv'ctx, "bool") || (ltype'typeSize > rtype'typeSize => ltype || rtype)
 /func
 
 
@@ -515,7 +514,7 @@ func validateEqDiffExpr(rsv sema:Resolver,
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "cannot evaluate the equivalence of two incompatible types"))
   /if
 
-  return success => ctx:contextMatchBuiltin(rsv'ctx, "bool") || null
+  return success => parser:ctxMatchBuiltin(rsv'ctx, "bool") || null
 /func
 
 
@@ -639,8 +638,8 @@ func validateArrayAccess(rsv sema:Resolver,
 /func
 
 
-func normalizeEmptyType(ctx ptr ctx:Context, type ptr ast:Type) ptr ast:Type
-  return type != null => type || ctx:contextMatchBuiltin(ctx, "\0")
+func normalizeEmptyType(ctx ptr parser:Context, type ptr ast:Type) ptr ast:Type
+  return type != null => type || parser:ctxMatchBuiltin(ctx, "\0")
 /func
 
 
@@ -1033,7 +1032,7 @@ func validateTernaryExpr(rsv sema:Resolver,
   /if
 
   if ast:typeIsData(leftType) or ast:typeIsData(rightType)
-    return ctx:contextMatchBuiltin(rsv'ctx, "data")
+    return parser:ctxMatchBuiltin(rsv'ctx, "data")
   /if
 
   if ast:typeIsNull(leftType)

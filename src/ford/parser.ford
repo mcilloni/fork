@@ -13,6 +13,29 @@ module parser
 
 import ast
 import err
+import list
+import map
+
+
+alias Context struct (
+  fordPaths ptr list:List,
+  imports ptr map:Map,
+  currentFile ptr uint8,
+  builtins ptr map:Map
+)
+
+decl ctxGetImport func(ctx ptr Context, name ptr uint8) ptr ast:PRoot
+decl ctxFree func(ctx ptr Context)
+decl ctxImport func(ctx ptr Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr list:List
+decl ctxImportAll func(ctx ptr Context, imports ptr list:List) ptr list:List
+decl ctxMatchBuiltin func(ctx ptr Context, name ptr uint8) ptr ast:Type
+decl ctxNew func() ptr Context
+
+decl ctxParseFile func(context ptr Context,
+                       fileName ptr uint8,
+                       newRoot ptr ptr ast:PNode) ptr list:List
+
+decl ctxSetCurrentFile func(ctx ptr Context, filename ptr uint8)
 
 
 alias Issue struct (

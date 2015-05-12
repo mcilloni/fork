@@ -9,7 +9,6 @@
 
 
 import ast
-import ctx
 import kv
 import list
 import mem
@@ -28,7 +27,7 @@ func resolverDeinit(rsv sema:Resolver)
 
 
 func resolverCollect(rsv ptr sema:Resolver,
-                     ctx ptr ctx:Context,
+                     ctx ptr parser:Context,
                      root ptr ast:PRoot,
                      errors ptr list:List) ptr kv:KVList
 

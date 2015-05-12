@@ -48,6 +48,7 @@ all:
 	$(MAKE) -C ast
 	$(MAKE) -C synt
 	$(MAKE) -C sema
+	$(MAKE) -C parser
 
 	@printf "AR\t\t%s\n" $(ARNAME)
 	@ $(AR) rc ../build/$(ARNAME) ../build/*/*.o
@@ -79,4 +80,5 @@ clean:
 	$(MAKE) -C ast clean
 	$(MAKE) -C synt clean
 	$(MAKE) -C sema clean
+	$(MAKE) -C parser clean
 	rm -rf ../build/ford/
