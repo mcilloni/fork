@@ -9,3 +9,7 @@
 
 #mut ptrSize uint8 = 4
 mut ptrSize uint8 = 8
+
+#mut soSuffix = ".dylib"
+#mut soSuffix = ".dll"
+mut soSuffix = ".so"

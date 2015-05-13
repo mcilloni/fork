@@ -139,3 +139,15 @@ func strcompare(s1 data, s2 data) int8
     /if
   /if
 /func
+
+
+func strEndsWith(str, end ptr uint8) bool
+  mut strLen = txt:strlen(str)
+  mut endLen = txt:strlen(end)
+
+  if endLen > strLen
+    return false
+  /if
+
+  return txt:strequals(str + (strLen - endLen), end)
+/func

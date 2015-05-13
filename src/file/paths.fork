@@ -8,12 +8,19 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
+import err
+import list
 import mem
 import txt
 
 
 decl path_exists func(path ptr uint8) uintptr
 
+decl path_listAll func(path ptr uint8,
+                       appendTo data,
+                       appender ptr func(to data, elem ptr uint8),
+                       error ptr uint8,
+                       errl uintptr) bool
 
 # path functions
 func pathExists(path ptr uint8) bool
@@ -48,6 +55,22 @@ func pathContains(path,filename ptr uint8) bool
   mut ret = pathExists(fullpath)
 
   mem:free(fullpath)
+
+  return ret
+/func
+
+
+func pathListFiles(path ptr uint8, error ptr ptr err:Error) ptr list:List
+  mut ret = list:listNew()
+  mut buf [512] uint8
+
+  if !path_listAll(path, ret, cast<ptr func(to data, elem ptr uint8)>(list:listAppend), ptr buf[0], 512)
+    list:listFree(ret)
+
+    val error = err:errorNew(buf)
+
+    return null
+  /if
 
   return ret
 /func

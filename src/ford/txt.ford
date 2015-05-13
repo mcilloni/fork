@@ -35,6 +35,7 @@ decl strappend func(str1 ptr uint8, str2 ptr uint8) ptr uint8
 decl strclone func(str ptr uint8) ptr uint8
 decl strcompare func(s1 data, s2 data) int8
 decl strequals func(str1 ptr uint8, str2 ptr uint8) bool
+decl strEndsWith func(str, end ptr uint8) bool
 decl strglue func(toGlue ptr ptr uint8) ptr uint8
 decl strlen func(str ptr uint8) uintptr
 decl strncpy func(dest ptr uint8, source ptr uint8, cap uintptr) ptr uint8

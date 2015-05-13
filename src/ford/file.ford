@@ -13,6 +13,7 @@ module file
 
 import err
 import io
+import list
 
 
 # File stream functions
@@ -24,3 +25,4 @@ decl pathContains func(path,filename ptr uint8) bool
 decl pathExists func(path ptr uint8) bool
 decl pathExistsDir func(path ptr uint8) bool
 decl pathJoin func(path1,path2 ptr uint8) ptr uint8
+decl pathListFiles func(path ptr uint8, error ptr ptr err:Error) ptr list:List
