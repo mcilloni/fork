@@ -14,4 +14,3 @@ module platform
 # since a several centuries before someone would ever have to express the length of a
 # pointer in bytes with more than 8 bits (Can't wait for 2040 bits systems).
 decl ptrSize uint8
-decl soSuffix ptr uint8

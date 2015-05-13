@@ -73,3 +73,8 @@ func sobjNew(name ptr uint8, err ptr ptr err:Error) ptr dyn:SObj
 
   return ret
 /func
+
+
+#mut soSuffix = ".dylib"
+#mut soSuffix = ".dll"
+mut soSuffix = ".so"
