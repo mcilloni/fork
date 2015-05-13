@@ -10,7 +10,9 @@
 
 module dyn
 
+
 import err
+
 
 alias SObj struct(
     handl data,
@@ -19,9 +21,9 @@ alias SObj struct(
 
 
 decl sobjDeinit func(sobj ptr SObj)
-decl sobjFree func(sobj ptr SObj)
+decl sobjFree   func(sobj ptr SObj)
 decl sobjGetSym func(sobj ptr SObj, name ptr uint8, err ptr ptr err:Error) data
-decl sobjInit func(sobj ptr SObj, name ptr uint8, err ptr ptr err:Error) bool
-decl sobjNew func(name ptr uint8, err ptr ptr err:Error) ptr SObj
+decl sobjInit   func(sobj ptr SObj, name ptr uint8, err ptr ptr err:Error) bool
+decl sobjNew    func(name ptr uint8, err ptr ptr err:Error) ptr SObj
 
 decl soSuffix ptr uint8
