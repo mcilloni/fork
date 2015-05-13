@@ -14,6 +14,9 @@ import mem
 import txt
 
 
+mut dirSep = "/"
+
+
 decl path_exists func(path ptr uint8) uintptr
 
 decl path_listAll func(path ptr uint8,
@@ -41,7 +44,7 @@ func pathJoin(path1,path2 ptr uint8) ptr uint8
   mut arr [4] ptr uint8
 
   arr[0] = path1
-  arr[1] = "/"
+  arr[1] = dirSep
   arr[2] = path2
   arr[3] = null
 
@@ -73,4 +76,11 @@ func pathListFiles(path ptr uint8, error ptr ptr err:Error) ptr list:List
   /if
 
   return ret
+/func
+
+
+func pathBasename(path ptr uint8) ptr uint8
+  decl basename func(path ptr uint8) ptr uint8
+
+  return basename(path)
 /func
