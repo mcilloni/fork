@@ -1,4 +1,4 @@
-#  libfork, a base library for the Fork language
+#  ctrans, Fork to C transpiler
 #  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
 #
 #  This Source Code Form is subject to the terms of the Mozilla Public
