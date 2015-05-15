@@ -27,6 +27,11 @@ func findCC(opt data, buf ptr uint8, len uintptr) ptr uint8
 /func
 
 
+func preprocess(itn data, code ptr ast:PRoot, opts backend:POpts) backend:PRes
+
+/func
+
+
 func compile(itn data, code ptr ast:PRoot, opts backend:COpts) backend:CRes
 
 /func
@@ -52,5 +57,5 @@ func backendInit(opt data, error ptr ptr err:Error) ptr backend:Backend
 
   mut cc = findCC(opt, ptr buf[0], 512)
 
-  return backend:backendNew(null, ptr compile, ptr destroy, ptr exelink, ptr solink)
+  return backend:backendNew(null, ptr preprocess, ptr compile, ptr destroy, ptr exelink, ptr solink)
 /func
