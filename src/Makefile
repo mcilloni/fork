@@ -16,7 +16,7 @@ OPATHS = $(foreach obj, $(OBJS), $(BUILDPATH)/$(obj))
 
 .PHONY: all clean fords
 
-all: dir fords $(OPATHS)
+all: dir $(OPATHS)
 
 	@printf "CCLD\t\t%s\n" $(SONAME)
 	@ $(CCLD) -shared -o ../build/$(SONAME) ../build/*.o -L$(FORKROOT)/libfork/build/ -lfork
@@ -24,12 +24,10 @@ all: dir fords $(OPATHS)
 dir:
 	install -d $(BUILDPATH)
 
-fords:
-	cp -r $(shell pwd)/ford/ $(BUILDPATH)
 
 $(BUILDPATH)/%.o: %.fork
 	@printf "FORKC\t\t%s\n" $<
-	@ FORDPATHS="$(FORKROOT)/libfork/build/ford/:$(FORKROOT)/forkc/build/ford/:$(BUILDPATH)/ford/" $(FORKC_O) -o $@ $<
+	@ FORDPATHS="$(FORKROOT)/libfork/build/ford/:$(FORKROOT)/forkc/build/ford/:$(BUILDPATH)/../src/ford/" $(FORKC_O) -o $@ $<
 
 clean:
 	rm -rf $(BUILDPATH)

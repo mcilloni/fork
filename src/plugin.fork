@@ -11,9 +11,10 @@
 import ast
 import backend
 import err
+import mem
 import proc
-
 import txt
+
 
 func findCC(opt data, buf ptr uint8, len uintptr) ptr uint8
 
@@ -28,7 +29,12 @@ func findCC(opt data, buf ptr uint8, len uintptr) ptr uint8
 
 
 func preprocess(itn data, code ptr ast:PRoot, opts backend:POpts) backend:PRes
+  mut pres backend:PRes
+  pres'success = true
+  pres'errors = null
+  pres'output = cast<ptr uint8>(mem:zalloc(1))
 
+  return pres
 /func
 
 
