@@ -15,8 +15,8 @@ Checks sema functionality:
   Imported proc
   Imported sort
   Imported synt
-  Imported text
   Imported tty
+  Imported txt
   Imported utils
   
   

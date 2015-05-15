@@ -1,0 +1,44 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import err
+import file
+import list
+import mem
+import proc
+import tty
+
+
+entry
+  mut error ptr err:Error = null
+  mut arg = proc:args()
+
+  if arg'len < 1
+    tty:failln("No arguments given")
+  /if
+
+  mut paths = file:pathListFiles(arg'args[0], ptr error)
+  if paths == null
+    tty:failln(error'msg)
+  /if
+
+  mut i uintptr = 0
+  mut len = list:listLen(paths)
+
+  while i < len
+    mut elem = cast<ptr uint8>(val list:listGet(paths, i))
+
+    tty:outln(elem)
+
+    i++
+  /while
+
+  list:listFreeAll(paths, ptr mem:free)
+/entry
