@@ -12,7 +12,7 @@ import mem
 import txt
 
 
-func csAppend(cs ptr txt:Charstash, ch uint8)
+func csAppend(cs ptr txt:Charstash, ch uint8) ptr txt:Charstash
   if cs'len == cs'cap
     cs'cap = cs'cap + 10
     mut new = cast<ptr uint8>(mem:alloc(cs'cap))
@@ -25,23 +25,29 @@ func csAppend(cs ptr txt:Charstash, ch uint8)
   val cs'work = ch
   cs'len++
   cs'work++
+
+  return cs
 /func
 
 
-func csAppendInt(cs ptr txt:Charstash, num uintptr)
+func csAppendInt(cs ptr txt:Charstash, num uintptr) ptr txt:Charstash
   mut buf [20] int8
 
   txt:numtostr(num, ptr buf[0], 20)
 
   txt:csAppendStr(cs, buf)
+
+  return cs
 /func
 
 
-func csAppendStr(cs ptr txt:Charstash, str ptr uint8)
+func csAppendStr(cs ptr txt:Charstash, str ptr uint8) ptr txt:Charstash
   while val str != 0
     csAppend(cs, val str)
     str++
   /while
+
+  return cs
 /func
 
 
