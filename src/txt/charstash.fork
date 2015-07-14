@@ -43,7 +43,7 @@ func csAppendInt(cs ptr txt:Charstash, num uintptr) ptr txt:Charstash
 
 func csAppendLine(cs ptr txt:Charstash, str ptr uint8) ptr txt:Charstash
   txt:csAppendStr(cs, str)
-  txt:csAppendStr(cs, ";\n")
+  txt:csAppendStr(cs, "\n")
   return cs
 /func
 
