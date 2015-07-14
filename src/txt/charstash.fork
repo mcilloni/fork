@@ -41,11 +41,26 @@ func csAppendInt(cs ptr txt:Charstash, num uintptr) ptr txt:Charstash
 /func
 
 
+func csAppendLine(cs ptr txt:Charstash, str ptr uint8) ptr txt:Charstash
+  txt:csAppendStr(cs, str)
+  txt:csAppendStr(cs, ";\n")
+  return cs
+/func
+
+
 func csAppendStr(cs ptr txt:Charstash, str ptr uint8) ptr txt:Charstash
   while val str != 0
     csAppend(cs, val str)
     str++
   /while
+
+  return cs
+/func
+
+
+func csAppendWord(cs ptr txt:Charstash, str ptr uint8) ptr txt:Charstash
+  txt:csAppendStr(cs, str)
+  txt:csAppend(cs, 32)
 
   return cs
 /func
