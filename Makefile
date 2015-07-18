@@ -2,8 +2,10 @@
 
 all:
 	@ mkdir -p build/
+	cp -rf src/ford/ build/
 	$(MAKE) -C src
+	$(MAKE) -C examples clean
+	$(MAKE) -C examples
 
 clean:
-	$(MAKE) -C src clean
 	rm -rf build

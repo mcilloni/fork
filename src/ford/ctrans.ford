@@ -7,4 +7,19 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
 module ctrans
+
+
+import ast
+import txt
+
+
+alias Transl struct(
+  debug bool
+)
+
+
+decl ctransTranslate func(tr ptr Transl,
+                          root ptr ast:PRoot,
+                          ford bool) ptr txt:Charstash

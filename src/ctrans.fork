@@ -1,0 +1,126 @@
+#  ctrans, Fork to C transpiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ctrans
+
+
+import ast
+import ctrans
+import list
+import map
+import pair
+import txt
+
+
+func ctransGenImports(tr ptr ctrans:Transl,
+                      cs ptr txt:Charstash,
+                      root ptr ast:PRoot)
+
+  mut i uintptr = 0
+  mut len = list:listLen(root'imports)
+
+  while i < len
+    mut impdef = cast<ptr ast:StringDef>(val list:listGet(root'imports, i))
+
+    txt:csAppendStr(cs, "??=include <ford$$")
+    txt:csAppendStr(cs, impdef'name)
+    txt:csAppendLine(cs, ".h>")
+
+    i++
+  /while
+/func
+
+
+func symMod(cs ptr txt:Charstash, modName,name ptr uint8)
+  if modName != null
+    txt:csAppendStr(cs, modName)
+    txt:csAppendStr(cs, "$")
+  /if
+
+  txt:csAppendStr(cs, name)
+/func
+
+
+func nullSafestreq(str1,str2 ptr uint8) bool
+  return (str1 != null and str2 != null) => txt:strequals(str1, str2) || str1 == str2
+/func
+
+
+func wantsLitType(modName,name ptr uint8, type ptr ast:Type) bool
+  return !(nullSafestreq(modName, type'moduleName) and nullSafestreq(name, type'name))
+/func
+
+
+func ctransGenCSym(tr ptr ctrans:Transl,
+                   cs ptr txt:Charstash,
+                   modName,name ptr uint8,
+                   type ptr ast:Type)
+
+  if wantsLitType(modName, name, type)
+    symMod(cs, type'moduleName, type'name)
+    txt:csAppendStr(cs, " ")
+    symMod(cs, modName, name)
+  /if
+
+/func
+
+
+func ctransGenAliases(tr ptr ctrans:Transl,
+                      cs ptr txt:Charstash,
+                      root ptr ast:PRoot)
+
+  mut iter = map:mapiterStart(root'aliases'syms)
+  mut pair ptr pair:Pair = null
+
+  while (pair = map:mapiterNext(iter)) != null
+    mut name = cast<ptr uint8>(pair'key)
+    mut type = cast<ptr ast:DeclInfo>(pair'value)'type
+
+    txt:csAppendWord(cs, "typedef")
+
+    ctransGenCSym(tr, cs, root'moduleName'name, name, type)
+  /while
+
+  map:mapiterFree(iter)
+/func
+
+
+# if ford is true, than emit include guards.
+func ctransTranslate(tr ptr ctrans:Transl,
+                     root ptr ast:PRoot,
+                     ford bool) ptr txt:Charstash
+
+  mut ret = txt:csNew(300)
+
+  if ford
+    # first-step is buggy like shit, must use trigraphs because
+    # `#` gets deleted by the lexer
+    txt:csAppendStr(ret, "??=ifndef ")
+    txt:csAppendStr(ret, root'moduleName'name )
+    txt:csAppendLine(ret, "_h")
+
+    txt:csAppendStr(ret, "??=define ")
+    txt:csAppendStr(ret, root'moduleName'name)
+    txt:csAppendLine(ret, "_h\n\n")
+  /if
+
+
+  ctransGenImports(tr, ret, root)
+
+  ctransGenAliases(tr, ret, root)
+
+
+  if ford
+    txt:csAppendStr(ret, "\n\n??=endif //")
+    txt:csAppendStr(ret, root'moduleName'name)
+    txt:csAppendLine(ret, "_h")
+  /if
+  return ret
+/func

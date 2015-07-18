@@ -1,0 +1,65 @@
+#  ctrans, Fork to C transpiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import ast
+import ctrans
+import list
+import mem
+import parser
+import proc
+import tty
+import txt
+
+
+entry
+  mut argv = proc:args()
+  if argv'len != 1
+    tty:errln("Wrong number of arguments, required: 1")
+    proc:exit(1)
+  /if
+
+  mut ctx = parser:ctxNew()
+  mut ast ptr ast:PNode
+  mut errors = parser:ctxParseFile(ctx, argv'args[0], ptr ast)
+
+  mut isFord = txt:strEndsWith(argv'args[0], ".ford")
+
+  mut errLen = list:listLen(errors)
+
+  if errLen > 0
+    mut i uintptr = 0
+
+    while i < errLen
+      mut issue = cast<ptr parser:Issue>(val list:listGet(errors, i))
+
+      parser:issueWriteOut(issue, ptr tty:out)
+
+      i++
+    /while
+
+    list:listFree(errors)
+    proc:exit(1)
+  /if
+
+  mut root = cast<ptr ast:PRoot>(ast)
+
+  mut tr ctrans:Transl
+  tr'debug = true
+
+  mut outf = txt:csUnwrap(ctrans:ctransTranslate(ptr tr, root, isFord))
+
+  tty:outln(outf)
+
+  mem:free(outf)
+
+  parser:ctxFree(ctx)
+
+  ast:pnodeFree(ast)
+/entry
