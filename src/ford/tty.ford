@@ -11,6 +11,9 @@
 module tty
 
 
+import io
+
+
 # Console output functions
 decl err func(msg ptr uint8)
 decl errch func(ch uint8)
@@ -21,3 +24,5 @@ decl out func(msg ptr uint8)
 decl outch func(ch uint8)
 decl outint func(num uint64)
 decl outln func(msg ptr uint8)
+
+decl ttyStream func() io:Stream

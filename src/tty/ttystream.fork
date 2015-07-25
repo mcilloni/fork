@@ -1,0 +1,46 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module tty
+
+
+import err
+import io
+import tty
+import txt
+
+
+func ttyCookieOut(handl data,
+                  buf ptr uint8,
+                  bufSize intptr,
+                  err ptr ptr err:Error) uintptr
+
+  tty:out(buf)
+
+  return txt:strlen(buf)
+/func
+
+
+func ttyCookieCloseFake(handl data, err ptr ptr err:Error) bool
+  return true
+/func
+
+
+func ttyStream() io:Stream
+  mut ret io:Stream
+
+  ret'cookie'cfn = ptr ttyCookieCloseFake
+  ret'cookie'wfn = ptr ttyCookieOut
+  ret'eof = false
+  ret'error = null
+  ret'inout = io:STREAM_OUT
+
+  return ret
+/func
