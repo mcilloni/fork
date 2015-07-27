@@ -49,6 +49,11 @@ decl csAppendInt func(cs ptr Charstash, num uintptr) ptr Charstash
 decl csAppendLine func(cs ptr Charstash, str ptr uint8) ptr Charstash
 decl csAppendStr func(cs ptr Charstash, str ptr uint8) ptr Charstash
 decl csAppendWord func(cs ptr Charstash, str ptr uint8) ptr Charstash
+decl csPrepend func(cs ptr Charstash, ch uint8) ptr Charstash
+decl csPrependInt func(cs ptr Charstash, num uintptr) ptr Charstash
+decl csPrependLine func(cs ptr Charstash, str ptr uint8) ptr Charstash
+decl csPrependStr func(cs ptr Charstash, str ptr uint8) ptr Charstash
+decl csPrependWord func(cs ptr Charstash, str ptr uint8) ptr Charstash
 
 decl csFree func(cs ptr Charstash)
 decl csLen func(cs ptr Charstash) uintptr
