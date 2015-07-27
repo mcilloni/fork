@@ -1,0 +1,237 @@
+#  ctrans, Fork to C transpiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ctrans
+
+
+import ast
+import ctrans
+import err
+import io
+import mem
+import proc
+import txt
+import tty
+
+
+func translDump(tr ptr ctrans:Transl, stream ptr io:Stream) ptr err:Error
+  if tr'header
+    # first-step is buggy like shit, must use trigraphs because
+    # `#` gets deleted by the lexer
+    io:streamWrite(stream, "??=ifndef ford$$")
+    io:streamWrite(stream, tr'modName )
+    io:streamWrite(stream, "_h\n")
+
+    io:streamWrite(stream, "??=define ford$$")
+    io:streamWrite(stream, tr'modName)
+    io:streamWrite(stream, "_h\n\n\n")
+  /if
+
+  mut includes = txt:csUnwrap(tr'includes)
+  io:streamWrite(stream, includes)
+  mem:free(includes)
+
+  mut typedefs = txt:csUnwrap(tr'typedefs)
+  io:streamWrite(stream, typedefs)
+  mem:free(typedefs)
+
+  mut decls = txt:csUnwrap(tr'decls)
+  io:streamWrite(stream, decls)
+  mem:free(decls)
+
+  mut funcs = txt:csUnwrap(tr'funcs)
+  io:streamWrite(stream, funcs)
+  mem:free(funcs)
+
+  if tr'header
+    io:streamWrite(stream, "\n\n??=endif //ford$$")
+    io:streamWrite(stream, tr'modName)
+    io:streamWrite(stream, "_h\n\n")
+  /if
+
+  return io:streamError(stream)
+/func
+
+
+func translFordInc(tr ptr ctrans:Transl, fordName ptr uint8)
+  txt:csAppendStr(tr'includes, "??=include <ford$$")
+  txt:csAppendStr(tr'includes, fordName)
+  txt:csAppendLine(tr'includes, ".h>")
+/func
+
+
+func translInit(tr ptr ctrans:Transl, header bool, name ptr uint8)
+  tr'includes = txt:csNew(40)
+  tr'typedefs = txt:csNew(300)
+  tr'decls = txt:csNew(300)
+  tr'funcs = txt:csNew(300)
+
+  tr'header = header
+  tr'modName = name
+/func
+
+
+func nullSafestreq(str1,str2 ptr uint8) bool
+  return (str1 != null and str2 != null) => txt:strequals(str1, str2) || str1 == str2
+/func
+
+
+func symMod(cs ptr txt:Charstash, modName,name ptr uint8)
+  if modName != null
+    txt:csAppendStr(cs, modName)
+    txt:csAppendStr(cs, "$")
+  /if
+
+  txt:csAppendStr(cs, name)
+/func
+
+
+alias LRStr struct(
+  left,right ptr txt:Charstash
+)
+
+
+func lrNew() LRStr
+  mut ret LRStr
+
+  ret'left  = txt:csNew(20)
+  ret'right = txt:csNew(20)
+
+  return ret
+/func
+
+
+func lrDump(lr LRStr, cs ptr txt:Charstash)
+  mut left = txt:csUnwrap(lr'left)
+  txt:csAppendStr(cs, left)
+  mem:free(left)
+
+  mut right = txt:csUnwrap(lr'right)
+  txt:csAppendStr(cs, right)
+  mem:free(right)
+/func
+
+
+decl csymType func(lr LRStr, type ptr ast:Type)
+
+
+func csymFuncType(lr LRStr, type ptr ast:Type)
+
+/func
+
+
+func csymPtrArrType(lr LRStr, type ptr ast:Type)
+  mut tofn = type'retType'type == ast:TYPE_FUNC
+
+  csymType(lr, type'retType)
+
+  if tofn
+    txt:csAppendStr(lr'left, "(")
+  /if
+
+  if type'type == ast:TYPE_PTR
+    txt:csAppendStr(lr'left, "*")
+  /if
+
+  if tofn
+    txt:csPrependStr(lr'right, ")")
+  /if
+
+  if type'type == ast:TYPE_LOC
+    txt:csPrependStr(lr'right, "]")
+    txt:csPrependInt(lr'right, type'itemCount)
+    txt:csPrependStr(lr'right, "[")
+  /if
+/func
+
+
+func csymType(lr LRStr, type ptr ast:Type)
+
+  if type'type == ast:TYPE_BOOL
+    txt:csAppendStr(lr'left, "bool ")
+  else
+    if type'type == ast:TYPE_DATA
+      txt:csAppendStr(lr'left, "void* ")
+    else
+      if type'type == ast:TYPE_EMPTY
+        txt:csAppendStr(lr'left, "void ")
+      else
+        if type'type == ast:TYPE_FUNC
+          csymFuncType(lr, type)
+        else
+          if type'type == ast:TYPE_INT
+            if !type'isSigned
+              txt:csAppendStr(lr'left, "u")
+            /if
+
+            txt:csAppendStr(lr'left, "int")
+            txt:csAppendInt(lr'left, type'typeSize * 8)
+          else
+            if type'type == ast:TYPE_LOC or type'type == ast:TYPE_PTR
+              csymPtrArrType(lr, type)
+
+            else
+              if type'type == ast:TYPE_NULL
+                tty:errln("UNREACHABLE - TYPE NULL CAN'T BE VALID")
+                proc:abort()
+              else
+                if type'type == ast:TYPE_RECALIAS
+                  txt:csAppendStr(lr'left, "struct ")
+                  symMod(lr'left, type'moduleName, type'name)
+                  txt:csAppendStr(lr'left, " ")
+                else
+
+                /if
+              /if
+            /if
+          /if
+        /if
+      /if
+    /if
+  /if
+/func
+
+
+func csymGen(lr LRStr,
+             moduleName,name ptr uint8,
+             type ptr ast:Type)
+
+  csymType(lr, type)
+  symMod(lr'left, moduleName, name)
+/func
+
+
+func csym(cs ptr txt:Charstash,
+          moduleName,name ptr uint8,
+          type ptr ast:Type,
+          expand bool)
+
+  if !expand and type'name != null
+    symMod(cs, type'moduleName, type'name)
+    txt:csAppendStr(cs, " ")
+    symMod(cs, moduleName, name)
+  else
+    mut lr = lrNew()
+
+    csymGen(lr, moduleName, name, type)
+
+    lrDump(lr, cs)
+  /if
+
+/func
+
+
+func translTypedef(tr ptr ctrans:Transl, name ptr uint8, type ptr ast:Type)
+  txt:csAppendWord(tr'typedefs, "typedef")
+
+  csym(tr'typedefs, tr'modName, name, type, true)
+
+  txt:csAppendLine(tr'typedefs, ";")
+/func
