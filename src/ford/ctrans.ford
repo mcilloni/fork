@@ -12,14 +12,22 @@ module ctrans
 
 
 import ast
+import err
+import io
 import txt
 
 
 alias Transl struct(
-  debug bool
+  includes,typedefs,decls,funcs ptr txt:Charstash,
+  modName ptr uint8,
+  header,debug bool
 )
 
 
-decl ctransTranslate func(tr ptr Transl,
-                          root ptr ast:PRoot,
-                          ford bool) ptr txt:Charstash
+decl translDump func(tr ptr Transl, stream ptr io:Stream) ptr err:Error
+decl translFordInc func(tr ptr Transl, fordName ptr uint8)
+decl translInit func(tr ptr Transl, header bool, name ptr uint8)
+decl translTypedef func(tr ptr Transl, name ptr uint8, type ptr ast:Type)
+
+
+decl ctransTranslate func(tr ptr Transl, root ptr ast:PRoot)

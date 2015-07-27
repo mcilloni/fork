@@ -51,13 +51,14 @@ entry
   mut root = cast<ptr ast:PRoot>(ast)
 
   mut tr ctrans:Transl
-  tr'debug = true
 
-  mut outf = txt:csUnwrap(ctrans:ctransTranslate(ptr tr, root, isFord))
+  ctrans:translInit(ptr tr, isFord, root'moduleName != null => root'moduleName'name || null)
 
-  tty:outln(outf)
+  ctrans:ctransTranslate(ptr tr, root)
 
-  mem:free(outf)
+  mut ttys = tty:ttyStream()
+
+  ctrans:translDump(ptr tr, ptr ttys)
 
   parser:ctxFree(ctx)
 

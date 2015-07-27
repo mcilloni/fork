@@ -20,7 +20,6 @@ import txt
 
 
 func ctransGenImports(tr ptr ctrans:Transl,
-                      cs ptr txt:Charstash,
                       root ptr ast:PRoot)
 
   mut i uintptr = 0
@@ -29,52 +28,15 @@ func ctransGenImports(tr ptr ctrans:Transl,
   while i < len
     mut impdef = cast<ptr ast:StringDef>(val list:listGet(root'imports, i))
 
-    txt:csAppendStr(cs, "??=include <ford$$")
-    txt:csAppendStr(cs, impdef'name)
-    txt:csAppendLine(cs, ".h>")
+    ctrans:translFordInc(tr, impdef'name)
 
     i++
   /while
 /func
 
 
-func symMod(cs ptr txt:Charstash, modName,name ptr uint8)
-  if modName != null
-    txt:csAppendStr(cs, modName)
-    txt:csAppendStr(cs, "$")
-  /if
-
-  txt:csAppendStr(cs, name)
-/func
-
-
-func nullSafestreq(str1,str2 ptr uint8) bool
-  return (str1 != null and str2 != null) => txt:strequals(str1, str2) || str1 == str2
-/func
-
-
-func wantsLitType(modName,name ptr uint8, type ptr ast:Type) bool
-  return !(nullSafestreq(modName, type'moduleName) and nullSafestreq(name, type'name))
-/func
-
-
-func ctransGenCSym(tr ptr ctrans:Transl,
-                   cs ptr txt:Charstash,
-                   modName,name ptr uint8,
-                   type ptr ast:Type)
-
-  if wantsLitType(modName, name, type)
-    symMod(cs, type'moduleName, type'name)
-    txt:csAppendStr(cs, " ")
-    symMod(cs, modName, name)
-  /if
-
-/func
-
-
-func ctransGenAliases(tr ptr ctrans:Transl,
-                      cs ptr txt:Charstash,
-                      root ptr ast:PRoot)
+func ctransGenTypedefs(tr ptr ctrans:Transl,
+                       root ptr ast:PRoot)
 
   mut iter = map:mapiterStart(root'aliases'syms)
   mut pair ptr pair:Pair = null
@@ -83,9 +45,7 @@ func ctransGenAliases(tr ptr ctrans:Transl,
     mut name = cast<ptr uint8>(pair'key)
     mut type = cast<ptr ast:DeclInfo>(pair'value)'type
 
-    txt:csAppendWord(cs, "typedef")
-
-    ctransGenCSym(tr, cs, root'moduleName'name, name, type)
+    ctrans:translTypedef(tr, name, type)
   /while
 
   map:mapiterFree(iter)
@@ -94,33 +54,9 @@ func ctransGenAliases(tr ptr ctrans:Transl,
 
 # if ford is true, than emit include guards.
 func ctransTranslate(tr ptr ctrans:Transl,
-                     root ptr ast:PRoot,
-                     ford bool) ptr txt:Charstash
+                     root ptr ast:PRoot)
 
-  mut ret = txt:csNew(300)
+  ctransGenImports(tr, root)
+  ctransGenTypedefs(tr, root)
 
-  if ford
-    # first-step is buggy like shit, must use trigraphs because
-    # `#` gets deleted by the lexer
-    txt:csAppendStr(ret, "??=ifndef ")
-    txt:csAppendStr(ret, root'moduleName'name )
-    txt:csAppendLine(ret, "_h")
-
-    txt:csAppendStr(ret, "??=define ")
-    txt:csAppendStr(ret, root'moduleName'name)
-    txt:csAppendLine(ret, "_h\n\n")
-  /if
-
-
-  ctransGenImports(tr, ret, root)
-
-  ctransGenAliases(tr, ret, root)
-
-
-  if ford
-    txt:csAppendStr(ret, "\n\n??=endif //")
-    txt:csAppendStr(ret, root'moduleName'name)
-    txt:csAppendLine(ret, "_h")
-  /if
-  return ret
 /func
