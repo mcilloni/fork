@@ -130,7 +130,7 @@ alias DeclInfo struct(
 )
 
 alias Symtable struct(
-  syms ptr map:Map
+  syms ptr kv:KVList
 )
 
 decl stabNew func() ptr Symtable

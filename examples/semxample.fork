@@ -9,6 +9,7 @@
 
 
 import ast
+import kv
 import list
 import map
 import mem
@@ -69,32 +70,34 @@ entry
 
   map:mapiterFree(iter)
 
-  mut aliasesMap = root'aliases'syms
+  mut aliases = cast<ptr ast:PRoot>(ast)'aliases'syms
 
   tty:out("\n\n== ALIASES: ")
-  tty:outint(map:mapLen(aliasesMap))
+  tty:outint(kv:kvLen(aliases))
   tty:outch(10)
 
-  iter = map:mapiterStart(aliasesMap)
+  mut i uintptr = 0
+  mut len = kv:kvLen(aliases)
 
-  while (pair = map:mapiterNext(iter)) != null
+  while i < len
+    pair = kv:kvGetAt(aliases, i)
     tty:out("alias ")
     tty:outln(cast<ptr uint8>(pair'key))
 
-    pair:pairFree(pair)
+    i++
   /while
 
-  map:mapiterFree(iter)
-
-  mut declsMap = cast<ptr ast:PRoot>(ast)'node'syms'syms
+  mut decls = cast<ptr ast:PRoot>(ast)'node'syms'syms
 
   tty:out("\n\n== DECLS: ")
-  tty:outint(map:mapLen(declsMap))
+  tty:outint(kv:kvLen(decls))
   tty:outch(10)
 
-  iter = map:mapiterStart(declsMap)
+  i = 0
+  len = kv:kvLen(decls)
 
-  while (pair = map:mapiterNext(iter)) != null
+  while i < len
+    pair = kv:kvGetAt(decls, i)
     mut dinfo = cast<ptr ast:DeclInfo>(pair'value)
     mut typeStr ptr uint8 = null
 
@@ -125,14 +128,13 @@ entry
     tty:outln(des)
 
     mem:free(des)
-    pair:pairFree(pair)
+
+    i++
   /while
 
   tty:out("\n\n==> Has entry? ")
 
   tty:outln(root'entryNode != null => "yes" || "no")
-
-  map:mapiterFree(iter)
 
   parser:ctxFree(ctx)
 

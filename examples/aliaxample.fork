@@ -9,6 +9,7 @@
 
 
 import ast
+import kv
 import list
 import map
 import pair
@@ -50,15 +51,17 @@ entry
 
   list:listFree(errors)
 
-  mut iter = map:mapiterStart(cast<ptr ast:PRoot>(ast)'aliases'syms)
+  mut syms = cast<ptr ast:PRoot>(ast)'aliases'syms
 
-  mut pair ptr pair:Pair
+  mut i uintptr = 0
+  mut len = kv:kvLen(syms)
 
-  while (pair = map:mapiterNext(iter)) != null
+  while i < len
+    mut pair = kv:kvGetAt(syms, i)
     ast:declDump("alias", cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value))
-  /while
 
-  map:mapiterFree(iter)
+    i++
+  /while
 
   parser:ctxFree(ctx)
 

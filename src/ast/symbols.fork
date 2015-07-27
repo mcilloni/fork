@@ -433,21 +433,23 @@ func declInfoNew(declType uint16, type ptr ast:Type) ptr ast:DeclInfo
 func stabNew() ptr ast:Symtable
   mut stab = cast<ptr ast:Symtable>(mem:zalloc(size(ast:Symtable)))
 
-  stab'syms = map:strmapNew()
+  stab'syms = kv:strkvNew()
+
+  kv:kvSetFreeFuncs(stab'syms, ptr mem:free, ptr astfn:declInfoFree)
 
   return stab
 /func
 
 
 func stabAdd(stab ptr ast:Symtable, name ptr uint8, type ptr ast:Type, symType uint16)
-  map:mapPut(stab'syms, txt:strclone(name), astfn:declInfoNew(symType, type), map:FREE_KEY | map:FREE_VALUE)
+  kv:kvPut(stab'syms, txt:strclone(name), astfn:declInfoNew(symType, type))
 /func
 
 
 func stabGet(stab ptr ast:Symtable, name ptr uint8) ptr ast:DeclInfo
   mut value ptr ast:DeclInfo = null
 
-  map:mapGet(stab'syms, name, ptr value)
+  kv:kvGet(stab'syms, name, ptr value)
 
   return value
 /func
@@ -462,7 +464,7 @@ func stabTypeof(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
 
 func stabFree(stab ptr ast:Symtable)
   if stab != null
-    map:mapFreeSpec(stab'syms, ptr mem:free, ptr astfn:declInfoFree)
+    kv:kvFree(stab'syms)
     mem:free(stab)
   /if
 /func
