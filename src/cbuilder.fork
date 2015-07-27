@@ -15,6 +15,7 @@ import ast
 import ctrans
 import err
 import io
+import kv
 import mem
 import proc
 import txt
@@ -38,17 +39,25 @@ func translDump(tr ptr ctrans:Transl, stream ptr io:Stream) ptr err:Error
   io:streamWrite(stream, includes)
   mem:free(includes)
 
+  io:streamWrite(stream, "\n\n")
+
   mut typedefs = txt:csUnwrap(tr'typedefs)
   io:streamWrite(stream, typedefs)
   mem:free(typedefs)
+
+  io:streamWrite(stream, "\n\n")
 
   mut decls = txt:csUnwrap(tr'decls)
   io:streamWrite(stream, decls)
   mem:free(decls)
 
+  io:streamWrite(stream, "\n\n")
+
   mut funcs = txt:csUnwrap(tr'funcs)
   io:streamWrite(stream, funcs)
   mem:free(funcs)
+
+  io:streamWrite(stream, "\n\n")
 
   if tr'header
     io:streamWrite(stream, "\n\n??=endif //ford$$")
@@ -119,7 +128,14 @@ func lrDump(lr LRStr, cs ptr txt:Charstash)
 /func
 
 
-decl csymType func(lr LRStr, type ptr ast:Type)
+decl csymType func(lr LRStr, type ptr ast:Type, full bool)
+
+
+func csymTypeWrap(cs ptr txt:Charstash, type ptr ast:Type)
+  mut lr = lrNew()
+  csymType(lr, type, false)
+  lrDump(lr, cs)
+/func
 
 
 func csymFuncType(lr LRStr, type ptr ast:Type)
@@ -130,7 +146,7 @@ func csymFuncType(lr LRStr, type ptr ast:Type)
 func csymPtrArrType(lr LRStr, type ptr ast:Type)
   mut tofn = type'retType'type == ast:TYPE_FUNC
 
-  csymType(lr, type'retType)
+  csymType(lr, type'retType, false)
 
   if tofn
     txt:csAppendStr(lr'left, "(")
@@ -152,16 +168,49 @@ func csymPtrArrType(lr LRStr, type ptr ast:Type)
 /func
 
 
-func csymType(lr LRStr, type ptr ast:Type)
+func csymStructType(cs ptr txt:Charstash, type ptr ast:Type)
+  txt:csAppendWord(cs, "struct")
+
+  if type'name != null
+    symMod(cs, type'moduleName, type'name)
+  /if
+
+  txt:csAppendLine(cs, " {")
+
+  mut i uintptr = 0
+  mut len = kv:kvLen(type'members)
+
+  while i < len
+    mut pair = kv:kvGetAt(type'members, i)
+
+    txt:csAppend(cs, 9)
+    csymTypeWrap(cs, cast<ptr ast:Type>(pair'value))
+    txt:csAppend(cs, 32)
+    txt:csAppendStr(cs, cast<ptr uint8>(pair'key))
+    txt:csAppendStr(cs, ";\n")
+
+    i++
+  /while
+
+  txt:csAppendStr(cs, "} ")
+/func
+
+
+func csymType(lr LRStr, type ptr ast:Type, full bool)
+
+  if !full and type'name != null and (type'type == ast:TYPE_STRUCT or type'type == ast:TYPE_FUNC)
+    symMod(lr'left, type'moduleName, type'name)
+    return
+  /if
 
   if type'type == ast:TYPE_BOOL
-    txt:csAppendStr(lr'left, "bool ")
+    txt:csAppendStr(lr'left, "_Bool")
   else
     if type'type == ast:TYPE_DATA
-      txt:csAppendStr(lr'left, "void* ")
+      txt:csAppendStr(lr'left, "void*")
     else
       if type'type == ast:TYPE_EMPTY
-        txt:csAppendStr(lr'left, "void ")
+        txt:csAppendStr(lr'left, "void")
       else
         if type'type == ast:TYPE_FUNC
           csymFuncType(lr, type)
@@ -173,10 +222,10 @@ func csymType(lr LRStr, type ptr ast:Type)
 
             txt:csAppendStr(lr'left, "int")
             txt:csAppendInt(lr'left, type'typeSize * 8)
+            txt:csAppendStr(lr'left, "_t")
           else
             if type'type == ast:TYPE_LOC or type'type == ast:TYPE_PTR
               csymPtrArrType(lr, type)
-
             else
               if type'type == ast:TYPE_NULL
                 tty:errln("UNREACHABLE - TYPE NULL CAN'T BE VALID")
@@ -187,7 +236,7 @@ func csymType(lr LRStr, type ptr ast:Type)
                   symMod(lr'left, type'moduleName, type'name)
                   txt:csAppendStr(lr'left, " ")
                 else
-
+                  csymStructType(lr'left, type)
                 /if
               /if
             /if
@@ -201,9 +250,10 @@ func csymType(lr LRStr, type ptr ast:Type)
 
 func csymGen(lr LRStr,
              moduleName,name ptr uint8,
-             type ptr ast:Type)
+             type ptr ast:Type,
+             tdf bool)
 
-  csymType(lr, type)
+  csymType(lr, type, tdf)
   symMod(lr'left, moduleName, name)
 /func
 
@@ -211,19 +261,11 @@ func csymGen(lr LRStr,
 func csym(cs ptr txt:Charstash,
           moduleName,name ptr uint8,
           type ptr ast:Type,
-          expand bool)
+          tdf bool)
 
-  if !expand and type'name != null
-    symMod(cs, type'moduleName, type'name)
-    txt:csAppendStr(cs, " ")
-    symMod(cs, moduleName, name)
-  else
-    mut lr = lrNew()
-
-    csymGen(lr, moduleName, name, type)
-
-    lrDump(lr, cs)
-  /if
+  mut lr = lrNew()
+  csymGen(lr, moduleName, name, type, tdf)
+  lrDump(lr, cs)
 
 /func
 
@@ -233,5 +275,5 @@ func translTypedef(tr ptr ctrans:Transl, name ptr uint8, type ptr ast:Type)
 
   csym(tr'typedefs, tr'modName, name, type, true)
 
-  txt:csAppendLine(tr'typedefs, ";")
+  txt:csAppendLine(tr'typedefs, ";\n")
 /func

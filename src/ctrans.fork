@@ -13,8 +13,8 @@ module ctrans
 
 import ast
 import ctrans
+import kv
 import list
-import map
 import pair
 import txt
 
@@ -38,17 +38,20 @@ func ctransGenImports(tr ptr ctrans:Transl,
 func ctransGenTypedefs(tr ptr ctrans:Transl,
                        root ptr ast:PRoot)
 
-  mut iter = map:mapiterStart(root'aliases'syms)
-  mut pair ptr pair:Pair = null
+  mut als = root'aliases'syms
 
-  while (pair = map:mapiterNext(iter)) != null
+  mut i uintptr = 0
+  mut len = kv:kvLen(als)
+
+  while i < len
+    mut pair = kv:kvGetAt(als, i)
     mut name = cast<ptr uint8>(pair'key)
     mut type = cast<ptr ast:DeclInfo>(pair'value)'type
 
     ctrans:translTypedef(tr, name, type)
-  /while
 
-  map:mapiterFree(iter)
+    i++
+  /while
 /func
 
 
