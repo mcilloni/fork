@@ -19,6 +19,28 @@ import pair
 import txt
 
 
+func ctransGenDecls(tr ptr ctrans:Transl,
+                    root ptr ast:PRoot)
+
+  mut len = list:listLen(root'node'node'leaves)
+  mut i uintptr = 0
+
+  while i < len
+    mut child = cast<ptr ast:PDecl>(val list:listGet(root'node'node'leaves, i))
+
+    if child'node'type != ast:PALIAS    
+      mut dinfo = ast:stabGet(root'node'syms, child'sym'name)
+
+      mut sym = ctrans:translGenSym(root'moduleName'name, child'sym'name, dinfo'type)
+
+      ctrans:translExtern(tr, sym)
+    /if
+
+    i++
+  /while
+/func
+
+
 func ctransGenImports(tr ptr ctrans:Transl,
                       root ptr ast:PRoot)
 
@@ -61,5 +83,5 @@ func ctransTranslate(tr ptr ctrans:Transl,
 
   ctransGenImports(tr, root)
   ctransGenTypedefs(tr, root)
-
+  ctransGenDecls(tr, root)
 /func

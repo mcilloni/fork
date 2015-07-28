@@ -50,9 +50,15 @@ func translDump(tr ptr ctrans:Transl, stream ptr io:Stream) ptr err:Error
 
   io:streamWrite(stream, "\n\n")
 
-  mut decls = txt:csUnwrap(tr'decls)
-  io:streamWrite(stream, decls)
-  mem:free(decls)
+  mut externs = txt:csUnwrap(tr'externs)
+  io:streamWrite(stream, externs)
+  mem:free(externs)
+
+  io:streamWrite(stream, "\n\n")
+
+  mut vars = txt:csUnwrap(tr'vars)
+  io:streamWrite(stream, vars)
+  mem:free(vars)
 
   io:streamWrite(stream, "\n\n")
 
@@ -82,7 +88,8 @@ func translFordInc(tr ptr ctrans:Transl, fordName ptr uint8)
 func translInit(tr ptr ctrans:Transl, header bool, name ptr uint8)
   tr'includes = txt:csNew(40)
   tr'typedefs = txt:csNew(300)
-  tr'decls = txt:csNew(300)
+  tr'externs = txt:csNew(300)
+  tr'vars = txt:csNew(300)
   tr'funcs = txt:csNew(300)
 
   tr'header = header
@@ -309,6 +316,22 @@ func csym(cs ptr txt:Charstash,
   csymGen(lr, moduleName, name, type, tdf)
   lrDump(lr, cs)
 
+/func
+
+
+func translExtern(tr ptr ctrans:Transl, sym ptr uint8)
+  txt:csAppendWord(tr'externs, "extern")
+  txt:csAppendStr(tr'externs, sym)
+  txt:csAppendLine(tr'externs, ";")
+/func
+
+
+func translGenSym(moduleName,name ptr uint8, type ptr ast:Type) ptr uint8
+  mut cs = txt:csNew(30)
+
+  csym(cs, moduleName, name, type, false)
+
+  return txt:csUnwrap(cs)
 /func
 
 

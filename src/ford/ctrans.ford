@@ -18,14 +18,16 @@ import txt
 
 
 alias Transl struct(
-  includes,typedefs,decls,funcs ptr txt:Charstash,
+  includes,typedefs,externs,vars,funcs ptr txt:Charstash,
   modName ptr uint8,
   header,debug bool
 )
 
 
 decl translDump func(tr ptr Transl, stream ptr io:Stream) ptr err:Error
+decl translExtern func(tr ptr Transl, sym ptr uint8)
 decl translFordInc func(tr ptr Transl, fordName ptr uint8)
+decl translGenSym func(moduleName,name ptr uint8, type ptr ast:Type) ptr uint8
 decl translInit func(tr ptr Transl, header bool, name ptr uint8)
 decl translTypedef func(tr ptr Transl, name ptr uint8, type ptr ast:Type)
 
