@@ -35,6 +35,9 @@ func translDump(tr ptr ctrans:Transl, stream ptr io:Stream) ptr err:Error
     io:streamWrite(stream, "_h\n\n\n")
   /if
 
+  io:streamWrite(stream, "??=include <stddef.h>\n")
+  io:streamWrite(stream, "??=include <stdint.h>\n\n")
+
   mut includes = txt:csUnwrap(tr'includes)
   io:streamWrite(stream, includes)
   mem:free(includes)
@@ -129,6 +132,10 @@ func lrDump(lr LRStr, cs ptr txt:Charstash)
 
 
 decl csymType func(lr LRStr, type ptr ast:Type, full bool)
+decl csymGen func(lr LRStr,
+                  moduleName,name ptr uint8,
+                  type ptr ast:Type,
+                  tdf bool)
 
 
 func csymTypeWrap(cs ptr txt:Charstash, type ptr ast:Type)
@@ -138,8 +145,43 @@ func csymTypeWrap(cs ptr txt:Charstash, type ptr ast:Type)
 /func
 
 
-func csymFuncType(lr LRStr, type ptr ast:Type)
+func csymGenWrap(cs ptr txt:Charstash,
+                 moduleName,name ptr uint8,
+                 type ptr ast:Type)
 
+  mut lr = lrNew()
+  csymGen(lr, moduleName, name, type, false)
+  lrDump(lr, cs)
+/func
+
+
+func csymFuncType(lr LRStr, type ptr ast:Type)
+  csymType(lr, type'retType, false)
+
+  mut paramsCs = txt:csNew(30)
+
+  mut i uintptr = 0
+  mut len = kv:kvLen(type'members)
+
+  txt:csAppendStr(paramsCs, "(")
+
+  while i < len
+    if i != 0
+      txt:csAppendWord(paramsCs, ",")
+    /if
+
+    mut pair = kv:kvGetAt(type'members, i)
+    csymGenWrap(paramsCs, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value))
+    i++
+  /while
+
+  txt:csAppendStr(paramsCs, ")")
+
+  mut params = txt:csUnwrap(paramsCs)
+
+  txt:csPrependStr(lr'right, params)
+
+  mem:free(params)
 /func
 
 
@@ -184,10 +226,8 @@ func csymStructType(cs ptr txt:Charstash, type ptr ast:Type)
     mut pair = kv:kvGetAt(type'members, i)
 
     txt:csAppend(cs, 9)
-    csymTypeWrap(cs, cast<ptr ast:Type>(pair'value))
-    txt:csAppend(cs, 32)
-    txt:csAppendStr(cs, cast<ptr uint8>(pair'key))
-    txt:csAppendStr(cs, ";\n")
+    csymGenWrap(cs, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value))
+    txt:csAppendLine(cs, ";")
 
     i++
   /while
@@ -198,46 +238,48 @@ func csymStructType(cs ptr txt:Charstash, type ptr ast:Type)
 
 func csymType(lr LRStr, type ptr ast:Type, full bool)
 
+  if type == null or type'type == ast:TYPE_EMPTY
+    txt:csAppendStr(lr'left, "void ")
+    return
+  /if
+
   if !full and type'name != null and (type'type == ast:TYPE_STRUCT or type'type == ast:TYPE_FUNC)
     symMod(lr'left, type'moduleName, type'name)
+    txt:csAppendStr(lr'left, " ")
     return
   /if
 
   if type'type == ast:TYPE_BOOL
-    txt:csAppendStr(lr'left, "_Bool")
+    txt:csAppendStr(lr'left, "_Bool ")
   else
     if type'type == ast:TYPE_DATA
-      txt:csAppendStr(lr'left, "void*")
+      txt:csAppendStr(lr'left, "void* ")
     else
-      if type'type == ast:TYPE_EMPTY
-        txt:csAppendStr(lr'left, "void")
+      if type'type == ast:TYPE_FUNC
+        csymFuncType(lr, type)
       else
-        if type'type == ast:TYPE_FUNC
-          csymFuncType(lr, type)
-        else
-          if type'type == ast:TYPE_INT
-            if !type'isSigned
-              txt:csAppendStr(lr'left, "u")
-            /if
+        if type'type == ast:TYPE_INT
+          if !type'isSigned
+            txt:csAppendStr(lr'left, "u")
+          /if
 
-            txt:csAppendStr(lr'left, "int")
-            txt:csAppendInt(lr'left, type'typeSize * 8)
-            txt:csAppendStr(lr'left, "_t")
+          txt:csAppendStr(lr'left, "int")
+          txt:csAppendInt(lr'left, type'typeSize * 8)
+          txt:csAppendStr(lr'left, "_t ")
+        else
+          if type'type == ast:TYPE_LOC or type'type == ast:TYPE_PTR
+            csymPtrArrType(lr, type)
           else
-            if type'type == ast:TYPE_LOC or type'type == ast:TYPE_PTR
-              csymPtrArrType(lr, type)
+            if type'type == ast:TYPE_NULL
+              tty:errln("UNREACHABLE - TYPE NULL CAN'T BE VALID")
+              proc:abort()
             else
-              if type'type == ast:TYPE_NULL
-                tty:errln("UNREACHABLE - TYPE NULL CAN'T BE VALID")
-                proc:abort()
+              if type'type == ast:TYPE_RECALIAS
+                txt:csAppendStr(lr'left, "struct ")
+                symMod(lr'left, type'moduleName, type'name)
+                txt:csAppendStr(lr'left, " ")
               else
-                if type'type == ast:TYPE_RECALIAS
-                  txt:csAppendStr(lr'left, "struct ")
-                  symMod(lr'left, type'moduleName, type'name)
-                  txt:csAppendStr(lr'left, " ")
-                else
-                  csymStructType(lr'left, type)
-                /if
+                csymStructType(lr'left, type)
               /if
             /if
           /if
