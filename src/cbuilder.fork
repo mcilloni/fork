@@ -16,6 +16,7 @@ import ctrans
 import err
 import io
 import kv
+import list
 import mem
 import proc
 import txt
@@ -143,21 +144,14 @@ decl csymGen func(lr LRStr,
                   moduleName,name ptr uint8,
                   type ptr ast:Type,
                   tdf bool)
-
+decl csym func(cs ptr txt:Charstash,
+               moduleName,name ptr uint8,
+               type ptr ast:Type,
+               tdf bool)
 
 func csymTypeWrap(cs ptr txt:Charstash, type ptr ast:Type)
   mut lr = lrNew()
   csymType(lr, type, false)
-  lrDump(lr, cs)
-/func
-
-
-func csymGenWrap(cs ptr txt:Charstash,
-                 moduleName,name ptr uint8,
-                 type ptr ast:Type)
-
-  mut lr = lrNew()
-  csymGen(lr, moduleName, name, type, false)
   lrDump(lr, cs)
 /func
 
@@ -178,7 +172,7 @@ func csymFuncType(lr LRStr, type ptr ast:Type)
     /if
 
     mut pair = kv:kvGetAt(type'members, i)
-    csymGenWrap(paramsCs, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value))
+    csym(paramsCs, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value), false)
     i++
   /while
 
@@ -232,8 +226,8 @@ func csymStructType(cs ptr txt:Charstash, type ptr ast:Type)
   while i < len
     mut pair = kv:kvGetAt(type'members, i)
 
-    txt:csAppend(cs, 9)
-    csymGenWrap(cs, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value))
+    txt:csAppendStr(cs, "  ")
+    csym(cs, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value), false)
     txt:csAppendLine(cs, ";")
 
     i++
@@ -326,12 +320,192 @@ func translExtern(tr ptr ctrans:Transl, sym ptr uint8)
 /func
 
 
+func pad(cs ptr txt:Charstash, p uintptr)
+  mut i uintptr = 0
+
+  while i < p
+    txt:csAppend(cs, 32)
+
+    i++
+  /while
+/func
+
+
+func dbgLine(cs ptr txt:Charstash, fname ptr uint8, line uintptr, p uintptr)
+  pad(cs, p)
+
+  txt:csAppendStr(cs, "\n??=line ")
+  txt:csAppendInt(cs, line)
+  txt:csAppendStr(cs, " \"")
+
+  mut pwd = proc:getenv("PWD")
+
+  txt:csAppendStr(cs, pwd)
+  txt:csAppendStr(cs, "/")
+  txt:csAppendStr(cs, fname)
+  txt:csAppendLine(cs, "\"")
+/func
+
+
+alias BlTrans struct(
+  decls,vars,stmt ptr list:List
+)
+
+
+func blDump(blt BlTrans, cs ptr txt:Charstash, p uintptr)
+  mut i uintptr = 0
+  mut dLen = list:listLen(blt'decls)
+
+  while i < dLen
+    mut dcl = cast<ptr uint8>(val list:listGet(blt'decls, i))
+
+    pad(cs, p)
+
+    txt:csAppendWord(cs, "extern")
+    txt:csAppendStr(cs, dcl)
+    txt:csAppendLine(cs, ";")
+
+    mem:free(dcl)
+
+    i++
+  /while
+
+  mut vLen = list:listLen(blt'vars)
+
+  i = 0
+
+  while i < vLen
+    mut var = cast<ptr uint8>(val list:listGet(blt'vars, i))
+
+    pad(cs, p)
+
+    txt:csAppendStr(cs, var)
+    txt:csAppendLine(cs, ";")
+
+    mem:free(var)
+
+    i++
+  /while
+
+  if dLen + vLen > 0
+    txt:csAppendLine(cs, "\n")
+  /if
+
+  mut sLen = list:listLen(blt'stmt)
+
+  i = 0
+
+  while i < sLen
+    mut stmt = cast<ptr uint8>(val list:listGet(blt'stmt, i))
+
+    pad(cs, p)
+
+    txt:csAppendStr(cs, stmt)
+    txt:csAppendLine(cs, ";")
+
+    mem:free(stmt)
+
+    i++
+  /while
+
+  list:listFree(blt'decls)
+  list:listFree(blt'vars)
+  list:listFree(blt'stmt)
+/func
+
+
+func blNew() BlTrans
+  mut ret BlTrans
+
+  ret'decls = list:listNew()
+  ret'vars = list:listNew()
+  ret'stmt = list:listNew()
+
+  return ret
+/func
+
+
+func translStmt(bl BlTrans, block ptr ast:PBlock, stmt ptr ast:PNode)
+  mut cs = txt:csNew(40)
+
+  if stmt'type == ast:PIF
+
+  else
+    mut isMut = stmt'type == ast:PMUT
+    mut isDecl = stmt'type == ast:PDECL
+
+    if isMut or isDecl
+      mut pdecl = cast<ptr ast:PDecl>(stmt)
+      mut sym = txt:csNew(20)
+      mut type = ast:stabTypeof(block'syms, pdecl'sym'name)
+
+      csym(sym, null, pdecl'sym'name, type, false)
+
+      mut sstr = txt:csUnwrap(sym)
+
+      list:listAppend(isMut => bl'vars || bl'decls, sstr)
+    /if
+  /if
+
+  bl'stmt
+/func
+
+
+func translBlock(cs ptr txt:Charstash,
+                 block ptr ast:PBlock,
+                 fname ptr uint8,
+                 p uintptr)
+
+  mut origp uintptr = p == 0 => 0 || p - 2
+
+  txt:csAppendLine(cs, "{")
+
+  mut bl = blNew()
+
+  mut bLen = list:listLen(block'node'leaves)
+  mut i uintptr = 0
+
+  while i < bLen
+    mut stmt = cast<ptr ast:PNode>(val list:listGet(block'node'leaves, i))
+
+    translStmt(bl, block, stmt)
+
+    i++
+  /while
+
+  blDump(bl, cs, p)
+
+  dbgLine(cs, fname, block'node'end'line + 1, origp)
+  txt:csAppendLine(cs, "}\n\n")
+/func
+
+
+func translFunc(tr ptr ctrans:Transl,
+                fname,sym ptr uint8,
+                fn ptr ast:PDecl)
+
+  dbgLine(tr'funcs, fname, fn'node'begin'line, 0)
+  txt:csAppendWord(tr'funcs, sym)
+
+  mut block = cast<ptr ast:PBlock>(val list:listGet(fn'node'leaves, 0))
+
+  translBlock(tr'funcs, block, fname, 2)
+/func
+
+
 func translGenSym(moduleName,name ptr uint8, type ptr ast:Type) ptr uint8
   mut cs = txt:csNew(30)
 
   csym(cs, moduleName, name, type, false)
 
   return txt:csUnwrap(cs)
+/func
+
+
+func translGlobVar(tr ptr ctrans:Transl, sym ptr uint8, expr ptr ast:PExpr)
+  txt:csAppendStr(tr'vars, sym)
+
+  txt:csAppendLine(tr'vars, ";")
 /func
 
 

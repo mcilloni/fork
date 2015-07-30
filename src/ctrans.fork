@@ -15,6 +15,7 @@ import ast
 import ctrans
 import kv
 import list
+import mem
 import pair
 import txt
 
@@ -24,16 +25,30 @@ func ctransGenDecls(tr ptr ctrans:Transl,
 
   mut len = list:listLen(root'node'node'leaves)
   mut i uintptr = 0
+  mut moduleName ptr uint8 = (root'moduleName != null) => root'moduleName'name || null
 
   while i < len
     mut child = cast<ptr ast:PDecl>(val list:listGet(root'node'node'leaves, i))
 
-    if child'node'type != ast:PALIAS    
+    if child'node'type != ast:PALIAS
       mut dinfo = ast:stabGet(root'node'syms, child'sym'name)
 
-      mut sym = ctrans:translGenSym(root'moduleName'name, child'sym'name, dinfo'type)
+      mut sym = ctrans:translGenSym(moduleName, child'sym'name, dinfo'type)
 
       ctrans:translExtern(tr, sym)
+
+      if child'node'type == ast:PMUT
+        mut expr = list:listGet(child'node'leaves, 0)
+
+        ctrans:translGlobVar(tr, sym, expr != null => cast<ptr ast:PExpr>(val expr) || null)
+      else
+        if child'node'type == ast:PFUNCTION
+          ctrans:translFunc(tr, root'fileName, sym, child)
+        /if
+      /if
+
+      mem:free(sym)
+
     /if
 
     i++
