@@ -13,6 +13,7 @@ import kv
 import lex
 import list
 import mem
+import tokens
 import tty
 import txt
 import utils
@@ -269,28 +270,28 @@ func pexprDumpInfo(pexpr ptr ast:PExpr, depth uintptr)
 
   tty:out(": ")
 
-  if pexpr'opType == lex:ID
+  if pexpr'opType == tokens:ID
     tty:out("an id - \"")
     tty:out(cast<ptr uint8>(pexpr'node'value))
     tty:out("\"")
   else
-    if pexpr'opType == lex:NUMBER
+    if pexpr'opType == tokens:NUMBER
       tty:outint(pexpr'node'value)
     else
-      if pexpr'opType == lex:STRING
+      if pexpr'opType == tokens:STRING
         tty:out("a string - \"")
         tty:out(cast<ptr uint8>(pexpr'node'value))
         tty:out("\"")
       else
-        if pexpr'opType == lex:OPAR
+        if pexpr'opType == tokens:OPAR
           tty:out("a function call")
         else
-          if pexpr'opType == lex:OBRAC
+          if pexpr'opType == tokens:OBRAC
             tty:out("an array access")
           else
             tty:out(lex:tokenStr(ptr tok))
 
-            if pexpr'opType == lex:CAST or pexpr'opType == lex:SIZE
+            if pexpr'opType == tokens:CAST or pexpr'opType == tokens:SIZE
               tty:out(" to ")
 
               ptypeDump(cast<ptr ast:PType>(pexpr'node'value))

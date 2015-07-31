@@ -13,6 +13,7 @@ import astfn
 import lex
 import mem
 import synt
+import tokens
 import utils
 
 
@@ -46,8 +47,8 @@ func assocLeft(tok ptr lex:Token) bool
 
 
 func tokTypePrec(ttype uint16) int16
-  if ttype == lex:MINUS
-    return tokTypePrec(lex:PLUS)
+  if ttype == tokens:MINUS
+    return tokTypePrec(tokens:PLUS)
   /if
 
   return ttype / 1000
@@ -69,7 +70,7 @@ func isOp(tok ptr lex:Token) bool
 
 
 func isValidInExpr(tok ptr lex:Token) bool
-  return tok != null and (isOp(tok) or tok'type == lex:ID or tok'type == lex:NUMBER)
+  return tok != null and (isOp(tok) or tok'type == tokens:ID or tok'type == tokens:NUMBER)
 /func
 
 
@@ -77,7 +78,7 @@ func parserParseCastTag(ctx ptr synt:ParserContext) ptr ast:PExpr
 
   mut castTok = synt:nextTok(ctx)
 
-  if !synt:expectDiscard(ctx, lex:MINOR)
+  if !synt:expectDiscard(ctx, tokens:MINOR)
     lex:tokenFree(castTok)
     return null
   /if
@@ -88,7 +89,7 @@ func parserParseCastTag(ctx ptr synt:ParserContext) ptr ast:PExpr
     return null
   /if
 
-  if !synt:expectDiscard(ctx, lex:MAJOR) or !synt:expectDiscard(ctx, lex:OPAR)
+  if !synt:expectDiscard(ctx, tokens:MAJOR) or !synt:expectDiscard(ctx, tokens:OPAR)
     lex:tokenFree(castTok)
     mem:decRef(type)
     return null
@@ -102,7 +103,7 @@ func parserParseCastTag(ctx ptr synt:ParserContext) ptr ast:PExpr
     mem:decRef(type)
   /if
 
-  mut cpar = synt:expect(ctx, lex:CPAR)
+  mut cpar = synt:expect(ctx, tokens:CPAR)
   if cpar == null
     lex:tokenFree(castTok)
     mem:decRef(type)
@@ -121,7 +122,7 @@ func parserParseSizeOp(ctx ptr synt:ParserContext) ptr ast:PExpr
   mut sizeTok = synt:nextTok(ctx)
 
 
-  if !synt:expectDiscard(ctx, lex:OPAR)
+  if !synt:expectDiscard(ctx, tokens:OPAR)
     lex:tokenFree(sizeTok)
     return null
   /if
@@ -132,7 +133,7 @@ func parserParseSizeOp(ctx ptr synt:ParserContext) ptr ast:PExpr
     return null
   /if
 
-  mut cpar = synt:expect(ctx, lex:CPAR)
+  mut cpar = synt:expect(ctx, tokens:CPAR)
   if cpar == null
     lex:tokenFree(sizeTok)
     return null
@@ -146,7 +147,7 @@ func parserParseSizeOp(ctx ptr synt:ParserContext) ptr ast:PExpr
 
 
 func tokIsPostfixExpressionSuffixStart(tok ptr lex:Token) bool
-  return tok != null and (tok'type == lex:OPAR or tok'type == lex:OBRAC or tok'type == lex:INC or tok'type == lex:DEC or tok'type == lex:APOS)
+  return tok != null and (tok'type == tokens:OPAR or tok'type == tokens:OBRAC or tok'type == tokens:INC or tok'type == tokens:DEC or tok'type == tokens:APOS)
 /func
 
 
@@ -154,10 +155,10 @@ func parserParseId(ctx ptr synt:ParserContext) ptr ast:PExpr
   mut first = synt:nextTok(ctx)
   mut ret = astfn:pexprNewSingle(first)
 
-  if ctx'next != null and ctx'next'type == lex:COLON
+  if ctx'next != null and ctx'next'type == tokens:COLON
     mut colon = synt:nextTok(ctx)
 
-    mut id = synt:expect(ctx, lex:ID)
+    mut id = synt:expect(ctx, tokens:ID)
     if id == null
       lex:tokenFree(colon)
       ast:pnodeFree(cast<ptr ast:PNode>(ret))
@@ -199,7 +200,7 @@ func parserParseGenParens(ctx ptr synt:ParserContext, cpar uint16) ptr ast:PExpr
 func parserParseParens(ctx ptr synt:ParserContext) ptr ast:PExpr
 
   synt:discardTok(ctx)
-  return parserParseGenParens(ctx, lex:CPAR)
+  return parserParseGenParens(ctx, tokens:CPAR)
 
 /func
 
@@ -211,23 +212,23 @@ func parserParsePrimaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
     return null
   /if
 
-  if ctx'next'type == lex:FALSE or ctx'next'type == lex:TRUE or ctx'next'type == lex:STRING or ctx'next'type == lex:NUMBER or ctx'next'type == lex:NULLPTR
+  if ctx'next'type == tokens:FALSE or ctx'next'type == tokens:TRUE or ctx'next'type == tokens:STRING or ctx'next'type == tokens:NUMBER or ctx'next'type == tokens:NULLPTR
     return astfn:pexprNewSingle(synt:nextTok(ctx))
   /if
 
-  if ctx'next'type == lex:ID
+  if ctx'next'type == tokens:ID
     return parserParseId(ctx)
   /if
 
-  if ctx'next'type == lex:CAST
+  if ctx'next'type == tokens:CAST
     return parserParseCastTag(ctx)
   /if
 
-  if ctx'next'type == lex:SIZE
+  if ctx'next'type == tokens:SIZE
     return parserParseSizeOp(ctx)
   /if
 
-  if ctx'next'type != lex:OPAR
+  if ctx'next'type != tokens:OPAR
     ctx'prs'err = lex:errorMism(ctx'next'lineno, "an identifier, a costant or an expression between ()", lex:tokenStr(ctx'next))
     return null
   /if
@@ -240,7 +241,7 @@ func parserParsePrimaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
 func parserParseAccessExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:PExpr
 
   mut obrac = synt:nextTok(ctx)
-  mut expression = parserParseGenParens(ctx, lex:CBRAC)
+  mut expression = parserParseGenParens(ctx, tokens:CBRAC)
 
   if expression == null
       return null
@@ -269,9 +270,9 @@ func parserParseCallExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:
   mut first = true
 
 
-  while ctx'next != null and ctx'next'type != lex:CPAR
+  while ctx'next != null and ctx'next'type != tokens:CPAR
 
-    if ctx'next'type != lex:COMMA and !first
+    if ctx'next'type != tokens:COMMA and !first
 
       ctx'prs'err = lex:errorMism(ctx'last, "a comma ','", lex:tokenStr(ctx'next))
       ast:pnodeFree(callPNode)
@@ -298,7 +299,7 @@ func parserParseCallExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:
 
   /while
 
-  mut cpar = synt:expect(ctx, lex:CPAR)
+  mut cpar = synt:expect(ctx, tokens:CPAR)
   if cpar == null
     ast:pnodeFree(callPNode)
     return null
@@ -314,7 +315,7 @@ func parserParseCallExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:
 func parserParseFieldExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:PExpr
 
   mut apos = synt:nextTok(ctx)
-  mut id = synt:expect(ctx, lex:ID)
+  mut id = synt:expect(ctx, tokens:ID)
 
   if id == null
     lex:tokenFree(apos)
@@ -336,17 +337,17 @@ func parserParsePostfixSuffix(ctx ptr synt:ParserContext, primaryLhs ptr ast:PEx
       break
     /if
 
-    if ctx'next'type == lex:OBRAC
+    if ctx'next'type == tokens:OBRAC
       lhs = parserParseAccessExpr(ctx, lhs)
     else
-      if ctx'next'type == lex:OPAR
+      if ctx'next'type == tokens:OPAR
         lhs = parserParseCallExpr(ctx, lhs)
       else
-        if ctx'next'type == lex:INC or ctx'next'type == lex:DEC
+        if ctx'next'type == tokens:INC or ctx'next'type == tokens:DEC
           mut incDec = synt:nextTok(ctx)
           lhs = astfn:pexprNew(incDec, lhs, null, lhs'node'begin, lex:tokExtractEnd(incDec))
         else
-          if ctx'next'type == lex:APOS
+          if ctx'next'type == tokens:APOS
             lhs = parserParseFieldExpr(ctx, lhs)
           else
             break
@@ -386,8 +387,8 @@ func parserParseUnaryExprOp(ctx ptr synt:ParserContext) ptr ast:PExpr
     return null
   /if
 
-  if operator'type == lex:MINUS
-    operator'type = lex:UMINUS
+  if operator'type == tokens:MINUS
+    operator'type = tokens:UMINUS
   /if
 
   return astfn:pexprNew(operator, result, null, lex:tokExtractBegin(operator), result'node'end)
@@ -409,7 +410,7 @@ func parserParseUnaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
 
 
 func isConditionalOperator(tok ptr lex:Token) bool
-  return tok != null and tok'type == lex:FATARROW
+  return tok != null and tok'type == tokens:FATARROW
 /func
 
 
@@ -424,7 +425,7 @@ func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri 
     mut ternaryMiddle ptr ast:PExpr = null
 
     if isConditionalOperator(opTok)
-      if (ternaryMiddle = synt:parserParseExpr(ctx)) == null or !synt:expectDiscard(ctx, lex:SEPARATOR)
+      if (ternaryMiddle = synt:parserParseExpr(ctx)) == null or !synt:expectDiscard(ctx, tokens:SEPARATOR)
         lex:tokenFree(opTok)
         return null
       /if
@@ -460,7 +461,7 @@ func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri 
 func parserParseAssignExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
   mut lhs = parserParseUnaryExpr(ctx)
 
-  return lhs != null => parserParseBinaryRhs(ctx, lhs, tokTypePrec(lex:ASSIGN)) || null
+  return lhs != null => parserParseBinaryRhs(ctx, lhs, tokTypePrec(tokens:ASSIGN)) || null
 /func
 
 

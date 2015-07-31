@@ -11,6 +11,7 @@
 import err
 import lex
 import proc
+import tokens
 import tty
 
 
@@ -39,11 +40,11 @@ entry
     /if
 
     tty:out(lex:tokenStr(tok))
-    if tok'type == lex:ID or tok'type == lex:STRING
+    if tok'type == tokens:ID or tok'type == tokens:STRING
       tty:out(": ")
       tty:out(cast<ptr uint8>(tok'value))
     else
-      if tok'type == lex:NUMBER
+      if tok'type == tokens:NUMBER
         tty:out(": ")
         tty:outint(tok'value)
       /if

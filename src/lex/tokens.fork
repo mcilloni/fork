@@ -7,6 +7,10 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
+
+module tokens
+
+
 mut EOF uint16 = 0
 mut NEWLINE uint16 = 10
 mut ALIAS uint16 = 20

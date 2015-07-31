@@ -8,6 +8,9 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
+module sema
+
+
 import ast
 import astfn
 import kv
@@ -18,17 +21,18 @@ import mem
 import parser
 import sema
 import synt
+import tokens
 import txt
 import utils
 
 
 func ttypeOpCanDoPtrArith(tt uint16) bool
-  return tt == lex:PLUS or tt == lex:MINUS or tt == lex:INC or tt == lex:DEC
+  return tt == tokens:PLUS or tt == tokens:MINUS or tt == tokens:INC or tt == tokens:DEC
 /func
 
 
 func ttypeIsTernary(tt uint16) bool
-  return tt == lex:FATARROW
+  return tt == tokens:FATARROW
 /func
 
 
@@ -37,7 +41,7 @@ func ttypeIsBinary(tt uint16) bool
 
   tok'type = tt
 
-  return synt:isBinary(ptr tok) or tt == lex:MINUS
+  return synt:isBinary(ptr tok) or tt == tokens:MINUS
 /func
 
 
@@ -47,46 +51,46 @@ func ttypeIsUnary(tt uint16) bool
 
 
 func ttypeIsComparison(tt uint16) bool
-  return tt == lex:MAJOR or tt == lex:MINOR or tt == lex:MAJEQ or tt == lex:MINEQ or tt == lex:EQUAL or tt == lex:DIFFERENT
+  return tt == tokens:MAJOR or tt == tokens:MINOR or tt == tokens:MAJEQ or tt == tokens:MINEQ or tt == tokens:EQUAL or tt == tokens:DIFFERENT
 /func
 
 
 func ttypeIsConst(tt uint16) bool
-  return tt == lex:STRING or tt == lex:NUMBER or tt == lex:NULLPTR or tt == lex:TRUE or tt == lex:FALSE
+  return tt == tokens:STRING or tt == tokens:NUMBER or tt == tokens:NULLPTR or tt == tokens:TRUE or tt == tokens:FALSE
 /func
 
 
 func ttypeIsEqDiff(tt uint16) bool
-  return tt == lex:EQUAL or tt == lex:DIFFERENT
+  return tt == tokens:EQUAL or tt == tokens:DIFFERENT
 /func
 
 
 func ttypeIsArith(tt uint16) bool
-  return tt == lex:PLUS or tt == lex:MINUS or tt == lex:MINOR or tt == lex:MAJOR or tt == lex:MAJEQ or tt == lex:MINEQ or tt == lex:MOD or tt == lex:DIV or tt == lex:INC or tt == lex:DEC or tt == lex:POW or tt == lex:TIMES or tt == lex:UMINUS or tt == lex:AMPER or tt == lex:PIPE or tt == lex:XOR
+  return tt == tokens:PLUS or tt == tokens:MINUS or tt == tokens:MINOR or tt == tokens:MAJOR or tt == tokens:MAJEQ or tt == tokens:MINEQ or tt == tokens:MOD or tt == tokens:DIV or tt == tokens:INC or tt == tokens:DEC or tt == tokens:POW or tt == tokens:TIMES or tt == tokens:UMINUS or tt == tokens:AMPER or tt == tokens:PIPE or tt == tokens:XOR
 /func
 
 
 func ttypeIsBool(tt uint16) bool
-  return tt == lex:AND or tt == lex:OR or tt == lex:NOT
+  return tt == tokens:AND or tt == tokens:OR or tt == tokens:NOT
 /func
 
 
 func ttypeCanBeAssignTarget(tt uint16, type ptr ast:Type) bool
-  return (tt == lex:VAL or tt == lex:OBRAC or tt == lex:APOS or tt == lex:COLON or tt == lex:ID) and (ast:typeIsPtr(type) or ast:typeIsInt(type) or ast:typeIsStruct(type) or ast:typeIsBool(type))
+  return (tt == tokens:VAL or tt == tokens:OBRAC or tt == tokens:APOS or tt == tokens:COLON or tt == tokens:ID) and (ast:typeIsPtr(type) or ast:typeIsInt(type) or ast:typeIsStruct(type) or ast:typeIsBool(type))
 /func
 
 
 func assignLhsDump(cs ptr txt:Charstash, pexpr ptr ast:PExpr)
   mut op = pexpr'opType
 
-  if op == lex:ID
+  if op == tokens:ID
     txt:csAppendStr(cs, cast<ptr uint8>(pexpr'node'value))
     return
   /if
 
   mut left = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
 
-  if op == lex:VAL
+  if op == tokens:VAL
     txt:csAppendStr(cs, "'val ")
 
     assignLhsDump(cs, left)
@@ -96,7 +100,7 @@ func assignLhsDump(cs ptr txt:Charstash, pexpr ptr ast:PExpr)
     return
   /if
 
-  if op == lex:OBRAC
+  if op == tokens:OBRAC
     txt:csAppendStr(cs, " member of '")
     assignLhsDump(cs, left)
     txt:csAppendStr(cs, "' ")
@@ -106,12 +110,12 @@ func assignLhsDump(cs ptr txt:Charstash, pexpr ptr ast:PExpr)
 
   mut right = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
 
-  if op == lex:APOS or op == lex:COMMA
+  if op == tokens:APOS or op == tokens:COMMA
     txt:csAppendStr(cs, "'")
 
     assignLhsDump(cs, left)
 
-    txt:csAppendStr(cs, op == lex:APOS => "'" || ":")
+    txt:csAppendStr(cs, op == tokens:APOS => "'" || ":")
 
     assignLhsDump(cs, right)
 
@@ -268,19 +272,19 @@ func validateExprConst(rsv sema:Resolver,
 
   mut op = pexpr'opType
 
-  if op == lex:STRING
+  if op == tokens:STRING
     return parser:ctxMatchBuiltin(rsv'ctx, "ptr uint8")
   /if
 
-  if op == lex:NUMBER
+  if op == tokens:NUMBER
     return intForVal(rsv'ctx, cast<intptr>(pexpr'node'value))
   /if
 
-  if op == lex:TRUE or op == lex:FALSE
+  if op == tokens:TRUE or op == tokens:FALSE
     return parser:ctxMatchBuiltin(rsv'ctx, "bool")
   /if
 
-  if op == lex:NULLPTR
+  if op == tokens:NULLPTR
     return parser:ctxMatchBuiltin(rsv'ctx, "null")
   /if
 
@@ -434,7 +438,7 @@ func validateArithPtrExpr(rsv sema:Resolver,
   /if
 
   if ast:typeIsPtr(ltype) and ast:typeIsPtr(rtype)
-    if pexpr'opType == lex:MINUS
+    if pexpr'opType == tokens:MINUS
       if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
         mut cs = txt:csNew(20)
 
@@ -782,7 +786,7 @@ func validateBinaryExpr(rsv sema:Resolver,
   # handle apos, colon and call operators before because they are special
   # (i.e. no expressions or expressions only on lhs)
 
-  if op == lex:COLON
+  if op == tokens:COLON
     return validateModuleAccessExpr(rsv, pexpr, errors)
   /if
 
@@ -794,12 +798,12 @@ func validateBinaryExpr(rsv sema:Resolver,
   /if
 
   # structure field access
-  if op == lex:APOS
+  if op == tokens:APOS
     return validateStructureAccessExpr(rsv, pexpr, ltype,  errors)
   /if
 
   # function call
-  if op == lex:OPAR
+  if op == tokens:OPAR
     return validateFunctionCallExpr(rsv, pexpr, ltype, recList, errors)
   /if
 
@@ -811,7 +815,7 @@ func validateBinaryExpr(rsv sema:Resolver,
   /if
 
   # array access
-  if op == lex:OBRAC
+  if op == tokens:OBRAC
     return validateArrayAccess(rsv, pexpr, ltype, rtype, errors)
   /if
 
@@ -964,19 +968,19 @@ func validateUnaryExpr(rsv sema:Resolver,
   mut arg = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
   mut atype = sema:validateExprRecl(rsv, arg, recList, errors)
 
-  if op == lex:NOT
+  if op == tokens:NOT
     return validateNotExpr(rsv, pexpr, atype, errors)
   /if
 
-  if op == lex:VAL
+  if op == tokens:VAL
     return validateValExpr(rsv, pexpr, atype, errors)
   /if
 
-  if op == lex:PTR
+  if op == tokens:PTR
     return validatePtrExpr(rsv, pexpr, atype, errors)
   /if
 
-  if op == lex:UMINUS
+  if op == tokens:UMINUS
     return validateUMinusExpr(rsv, pexpr, atype, errors)
   /if
 
@@ -1067,13 +1071,13 @@ func validateExprRecl(rsv sema:Resolver,
   if ttypeIsConst(op)
     return validateExprConst(rsv, pexpr)
   else
-    if op == lex:ID
+    if op == tokens:ID
       pexpr'type = validateExprId(rsv, pexpr, recList, errors)
     else
-      if op == lex:CAST
+      if op == tokens:CAST
         pexpr'type = validateExprCast(rsv, pexpr, recList, errors)
       else
-        if op == lex:SIZE
+        if op == tokens:SIZE
           pexpr'type = validateSizeExpr(rsv, pexpr, errors)
         else
           if ttypeIsTernary(op)

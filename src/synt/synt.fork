@@ -15,6 +15,7 @@ import lex
 import list
 import mem
 import synt
+import tokens
 import txt
 import utils
 
@@ -83,7 +84,7 @@ func expect(ctx ptr synt:ParserContext, ttype uint16) ptr lex:Token
 
   mut expected lex:Token
   expected'type = ttype
-  if (got == null and ttype != lex:EOF) or got'type != ttype
+  if (got == null and ttype != tokens:EOF) or got'type != ttype
     createExpectedError(ctx, ptr expected, got)
     return null
   /if
@@ -102,12 +103,12 @@ func expectDiscard(ctx ptr synt:ParserContext, ttype uint16) bool
 
 # parses, if present, the module name. Returns null if none or error
 func parserParseModuleName(ctx ptr synt:ParserContext) ptr ast:StringDef
-  if ctx'next'type == lex:MODULE
+  if ctx'next'type == tokens:MODULE
     mut begin = lex:tokDiscardBegin(synt:nextTok(ctx)) # discard 'module'
 
-    mut name = expect(ctx, lex:ID)
+    mut name = expect(ctx, tokens:ID)
     if name != null
-      if !synt:expectDiscard(ctx, lex:NEWLINE)
+      if !synt:expectDiscard(ctx, tokens:NEWLINE)
         return null
       /if
 
@@ -123,12 +124,12 @@ func parserParseModuleName(ctx ptr synt:ParserContext) ptr ast:StringDef
 
 
 func parserParseImport(ctx ptr synt:ParserContext) ptr ast:StringDef
-  if ctx'next != null and ctx'next'type == lex:IMPORT
+  if ctx'next != null and ctx'next'type == tokens:IMPORT
     mut begin = lex:tokDiscardBegin(synt:nextTok(ctx)) # discard 'import'
 
-    mut name = synt:expect(ctx, lex:ID)
+    mut name = synt:expect(ctx, tokens:ID)
     if name != null
-      if !synt:expectDiscard(ctx, lex:NEWLINE)
+      if !synt:expectDiscard(ctx, tokens:NEWLINE)
         return null
       /if
 
@@ -159,11 +160,11 @@ func parserParseImports(ctx ptr synt:ParserContext) ptr list:List
 func parserParseIdType(ctx ptr synt:ParserContext, name ptr uint8) ptr ast:PType
   mut moduleName ptr uint8 = null
 
-  if ctx'next != null and ctx'next'type == lex:COLON
+  if ctx'next != null and ctx'next'type == tokens:COLON
     # discard ':'
     lex:tokenFree(nextTok(ctx))
 
-    mut tok = expect(ctx, lex:ID)
+    mut tok = expect(ctx, tokens:ID)
     if tok == null
       return null
     /if
@@ -180,16 +181,16 @@ func parserParseIdType(ctx ptr synt:ParserContext, name ptr uint8) ptr ast:PType
 
 func tokenIsTypeStart(tok ptr lex:Token) bool
   mut ttype = tok'type
-  return ttype == lex:STRUCT or ttype == lex:FUNC or ttype == lex:PTR or ttype == lex:VAL or ttype == lex:ID or ttype == lex:OBRAC
+  return ttype == tokens:STRUCT or ttype == tokens:FUNC or ttype == tokens:PTR or ttype == tokens:VAL or ttype == tokens:ID or ttype == tokens:OBRAC
 /func
 
 
 decl parserParseType func(ctx ptr synt:ParserContext) ptr ast:PType
 
 
-# if the next token exists and it's a lex:NEWLINE, then discards it
+# if the next token exists and it's a tokens:NEWLINE, then discards it
 func parserDiscardNewLine(ctx ptr synt:ParserContext)
-  if ctx'next != null and ctx'next'type == lex:NEWLINE
+  if ctx'next != null and ctx'next'type == tokens:NEWLINE
     synt:discardTok(ctx)
   /if
 /func
@@ -198,7 +199,7 @@ func parserParseIdList(ctx ptr synt:ParserContext) ptr list:List
   mut tok ptr lex:Token
   mut ret = list:listNew()
   while true
-    tok = expect(ctx, lex:ID)
+    tok = expect(ctx, tokens:ID)
     if tok == null
       break
     /if
@@ -211,7 +212,7 @@ func parserParseIdList(ctx ptr synt:ParserContext) ptr list:List
       break
     /if
 
-    if ctx'next'type != lex:COMMA
+    if ctx'next'type != tokens:COMMA
       return ret
     /if
 
@@ -251,7 +252,7 @@ func parserParseStructBodyVars(ctx ptr synt:ParserContext, syms ptr list:List) b
     return false
   /if
 
-  if ctx'next'type == lex:CPAR
+  if ctx'next'type == tokens:CPAR
     return false
   /if
 
@@ -273,7 +274,7 @@ func parserParseStructBodyVars(ctx ptr synt:ParserContext, syms ptr list:List) b
 
 
 func parserParseStructBody(ctx ptr synt:ParserContext, end ptr ast:Line) ptr list:List
-  if !expectDiscard(ctx, lex:OPAR)
+  if !expectDiscard(ctx, tokens:OPAR)
     return null
   /if
 
@@ -284,11 +285,11 @@ func parserParseStructBody(ctx ptr synt:ParserContext, end ptr ast:Line) ptr lis
 
     parserDiscardNewLine(ctx)
 
-    if ctx'next != null and ctx'next'type == lex:CPAR
+    if ctx'next != null and ctx'next'type == tokens:CPAR
       break
     /if
 
-    if !synt:expectDiscard(ctx, lex:COMMA)
+    if !synt:expectDiscard(ctx, tokens:COMMA)
       list:listFreeAll(strBody, cast<ptr func(item data)>(ptr mem:decRef))
       return null
     /if
@@ -299,7 +300,7 @@ func parserParseStructBody(ctx ptr synt:ParserContext, end ptr ast:Line) ptr lis
     return null
   /if
 
-  mut endTok = synt:expect(ctx, lex:CPAR)
+  mut endTok = synt:expect(ctx, tokens:CPAR)
   if endTok == null
     list:listFreeAll(strBody, cast<ptr func(item data)>(ptr mem:decRef))
     return null
@@ -332,7 +333,7 @@ func parserParseFunctionType(ctx ptr synt:ParserContext) ptr ast:PType
 
 
 func parserParseLocType(ctx ptr synt:ParserContext) ptr ast:PType
-  mut locLengthTok = expect(ctx, lex:NUMBER)
+  mut locLengthTok = expect(ctx, tokens:NUMBER)
   if locLengthTok == null
     return null
   /if
@@ -341,7 +342,7 @@ func parserParseLocType(ctx ptr synt:ParserContext) ptr ast:PType
 
   lex:tokenFree(locLengthTok)
 
-  if !expectDiscard(ctx, lex:CBRAC)
+  if !expectDiscard(ctx, tokens:CBRAC)
     return null
   /if
 
@@ -381,31 +382,31 @@ func parserParseType(ctx ptr synt:ParserContext) ptr ast:PType
   mut tok = nextTok(ctx)
   mut ret ptr ast:PType = null
 
-  if tok'type == lex:FUNC
+  if tok'type == tokens:FUNC
     ret = parserParseFunctionType(ctx)
   /if
 
-  if tok'type == lex:ID
+  if tok'type == tokens:ID
     ret = parserParseIdType(ctx, txt:strclone(cast<ptr uint8>(tok'value)))
     ret'end = lex:tokExtractEnd(tok)
   /if
 
-  if tok'type == lex:OBRAC
+  if tok'type == tokens:OBRAC
     ret = parserParseLocType(ctx)
   /if
 
-  if tok'type == lex:PTR
+  if tok'type == tokens:PTR
     # parses the real type (after ptr)
     mut realType = parserParseType(ctx)
     ret = astfn:ptypeNew(null, null, ast:ptypeDescrNew(ast:PTYPE_PTR, realType, null))
     ret'end = realType'end
   /if
 
-  if tok'type == lex:STRUCT
+  if tok'type == tokens:STRUCT
     ret = parserParseStructType(ctx)
   /if
 
-  if tok'type == lex:VAL
+  if tok'type == tokens:VAL
     # parses the real type (after val)
     ret = parserParseType(ctx)
   /if
@@ -428,7 +429,7 @@ func parserParseDeclaration(ctx ptr synt:ParserContext, declType uint16, externa
   # discard 'mut' or 'decl'
   mut begin = lex:tokDiscardBegin(synt:nextTok(ctx))
 
-  mut idTok = expect(ctx, lex:ID)
+  mut idTok = expect(ctx, tokens:ID)
   if idTok == null
     return null
   /if
@@ -446,7 +447,7 @@ func parserParseDeclaration(ctx ptr synt:ParserContext, declType uint16, externa
   mut type ptr ast:PType = null
   mut end ast:Line
 
-  if ctx'next'type != lex:ASSIGN
+  if ctx'next'type != tokens:ASSIGN
     type = parserParseType(ctx)
     if type == null
       mem:free(id)
@@ -459,7 +460,7 @@ func parserParseDeclaration(ctx ptr synt:ParserContext, declType uint16, externa
   mut pdecl = astfn:pdeclNew(declType, astfn:psymbolNew(id, type))
   mut pnode = cast<ptr ast:PNode>(pdecl)
 
-  if ctx'next != null and ctx'next'type == lex:ASSIGN
+  if ctx'next != null and ctx'next'type == tokens:ASSIGN
     if external
       ctx'prs'err = lex:error(ctx'last, "decl values can't have initializers")
       ast:pnodeFree(pnode)
@@ -501,7 +502,7 @@ func parserParseAlias(ctx ptr synt:ParserContext) ptr ast:PNode
   # discard 'alias'
   mut begin = lex:tokDiscardBegin(synt:nextTok(ctx))
 
-  mut name = expect(ctx, lex:ID)
+  mut name = expect(ctx, tokens:ID)
   if name != null
     mut type = parserParseType(ctx)
     if type == null
@@ -527,7 +528,7 @@ decl parserParseBody func(ctx ptr synt:ParserContext, isEndToken ptr func(tok pt
 
 
 func matchWhileEndTok(tok ptr lex:Token) bool
-  return tok'type == lex:ENDWHILE
+  return tok'type == tokens:ENDWHILE
 /func
 
 
@@ -539,7 +540,7 @@ func parserParseWhile(ctx ptr synt:ParserContext) ptr ast:PNode
     return null
   /if
 
-  if !synt:expectDiscard(ctx, lex:NEWLINE)
+  if !synt:expectDiscard(ctx, tokens:NEWLINE)
     ast:pnodeFree(expr)
     return null
   /if
@@ -563,11 +564,11 @@ func parserParseWhile(ctx ptr synt:ParserContext) ptr ast:PNode
 
 
 func matchIfElseEndTok(tok ptr lex:Token) bool
-  return tok'type == lex:ENDIF or tok'type == lex:ELSE
+  return tok'type == tokens:ENDIF or tok'type == tokens:ELSE
 /func
 
 func matchIfEndTok(tok ptr lex:Token) bool
-  return tok'type == lex:ENDIF
+  return tok'type == tokens:ENDIF
 /func
 
 
@@ -579,7 +580,7 @@ func parserParseIf(ctx ptr synt:ParserContext) ptr ast:PNode
     return null
   /if
 
-  if !synt:expectDiscard(ctx, lex:NEWLINE)
+  if !synt:expectDiscard(ctx, tokens:NEWLINE)
     ast:pnodeFree(expr)
     return null
   /if
@@ -596,9 +597,9 @@ func parserParseIf(ctx ptr synt:ParserContext) ptr ast:PNode
 
   astfn:pnodeAppendChild(block, mainBlock)
 
-  if ctx'next'type == lex:ELSE
+  if ctx'next'type == tokens:ELSE
     synt:discardTok(ctx) #discard else
-    if !synt:expectDiscard(ctx, lex:NEWLINE)
+    if !synt:expectDiscard(ctx, tokens:NEWLINE)
       ast:pnodeFree(block)
       return null
     /if
@@ -629,7 +630,7 @@ func parserParseReturn(ctx ptr synt:ParserContext) ptr ast:PNode
   mut end = lex:tokDiscardEnd(returnTok)
 
   mut returnNode = astfn:pnodeNew(ast:PRETURN, 0)
-  if ctx'next != null and ctx'next'type != lex:NEWLINE
+  if ctx'next != null and ctx'next'type != tokens:NEWLINE
     mut expr = synt:parserParseExpr(ctx)
     if expr == null
       ast:pnodeFree(returnNode)
@@ -667,31 +668,31 @@ func parserParseStatement(ctx ptr synt:ParserContext) ptr ast:PNode
     ctx'prs'err = lex:errorMism(ctx'last, "a statement or an expression", "EOF")
   /if
 
-  if ctx'next'type == lex:BREAK
+  if ctx'next'type == tokens:BREAK
     return parserParseBreakCont(ctx, ast:PBREAK)
   /if
 
-  if ctx'next'type == lex:CONTINUE
+  if ctx'next'type == tokens:CONTINUE
     return parserParseBreakCont(ctx, ast:PCONTINUE)
   /if
 
-  if ctx'next'type == lex:DECL
+  if ctx'next'type == tokens:DECL
     return parserParseDecl(ctx)
   /if
 
-  if ctx'next'type == lex:IF
+  if ctx'next'type == tokens:IF
     return parserParseIf(ctx)
   /if
 
-  if ctx'next'type == lex:MUT
+  if ctx'next'type == tokens:MUT
     return parserParseMut(ctx)
   /if
 
-  if ctx'next'type == lex:RETURN
+  if ctx'next'type == tokens:RETURN
     return parserParseReturn(ctx)
   /if
 
-  if ctx'next'type == lex:WHILE
+  if ctx'next'type == tokens:WHILE
     return parserParseWhile(ctx)
   /if
 
@@ -728,7 +729,7 @@ func parserParseBody(ctx ptr synt:ParserContext, isEndToken ptr func(tok ptr lex
       first = false
     /if
 
-    if !synt:expectDiscard(ctx, lex:NEWLINE)
+    if !synt:expectDiscard(ctx, tokens:NEWLINE)
       ast:pnodeFree(pnode)
       return null
     /if
@@ -757,7 +758,7 @@ func parserMakeFunction(ctx ptr synt:ParserContext,
                         endTType uint16,
                         isEndToken ptr func(tok ptr lex:Token) bool) ptr ast:PNode
 
-  if !expectDiscard(ctx, lex:NEWLINE)
+  if !expectDiscard(ctx, tokens:NEWLINE)
     return null
   /if
 
@@ -790,14 +791,14 @@ func makeEntryType() ptr ast:PType
 
 
 func matchEntryEndTok(tok ptr lex:Token) bool
-  return tok'type == lex:ENDENTRY
+  return tok'type == tokens:ENDENTRY
 /func
 
 
 func parserParseEntry(ctx ptr synt:ParserContext) ptr ast:PNode
   mut begin = lex:tokDiscardBegin(synt:nextTok(ctx))  #discard "entry"
 
-  mut entryNode = parserMakeFunction(ctx, ast:PENTRY, txt:strclone("_fork_entry"), makeEntryType(), lex:ENDENTRY, ptr matchEntryEndTok)
+  mut entryNode = parserMakeFunction(ctx, ast:PENTRY, txt:strclone("_fork_entry"), makeEntryType(), tokens:ENDENTRY, ptr matchEntryEndTok)
 
   if entryNode == null
     return null
@@ -810,7 +811,7 @@ func parserParseEntry(ctx ptr synt:ParserContext) ptr ast:PNode
 
 
 func parserParseFuncName(ctx ptr synt:ParserContext) ptr uint8
-  mut nameTok = expect(ctx, lex:ID)
+  mut nameTok = expect(ctx, tokens:ID)
   if nameTok == null
     return null
   /if
@@ -825,7 +826,7 @@ func parserParseFuncName(ctx ptr synt:ParserContext) ptr uint8
 
 
 func matchFuncEndTok(tok ptr lex:Token) bool
-  return tok'type == lex:ENDFUNC
+  return tok'type == tokens:ENDFUNC
 /func
 
 
@@ -844,7 +845,7 @@ func parserParseFunc(ctx ptr synt:ParserContext) ptr ast:PNode
     return null
   /if
 
-  mut functionNode =  parserMakeFunction(ctx, ast:PFUNCTION, name, type, lex:ENDFUNC, ptr matchFuncEndTok)
+  mut functionNode =  parserMakeFunction(ctx, ast:PFUNCTION, name, type, tokens:ENDFUNC, ptr matchFuncEndTok)
   if functionNode == null
     return null
   /if
@@ -861,23 +862,23 @@ func parserParseDefinition(ctx ptr synt:ParserContext) ptr ast:PNode
     return null
   /if
 
-  if ctx'next'type == lex:ALIAS
+  if ctx'next'type == tokens:ALIAS
     return parserParseAlias(ctx)
   /if
 
-  if ctx'next'type == lex:DECL
+  if ctx'next'type == tokens:DECL
     return parserParseDecl(ctx)
   /if
 
-  if ctx'next'type == lex:ENTRY
+  if ctx'next'type == tokens:ENTRY
     return parserParseEntry(ctx)
   /if
 
-  if ctx'next'type == lex:FUNC
+  if ctx'next'type == tokens:FUNC
     return parserParseFunc(ctx)
   /if
 
-  if ctx'next'type == lex:MUT
+  if ctx'next'type == tokens:MUT
     return parserParseMut(ctx)
   /if
 
@@ -918,7 +919,7 @@ func parserParseProgram(ctx ptr synt:ParserContext) ptr ast:PNode
   while (definition = parserParseDefinition(ctx)) != null
     astfn:pnodeAppendChild(pnode, definition)
 
-    if ctx'next != null and !synt:expectDiscard(ctx, lex:NEWLINE)
+    if ctx'next != null and !synt:expectDiscard(ctx, tokens:NEWLINE)
       ast:pnodeFree(pnode)
       return null
     /if
