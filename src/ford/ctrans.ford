@@ -24,6 +24,8 @@ alias Transl struct(
 )
 
 
+decl ctransGenEntry func(tr ptr Transl, root ptr ast:PRoot)
+
 decl translDump func(tr ptr Transl, stream ptr io:Stream) ptr err:Error
 decl translExtern func(tr ptr Transl, sym ptr uint8)
 decl translFunc func(tr ptr Transl, fname,sym ptr uint8, fn ptr ast:PDecl)

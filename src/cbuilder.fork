@@ -19,6 +19,7 @@ import kv
 import list
 import mem
 import proc
+import tokens
 import txt
 import tty
 
@@ -36,8 +37,10 @@ func translDump(tr ptr ctrans:Transl, stream ptr io:Stream) ptr err:Error
     io:streamWrite(stream, "_h\n\n\n")
   /if
 
-  io:streamWrite(stream, "??=include <stddef.h>\n")
   io:streamWrite(stream, "??=include <stdint.h>\n\n")
+
+  #just in case, you know.
+  io:streamWrite(stream, "??=undef NULL\n\n")
 
   mut includes = txt:csUnwrap(tr'includes)
   io:streamWrite(stream, includes)
@@ -254,7 +257,7 @@ func csymType(lr LRStr, type ptr ast:Type, full bool)
     txt:csAppendStr(lr'left, "_Bool ")
   else
     if type'type == ast:TYPE_DATA
-      txt:csAppendStr(lr'left, "void* ")
+      txt:csAppendStr(lr'left, "void *")
     else
       if type'type == ast:TYPE_FUNC
         csymFuncType(lr, type)
@@ -461,7 +464,252 @@ decl translBlock func(cs ptr txt:Charstash,
                       p uintptr)
 
 
+func isBinOp(tok uint16) bool
+  return (tok mod 10) < 2
+/func
+
+
+func opConv(tok uint16) ptr uint8
+  if tok == tokens:AMPER or tok == tokens:PTR
+    return "&"
+  /if
+
+  if tok == tokens:AND
+    return "&&"
+  /if
+
+  if tok == tokens:APOS
+    return "."
+  /if
+
+  if tok == tokens:ASSIGN
+    return "="
+  /if
+
+  if tok == tokens:DIFFERENT
+    return "!="
+  /if
+
+  if tok == tokens:DIV
+    return "/"
+  /if
+
+  if tok == tokens:EQUAL
+    return "=="
+  /if
+
+  if tok == tokens:MAJEQ
+    return ">="
+  /if
+
+  if tok == tokens:MAJOR
+    return ">"
+  /if
+
+  if tok == tokens:MINEQ
+    return "<="
+  /if
+
+  if tok == tokens:MINOR
+    return "<"
+  /if
+
+  if tok == tokens:MINUS or tok == tokens:UMINUS
+    return "-"
+  /if
+
+  if tok == tokens:MOD
+    return "%"
+  /if
+
+  if tok == tokens:NOT
+    return "!"
+  /if
+
+  if tok == tokens:OR
+    return "||"
+  /if
+
+  if tok == tokens:PIPE
+    return "|"
+  /if
+
+  if tok == tokens:PLUS
+    return "+"
+  /if
+
+  if tok == tokens:TIMES or tok == tokens:VAL
+    return "*"
+  /if
+
+  if tok == tokens:XOR
+    return "^"
+  /if
+
+  tty:errln("UNREACHABLE")
+  tty:outint(tok)
+  proc:abort()
+
+  return null
+/func
+
+
 func translExpr(cs ptr txt:Charstash, pexpr ptr ast:PExpr)
+
+  mut value = pexpr'node'value
+
+  if pexpr'opType == tokens:NUMBER
+    txt:csAppendInt(cs, value)
+    txt:csAppendStr(cs, "U")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:STRING
+    txt:csAppendStr(cs, "\"")
+    txt:csAppendStr(cs, cast<ptr uint8>(value))
+    txt:csAppendStr(cs, "\"")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:ID
+    txt:csAppendStr(cs, cast<ptr uint8>(value))
+
+    return
+  /if
+
+  if pexpr'opType == tokens:NULLPTR
+    txt:csAppendStr(cs, "(void*) 0")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:TRUE
+    txt:csAppendStr(cs, "1")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:FALSE
+    txt:csAppendStr(cs, "0")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:COLON
+    mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val list:listGet(pexpr'node'leaves, 0))'value)
+    mut name = cast<ptr uint8>(cast<ptr ast:PNode>(val list:listGet(pexpr'node'leaves, 1))'value)
+
+    symMod(cs, modName, name)
+
+    return
+  /if
+
+  if pexpr'opType == tokens:SIZE
+      mut expr = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+
+      txt:csAppendStr(cs, "sizeof(")
+      csymTypeWrap(cs, pexpr'type)
+      txt:csAppendStr(cs, ")")
+
+      return
+  /if
+
+  if pexpr'opType == tokens:CAST
+    mut expr = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+
+    txt:csAppendStr(cs, "(")
+    csymTypeWrap(cs, pexpr'type)
+    txt:csAppendStr(cs, ")(")
+
+    translExpr(cs, expr)
+
+    txt:csAppendStr(cs, ")")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:OPAR
+    return
+  /if
+
+  if pexpr'opType == tokens:CPAR
+    return
+  /if
+
+  if pexpr'opType == tokens:FATARROW
+    mut e1 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+    mut e2 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
+    mut e3 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 2))
+
+    txt:csAppendStr(cs, "(")
+
+    translExpr(cs, e1)
+
+    txt:csAppendStr(cs, ") ? (")
+
+    translExpr(cs, e2)
+
+    txt:csAppendStr(cs, ") : (")
+
+    translExpr(cs, e3)
+
+    txt:csAppendStr(cs, ")")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:DEC
+    mut e = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+    translExpr(cs, e)
+
+    txt:csAppendStr(cs, "--")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:INC
+    mut e = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+    translExpr(cs, e)
+
+    txt:csAppendStr(cs, "++")
+
+    return
+  /if
+
+  if isBinOp(pexpr'opType)
+    mut e1 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+    mut e2 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
+
+    if pexpr'opType == tokens:POW
+      txt:csAppendStr(cs, "__forkpow(")
+      translExpr(cs, e1)
+      txt:csAppendStr(cs, ", ")
+      translExpr(cs, e2)
+      txt:csAppendStr(cs, ")")
+
+      return
+    /if
+
+    txt:csAppendStr(cs, "(")
+    translExpr(cs, e1)
+    txt:csAppend(cs, 32)
+    txt:csAppendStr(cs, opConv(pexpr'opType))
+    txt:csAppend(cs, 32)
+    translExpr(cs, e2)
+    txt:csAppendStr(cs, ")")
+
+    return
+  /if
+
+  #assume prefix unary now
+
+  mut e = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+  txt:csAppendStr(cs, opConv(pexpr'opType))
+  txt:csAppendStr(cs, "(")
+  translExpr(cs, e)
+  txt:csAppendStr(cs, ")")
 
 /func
 
@@ -493,28 +741,98 @@ func translIf(stmt ptr ast:PNode, fname ptr uint8, p uintptr) ptr uint8
 /func
 
 
+func translWhile(stmt ptr ast:PNode, fname ptr uint8, p uintptr) ptr uint8
+  mut cs = txt:csNew(100)
+
+  txt:csAppendStr(cs, "while (")
+
+  mut pexpr = cast<ptr ast:PExpr>(val list:listGet(stmt'leaves, 0))
+
+  translExpr(cs, pexpr)
+
+  txt:csAppendWord(cs, ")")
+
+  mut block = cast<ptr ast:PBlock>(val list:listGet(stmt'leaves, 1))
+
+  translBlock(cs, block, fname, p + 2)
+
+  return txt:csUnwrap(cs)
+/func
+
+
+func translDecl(bl BlTrans, block ptr ast:PBlock, stmt ptr ast:PNode)
+  mut isMut = stmt'type == ast:PMUT
+  mut pdecl = cast<ptr ast:PDecl>(stmt)
+  mut sym = txt:csNew(20)
+  mut type = ast:stabTypeof(block'syms, pdecl'sym'name)
+
+  csym(sym, null, pdecl'sym'name, type, false)
+
+  mut ls = lsNew(stmt'begin,txt:csUnwrap(sym))
+
+  list:listAppend(isMut => bl'vars || bl'decls, ls)
+
+  if isMut and list:listLen(stmt'leaves) > 0
+    mut expr = cast<ptr ast:PExpr>(val list:listGet(stmt'leaves, 0))
+    mut cs = txt:csNew(30)
+
+    txt:csAppendStr(cs, pdecl'sym'name)
+    txt:csAppendStr(cs, " = ")
+
+    translExpr(cs, expr)
+
+    list:listAppend(bl'stmts, lsNew(expr'node'begin, txt:csUnwrap(cs)))
+  /if
+/func
+
+
+func translReturn(stmt ptr ast:PNode) ptr uint8
+  mut cs = txt:csNew(30)
+
+  txt:csAppendStr(cs, "return")
+
+  mut expr = list:listGet(stmt'leaves, 0)
+
+  if expr != null
+    txt:csAppend(cs, 32)
+    translExpr(cs, cast<ptr ast:PExpr>(val expr))
+  /if
+
+  return txt:csUnwrap(cs)
+/func
+
+
 func translStmt(bl BlTrans, block ptr ast:PBlock, stmt ptr ast:PNode, fname ptr uint8, p uintptr)
-  mut cs = txt:csNew(40)
 
-  mut isIf = stmt'type == ast:PIF
-  mut isIfElse = stmt'type == ast:PIFELSE
-
-  if isIf or isIfElse
+  if stmt'type == ast:PIF or stmt'type == ast:PIFELSE
     list:listAppend(bl'stmts, lsNew(stmt'begin, translIf(stmt, fname, p)))
   else
-    mut isMut = stmt'type == ast:PMUT
-    mut isDecl = stmt'type == ast:PDECL
+    if stmt'type == ast:PMUT or stmt'type == ast:PDECL
+      translDecl(bl, block, stmt)
+    else
+      if stmt'type == ast:PWHILE
+        list:listAppend(bl'stmts, lsNew(stmt'begin, translWhile(stmt, fname, p)))
+      else
+        if stmt'type == ast:PCONTINUE
+          list:listAppend(bl'stmts, lsNew(stmt'begin, txt:strclone("continue")))
+        else
+          if stmt'type == ast:PBREAK
+            list:listAppend(bl'stmts, lsNew(stmt'begin, txt:strclone("break")))
+          else
+            if stmt'type == ast:PRETURN
+              list:listAppend(bl'stmts, lsNew(stmt'begin, translReturn(stmt)))
+            else
+              if stmt'type == ast:PEXPR
+                mut cs = txt:csNew(30)
 
-    if isMut or isDecl
-      mut pdecl = cast<ptr ast:PDecl>(stmt)
-      mut sym = txt:csNew(20)
-      mut type = ast:stabTypeof(block'syms, pdecl'sym'name)
+                translExpr(cs, cast<ptr ast:PExpr>(stmt))
 
-      csym(sym, null, pdecl'sym'name, type, false)
-
-      mut ls = lsNew(stmt'begin,txt:csUnwrap(sym))
-
-      list:listAppend(isMut => bl'vars || bl'decls, ls)
+                list:listAppend(bl'stmts, lsNew(stmt'begin, txt:csUnwrap(cs)))
+              /if
+            /if
+          /if
+        /if
+      /if
     /if
   /if
 /func
@@ -565,6 +883,20 @@ func translFunc(tr ptr ctrans:Transl,
 /func
 
 
+func ctransGenEntry(tr ptr ctrans:Transl, root ptr ast:PRoot)
+  mut entryN = root'entryNode
+
+  dbgLine(tr'funcs, root'fileName, entryN'node'begin'line, 0)
+  txt:csAppendStr(tr'funcs, "void __fork_entry() ")
+
+  mut block = cast<ptr ast:PBlock>(val list:listGet(entryN'node'leaves, 0))
+
+  translBlock(tr'funcs, block, root'fileName, 2)
+
+  txt:csAppendLine(tr'funcs, "\n")
+/func
+
+
 func translGenSym(moduleName,name ptr uint8, type ptr ast:Type) ptr uint8
   mut cs = txt:csNew(30)
 
@@ -576,6 +908,11 @@ func translGenSym(moduleName,name ptr uint8, type ptr ast:Type) ptr uint8
 
 func translGlobVar(tr ptr ctrans:Transl, sym ptr uint8, expr ptr ast:PExpr)
   txt:csAppendStr(tr'vars, sym)
+
+  if expr != null
+    txt:csAppendStr(tr'vars, " = ")
+    translExpr(tr'vars, expr)
+  /if
 
   txt:csAppendLine(tr'vars, ";")
 /func

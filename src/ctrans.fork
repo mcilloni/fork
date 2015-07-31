@@ -30,7 +30,7 @@ func ctransGenDecls(tr ptr ctrans:Transl,
   while i < len
     mut child = cast<ptr ast:PDecl>(val list:listGet(root'node'node'leaves, i))
 
-    if child'node'type != ast:PALIAS
+    if child'node'type != ast:PALIAS and child'node'type != ast:PENTRY
       mut dinfo = ast:stabGet(root'node'syms, child'sym'name)
 
       mut sym = ctrans:translGenSym(moduleName, child'sym'name, dinfo'type)
@@ -99,4 +99,8 @@ func ctransTranslate(tr ptr ctrans:Transl,
   ctransGenImports(tr, root)
   ctransGenTypedefs(tr, root)
   ctransGenDecls(tr, root)
+
+  if root'entryNode != null
+    ctrans:ctransGenEntry(tr, root)
+  /if
 /func

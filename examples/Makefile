@@ -6,8 +6,6 @@ ifndef FORKL
 	FORKL = forkl
 endif
 
-LDFLAGS+=-lfork 
-
 ifeq ($(shell uname), Linux)
 	LDFLAGS+=-ldl
 endif
@@ -26,7 +24,7 @@ all: $(BINS)
 
 	@printf "FORKL\t\t%s\n" $<
 
-	@ $(CC) -o $@ $< $(FORKROOT)/libfork/build/rt.o -L$(shell pwd)/../build/ -L$(FORKROOT)/libfork/build/ $(LDFLAGS) $(shell pwd)/../build/*.o
+	@ $(CC) -o $@ $< $(FORKROOT)/libfork/build/rt.o  $(FORKROOT)/libfork/build/libfork.a $(shell pwd)/../build/*.o
 
 %.o: %.fork
 	@printf "FORKC\t\t%s\n" $<
