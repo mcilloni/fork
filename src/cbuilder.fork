@@ -343,10 +343,13 @@ func dbgLine(cs ptr txt:Charstash, fname ptr uint8, line,p uintptr)
   txt:csAppendInt(cs, line)
   txt:csAppendStr(cs, " \"")
 
-  mut pwd = proc:getenv("PWD")
+  if fname[0] != 47
+    mut pwd = proc:getenv("PWD")
 
-  txt:csAppendStr(cs, pwd)
-  txt:csAppendStr(cs, "/")
+    txt:csAppendStr(cs, pwd)
+    txt:csAppendStr(cs, "/")
+  /if
+  
   txt:csAppendStr(cs, fname)
   txt:csAppendLine(cs, "\"")
 /func
@@ -552,51 +555,56 @@ func opConv(tok uint16) ptr uint8
 
 
 func translStringEscape(cs ptr txt:Charstash, str ptr uint8)
-  while val str != 0
-    if val str == 7
+  mut ch uint8 = 0
+
+  while (ch = val str) != 0
+
+    if ch == 7
       txt:csAppendStr(cs, "\\a")
-    /if
-
-    if val str == 8
-      txt:csAppendStr(cs, "\\b")
-    /if
-
-    if val str == 12
-      txt:csAppendStr(cs, "\\f")
-    /if
-
-    if val str == 10
-      txt:csAppendStr(cs, "\\n")
-    /if
-
-    if val str == 13
-      txt:csAppendStr(cs, "\\r")
-    /if
-
-    if val str == 9
-      txt:csAppendStr(cs, "\\t")
-    /if
-
-    if val str == 11
-      txt:csAppendStr(cs, "\\v")
-    /if
-
-    if val str == 92
-      # first-step lexer is CRAP
-      txt:csAppend(cs, 92)
-      txt:csAppend(cs, 92)
-    /if
-
-    if val str == 39
-      txt:csAppendStr(cs, "\\'")
-    /if
-
-    if val str == 34
-      txt:csAppendStr(cs, "\\\"")
-    /if
-
-    if val str == 63
-      txt:csAppendStr(cs, "\\?")
+    else
+      if ch == 8
+        txt:csAppendStr(cs, "\\b")
+      else
+        if ch == 12
+          txt:csAppendStr(cs, "\\f")
+        else
+          if ch == 10
+            txt:csAppendStr(cs, "\\n")
+          else
+            if ch == 13
+              txt:csAppendStr(cs, "\\r")
+            else
+              if ch == 9
+                txt:csAppendStr(cs, "\\t")
+              else
+                if ch == 11
+                  txt:csAppendStr(cs, "\\v")
+                else
+                  if ch == 92
+                    # first-step lexer is CRAP
+                    txt:csAppend(cs, 92)
+                    txt:csAppend(cs, 92)
+                  else
+                    if ch == 39
+                      txt:csAppendStr(cs, "\\'")
+                    else
+                      if ch == 34
+                        txt:csAppendStr(cs, "\\\"")
+                      else
+                        if ch == 63
+                          txt:csAppendStr(cs, "\\?")
+                        else
+                          txt:csAppend(cs, ch)
+                        /if
+                      /if
+                    /if
+                  /if
+                /if
+              /if
+            /if
+          /if
+        /if
+      /if
     /if
 
     str++

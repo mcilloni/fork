@@ -17,7 +17,7 @@ BINS = $(patsubst %.fork,%.elf,$(SRCS))
 .PHONY: all clean
 
 all: $(BINS)
-
+	cp -fv test.elf "$(shell pwd)/../build/forkc1"
 
 
 %.elf: %.o
