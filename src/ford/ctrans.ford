@@ -28,10 +28,10 @@ decl ctransGenEntry func(tr ptr Transl, root ptr ast:PRoot)
 
 decl translDump func(tr ptr Transl, stream ptr io:Stream) ptr err:Error
 decl translExtern func(tr ptr Transl, sym ptr uint8)
-decl translFunc func(tr ptr Transl, fname,sym ptr uint8, fn ptr ast:PDecl)
+decl translFunc func(tr ptr Transl, root ptr ast:PRoot, fname,sym ptr uint8, fn ptr ast:PDecl)
 decl translFordInc func(tr ptr Transl, fordName ptr uint8)
 decl translGenSym func(moduleName,name ptr uint8, type ptr ast:Type) ptr uint8
-decl translGlobVar func(tr ptr Transl, sym ptr uint8, expr ptr ast:PExpr)
+decl translGlobVar func(tr ptr Transl, sym ptr uint8, root ptr ast:PRoot, expr ptr ast:PExpr)
 decl translInit func(tr ptr Transl, header bool, name ptr uint8)
 decl translTypedef func(tr ptr Transl, name ptr uint8, type ptr ast:Type)
 

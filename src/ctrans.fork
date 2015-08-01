@@ -40,10 +40,10 @@ func ctransGenDecls(tr ptr ctrans:Transl,
       if child'node'type == ast:PMUT
         mut expr = list:listGet(child'node'leaves, 0)
 
-        ctrans:translGlobVar(tr, sym, expr != null => cast<ptr ast:PExpr>(val expr) || null)
+        ctrans:translGlobVar(tr, sym, root, expr != null => cast<ptr ast:PExpr>(val expr) || null)
       else
         if child'node'type == ast:PFUNCTION
-          ctrans:translFunc(tr, root'fileName, sym, child)
+          ctrans:translFunc(tr, root, root'fileName, sym, child)
         /if
       /if
 
