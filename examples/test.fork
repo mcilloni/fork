@@ -21,7 +21,7 @@ import txt
 entry
   mut argv = proc:args()
   if argv'len != 1
-    tty:errln("Wrong number of arguments, required: 1")
+    tty:errln("error: wrong number of arguments, required: 1")
     proc:exit(1)
   /if
 
