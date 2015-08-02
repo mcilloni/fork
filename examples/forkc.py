@@ -123,6 +123,7 @@ def main():
                              'for the object file. '
                              'Defaults to <forkfile>.o')
     parser.add_argument('--no-spring',
+                        action='store_false',
                         help='legacy, noop')
     parser.add_argument('--no-libfork',
                         dest='libfork',
@@ -156,7 +157,7 @@ def main():
             cfile = forkc1(f)
             if not args.emit_c:
                 todelete.append(cfile)
-                cc(args.cc, cfile)
+                cc(args.cc, cfile, includes=args.includes)
 
 if __name__ == '__main__':
     main()

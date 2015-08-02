@@ -349,7 +349,7 @@ func dbgLine(cs ptr txt:Charstash, fname ptr uint8, line,p uintptr)
     txt:csAppendStr(cs, pwd)
     txt:csAppendStr(cs, "/")
   /if
-  
+
   txt:csAppendStr(cs, fname)
   txt:csAppendLine(cs, "\"")
 /func
@@ -632,7 +632,16 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:ID
-    txt:csAppendStr(cs, cast<ptr uint8>(value))
+
+    mut name = cast<ptr uint8>(value)
+    mut modName ptr uint8 = root'moduleName != null => root'moduleName'name || null
+    mut fDecl = ast:stabGet(root'node'syms, name)
+
+    if fDecl != null and fDecl'declType != ast:PDECL
+      symMod(cs, modName, name)
+    else
+      txt:csAppendStr(cs, name)
+    /if
 
     return
   /if
@@ -688,9 +697,9 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   if pexpr'opType == tokens:CAST
     mut expr = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
 
-    txt:csAppendStr(cs, "(")
+    txt:csAppendStr(cs, "((")
     csymTypeWrap(cs, pexpr'type)
-    txt:csAppendStr(cs, ")(")
+    txt:csAppendStr(cs, ")")
 
     translExpr(cs, root, expr)
 
@@ -702,24 +711,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   if pexpr'opType == tokens:OPAR
     mut toCall = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
 
-    mut callerOk = false
-
-    # Check if this is a function in the same file.
-    # If this is true, then the module name should also be added.
-    if toCall'opType == tokens:ID
-      mut name = cast<ptr uint8>(toCall'node'value)
-      mut modName ptr uint8 = root'moduleName != null => root'moduleName'name || null
-      mut fDecl = ast:stabGet(root'node'syms, name)
-
-      if fDecl != null and fDecl'declType != ast:PDECL
-        symMod(cs, modName, name)
-        callerOk = true
-      /if
-    /if
-
-    if !callerOk
-      translExpr(cs, root, toCall)
-    /if
+    translExpr(cs, root, toCall)
 
     txt:csAppendStr(cs, "(")
 
@@ -742,7 +734,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
     return
   /if
 
-  if pexpr'opType == tokens:CPAR
+  if pexpr'opType == tokens:OBRAC
     mut e1 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
     mut e2 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
 
