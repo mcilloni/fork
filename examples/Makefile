@@ -18,6 +18,16 @@ BINS = $(patsubst %.fork,%.elf,$(SRCS))
 
 all: $(BINS)
 	cp -fv test.elf "$(shell pwd)/../build/forkc1"
+	cp -f header.txt "$(shell pwd)/../build/forkc"
+	cat forkc.py >> "$(shell pwd)/../build/forkc"
+	chmod +x "$(shell pwd)/../build/forkc"
+	cp -f header.txt "$(shell pwd)/../build/forkl"
+	cat forkl.py >> "$(shell pwd)/../build/forkl"
+	chmod +x "$(shell pwd)/../build/forkl"
+	cp -f header.txt "$(shell pwd)/../build/fordc"
+	cat fordc.py >> "$(shell pwd)/../build/fordc"
+	chmod +x "$(shell pwd)/../build/fordc"
+
 
 
 %.elf: %.o
