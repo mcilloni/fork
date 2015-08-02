@@ -206,7 +206,7 @@ decl isPExpr func(node ptr PNode) bool
 
 decl emptyExpr PExpr
 
-decl PROOT   uint16
+decl PROOT      uint16
 decl PENTRY     uint16
 decl PEXPR      uint16
 decl PFUNCTION  uint16

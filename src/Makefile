@@ -54,8 +54,8 @@ all:
 	@ $(AR) rc ../build/$(ARNAME) ../build/*/*.o
 	@ $(RANLIB) ../build/$(ARNAME)
 
-	@printf "CCLD\t\t%s\n" $(SONAME)
-	@ $(CCLD) -shared -o ../build/$(SONAME) ../build/*/*.o $(LDFLAGS)
+	#@printf "CCLD\t\t%s\n" $(SONAME)
+	#@ $(CCLD) -shared -o ../build/$(SONAME) ../build/*/*.o $(LDFLAGS)
 
 	cp -r ford/ ../build
 
