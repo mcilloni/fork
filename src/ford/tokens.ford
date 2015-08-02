@@ -1,0 +1,75 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module tokens
+
+
+decl EOF uint16
+decl NEWLINE uint16
+decl ALIAS uint16
+decl AMPER uint16
+decl AND uint16
+decl APOS uint16
+decl ASSIGN uint16
+decl BREAK uint16
+decl CAST uint16
+decl CBRAC uint16
+decl COLON uint16
+decl COMMA uint16
+decl CONTINUE uint16
+decl CPAR uint16
+decl DEC uint16
+decl DECL uint16
+decl DIFFERENT uint16
+decl DIV uint16
+decl ELSE uint16
+decl ENDENTRY uint16
+decl ENDFUNC uint16
+decl ENDIF uint16
+decl ENDWHILE uint16
+decl ENTRY uint16
+decl EQUAL uint16
+decl FALSE uint16
+decl FATARROW uint16
+decl FUNC uint16
+decl ID uint16
+decl IF uint16
+decl IMPORT uint16
+decl INC uint16
+decl MAJEQ uint16
+decl MAJOR uint16
+decl MINEQ uint16
+decl MINOR uint16
+decl MINUS uint16
+decl MOD uint16
+decl MODULE uint16
+decl MUT uint16
+decl NOT uint16
+decl NULLPTR uint16
+decl NUMBER uint16
+decl OBRAC uint16
+decl OPAR uint16
+decl OR uint16
+decl PIPE uint16
+decl PLUS uint16
+decl POW uint16
+decl PTR uint16
+decl RETURN uint16
+decl SEPARATOR uint16
+decl SIZE uint16
+decl STRING uint16
+decl STRUCT uint16
+decl TIMES uint16
+decl TRUE uint16
+decl TWOCOLONS uint16
+decl UMINUS uint16
+decl VAL uint16
+decl WHILE uint16
+decl XOR uint16
