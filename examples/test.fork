@@ -40,7 +40,7 @@ entry
     while i < errLen
       mut issue = cast<ptr parser:Issue>(val list:listGet(errors, i))
 
-      parser:issueWriteOut(issue, ptr tty:out)
+      parser:issueWriteOut(issue, ptr tty:err)
 
       i++
     /while
