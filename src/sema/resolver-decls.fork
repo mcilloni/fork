@@ -27,21 +27,8 @@ func findRecAlias(ctx ptr parser:Context, scope ptr ast:PNode, ralias ptr ast:Ty
 /func
 
 
-func findPBlock(node ptr ast:PNode) ptr ast:PNode
-  if node == null
-    return null
-  /if
-
-  if !ast:isPBlock(node)
-    return findPBlock(node'parent)
-  /if
-
-  return node
-/func
-
-
 func findStab(node ptr ast:PNode) ptr ast:Symtable
-  mut pblock = findPBlock(node)
+  mut pblock = ast:findPBlock(node)
 
   return pblock != null => cast<ptr ast:PBlock>(pblock)'syms || null
 /func
@@ -55,7 +42,7 @@ func findSymLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 
 
 func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
-  mut pblock = findPBlock(node)
+  mut pblock = ast:findPBlock(node)
 
   if pblock != null
     mut stab = findStab(pblock)
