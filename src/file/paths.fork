@@ -8,6 +8,9 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
+module file
+
+
 import err
 import list
 import mem
@@ -70,7 +73,7 @@ func pathListFiles(path ptr uint8, error ptr ptr err:Error) ptr list:List
   if !path_listAll(path, ret, cast<ptr func(to data, elem ptr uint8)>(list:listAppend), ptr buf[0], 512)
     list:listFree(ret)
 
-    val error = err:errorNew(buf)
+    val error = err:errorNew(ptr buf[0])
 
     return null
   /if

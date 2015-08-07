@@ -10,21 +10,17 @@
  *
  */
 
-#include <cinttypes>
-#include <cstdio>
+#include <inttypes.h>
+#include <stdio.h>
 
-extern "C" {
-
-auto stderr_file(void) -> FILE* {
+FILE* c$stderr_file(void) {
   return stderr;
 }
 
-auto stdin_file(void) -> FILE* {
+FILE* c$stdin_file(void) {
   return stdin;
 }
 
-auto stdout_file(void) -> FILE* {
+FILE* c$stdout_file(void) {
   return stdout;
-}
-
 }

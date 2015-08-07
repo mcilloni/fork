@@ -8,6 +8,9 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
+module mem
+
+
 import proc
 
 
@@ -32,4 +35,11 @@ func zalloc(len uintptr) data
   /if
 
   return ret
+/func
+
+
+func free(d data)
+  decl free func(d data)
+
+  free(d)
 /func

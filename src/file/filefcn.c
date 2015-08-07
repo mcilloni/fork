@@ -12,19 +12,19 @@
 
 #undef _GNU_SOURCE
 
-#include <cerrno>
+#include <errno.h>
 #include <fcntl.h>
-#include <cstdint>
-#include <cstring>
-#include <cstdlib>
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <dirent.h>
 
 #include <sys/stat.h>
 
-extern "C" {
 
-auto open_readfile(char* filename, char* error, uintptr_t len) -> int64_t {
+int64_t open_readfile(char* filename, char* error, uintptr_t len) {
   int64_t fd = open(filename, O_RDONLY);
 
   if (fd < 0) {
@@ -36,7 +36,7 @@ auto open_readfile(char* filename, char* error, uintptr_t len) -> int64_t {
 }
 
 
-auto open_writefile(char* filename, char* error, uintptr_t len) -> int64_t {
+int64_t open_writefile(char* filename, char* error, uintptr_t len) {
   int64_t fd = creat(filename, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
   if (fd < 0) {
@@ -47,7 +47,8 @@ auto open_writefile(char* filename, char* error, uintptr_t len) -> int64_t {
   return fd;
 }
 
-auto stream_closefileInternal(int64_t fd, char* error, uintptr_t len) -> uint8_t {
+
+uint8_t stream_closefileInternal(int64_t fd, char* error, uintptr_t len) {
   int res = close(fd);
 
   if (res == -1) {
@@ -58,7 +59,8 @@ auto stream_closefileInternal(int64_t fd, char* error, uintptr_t len) -> uint8_t
   return 1;
 }
 
-auto stream_readfileInternal(int64_t fd, void* data, intptr_t len, char* error, uintptr_t errl) -> intptr_t {
+
+intptr_t stream_readfileInternal(int64_t fd, void* data, intptr_t len, char* error, uintptr_t errl) {
   intptr_t res = read(fd, data, len);
 
   if (res < 0) {
@@ -69,7 +71,8 @@ auto stream_readfileInternal(int64_t fd, void* data, intptr_t len, char* error, 
   return res;
 }
 
-auto stream_writefileInternal(int64_t fd, void* data, intptr_t len, char* error, uintptr_t errl) -> intptr_t {
+
+intptr_t stream_writefileInternal(int64_t fd, void* data, intptr_t len, char* error, uintptr_t errl) {
   intptr_t res = write(fd, data, len);
 
   if (res < 0) {
@@ -80,12 +83,13 @@ auto stream_writefileInternal(int64_t fd, void* data, intptr_t len, char* error,
   return res;
 }
 
-auto stream_closeFileInternal(int64_t fd) -> int8_t {
+
+int8_t stream_closeFileInternal(int64_t fd) {
   return close(fd) == 0;
 }
 
 
-auto path_exists(char* filename) -> uintptr_t {
+uintptr_t path_exists(char* filename) {
   struct stat st;
 
   if (!stat(filename, &st)) {
@@ -100,19 +104,19 @@ auto path_exists(char* filename) -> uintptr_t {
 }
 
 
-auto path_listAll(char* path, void* appendTo, void (*appender)(void* to, char* elem), char* error, uintptr_t errl) -> bool {
-  auto dp = opendir(path);
-  if (dp == nullptr) {
+bool path_listAll(char* path, void* appendTo, void (*appender)(void* to, char* elem), char* error, uintptr_t errl) {
+  DIR* dp = opendir(path);
+  if (dp == NULL) {
     strerror_r(errno, error, errl);
     return false;
   }
 
   extern char* strclone(char*);
   extern bool strequals(const char*,const char*);
-  dirent *ep;
+  struct dirent *ep;
 
   while ((ep = readdir(dp))) {
-    auto name = strclone(ep->d_name);
+    char* name = strclone(ep->d_name);
 
     if (!strequals(name, ".") && !strequals(name, "..")) {
       appender(appendTo, name);
@@ -125,6 +129,4 @@ auto path_listAll(char* path, void* appendTo, void (*appender)(void* to, char* e
   closedir(dp);
 
   return true;
-}
-
 }

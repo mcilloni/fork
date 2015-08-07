@@ -8,6 +8,9 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
+module file
+
+
 import err
 import io
 
@@ -16,10 +19,10 @@ func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err:
   mut fd = cast<int64>(camoFd)
   decl stream_readfileInternal func(fd int64, buf data, len intptr, error ptr uint8, errLen uintptr) intptr
   mut buf [512] uint8
-  mut rd = stream_readfileInternal(fd, bytes, len, buf, 512)
+  mut rd = stream_readfileInternal(fd, bytes, len, ptr buf[0], 512)
 
   if rd < 0
-    val err = err:errorNew(buf)
+    val err = err:errorNew(ptr buf[0])
     return 0
   /if
 
@@ -39,10 +42,10 @@ func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err
   mut wttot intptr = 0
 
   while wttot < len
-    wt = stream_writefileInternal(fd, bytes + wttot, len - wttot, buf, 512)
+    wt = stream_writefileInternal(fd, bytes + wttot, len - wttot, ptr buf[0], 512)
 
     if wt < 0
-      val err = err:errorNew(buf)
+      val err = err:errorNew(ptr buf[0])
       return 0
     /if
 
@@ -57,7 +60,7 @@ func filecloseInternal(camoFd data, err ptr ptr err:Error) bool
   decl stream_closefileInternal func(fd int64, error ptr uint8, errLen uintptr) uint8
   mut buf [512] uint8
 
-  if stream_closefileInternal(cast<int64>(camoFd), buf, 512) != 0
+  if stream_closefileInternal(cast<int64>(camoFd), ptr buf[0], 512) != 0
     return true
   /if
 
@@ -71,9 +74,9 @@ func fileOpen(filename ptr uint8, err ptr ptr err:Error) ptr io:Stream
 
   val err = null
 
-  mut fd = open_readfile(filename, buf, 512)
+  mut fd = open_readfile(filename, ptr buf[0], 512)
   if fd < 0
-    val err = err:errorNew(buf)
+    val err = err:errorNew(ptr buf[0])
     return null
   /if
 
@@ -85,9 +88,9 @@ func fileCreate(filename ptr uint8, err ptr ptr err:Error) ptr io:Stream
   decl open_writefile func(name ptr uint8, error ptr uint8, errlen uintptr) int64
   mut buf [512] uint8
 
-  mut fd = open_writefile(filename, buf, 512)
+  mut fd = open_writefile(filename, ptr buf[0], 512)
   if fd < 0
-    val err = err:errorNew(buf)
+    val err = err:errorNew(ptr buf[0])
     return null
   /if
 

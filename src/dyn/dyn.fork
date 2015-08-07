@@ -8,6 +8,9 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
+module dyn
+
+
 import dyn
 import err
 import mem
@@ -37,7 +40,7 @@ func sobjGetSym(sobj ptr dyn:SObj, name ptr uint8, err ptr ptr err:Error) data
 
   mut sym = load_sym(sobj'handl, name, ptr buf[0], 1024)
   if sym == null
-    val err = err:errorNew(buf)
+    val err = err:errorNew(ptr buf[0])
 
     return null
   /if
@@ -51,7 +54,7 @@ func sobjInit(sobj ptr dyn:SObj, name ptr uint8, err ptr ptr err:Error) bool
   sobj'handl = load_lib(name, ptr buf[0], 1024)
 
   if sobj'handl == null
-    val err = err:errorNew(buf)
+    val err = err:errorNew(ptr buf[0])
 
     return false
   /if
