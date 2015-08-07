@@ -1000,7 +1000,7 @@ func validateTernaryExpr(rsv sema:Resolver,
   mut left = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
   mut leftType = sema:validateExprRecl(rsv, left, recList, errors)
 
-  mut right = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
+  mut right = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 2))
   mut rightType = sema:validateExprRecl(rsv, right, recList, errors)
 
   if condType == null or leftType == null or rightType == null
@@ -1069,7 +1069,7 @@ func validateExprRecl(rsv sema:Resolver,
 
   mut op = pexpr'opType
   if ttypeIsConst(op)
-    return validateExprConst(rsv, pexpr)
+    return (pexpr'type = validateExprConst(rsv, pexpr))
   else
     if op == tokens:ID
       pexpr'type = validateExprId(rsv, pexpr, recList, errors)
