@@ -33,6 +33,34 @@ func findPBlock(node ptr ast:PNode) ptr ast:PNode
 /func
 
 
+func findStab(node ptr ast:PNode) ptr ast:Symtable
+  mut pblock = ast:findPBlock(node)
+
+  return pblock != null => cast<ptr ast:PBlock>(pblock)'syms || null
+/func
+
+
+func findSymLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
+  mut stab = findStab(node)
+
+  return ast:stabTypeof(stab, name)
+/func
+
+
+func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
+  mut pblock = ast:findPBlock(node)
+
+  if pblock != null
+    mut stab = findStab(pblock)
+    mut type = ast:stabTypeof(stab, name)
+
+    return type != null => type || findSym(pblock'parent, name)
+  /if
+
+  return null
+/func
+
+
 func pnodeAppendChild(pnode, child ptr ast:PNode) ptr ast:PNode
 
   if pnode != null and child != null

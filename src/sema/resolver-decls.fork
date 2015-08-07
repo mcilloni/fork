@@ -27,34 +27,6 @@ func findRecAlias(ctx ptr parser:Context, scope ptr ast:PNode, ralias ptr ast:Ty
 /func
 
 
-func findStab(node ptr ast:PNode) ptr ast:Symtable
-  mut pblock = ast:findPBlock(node)
-
-  return pblock != null => cast<ptr ast:PBlock>(pblock)'syms || null
-/func
-
-
-func findSymLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
-  mut stab = findStab(node)
-
-  return ast:stabTypeof(stab, name)
-/func
-
-
-func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
-  mut pblock = ast:findPBlock(node)
-
-  if pblock != null
-    mut stab = findStab(pblock)
-    mut type = ast:stabTypeof(stab, name)
-
-    return type != null => type || findSym(pblock'parent, name)
-  /if
-
-  return null
-/func
-
-
 func findSymModule(ctx ptr parser:Context, moduleName, name ptr uint8) ptr ast:Type
   mut imp = parser:ctxGetImport(ctx, moduleName)
   if imp == null
@@ -93,7 +65,7 @@ func registerDeclReal(rsv sema:Resolver,
   mut isFunc = pdecl'node'type == ast:PFUNCTION or isEntry
 
 
-  mut realType ptr ast:Type = sema:findSym(cast<ptr ast:PNode>(pdecl), name)
+  mut realType ptr ast:Type = ast:findSym(cast<ptr ast:PNode>(pdecl), name)
   mut typeResolved = realType != null
   mut inMap = typeResolved
 
@@ -243,7 +215,7 @@ func resolveDeclType(rsv sema:Resolver,
                      node ptr ast:PNode,
                      recList,errors ptr list:List) ptr ast:Type
 
-  mut dtype = sema:findSym(node, name)
+  mut dtype = ast:findSym(node, name)
 
   if dtype != null
     return dtype
@@ -278,7 +250,7 @@ func registerDecl(rsv sema:Resolver,
 
   mut declNode = cast<ptr ast:PNode>(pdecl)
 
-  mut stab = sema:findStab(declNode)
+  mut stab = ast:findStab(declNode)
   if ast:stabTypeof(stab, name) != null
     mut cs = txt:csNew(20)
     txt:csAppendStr(cs, "symbol '")
