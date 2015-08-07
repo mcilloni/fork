@@ -17,6 +17,19 @@ import txt
 import utils
 
 
+func findPBlock(node ptr ast:PNode) ptr ast:PNode
+  if node == null
+    return null
+  /if
+
+  if !ast:isPBlock(node)
+    return findPBlock(node'parent)
+  /if
+
+  return node
+/func
+
+
 func pnodeAppendChild(pnode, child ptr ast:PNode) ptr ast:PNode
 
   if pnode != null and child != null

@@ -206,6 +206,10 @@ decl isPExpr func(node ptr PNode) bool
 
 decl emptyExpr PExpr
 
+
+decl findPBlock func(node ptr PNode) ptr PNode
+
+
 decl PROOT      uint16
 decl PENTRY     uint16
 decl PEXPR      uint16
