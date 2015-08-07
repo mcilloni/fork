@@ -358,7 +358,7 @@ func validateExprId(rsv sema:Resolver,
                     recList,errors ptr list:List) ptr ast:Type
 
   mut name = cast<ptr uint8>(pexpr'node'value)
-  mut type = sema:findSym(cast<ptr ast:PNode>(pexpr), name)
+  mut type = ast:findSym(cast<ptr ast:PNode>(pexpr), name)
 
   if recList != null and utils:listContains(recList, name)
     mut cs = txt:csNew(20)

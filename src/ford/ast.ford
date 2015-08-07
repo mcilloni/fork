@@ -208,6 +208,9 @@ decl emptyExpr PExpr
 
 
 decl findPBlock func(node ptr PNode) ptr PNode
+decl findSym func(node ptr PNode, name ptr uint8) ptr Type
+decl findSymLocal func(node ptr PNode, name ptr uint8) ptr Type
+decl findStab func(node ptr PNode) ptr Symtable
 
 
 decl PROOT      uint16
