@@ -637,7 +637,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
     mut modName ptr uint8 = root'moduleName != null => root'moduleName'name || null
     mut fDecl = ast:stabGet(root'node'syms, name)
 
-    if fDecl != null and fDecl'declType != ast:PDECL
+    if fDecl != null and fDecl'declType != ast:PDECL and ast:findSym(cast<ptr ast:PNode>(pexpr), name) == fDecl'type
       symMod(cs, modName, name)
     else
       txt:csAppendStr(cs, name)
@@ -681,7 +681,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
 
     txt:csAppendStr(cs, (e1'type != null and e1'type'type == ast:TYPE_PTR) => "->" || ".")
 
-    translExpr(cs, root, e2)
+    txt:csAppendStr(cs, cast<ptr uint8>(e2'node'value))
 
     return
   /if
@@ -796,7 +796,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
     mut e2 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
 
     if pexpr'opType == tokens:POW
-      txt:csAppendStr(cs, "__forkpow(")
+      txt:csAppendStr(cs, "math$__forkpow(")
       translExpr(cs, root, e1)
       txt:csAppendStr(cs, ", ")
       translExpr(cs, root, e2)
@@ -1012,10 +1012,15 @@ func ctransGenEntry(tr ptr ctrans:Transl, root ptr ast:PRoot)
 /func
 
 
-func translGenSym(moduleName,name ptr uint8, type ptr ast:Type) ptr uint8
+func translGenSym(moduleName,name ptr uint8, dinfo ptr ast:DeclInfo) ptr uint8
   mut cs = txt:csNew(30)
 
-  csym(cs, moduleName, name, type, false)
+  # big hack for int main(int argc, char *argv[])
+  if moduleName == null and txt:strequals(name, "main") and dinfo'declType == ast:PFUNCTION
+    txt:csAppendStr(cs, "int main(int argc, char *argv[])")
+  else
+    csym(cs, moduleName, name, dinfo'type, false)
+  /if
 
   return txt:csUnwrap(cs)
 /func

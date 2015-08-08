@@ -35,7 +35,7 @@ func ctransGenDecls(tr ptr ctrans:Transl,
 
       mut wantsModName = tr'header or child'node'type != ast:PDECL
 
-      mut sym = ctrans:translGenSym(wantsModName => moduleName || null, child'sym'name, dinfo'type)
+      mut sym = ctrans:translGenSym(wantsModName => moduleName || null, child'sym'name, dinfo)
 
       ctrans:translExtern(tr, sym)
 
