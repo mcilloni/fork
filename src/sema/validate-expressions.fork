@@ -343,6 +343,8 @@ func validateSizeExpr(rsv sema:Resolver,
     return null
   /if
 
+  pexpr'sizeType = sizeType
+
   return parser:ctxMatchBuiltin(rsv'ctx, "uintptr")
 /func
 
