@@ -8,6 +8,9 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
+module txt
+
+
 import mem
 import txt
 
@@ -152,4 +155,18 @@ func strEndsWith(str, end ptr uint8) bool
   /if
 
   return txt:strequals(str + (strLen - endLen), end)
+/func
+
+
+func strlen(str ptr uint8) uintptr
+  decl strlen func(str ptr uint8) uintptr
+
+  return strlen(str)
+/func
+
+
+func strncpy(dest ptr uint8, source ptr uint8, cap uintptr) ptr uint8
+  decl strncpy func(dest ptr uint8, source ptr uint8, cap uintptr) ptr uint8
+
+  return strncpy(dest, source, cap)
 /func

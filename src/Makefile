@@ -1,8 +1,8 @@
+INCLUDES = $(shell pwd)/../build/include/
+
 ifndef FORKC
 	FORKC = forkc
 endif
-
-FORKC_O = $(FORKC) --no-spring
 
 CCLD = $(CC)
 
@@ -25,8 +25,11 @@ ARNAME = 'libfork.a'
 
 all:
 	mkdir -p ../build/
+
+	$(MAKE) -C ford
+
 	@printf "FORKC\t\t%s\n" rt.fork
-	@ FORDPATHS="$(shell pwd)/ford/internal/:$(shell pwd)/ford/" $(FORKC_O) -o ../build/rt.o rt.fork
+	@ FORDPATHS="$(shell pwd)/ford/internal/:$(shell pwd)/ford/" $(FORKC) -I $(INCLUDES) -o ../build/rt.o rt.fork
 
 	$(MAKE) -C c
 	$(MAKE) -C math

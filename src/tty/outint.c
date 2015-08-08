@@ -10,13 +10,10 @@
  *
  */
 
-#include <cinttypes>
-#include <cstdio>
+#include <inttypes.h>
+#include <stdio.h>
 
-extern "C" {
 
-auto outint(uint64_t n) -> void {
+void tty$outint(uint64_t n) {
   printf("%" PRIu64, n);
-}
-
 }

@@ -103,3 +103,8 @@ func issueWriteOut(issue ptr parser:Issue, outFn ptr func(err ptr uint8))
   outFn(issue'message)
   outFn("\n")
 /func
+
+
+mut ISSUE_ERR  uint8 = 10
+mut ISSUE_WARN uint8 = 20
+mut ISSUE_INFO uint8 = 30

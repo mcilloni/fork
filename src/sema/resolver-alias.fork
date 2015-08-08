@@ -8,6 +8,9 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
+module sema
+
+
 import ast
 import astfn
 import kv

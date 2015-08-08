@@ -5,8 +5,6 @@ ifndef FORKC
 	FORKC = forkc
 endif
 
-FORKC_O = $(FORKC) --no-spring
-
 
 SRCS = $(wildcard *.fork)
 OBJS = $(patsubst %.fork,%.o,$(SRCS))

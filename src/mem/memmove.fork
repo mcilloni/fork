@@ -8,35 +8,25 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-module proc
+module mem
 
 
-import proc
+func memcpy(dest data, src data, len uintptr) data
+  decl memcpy func(dest data, src data, len uintptr) data
 
-
-mut __forkprogArgs proc:Args
-
-func args() ptr proc:Args
-  return ptr __forkprogArgs
+  return memcpy(dest, src, len)
 /func
 
 
-func abort()
-  decl abort func()
+func memmove(dest data, src data, len uintptr) data
+  decl memmove func(dest data, src data, len uintptr) data
 
-  abort()
+  return memmove(dest, src, len)
 /func
 
 
-func exit(retval int16)
-  decl exit func(retval int16)
+func memset(dest data, value uintptr, len uintptr) data
+  decl memset func(dest data, value uintptr, len uintptr) data
 
-  exit(retval)
-/func
-
-
-func getenv(variable ptr uint8) ptr uint8
-  decl getenv func(variable ptr uint8) ptr uint8
-
-  return getenv(variable)
+  return memset(dest, value, len)
 /func

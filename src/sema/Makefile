@@ -1,10 +1,10 @@
 BUILDPATH = ../../build/sema/
+INCLUDES = $(shell pwd)/../../build/include/
 
 ifndef FORKC
 	FORKC = forkc
 endif
 
-FORKC_O = $(FORKC) --no-spring
 
 ifndef AR
 	AR=ar
@@ -27,7 +27,7 @@ dir:
 
 $(BUILDPATH)/%.o: %.fork dir
 	@printf "FORKC\t\t%s\n" $<
-	@ FORDPATHS="$(shell pwd)/../ford/internal/:$(shell pwd)/../ford/" $(FORKC_O) -o $@ $<
+	@ FORDPATHS="$(shell pwd)/../ford/internal/:$(shell pwd)/../ford/" $(FORKC) -I $(INCLUDES) -o $@ $<
 
 clean:
 	rm -rf $(BUILDPATH)

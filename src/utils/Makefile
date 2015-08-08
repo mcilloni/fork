@@ -1,4 +1,5 @@
 BUILDPATH = ../../build/utils/
+INCLUDES = $(shell pwd)/../../build/include/
 LIBPATH = ../../build/libutils.a
 
 ifndef FORKC
@@ -26,7 +27,7 @@ dir:
 
 $(BUILDPATH)/%.o: %.fork dir
 	@printf "FORKC\t\t%s\n" $<
-	@ FORDPATHS="$(shell pwd)/../ford/internal/:$(shell pwd)/../ford/" $(FORKC) -o $@ $<
+	@ FORDPATHS="$(shell pwd)/../ford/internal/:$(shell pwd)/../ford/" $(FORKC) -I $(INCLUDES) -o $@ $<
 
 clean:
 	rm -rf $(BUILDPATH)
