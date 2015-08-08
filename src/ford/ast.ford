@@ -199,7 +199,7 @@ alias PExpr struct(
   node PNode,
   opType uint16,
   constant bool,
-  type ptr Type
+  type,sizeType ptr Type
 )
 
 decl isPExpr func(node ptr PNode) bool
