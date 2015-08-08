@@ -48,6 +48,12 @@ decl registerTopDecl func(rsv Resolver,
                           pdecl ptr ast:PDecl,
                           errors ptr list:List) ptr ast:Type
 
+
+decl resolveDeclType func(rsv Resolver,
+                          name ptr uint8,
+                          node ptr ast:PNode,
+                          recList,errors ptr list:List) ptr ast:Type
+
 decl resolveType func(rsv Resolver,
                       ptype ptr ast:PType,
                       errors ptr list:List) ptr ast:Type

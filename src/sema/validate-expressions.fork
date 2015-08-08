@@ -347,12 +347,6 @@ func validateSizeExpr(rsv sema:Resolver,
 /func
 
 
-decl resolveDeclType func(rsv sema:Resolver,
-                          name ptr uint8,
-                          node ptr ast:PNode,
-                          recList,errors ptr list:List) ptr ast:Type
-
-
 func validateExprId(rsv sema:Resolver,
                     pexpr ptr ast:PExpr,
                     recList,errors ptr list:List) ptr ast:Type
@@ -378,7 +372,7 @@ func validateExprId(rsv sema:Resolver,
   /if
 
   # try searching for a top declaration
-  if type == null and (type = resolveDeclType(rsv, name, cast<ptr ast:PNode>(pexpr), recList, errors)) == null
+  if type == null and (type = sema:resolveDeclType(rsv, name, cast<ptr ast:PNode>(pexpr), recList, errors)) == null
     return null
   /if
 
