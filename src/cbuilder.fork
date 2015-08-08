@@ -618,7 +618,6 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
 
   if pexpr'opType == tokens:NUMBER
     txt:csAppendInt(cs, value)
-    txt:csAppendStr(cs, "U")
 
     return
   /if
@@ -688,7 +687,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
 
   if pexpr'opType == tokens:SIZE
       txt:csAppendStr(cs, "sizeof(")
-      csymTypeWrap(cs, pexpr'type)
+      csymTypeWrap(cs, pexpr'sizeType)
       txt:csAppendStr(cs, ")")
 
       return
@@ -699,7 +698,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
 
     txt:csAppendStr(cs, "((")
     csymTypeWrap(cs, pexpr'type)
-    txt:csAppendStr(cs, ")")
+    txt:csAppendStr(cs, ") ")
 
     translExpr(cs, root, expr)
 
