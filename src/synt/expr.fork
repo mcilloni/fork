@@ -98,9 +98,7 @@ func parserParseCastTag(ctx ptr synt:ParserContext) ptr ast:PExpr
     return null
   /if
 
-  decl parserParseExpr func(ctx ptr synt:ParserContext) ptr ast:PExpr
-
-  mut expr = parserParseExpr(ctx)
+  mut expr = synt:parserParseExpr(ctx)
   if expr == null
     lex:tokenFree(castTok)
     mem:decRef(type)
@@ -178,8 +176,6 @@ func parserParseId(ctx ptr synt:ParserContext) ptr ast:PExpr
 
 
 func parserParseGenParens(ctx ptr synt:ParserContext, cpar uint16) ptr ast:PExpr
-
-  decl parserParseAssignExpr func(ctx ptr synt:ParserContext) ptr ast:PExpr
 
   mut expression = parserParseAssignExpr(ctx)
 
@@ -266,8 +262,6 @@ func parserParseCallExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:
   mut begin = lex:tokExtractBegin(opar)
   mut callExpr = astfn:pexprNew(opar, lhs, null, begin, begin)
   mut callPNode = cast<ptr ast:PNode>(callExpr)
-
-  decl parserParseAssignExpr func(ctx ptr synt:ParserContext) ptr ast:PExpr
 
   mut next = ctx'next
   mut first = true
@@ -381,8 +375,6 @@ func parserParsePostfixExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
 
 func parserParseUnaryExprOp(ctx ptr synt:ParserContext) ptr ast:PExpr
   mut operator = synt:nextTok(ctx)
-
-  decl parserParseUnaryExpr func(ctx ptr synt:ParserContext) ptr ast:PExpr
 
   mut result = parserParseUnaryExpr(ctx)
   if result == null

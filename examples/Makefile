@@ -1,3 +1,5 @@
+INCLUDES = $(shell pwd)/../build/include/
+
 ifndef FORKC
 	FORKC = forkc
 endif
@@ -22,11 +24,11 @@ all: $(BINS)
 
 	@printf "FORKL\t\t%s\n" $<
 
-	@ $(CC) -o $@ $< $(shell pwd)/../build/rt.o $(shell pwd)/../build/libfork.a $(LDFLAGS)  
+	@ $(CC) -o $@ $< $(shell pwd)/../build/rt.o $(shell pwd)/../build/libfork.a $(LDFLAGS)
 
 %.o: %.fork
 	@printf "FORKC\t\t%s\n" $<
-	@ FORDPATHS="$(shell pwd)/../src/ford/internal/:$(shell pwd)/../src/ford/" $(FORKC) -o $@ $<
+	@ FORDPATHS="$(shell pwd)/../src/ford/internal/:$(shell pwd)/../src/ford/" $(FORKC) -I $(INCLUDES) -o $@ $<
 
 clean:
 	rm -f $(BINS)

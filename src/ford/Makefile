@@ -4,6 +4,8 @@ ifndef FORDC
 	FORDC = fordc
 endif
 
+FORDC += --no-libfork
+
 .PHONY: all dir clean
 
 all: dir

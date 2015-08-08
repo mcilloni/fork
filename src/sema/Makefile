@@ -5,6 +5,8 @@ ifndef FORKC
 	FORKC = forkc
 endif
 
+FORKC += --no-libfork
+
 
 ifndef AR
 	AR=ar

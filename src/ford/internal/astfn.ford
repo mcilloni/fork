@@ -23,6 +23,8 @@ decl psymbolNew func(name ptr uint8, type ptr ast:PType) ptr ast:PSymbol
 
 decl ptypeNew func(name,moduleName ptr uint8, descr ptr ast:PTypeDescr) ptr ast:PType
 
+decl ptypeDescrNew func(ptype uint16, retPType ptr ast:PType, params ptr list:List) ptr ast:PTypeDescr
+decl ptypeDescrNewLoc func(innerPType ptr ast:PType, length uintptr) ptr ast:PTypeDescr
 
 decl symbolClone func(sym ptr ast:Symbol) ptr ast:Symbol
 decl symbolFree func(sym ptr ast:Symbol)

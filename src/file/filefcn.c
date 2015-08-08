@@ -111,14 +111,14 @@ bool path_listAll(char* path, void* appendTo, void (*appender)(void* to, char* e
     return false;
   }
 
-  extern char* strclone(char*);
-  extern bool strequals(const char*,const char*);
+  extern char* txt$strclone(char*);
+  extern bool txt$strequals(const char*,const char*);
   struct dirent *ep;
 
   while ((ep = readdir(dp))) {
-    char* name = strclone(ep->d_name);
+    char* name = txt$strclone(ep->d_name);
 
-    if (!strequals(name, ".") && !strequals(name, "..")) {
+    if (!txt$strequals(name, ".") && !txt$strequals(name, "..")) {
       appender(appendTo, name);
     } else {
       free(name);

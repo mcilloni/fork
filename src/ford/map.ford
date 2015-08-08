@@ -25,6 +25,10 @@ alias Mnode struct (
 )
 
 
+decl nodeMkpair func(node ptr Mnode) ptr pair:Pair
+decl nodeMinpair func(node ptr Mnode) ptr pair:Pair
+
+
 alias Map struct (
   root ptr Mnode,
   len uintptr,

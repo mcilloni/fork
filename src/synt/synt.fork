@@ -178,7 +178,7 @@ func parserParseIdType(ctx ptr synt:ParserContext, name ptr uint8) ptr ast:PType
     lex:tokenFree(tok)
   /if
 
-  return astfn:ptypeNew(name, moduleName, ast:ptypeDescrNew(ast:PTYPE_ID, null, null))
+  return astfn:ptypeNew(name, moduleName, astfn:ptypeDescrNew(ast:PTYPE_ID, null, null))
 /func
 
 
@@ -328,7 +328,7 @@ func parserParseFunctionType(ctx ptr synt:ParserContext) ptr ast:PType
     retType = parserParseType(ctx)
   /if
 
-  mut type = astfn:ptypeNew(null, null, ast:ptypeDescrNew(ast:PTYPE_FUNC, retType, args))
+  mut type = astfn:ptypeNew(null, null, astfn:ptypeDescrNew(ast:PTYPE_FUNC, retType, args))
   type'end = end
 
   return type
@@ -354,7 +354,7 @@ func parserParseLocType(ctx ptr synt:ParserContext) ptr ast:PType
     return null
   /if
 
-  mut type = astfn:ptypeNew(null, null, ast:ptypeDescrNewLoc(realType, locLength))
+  mut type = astfn:ptypeNew(null, null, astfn:ptypeDescrNewLoc(realType, locLength))
   type'end = realType'end
 
   return type
@@ -369,7 +369,7 @@ func parserParseStructType(ctx ptr synt:ParserContext) ptr ast:PType
     return null
   /if
 
-  mut type = astfn:ptypeNew(null, null, ast:ptypeDescrNew(ast:PTYPE_STRUCT, null, args))
+  mut type = astfn:ptypeNew(null, null, astfn:ptypeDescrNew(ast:PTYPE_STRUCT, null, args))
   type'end = end
 
   return type
@@ -401,7 +401,7 @@ func parserParseType(ctx ptr synt:ParserContext) ptr ast:PType
   if tok'type == tokens:PTR
     # parses the real type (after ptr)
     mut realType = parserParseType(ctx)
-    ret = astfn:ptypeNew(null, null, ast:ptypeDescrNew(ast:PTYPE_PTR, realType, null))
+    ret = astfn:ptypeNew(null, null, astfn:ptypeDescrNew(ast:PTYPE_PTR, realType, null))
     ret'end = realType'end
   /if
 
@@ -789,7 +789,7 @@ func parserMakeFunction(ctx ptr synt:ParserContext,
 
 
 func makeEntryType() ptr ast:PType
-  return astfn:ptypeNew(null, null,ast:ptypeDescrNew(ast:PTYPE_FUNC, null, null))
+  return astfn:ptypeNew(null, null,astfn:ptypeDescrNew(ast:PTYPE_FUNC, null, null))
 /func
 
 

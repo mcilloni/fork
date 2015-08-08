@@ -40,8 +40,7 @@ func iterIntNext(node ptr map:Mnode, lastKey data) ptr pair:Pair
       return pair
     /if
 
-    decl nodeMkpair func(node ptr map:Mnode) ptr pair:Pair
-    return nodeMkpair(node)
+    return map:nodeMkpair(node)
   /if
 
   return iterIntNext(node'right, lastKey)
@@ -58,8 +57,7 @@ func mapiterNext(iter ptr map:MapIter) ptr pair:Pair
 
   if iter'begin
     iter'begin = false
-    decl nodeMinpair func(node ptr map:Mnode) ptr pair:Pair
-    mut pair = nodeMinpair(root)
+    mut pair = map:nodeMinpair(root)
     iter'lastKey = pair'key
     return pair
   /if

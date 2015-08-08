@@ -52,8 +52,6 @@ alias PTypeDescr struct (
 decl ptypeDump func(ptype ptr PType)
 
 decl ptypeDescrDump func(ptype ptr PTypeDescr)
-decl ptypeDescrNew func(ptype uint16, retPType ptr PType, params ptr list:List) ptr PTypeDescr
-decl ptypeDescrNewLoc func(innerPType ptr PType, length uintptr) ptr PTypeDescr
 
 alias PSymbol struct(
   refc mem:Ref,

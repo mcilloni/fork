@@ -61,18 +61,6 @@ func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 /func
 
 
-func pnodeAppendChild(pnode, child ptr ast:PNode) ptr ast:PNode
-
-  if pnode != null and child != null
-    list:listAppend(pnode'leaves, child)
-
-    child'parent = pnode
-  /if
-
-  return pnode
-/func
-
-
 func pnodeFree(pnode ptr ast:PNode)
   if pnode != null
     if ast:isPRoot(pnode)
@@ -108,17 +96,6 @@ func pnodeFree(pnode ptr ast:PNode)
 /func
 
 
-func pnodeNew(type uint16, value uintptr) ptr ast:PNode
-
-  mut pnode = cast<ptr ast:PNode>(mem:zalloc(size(ast:PNode)))
-  pnode'type = type
-  pnode'value = value
-  pnode'leaves = list:listNew()
-
-  return pnode
-/func
-
-
 func pnodeIsBreakContinue(pnode ptr ast:PNode) bool
   return pnode'type == ast:PBREAK or pnode'type == ast:PCONTINUE
 /func
@@ -149,81 +126,6 @@ func pnodeIsWhile(pnode ptr ast:PNode) bool
 /func
 
 
-func pblockNew() ptr ast:PBlock
-  mut pblock = cast<ptr ast:PBlock>(mem:zalloc(size(ast:PBlock)))
-  mut pnode = cast<ptr ast:PNode>(pblock)
-
-  pnode'type = ast:PBLOCK
-  pnode'leaves = list:listNew()
-
-  return pblock
-/func
-
-
-func pdeclNew(nodeType uint16, sym ptr ast:PSymbol) ptr ast:PDecl
-
-  mut pdecl = cast<ptr ast:PDecl>(mem:zalloc(size(ast:PDecl)))
-  pdecl'node'type = nodeType
-  pdecl'node'leaves = list:listNew()
-
-  mem:incRef(sym)
-
-  pdecl'sym = sym
-
-  return pdecl
-/func
-
-
-func pexprNewTernary(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end ast:Line) ptr ast:PExpr
-    mut pexpr = cast<ptr ast:PExpr>(mem:zalloc(size(ast:PExpr)))
-    pexpr'node'type = ast:PEXPR
-    pexpr'node'value = tok'value
-    pexpr'node'leaves = list:listNew()
-    pexpr'opType = tok'type
-    tok'value = 0 # now the value belongs to this PExpr
-
-    mut pnode = ptr pexpr'node
-    pnode'begin = begin
-    pnode'end = end
-
-    astfn:pnodeAppendChild(pnode, ptr lhs'node)
-    astfn:pnodeAppendChild(pnode, ptr mid'node)
-    astfn:pnodeAppendChild(pnode, ptr rhs'node)
-
-    lex:tokenFree(tok)
-
-    return pexpr
-/func
-
-
-func pexprNew(tok ptr lex:Token, lhs,rhs ptr ast:PExpr, begin,end ast:Line) ptr ast:PExpr
-  return pexprNewTernary(tok, lhs, null, rhs, begin, end)
-/func
-
-
-func pexprNewSingle(tok ptr lex:Token) ptr ast:PExpr
-  return pexprNew(tok, null, null, lex:tokExtractBegin(tok), lex:tokExtractEnd(tok))
-/func
-
-
-func prootNew(moduleName ptr ast:StringDef, imports ptr list:List, fileName ptr uint8) ptr ast:PRoot
-
-  mut proot = cast<ptr ast:PRoot>(mem:zalloc(size(ast:PRoot)))
-  mut pnode = cast<ptr ast:PNode>(proot)
-
-  pnode'type = ast:PROOT
-  pnode'leaves = list:listNew()
-  pnode'parent = null
-
-  proot'moduleName = moduleName
-  proot'imports = imports
-  proot'fileName = txt:strclone(fileName)
-
-  return proot
-
-/func
-
-
 func prootHasImported(root ptr ast:PRoot, name ptr uint8) bool
   mut i uintptr = 0
   mut len = list:listLen(root'imports)
@@ -246,9 +148,11 @@ func isPDecl(pnode ptr ast:PNode) bool
   return pnode != null and pnode'type == ast:PALIAS or pnode'type == ast:PDECL or pnode'type == ast:PMUT or pnode'type == ast:PENTRY or pnode'type == ast:PFUNCTION
 /func
 
+
 func isPBlock(pnode ptr ast:PNode) bool
   return pnode != null and (pnode'type == ast:PBLOCK or ast:isPRoot(pnode))
 /func
+
 
 func isPExpr(pnode ptr ast:PNode) bool
   return pnode != null and pnode'type == ast:PEXPR
@@ -257,23 +161,6 @@ func isPExpr(pnode ptr ast:PNode) bool
 
 func isPRoot(pnode ptr ast:PNode) bool
   return pnode != null and pnode'type == ast:PROOT
-/func
-
-func strdefFree(strdef ptr ast:StringDef)
-  if strdef != null
-    mem:free(strdef'name)
-    mem:free(strdef)
-  /if
-/func
-
-
-func strdefNew(name ptr uint8, begin,end ast:Line) ptr ast:StringDef
-  mut strdef = cast<ptr ast:StringDef>(mem:zalloc(size(ast:StringDef)))
-  strdef'name = name
-  strdef'begin = begin
-  strdef'end = end
-
-  return strdef
 /func
 
 
