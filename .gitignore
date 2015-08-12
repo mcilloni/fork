@@ -1,4 +1,6 @@
 build/*
+build.1/*
+ctrans-release*
 examples/*.txt
 examples/*.elf
 examples/*.old
