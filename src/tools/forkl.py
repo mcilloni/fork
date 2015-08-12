@@ -2,7 +2,7 @@
 import argparse, atexit, os, subprocess, sys
 
 buildpath = os.path.dirname(os.path.abspath(__file__))
-forkrtpath = os.path.join(os.environ['FORKROOT'],'/libfork/build/', 'rt.o')
+forkrtpath = os.path.join(buildpath,'libfork', 'rt.o')
 
 def ld(ccCommand, ofiles, ofile=None):
 
@@ -12,7 +12,7 @@ def ld(ccCommand, ofiles, ofile=None):
         else:
             ofile = 'a.out'
 
-    retval = subprocess.call(ccCommand.split() + ofiles + [forkrtpath, '-g', '-L' + buildpath, '-lfork', '-w', '-o', ofile])
+    retval = subprocess.call(ccCommand.split() + ofiles + [forkrtpath, '-g', '-L' + os.path.join(buildpath,'libfork'), '-lfork', '-w', '-o', ofile])
     if (retval != 0):
         sys.exit(retval)
 

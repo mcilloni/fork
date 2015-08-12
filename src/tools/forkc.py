@@ -8,7 +8,6 @@ import signal
 import subprocess
 import sys
 import tempfile
-import termcolor
 
 todelete = []
 
@@ -35,7 +34,7 @@ def forkc1(forkfile, libfork = True):
 
     newenv = os.environ.copy()
     if libfork:
-        newenv['FORDPATHS'] = os.environ['FORKROOT'] + '/libfork/build/ford/'
+        newenv['FORDPATHS'] = buildpath + '/libfork/ford/'
 
     if 'FORDPATHS' in os.environ:
         newenv['FORDPATHS'] = newenv['FORDPATHS'] \
@@ -47,8 +46,7 @@ def forkc1(forkfile, libfork = True):
 
     if proc.returncode != 0:
         if proc.returncode == -signal.SIGSEGV:
-            sys.exit(termcolor.colored('FATAL COMPILER ERROR: ','red', attrs=['bold','blink'])
-                    + termcolor.colored("forkc1 segfaulted :(", attrs=['bold']))
+            sys.exit('FATAL COMPILER ERROR: forkc1 segfaulted :(')
         sys.exit(proc.returncode)
 
     outfile = open(cname, 'wb')
@@ -62,7 +60,7 @@ def forkc1(forkfile, libfork = True):
     return cname
 
 
-def cc(ccCommand, cfile, ofile=None, includes=[]):
+def cc(ccCommand, cfile, ofile=None, libfork=True, includes=[]):
 
     if not cfile.endswith('.c'):
         sys.exit((__file__
@@ -79,6 +77,9 @@ def cc(ccCommand, cfile, ofile=None, includes=[]):
 
     for include in includes:
         params += ['-I' + include[0]]
+
+    if libfork:
+        params += ['-I' + os.path.join(buildpath, 'libfork', 'include')]
 
     retval = subprocess.call(ccCommand.split()
                              + params
@@ -131,7 +132,7 @@ def main():
                         help='prevents the inclusion of the standard libfork')
     parser.add_argument('--fordpath',
                         action='version',
-                        version=os.environ['FORKROOT'] + '/libfork/build/ford/',
+                        version=buildpath + '/libfork/ford/',
                         help='dumps the FORDPATH for default libfork fords')
 
     parser.set_defaults(libfork=True)
@@ -150,14 +151,14 @@ def main():
         cfile = forkc1(args.files[0], args.libfork)
         if not args.emit_c:
             todelete.append(cfile)
-            cc(args.cc, cfile, args.objname, args.includes)
+            cc(args.cc, cfile, args.objname, args.libfork, args.includes)
 
     else:
         for f in args.files:
-            cfile = forkc1(f)
+            cfile = forkc1(f, libfork=args.libfork)
             if not args.emit_c:
                 todelete.append(cfile)
-                cc(args.cc, cfile, includes=args.includes)
+                cc(args.cc, cfile, libfork=args.libfork, includes=args.includes)
 
 if __name__ == '__main__':
     main()

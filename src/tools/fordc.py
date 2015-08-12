@@ -1,6 +1,5 @@
 
 import argparse
-import atexit
 import os
 import os.path
 import platform
@@ -8,7 +7,6 @@ import signal
 import subprocess
 import sys
 import tempfile
-import termcolor
 
 
 buildpath = os.path.dirname(os.path.abspath(__file__))
@@ -30,7 +28,7 @@ def forkc1(fordfile, outdir, libfork):
 
     newenv = os.environ.copy()
     if libfork:
-        newenv['FORDPATHS'] = os.environ['FORKROOT'] + '/libfork/build/ford/'
+        newenv['FORDPATHS'] = buildpath + '/libfork/ford/'
 
     if 'FORDPATHS' in os.environ:
         newenv['FORDPATHS'] = newenv['FORDPATHS'] \
@@ -42,8 +40,7 @@ def forkc1(fordfile, outdir, libfork):
 
     if proc.returncode != 0:
         if proc.returncode == -signal.SIGSEGV:
-            sys.exit(termcolor.colored('FATAL COMPILER ERROR: ','red', attrs=['bold','blink'])
-                    + termcolor.colored("forkc1 segfaulted :(", attrs=['bold']))
+            sys.exit('FATAL COMPILER ERROR: forkc1 segfaulted :(')
         sys.exit(proc.returncode)
 
     outfile = open(hfile, 'wb')
@@ -76,7 +73,7 @@ def main():
                         help='prevents the inclusion of the standard libfork')
     parser.add_argument('--fordpath',
                         action='version',
-                        version=os.environ['FORKROOT'] + '/libfork/build/ford/',
+                        version= buildpath + '/libfork/ford/',
                         help='dumps the FORDPATH for default libfork fords')
 
     parser.set_defaults(libfork=True)
