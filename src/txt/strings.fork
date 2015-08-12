@@ -41,15 +41,16 @@ func strequals(s1, s2 ptr uint8) bool
 
 
 func strreverse(str ptr uint8, len uintptr)
-  mut i uintptr = 0
-  mut end = len / 2
+  mut end = str + len - 1
 
+  # workaround, fix sema
+  while cast<uintptr>(str) < cast<uintptr>(end)
+    val str = val str ^ val end
+    val end = val end ^ val str
+    val str = val str ^ val end
 
-while i < end
-    str[i] = str[i] ^ str[len - 1 - i]
-    str[len - 1 - i] = str[i] ^ str[len - 1 - i]
-    str[i] = str[i] ^ str[len - 1 - i]
-    i++
+    str++
+    end--
   /while
 /func
 
