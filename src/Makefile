@@ -1,10 +1,13 @@
 BUILDPATH = $(shell pwd)/../build/
+LIBFORK = $(shell pwd)/../libfork/
+LFINCL = $(LIBFORK)/build/include/
+INCLUDES = $(BUILDPATH)/include/
 
 ifndef FORKC
 	FORKC = forkc
 endif
 
-FORKC_O = $(FORKC) --no-spring
+FORKC += --no-libfork
 
 CCLD = $(CC)
 
@@ -14,20 +17,21 @@ SRCS = $(wildcard *.fork)
 OBJS = $(patsubst %.fork,%.o,$(SRCS))
 OPATHS = $(foreach obj, $(OBJS), $(BUILDPATH)/$(obj))
 
-.PHONY: all clean fords
+.PHONY: all dir clean fords
 
-all: dir $(OPATHS)
-
-	@printf "CCLD\t\t%s\n" $(SONAME)
-	@ $(CCLD) -shared -o ../build/$(SONAME) ../build/*.o -L$(FORKROOT)/libfork/build/ -lfork
+all: dir fords $(OPATHS)
+	$(MAKE) -C tools
 
 dir:
 	install -d $(BUILDPATH)
 
+fords:
+	$(MAKE) -C ford
+
 
 $(BUILDPATH)/%.o: %.fork
 	@printf "FORKC\t\t%s\n" $<
-	@ FORDPATHS="$(FORKROOT)/libfork/build/ford/:$(FORKROOT)/forkc/build/ford/:$(BUILDPATH)/../src/ford/" $(FORKC_O) -o $@ $<
+	@ FORDPATHS="$(LIBFORK)/build/ford/:$(BUILDPATH)/../src/ford/" $(FORKC) -I $(INCLUDES) -I $(LFINCL) -o $@ $<
 
 clean:
 	rm -rf $(BUILDPATH)

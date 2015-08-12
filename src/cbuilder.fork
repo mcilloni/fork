@@ -26,21 +26,19 @@ import tty
 
 func translDump(tr ptr ctrans:Transl, stream ptr io:Stream) ptr err:Error
   if tr'header
-    # first-step is buggy like shit, must use trigraphs because
-    # `#` gets deleted by the lexer
-    io:streamWrite(stream, "??=ifndef ford$$")
+    io:streamWrite(stream, "#ifndef ford$$")
     io:streamWrite(stream, tr'modName )
     io:streamWrite(stream, "_h\n")
 
-    io:streamWrite(stream, "??=define ford$$")
+    io:streamWrite(stream, "#define ford$$")
     io:streamWrite(stream, tr'modName)
     io:streamWrite(stream, "_h\n\n\n")
   /if
 
-  io:streamWrite(stream, "??=include <stdint.h>\n\n")
+  io:streamWrite(stream, "#include <stdint.h>\n\n")
 
   #just in case, you know.
-  io:streamWrite(stream, "??=undef NULL\n\n")
+  io:streamWrite(stream, "#undef NULL\n\n")
 
   mut includes = txt:csUnwrap(tr'includes)
   io:streamWrite(stream, includes)
@@ -73,7 +71,7 @@ func translDump(tr ptr ctrans:Transl, stream ptr io:Stream) ptr err:Error
   io:streamWrite(stream, "\n\n")
 
   if tr'header
-    io:streamWrite(stream, "\n\n??=endif //ford$$")
+    io:streamWrite(stream, "\n\n#endif //ford$$")
     io:streamWrite(stream, tr'modName)
     io:streamWrite(stream, "_h\n\n")
   /if
@@ -83,7 +81,7 @@ func translDump(tr ptr ctrans:Transl, stream ptr io:Stream) ptr err:Error
 
 
 func translFordInc(tr ptr ctrans:Transl, fordName ptr uint8)
-  txt:csAppendStr(tr'includes, "??=include <ford$$")
+  txt:csAppendStr(tr'includes, "#include <ford$$")
   txt:csAppendStr(tr'includes, fordName)
   txt:csAppendLine(tr'includes, ".h>")
 /func
@@ -339,7 +337,7 @@ func dbgLine(cs ptr txt:Charstash, fname ptr uint8, line,p uintptr)
 
   pad(cs, p)
 
-  txt:csAppendStr(cs, "??=line ")
+  txt:csAppendStr(cs, "#line ")
   txt:csAppendInt(cs, line)
   txt:csAppendStr(cs, " \"")
 
