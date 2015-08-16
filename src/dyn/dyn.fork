@@ -17,9 +17,9 @@ import mem
 import txt
 
 
-decl load_lib func(name ptr uint8, err ptr uint8, len uintptr) data
-decl load_sym func(handl data, name ptr uint8, err ptr uint8, len uintptr) data
-decl free_lib func(handl data, err ptr uint8, len uintptr) bool
+decl func load_lib(name ptr uint8, err ptr uint8, len uintptr) data
+decl func load_sym(handl data, name ptr uint8, err ptr uint8, len uintptr) data
+decl func free_lib(handl data, err ptr uint8, len uintptr) bool
 
 
 func sobjDeinit(sobj ptr dyn:SObj)

@@ -4,6 +4,8 @@ ifndef FORKC
 	FORKC = forkc
 endif
 
+FORKC += --no-libfork
+
 CCLD = $(CC)
 
 ifndef AR

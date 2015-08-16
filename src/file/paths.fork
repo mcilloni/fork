@@ -20,9 +20,9 @@ import txt
 mut dirSep = "/"
 
 
-decl path_exists func(path ptr uint8) uintptr
+decl func path_exists(path ptr uint8) uintptr
 
-decl path_listAll func(path ptr uint8,
+decl func path_listAll(path ptr uint8,
                        appendTo data,
                        appender ptr func(to data, elem ptr uint8),
                        error ptr uint8,
@@ -83,7 +83,7 @@ func pathListFiles(path ptr uint8, error ptr ptr err:Error) ptr list:List
 
 
 func pathBasename(path ptr uint8) ptr uint8
-  decl basename func(path ptr uint8) ptr uint8
+  decl func basename(path ptr uint8) ptr uint8
 
   return basename(path)
 /func

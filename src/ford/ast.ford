@@ -49,9 +49,9 @@ alias PTypeDescr struct (
   length uintptr
 )
 
-decl ptypeDump func(ptype ptr PType)
+decl func ptypeDump(ptype ptr PType)
 
-decl ptypeDescrDump func(ptype ptr PTypeDescr)
+decl func ptypeDescrDump(ptype ptr PTypeDescr)
 
 alias PSymbol struct(
   refc mem:Ref,
@@ -104,22 +104,22 @@ alias Symbol struct(
 )
 
 
-decl symbolDump func(cs ptr txt:Charstash, sym ptr Symbol)
-decl symbolEquals func(sym1,sym2 ptr Symbol) bool
-decl symbolSummarize func(cs ptr txt:Charstash, sym ptr Symbol)
+decl func symbolDump(cs ptr txt:Charstash, sym ptr Symbol)
+decl func symbolEquals(sym1,sym2 ptr Symbol) bool
+decl func symbolSummarize(cs ptr txt:Charstash, sym ptr Symbol)
 
-decl typeDump func(cs ptr txt:Charstash, type ptr Type)
-decl typeEquals func(type1, type2 ptr Type) bool
-decl typeFree func(type ptr Type)
-decl typeIsBool func(type ptr Type) bool
-decl typeIsData func(type ptr Type) bool
-decl typeIsFunc func(type ptr Type) bool
-decl typeIsInt func(type ptr Type) bool
-decl typeIsLoc func(type ptr Type) bool
-decl typeIsNull func(type ptr Type) bool
-decl typeIsPtr func(type ptr Type) bool
-decl typeIsStruct func(type ptr Type) bool
-decl typeSummarize func(cs ptr txt:Charstash, type ptr Type)
+decl func typeDump(cs ptr txt:Charstash, type ptr Type)
+decl func typeEquals(type1, type2 ptr Type) bool
+decl func typeFree(type ptr Type)
+decl func typeIsBool(type ptr Type) bool
+decl func typeIsData(type ptr Type) bool
+decl func typeIsFunc(type ptr Type) bool
+decl func typeIsInt(type ptr Type) bool
+decl func typeIsLoc(type ptr Type) bool
+decl func typeIsNull(type ptr Type) bool
+decl func typeIsPtr(type ptr Type) bool
+decl func typeIsStruct(type ptr Type) bool
+decl func typeSummarize(cs ptr txt:Charstash, type ptr Type)
 
 
 alias DeclInfo struct(
@@ -131,14 +131,14 @@ alias Symtable struct(
   syms ptr kv:KVList
 )
 
-decl stabNew func() ptr Symtable
-decl stabAdd func(stab ptr Symtable, name ptr uint8, type ptr Type, symType uint16)
-decl stabGet func(stab ptr Symtable, name ptr uint8) ptr DeclInfo
-decl stabTypeof func(stab ptr Symtable, name ptr uint8) ptr Type
-decl stabFree func(stab ptr Symtable)
+decl func stabNew() ptr Symtable
+decl func stabAdd(stab ptr Symtable, name ptr uint8, type ptr Type, symType uint16)
+decl func stabGet(stab ptr Symtable, name ptr uint8) ptr DeclInfo
+decl func stabTypeof(stab ptr Symtable, name ptr uint8) ptr Type
+decl func stabFree(stab ptr Symtable)
 
 
-decl declDump func(prefix,name ptr uint8, type ptr Type)
+decl func declDump(prefix,name ptr uint8, type ptr Type)
 # end symbols
 
 # begin pnode
@@ -152,21 +152,21 @@ alias PNode struct(
   validated bool
 )
 
-decl pnodeDump func(node ptr PNode)
-decl pnodeFree func(pnode ptr PNode)
-decl pnodeIsBreakContinue func(pnode ptr PNode) bool
-decl pnodeIsDecl func(pnode ptr PNode) bool
-decl pnodeIsExpr func(pnode ptr PNode) bool
-decl pnodeIsIf func(pnode ptr PNode) bool
-decl pnodeIsReturn func(pnode ptr PNode) bool
-decl pnodeIsWhile func(pnode ptr PNode) bool
+decl func pnodeDump(node ptr PNode)
+decl func pnodeFree(pnode ptr PNode)
+decl func pnodeIsBreakContinue(pnode ptr PNode) bool
+decl func pnodeIsDecl(pnode ptr PNode) bool
+decl func pnodeIsExpr(pnode ptr PNode) bool
+decl func pnodeIsIf(pnode ptr PNode) bool
+decl func pnodeIsReturn(pnode ptr PNode) bool
+decl func pnodeIsWhile(pnode ptr PNode) bool
 
 alias PBlock struct(
   node PNode,
   syms ptr Symtable
 )
 
-decl isPBlock func(node ptr PNode) bool
+decl func isPBlock(node ptr PNode) bool
 
 alias StringDef struct(
   name ptr uint8,
@@ -178,7 +178,7 @@ alias PDecl struct(
   sym ptr PSymbol
 )
 
-decl isPDecl func(node ptr PNode) bool
+decl func isPDecl(node ptr PNode) bool
 
 alias PRoot struct(
   node PBlock,
@@ -190,8 +190,8 @@ alias PRoot struct(
   entryNode ptr PDecl
 )
 
-decl isPRoot func(node ptr PNode) bool
-decl prootHasImported func(root ptr PRoot, name ptr uint8) bool
+decl func isPRoot(node ptr PNode) bool
+decl func prootHasImported(root ptr PRoot, name ptr uint8) bool
 
 alias PExpr struct(
   node PNode,
@@ -200,50 +200,50 @@ alias PExpr struct(
   type,sizeType ptr Type
 )
 
-decl isPExpr func(node ptr PNode) bool
+decl func isPExpr(node ptr PNode) bool
 
-decl emptyExpr PExpr
-
-
-decl findPBlock func(node ptr PNode) ptr PNode
-decl findSym func(node ptr PNode, name ptr uint8) ptr Type
-decl findSymLocal func(node ptr PNode, name ptr uint8) ptr Type
-decl findStab func(node ptr PNode) ptr Symtable
+decl mut emptyExpr PExpr
 
 
-decl PROOT      uint16
-decl PENTRY     uint16
-decl PEXPR      uint16
-decl PFUNCTION  uint16
-decl PALIAS     uint16
-decl PDECL      uint16
-decl PMUT       uint16
-decl PBREAK     uint16
-decl PCONTINUE  uint16
-decl PRETURN    uint16
-decl PIF        uint16
-decl PIFELSE    uint16
-decl PWHILE     uint16
-decl PBLOCK     uint16
+decl func findPBlock(node ptr PNode) ptr PNode
+decl func findSym(node ptr PNode, name ptr uint8) ptr Type
+decl func findSymLocal(node ptr PNode, name ptr uint8) ptr Type
+decl func findStab(node ptr PNode) ptr Symtable
+
+
+decl mut PROOT      uint16
+decl mut PENTRY     uint16
+decl mut PEXPR      uint16
+decl mut PFUNCTION  uint16
+decl mut PALIAS     uint16
+decl mut PDECL      uint16
+decl mut PMUT       uint16
+decl mut PBREAK     uint16
+decl mut PCONTINUE  uint16
+decl mut PRETURN    uint16
+decl mut PIF        uint16
+decl mut PIFELSE    uint16
+decl mut PWHILE     uint16
+decl mut PBLOCK     uint16
 
 #end pnode
 
 # symbols
 
-decl PTYPE_FUNC   uint16
-decl PTYPE_ID     uint16
-decl PTYPE_PTR    uint16
-decl PTYPE_STRUCT uint16
-decl PTYPE_LOC    uint16
+decl mut PTYPE_FUNC   uint16
+decl mut PTYPE_ID     uint16
+decl mut PTYPE_PTR    uint16
+decl mut PTYPE_STRUCT uint16
+decl mut PTYPE_LOC    uint16
 
 
-decl TYPE_EMPTY     uint16
-decl TYPE_FUNC      uint16
-decl TYPE_PTR       uint16
-decl TYPE_STRUCT    uint16
-decl TYPE_LOC       uint16
-decl TYPE_BOOL      uint16
-decl TYPE_INT       uint16
-decl TYPE_DATA      uint16
-decl TYPE_RECALIAS uint16
-decl TYPE_NULL      uint16
+decl mut TYPE_EMPTY     uint16
+decl mut TYPE_FUNC      uint16
+decl mut TYPE_PTR       uint16
+decl mut TYPE_STRUCT    uint16
+decl mut TYPE_LOC       uint16
+decl mut TYPE_BOOL      uint16
+decl mut TYPE_INT       uint16
+decl mut TYPE_DATA      uint16
+decl mut TYPE_RECALIAS uint16
+decl mut TYPE_NULL      uint16

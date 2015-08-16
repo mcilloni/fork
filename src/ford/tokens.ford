@@ -11,65 +11,65 @@
 module tokens
 
 
-decl EOF uint16
-decl NEWLINE uint16
-decl ALIAS uint16
-decl AMPER uint16
-decl AND uint16
-decl APOS uint16
-decl ASSIGN uint16
-decl BREAK uint16
-decl CAST uint16
-decl CBRAC uint16
-decl COLON uint16
-decl COMMA uint16
-decl CONTINUE uint16
-decl CPAR uint16
-decl DEC uint16
-decl DECL uint16
-decl DIFFERENT uint16
-decl DIV uint16
-decl ELSE uint16
-decl ENDENTRY uint16
-decl ENDFUNC uint16
-decl ENDIF uint16
-decl ENDWHILE uint16
-decl ENTRY uint16
-decl EQUAL uint16
-decl FALSE uint16
-decl FATARROW uint16
-decl FUNC uint16
-decl ID uint16
-decl IF uint16
-decl IMPORT uint16
-decl INC uint16
-decl MAJEQ uint16
-decl MAJOR uint16
-decl MINEQ uint16
-decl MINOR uint16
-decl MINUS uint16
-decl MOD uint16
-decl MODULE uint16
-decl MUT uint16
-decl NOT uint16
-decl NULLPTR uint16
-decl NUMBER uint16
-decl OBRAC uint16
-decl OPAR uint16
-decl OR uint16
-decl PIPE uint16
-decl PLUS uint16
-decl POW uint16
-decl PTR uint16
-decl RETURN uint16
-decl SEPARATOR uint16
-decl SIZE uint16
-decl STRING uint16
-decl STRUCT uint16
-decl TIMES uint16
-decl TRUE uint16
-decl TWOCOLONS uint16
-decl UMINUS uint16
-decl VAL uint16
-decl WHILE uint16
-decl XOR uint16
+decl mut EOF uint16
+decl mut NEWLINE uint16
+decl mut ALIAS uint16
+decl mut AMPER uint16
+decl mut AND uint16
+decl mut APOS uint16
+decl mut ASSIGN uint16
+decl mut BREAK uint16
+decl mut CAST uint16
+decl mut CBRAC uint16
+decl mut COLON uint16
+decl mut COMMA uint16
+decl mut CONTINUE uint16
+decl mut CPAR uint16
+decl mut DEC uint16
+decl mut DECL uint16
+decl mut DIFFERENT uint16
+decl mut DIV uint16
+decl mut ELSE uint16
+decl mut ENDENTRY uint16
+decl mut ENDFUNC uint16
+decl mut ENDIF uint16
+decl mut ENDWHILE uint16
+decl mut ENTRY uint16
+decl mut EQUAL uint16
+decl mut FALSE uint16
+decl mut FATARROW uint16
+decl mut FUNC uint16
+decl mut ID uint16
+decl mut IF uint16
+decl mut IMPORT uint16
+decl mut INC uint16
+decl mut MAJEQ uint16
+decl mut MAJOR uint16
+decl mut MINEQ uint16
+decl mut MINOR uint16
+decl mut MINUS uint16
+decl mut MOD uint16
+decl mut MODULE uint16
+decl mut MUT uint16
+decl mut NOT uint16
+decl mut NULLPTR uint16
+decl mut NUMBER uint16
+decl mut OBRAC uint16
+decl mut OPAR uint16
+decl mut OR uint16
+decl mut PIPE uint16
+decl mut PLUS uint16
+decl mut POW uint16
+decl mut PTR uint16
+decl mut RETURN uint16
+decl mut SEPARATOR uint16
+decl mut SIZE uint16
+decl mut STRING uint16
+decl mut STRUCT uint16
+decl mut TIMES uint16
+decl mut TRUE uint16
+decl mut TWOCOLONS uint16
+decl mut UMINUS uint16
+decl mut VAL uint16
+decl mut WHILE uint16
+decl mut XOR uint16

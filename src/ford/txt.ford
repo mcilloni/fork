@@ -30,38 +30,38 @@ alias Tokenizer struct (
 
 
 # string functions
-decl numtostr func(num uintptr, str ptr uint8, strLen uintptr) ptr uint8
-decl strappend func(str1 ptr uint8, str2 ptr uint8) ptr uint8
-decl strclone func(str ptr uint8) ptr uint8
-decl strcompare func(s1 data, s2 data) int8
-decl strequals func(str1 ptr uint8, str2 ptr uint8) bool
-decl strEndsWith func(str, end ptr uint8) bool
-decl strglue func(toGlue ptr ptr uint8) ptr uint8
-decl strlen func(str ptr uint8) uintptr
-decl strncpy func(dest ptr uint8, source ptr uint8, cap uintptr) ptr uint8
-decl strreverse func(str ptr uint8, len uintptr)
-decl strtonum func(str ptr uint8) intptr
+decl func numtostr(num uintptr, str ptr uint8, strLen uintptr) ptr uint8
+decl func strappend(str1 ptr uint8, str2 ptr uint8) ptr uint8
+decl func strclone(str ptr uint8) ptr uint8
+decl func strcompare(s1 data, s2 data) int8
+decl func strequals(str1 ptr uint8, str2 ptr uint8) bool
+decl func strEndsWith(str, end ptr uint8) bool
+decl func strglue(toGlue ptr ptr uint8) ptr uint8
+decl func strlen(str ptr uint8) uintptr
+decl func strncpy(dest ptr uint8, source ptr uint8, cap uintptr) ptr uint8
+decl func strreverse(str ptr uint8, len uintptr)
+decl func strtonum(str ptr uint8) intptr
 
 
 # charstash functions
-decl csAppend func(cs ptr Charstash, ch uint8) ptr Charstash
-decl csAppendInt func(cs ptr Charstash, num uintptr) ptr Charstash
-decl csAppendLine func(cs ptr Charstash, str ptr uint8) ptr Charstash
-decl csAppendStr func(cs ptr Charstash, str ptr uint8) ptr Charstash
-decl csAppendWord func(cs ptr Charstash, str ptr uint8) ptr Charstash
-decl csPrepend func(cs ptr Charstash, ch uint8) ptr Charstash
-decl csPrependInt func(cs ptr Charstash, num uintptr) ptr Charstash
-decl csPrependLine func(cs ptr Charstash, str ptr uint8) ptr Charstash
-decl csPrependStr func(cs ptr Charstash, str ptr uint8) ptr Charstash
-decl csPrependWord func(cs ptr Charstash, str ptr uint8) ptr Charstash
+decl func csAppend(cs ptr Charstash, ch uint8) ptr Charstash
+decl func csAppendInt(cs ptr Charstash, num uintptr) ptr Charstash
+decl func csAppendLine(cs ptr Charstash, str ptr uint8) ptr Charstash
+decl func csAppendStr(cs ptr Charstash, str ptr uint8) ptr Charstash
+decl func csAppendWord(cs ptr Charstash, str ptr uint8) ptr Charstash
+decl func csPrepend(cs ptr Charstash, ch uint8) ptr Charstash
+decl func csPrependInt(cs ptr Charstash, num uintptr) ptr Charstash
+decl func csPrependLine(cs ptr Charstash, str ptr uint8) ptr Charstash
+decl func csPrependStr(cs ptr Charstash, str ptr uint8) ptr Charstash
+decl func csPrependWord(cs ptr Charstash, str ptr uint8) ptr Charstash
 
-decl csFree func(cs ptr Charstash)
-decl csLen func(cs ptr Charstash) uintptr
-decl csNew func(cap uintptr) ptr Charstash
-decl csUnwrap func(cs ptr Charstash) ptr uint8
+decl func csFree(cs ptr Charstash)
+decl func csLen(cs ptr Charstash) uintptr
+decl func csNew(cap uintptr) ptr Charstash
+decl func csUnwrap(cs ptr Charstash) ptr uint8
 
 
 #tokenizer functions
-decl tokenizerFree func(tkz ptr Tokenizer)
-decl tokenizerNew func(str ptr uint8, ch uint8) ptr Tokenizer
-decl tokenizerNext func(tkz ptr Tokenizer) ptr uint8
+decl func tokenizerFree(tkz ptr Tokenizer)
+decl func tokenizerNew(str ptr uint8, ch uint8) ptr Tokenizer
+decl func tokenizerNext(tkz ptr Tokenizer) ptr uint8

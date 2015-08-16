@@ -16,13 +16,13 @@ import c
 
 
 func err(str ptr uint8)
-  decl fputs func(str ptr uint8, file c:CFILE)
+  decl func fputs(str ptr uint8, file c:CFILE)
   fputs(str, c:stderr_file())
 /func
 
 
 func errch(ch uint8)
-  decl putc func(ch uint8, file c:CFILE)
+  decl func putc(ch uint8, file c:CFILE)
   putc(ch, c:stderr_file())
 /func
 
@@ -46,18 +46,18 @@ func failln(str ptr uint8)
 
 
 func out(str ptr uint8)
-  decl fputs func(str ptr uint8, file c:CFILE)
+  decl func fputs(str ptr uint8, file c:CFILE)
   fputs(str, c:stdout_file())
 /func
 
 
 func outch(ch uint8)
-  decl putchar func(ch uint8)
+  decl func putchar(ch uint8)
   putchar(ch)
 /func
 
 
 func outln(str ptr uint8)
-  decl puts func(str ptr uint8)
+  decl func puts(str ptr uint8)
   puts(str)
 /func

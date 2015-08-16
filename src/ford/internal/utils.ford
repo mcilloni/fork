@@ -19,14 +19,14 @@ import sort
 import txt
 
 
-decl charCanBeInString func(ch uint8, escape bool) bool
-decl charIsIdVal func(ch uint8) bool
-decl charIsPar func(ch uint8) bool
-decl charIsSym func(ch uint8) bool
-decl charIsWhite func(ch uint8) bool
+decl func charCanBeInString(ch uint8, escape bool) bool
+decl func charIsIdVal(ch uint8) bool
+decl func charIsPar(ch uint8) bool
+decl func charIsSym(ch uint8) bool
+decl func charIsWhite(ch uint8) bool
 
 
-decl strIsUInt func(str ptr uint8) bool
+decl func strIsUInt(str ptr uint8) bool
 
-decl listContains func(list ptr list:List, value ptr uint8) bool
-decl listDumpHierarchyIntoCS func(list ptr list:List, cs ptr txt:Charstash)
+decl func listContains(list ptr list:List, value ptr uint8) bool
+decl func listDumpHierarchyIntoCS(list ptr list:List, cs ptr txt:Charstash)

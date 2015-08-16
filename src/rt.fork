@@ -11,7 +11,7 @@
 import proc
 
 
-decl __fork_entry func()
+decl func __fork_entry()
 
 
 func main(argc intptr, argv ptr ptr uint8) int8

@@ -31,8 +31,8 @@ alias Cookie struct (
 
 # stream structure
 
-decl STREAM_IN uint8
-decl STREAM_OUT uint8
+decl mut STREAM_IN uint8
+decl mut STREAM_OUT uint8
 
 alias Stream struct (
   cookie Cookie,
@@ -43,9 +43,9 @@ alias Stream struct (
 
 
 # Stream functions
-decl streamClose func(stream ptr Stream) bool
-decl streamEnded func(stream ptr Stream) bool
-decl streamError func(stream ptr Stream) ptr err:Error
-decl streamNew func(priv8 data, rfn ptr readfunc, wfn ptr writefunc, cfn ptr closefunc) ptr Stream
-decl streamRead func(stream ptr Stream, str ptr uint8, len intptr) uintptr
-decl streamWrite func(stream ptr Stream, str ptr uint8) uintptr
+decl func streamClose(stream ptr Stream) bool
+decl func streamEnded(stream ptr Stream) bool
+decl func streamError(stream ptr Stream) ptr err:Error
+decl func streamNew(priv8 data, rfn ptr readfunc, wfn ptr writefunc, cfn ptr closefunc) ptr Stream
+decl func streamRead(stream ptr Stream, str ptr uint8, len intptr) uintptr
+decl func streamWrite(stream ptr Stream, str ptr uint8) uintptr

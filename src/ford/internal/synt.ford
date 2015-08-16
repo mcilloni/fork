@@ -29,19 +29,19 @@ alias ParserContext struct (
   last ptr lex:Lineno
 )
 
-decl parserParseExpr func(ctx ptr ParserContext) ptr ast:PExpr
+decl func parserParseExpr(ctx ptr ParserContext) ptr ast:PExpr
 
-decl parserParseType func(ctx ptr ParserContext) ptr ast:PType
+decl func parserParseType(ctx ptr ParserContext) ptr ast:PType
 
-decl nextTok func(ctx ptr ParserContext) ptr lex:Token
-decl discardTok func(ctx ptr ParserContext)
+decl func nextTok(ctx ptr ParserContext) ptr lex:Token
+decl func discardTok(ctx ptr ParserContext)
 
-decl parserFree func(prs ptr Parser)
-decl parserNew func(file ptr uint8) ptr Parser
-decl parserParse func(prs ptr Parser) ptr ast:PNode
+decl func parserFree(prs ptr Parser)
+decl func parserNew(file ptr uint8) ptr Parser
+decl func parserParse(prs ptr Parser) ptr ast:PNode
 
-decl expect func(ctx ptr ParserContext, tokType uint16) ptr lex:Token
-decl expectDiscard func(ctx ptr ParserContext, tokType uint16) bool
+decl func expect(ctx ptr ParserContext, tokType uint16) ptr lex:Token
+decl func expectDiscard(ctx ptr ParserContext, tokType uint16) bool
 
-decl isBinary func(tok ptr lex:Token) bool
-decl isUnary func(tok ptr lex:Token) bool
+decl func isBinary(tok ptr lex:Token) bool
+decl func isUnary(tok ptr lex:Token) bool

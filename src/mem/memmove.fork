@@ -12,21 +12,21 @@ module mem
 
 
 func memcpy(dest data, src data, len uintptr) data
-  decl memcpy func(dest data, src data, len uintptr) data
+  decl func memcpy(dest data, src data, len uintptr) data
 
   return memcpy(dest, src, len)
 /func
 
 
 func memmove(dest data, src data, len uintptr) data
-  decl memmove func(dest data, src data, len uintptr) data
+  decl func memmove(dest data, src data, len uintptr) data
 
   return memmove(dest, src, len)
 /func
 
 
 func memset(dest data, value uintptr, len uintptr) data
-  decl memset func(dest data, value uintptr, len uintptr) data
+  decl func memset(dest data, value uintptr, len uintptr) data
 
   return memset(dest, value, len)
 /func

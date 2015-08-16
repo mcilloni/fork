@@ -25,8 +25,8 @@ alias Mnode struct (
 )
 
 
-decl nodeMkpair func(node ptr Mnode) ptr pair:Pair
-decl nodeMinpair func(node ptr Mnode) ptr pair:Pair
+decl func nodeMkpair(node ptr Mnode) ptr pair:Pair
+decl func nodeMinpair(node ptr Mnode) ptr pair:Pair
 
 
 alias Map struct (
@@ -44,33 +44,33 @@ alias MapIter struct (
 
 
 # map functions
-decl mapContains func(map ptr Map, key data) bool
-decl mapDeinit func(map ptr Map)
-decl mapDeinitSpec func(map ptr Map, freeKey ptr func(item data), freeVal ptr func(item data))
-decl mapFirst func(map ptr Map) ptr pair:Pair
-decl mapFree func(map ptr Map)
-decl mapFreeSpec func(map ptr Map, freeKey ptr func(item data), freeVal ptr func(item data))
-decl mapGet func(map ptr Map, key data, value ptr data) bool
-decl mapInit func(map ptr Map, cmp sort:comparator) ptr Map
-decl mapLen func(map ptr Map) uintptr
-decl mapNew func(cmp sort:comparator) ptr Map
-decl mapPut func(map ptr Map, key data, value data, freewhat uint8) data
-decl mapRemove func(map ptr Map, key data) bool
+decl func mapContains(map ptr Map, key data) bool
+decl func mapDeinit(map ptr Map)
+decl func mapDeinitSpec(map ptr Map, freeKey ptr func(item data), freeVal ptr func(item data))
+decl func mapFirst(map ptr Map) ptr pair:Pair
+decl func mapFree(map ptr Map)
+decl func mapFreeSpec(map ptr Map, freeKey ptr func(item data), freeVal ptr func(item data))
+decl func mapGet(map ptr Map, key data, value ptr data) bool
+decl func mapInit(map ptr Map, cmp sort:comparator) ptr Map
+decl func mapLen(map ptr Map) uintptr
+decl func mapNew(cmp sort:comparator) ptr Map
+decl func mapPut(map ptr Map, key data, value data, freewhat uint8) data
+decl func mapRemove(map ptr Map, key data) bool
 
 
 # string map helpers
-decl strmapInit func(map ptr Map) ptr Map
-decl strmapNew func() ptr Map
+decl func strmapInit(map ptr Map) ptr Map
+decl func strmapNew() ptr Map
 
 
 # mapiter functions
 
-decl mapiterStart func(map ptr Map) ptr MapIter
-decl mapiterNext func(map ptr MapIter) ptr pair:Pair
-decl mapiterFree func(map ptr MapIter)
+decl func mapiterStart(map ptr Map) ptr MapIter
+decl func mapiterNext(map ptr MapIter) ptr pair:Pair
+decl func mapiterFree(map ptr MapIter)
 
 
 # map values
-decl FREE_NONE uint8
-decl FREE_KEY uint8
-decl FREE_VALUE uint8
+decl mut FREE_NONE uint8
+decl mut FREE_KEY uint8
+decl mut FREE_VALUE uint8

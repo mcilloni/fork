@@ -20,10 +20,10 @@ alias Args struct (
 
 
 # args functions
-decl args func() ptr Args
+decl func args() ptr Args
 
 
 # System functions
-decl abort func()
-decl exit func(retval int16)
-decl getenv func(variable ptr uint8) ptr uint8
+decl func abort()
+decl func exit(retval int16)
+decl func getenv(variable ptr uint8) ptr uint8

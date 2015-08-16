@@ -12,4 +12,4 @@ module math
 
 
 # math declarations
-decl abs func(num intptr) uintptr
+decl func abs(num intptr) uintptr

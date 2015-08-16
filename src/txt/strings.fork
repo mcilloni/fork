@@ -16,7 +16,7 @@ import txt
 
 
 
-decl strcmp func(str1,str2 data) int32
+decl func strcmp(str1,str2 data) int32
 
 
 func strclone(orig ptr uint8) ptr uint8
@@ -160,14 +160,14 @@ func strEndsWith(str, end ptr uint8) bool
 
 
 func strlen(str ptr uint8) uintptr
-  decl strlen func(str ptr uint8) uintptr
+  decl func strlen(str ptr uint8) uintptr
 
   return strlen(str)
 /func
 
 
 func strncpy(dest ptr uint8, source ptr uint8, cap uintptr) ptr uint8
-  decl strncpy func(dest ptr uint8, source ptr uint8, cap uintptr) ptr uint8
+  decl func strncpy(dest ptr uint8, source ptr uint8, cap uintptr) ptr uint8
 
   return strncpy(dest, source, cap)
 /func

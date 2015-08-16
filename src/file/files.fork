@@ -17,7 +17,7 @@ import io
 
 func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err:Error, eof ptr bool) uintptr
   mut fd = cast<int64>(camoFd)
-  decl stream_readfileInternal func(fd int64, buf data, len intptr, error ptr uint8, errLen uintptr) intptr
+  decl func stream_readfileInternal(fd int64, buf data, len intptr, error ptr uint8, errLen uintptr) intptr
   mut buf [512] uint8
   mut rd = stream_readfileInternal(fd, bytes, len, ptr buf[0], 512)
 
@@ -36,7 +36,7 @@ func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err:
 
 func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err:Error) uintptr
   mut fd = cast<int64>(camoFd)
-  decl stream_writefileInternal func(fd int64, buf data, len intptr, error ptr uint8, errLen uintptr) intptr
+  decl func stream_writefileInternal(fd int64, buf data, len intptr, error ptr uint8, errLen uintptr) intptr
   mut buf [512] uint8
   mut wt intptr
   mut wttot intptr = 0
@@ -57,7 +57,7 @@ func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err
 
 
 func filecloseInternal(camoFd data, err ptr ptr err:Error) bool
-  decl stream_closefileInternal func(fd int64, error ptr uint8, errLen uintptr) uint8
+  decl func stream_closefileInternal(fd int64, error ptr uint8, errLen uintptr) uint8
   mut buf [512] uint8
 
   if stream_closefileInternal(cast<int64>(camoFd), ptr buf[0], 512) != 0
@@ -69,7 +69,7 @@ func filecloseInternal(camoFd data, err ptr ptr err:Error) bool
 
 
 func fileOpen(filename ptr uint8, err ptr ptr err:Error) ptr io:Stream
-  decl open_readfile func(name ptr uint8, error ptr uint8, errlen uintptr) int64
+  decl func open_readfile(name ptr uint8, error ptr uint8, errlen uintptr) int64
   mut buf [512] uint8
 
   val err = null
@@ -85,7 +85,7 @@ func fileOpen(filename ptr uint8, err ptr ptr err:Error) ptr io:Stream
 
 
 func fileCreate(filename ptr uint8, err ptr ptr err:Error) ptr io:Stream
-  decl open_writefile func(name ptr uint8, error ptr uint8, errlen uintptr) int64
+  decl func open_writefile(name ptr uint8, error ptr uint8, errlen uintptr) int64
   mut buf [512] uint8
 
   mut fd = open_writefile(filename, ptr buf[0], 512)

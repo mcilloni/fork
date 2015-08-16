@@ -18,5 +18,5 @@ alias Pair struct (
 
 
 # pair functions
-decl pairFree func(pair ptr Pair)
-decl pairNew func(item1,item2 data) ptr Pair
+decl func pairFree(pair ptr Pair)
+decl func pairNew(item1,item2 data) ptr Pair

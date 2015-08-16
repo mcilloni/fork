@@ -17,13 +17,13 @@ import list
 
 
 # File stream functions
-decl fileOpen func(name ptr uint8, error ptr ptr err:Error) ptr io:Stream
-decl fileCreate func(name ptr uint8, error ptr ptr err:Error) ptr io:Stream
+decl func fileOpen(name ptr uint8, error ptr ptr err:Error) ptr io:Stream
+decl func fileCreate(name ptr uint8, error ptr ptr err:Error) ptr io:Stream
 
 # path functions
-decl pathBasename func(path ptr uint8) ptr uint8
-decl pathContains func(path,filename ptr uint8) bool
-decl pathExists func(path ptr uint8) bool
-decl pathExistsDir func(path ptr uint8) bool
-decl pathJoin func(path1,path2 ptr uint8) ptr uint8
-decl pathListFiles func(path ptr uint8, error ptr ptr err:Error) ptr list:List
+decl func pathBasename(path ptr uint8) ptr uint8
+decl func pathContains(path,filename ptr uint8) bool
+decl func pathExists(path ptr uint8) bool
+decl func pathExistsDir(path ptr uint8) bool
+decl func pathJoin(path1,path2 ptr uint8) ptr uint8
+decl func pathListFiles(path ptr uint8, error ptr ptr err:Error) ptr list:List

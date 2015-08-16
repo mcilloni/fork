@@ -20,23 +20,23 @@ alias Vect struct (
 
 
 # vector functions
-decl vectAppend ptr func(vect ptr Vect, item data) bool
-decl vectAppendint func(vect ptr Vect, item uintptr) bool
-decl vectCap func(vect ptr Vect) uintptr
-decl vectDeinit func(vect ptr Vect)
-decl vectEnsureCap func(vect ptr Vect, newMinCap uintptr)
-decl vectExtract func(vect ptr Vect, from uintptr, len intptr) ptr Vect
-decl vectFree func(vect ptr Vect)
-decl vectFreeAll func(vect ptr Vect, freeFunc ptr func(item data))
-decl vectFreeContents func(vect ptr Vect, freeFunc ptr func(item data))
-decl vectGet ptr func(vect ptr Vect, item uintptr) ptr data
-decl vectGetint func(vect ptr Vect, item uintptr) ptr uintptr
-decl vectInit func(arr ptr Vect, cap uintptr) ptr Vect
-decl vectLen func(vect ptr Vect) uintptr
-decl vectNew func(cap uintptr) ptr Vect
-decl vectNewCap func(vect ptr Vect, cap uintptr)
-decl vectPrint func(vect ptr Vect)
-decl vectPrune func(vect ptr Vect)
-decl vectPut ptr func(vect ptr Vect, index uintptr, item data) bool
-decl vectPutint func(vect ptr Vect, index uintptr, item uintptr) bool
-decl vectSlice func(vect ptr Vect, from uintptr, len intptr) ptr Vect
+decl mut vectAppend ptr func(vect ptr Vect, item data) bool
+decl func vectAppendint(vect ptr Vect, item uintptr) bool
+decl func vectCap(vect ptr Vect) uintptr
+decl func vectDeinit(vect ptr Vect)
+decl func vectEnsureCap(vect ptr Vect, newMinCap uintptr)
+decl func vectExtract(vect ptr Vect, from uintptr, len intptr) ptr Vect
+decl func vectFree(vect ptr Vect)
+decl func vectFreeAll(vect ptr Vect, freeFunc ptr func(item data))
+decl func vectFreeContents(vect ptr Vect, freeFunc ptr func(item data))
+decl mut vectGet ptr func(vect ptr Vect, item uintptr) ptr data
+decl func vectGetint(vect ptr Vect, item uintptr) ptr uintptr
+decl func vectInit(arr ptr Vect, cap uintptr) ptr Vect
+decl func vectLen(vect ptr Vect) uintptr
+decl func vectNew(cap uintptr) ptr Vect
+decl func vectNewCap(vect ptr Vect, cap uintptr)
+decl func vectPrint(vect ptr Vect)
+decl func vectPrune(vect ptr Vect)
+decl mut vectPut ptr func(vect ptr Vect, index uintptr, item data) bool
+decl func vectPutint(vect ptr Vect, index uintptr, item uintptr) bool
+decl func vectSlice(vect ptr Vect, from uintptr, len intptr) ptr Vect

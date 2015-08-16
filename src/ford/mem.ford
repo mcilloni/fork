@@ -20,8 +20,8 @@ alias Ref struct (
 )
 
 
-decl incRef func(item data)
-decl decRef func(item data)
+decl func incRef(item data)
+decl func decRef(item data)
 
 
 alias FreePool struct(
@@ -30,15 +30,15 @@ alias FreePool struct(
 )
 
 
-decl fpAlloc func(fp ptr FreePool, len uintptr) data
-decl fpFree func(fp ptr FreePool)
-decl fpNew func(freeFunc ptr func(item data)) ptr FreePool
-decl fpZAlloc func(fp ptr FreePool, len uintptr) data
+decl func fpAlloc(fp ptr FreePool, len uintptr) data
+decl func fpFree(fp ptr FreePool)
+decl func fpNew(freeFunc ptr func(item data)) ptr FreePool
+decl func fpZAlloc(fp ptr FreePool, len uintptr) data
 
 
-decl alloc func(bytes uintptr) data
-decl free func(location data)
-decl memcpy func(dest data, src data, len uintptr) data
-decl memmove func(dest data, src data, len uintptr) data
-decl memset func(dest data, value uintptr, len uintptr) data
-decl zalloc func(bytes uintptr) data
+decl func alloc(bytes uintptr) data
+decl func free(location data)
+decl func memcpy(dest data, src data, len uintptr) data
+decl func memmove(dest data, src data, len uintptr) data
+decl func memset(dest data, value uintptr, len uintptr) data
+decl func zalloc(bytes uintptr) data

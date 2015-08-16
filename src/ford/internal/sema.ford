@@ -25,69 +25,69 @@ alias Resolver struct (
 )
 
 
-decl resolverCollect func(rsv ptr Resolver,
+decl func resolverCollect(rsv ptr Resolver,
                           ctx ptr parser:Context,
                           root ptr ast:PRoot,
                           errors ptr list:List) ptr kv:KVList
 
-decl resolverDeinit func(rsv Resolver)
+decl func resolverDeinit(rsv Resolver)
 
 
-decl registerAlias func(rsv Resolver,
+decl func registerAlias(rsv Resolver,
                         pdecl ptr ast:PDecl,
                         errors ptr list:List) ptr ast:Type
 
-decl registerDecl func(rsv Resolver,
+decl func registerDecl(rsv Resolver,
                        pdecl ptr ast:PDecl,
                        name ptr uint8,
                        type ptr ast:Type,
                        declType uint16,
                        errors ptr list:List) ptr ast:Type
 
-decl registerTopDecl func(rsv Resolver,
+decl func registerTopDecl(rsv Resolver,
                           pdecl ptr ast:PDecl,
                           errors ptr list:List) ptr ast:Type
 
 
-decl resolveDeclType func(rsv Resolver,
+decl func resolveDeclType(rsv Resolver,
                           name ptr uint8,
                           node ptr ast:PNode,
                           recList,errors ptr list:List) ptr ast:Type
 
-decl resolveType func(rsv Resolver,
+decl func resolveType(rsv Resolver,
                       ptype ptr ast:PType,
                       errors ptr list:List) ptr ast:Type
 
-decl validateExprRecl func(rsv Resolver,
+decl func validateExprRecl(rsv Resolver,
                            pexpr ptr ast:PExpr,
                            recList,errors ptr list:List) ptr ast:Type
 
-decl validateExpr func(rsv Resolver,
+decl func validateExpr(rsv Resolver,
                        pexpr ptr ast:PExpr,
                        errors ptr list:List) ptr ast:Type
 
-decl validateFunc func(rsv Resolver,
+decl func validateFunc(rsv Resolver,
                        pdecl ptr ast:PDecl,
                        funcType ptr ast:Type,
                        errors ptr list:List) bool
 
 
-decl semaValidateAstRoot func(ctx ptr parser:Context,
+decl func semaValidateAstRoot(ctx ptr parser:Context,
                               root ptr ast:PRoot,
                               errors ptr list:List) bool
 
 # validates the AST, and returns a list of the issues found.
-decl semaValidateAst func(context ptr parser:Context,
+decl func semaValidateAst(context ptr parser:Context,
                           root ptr ast:PNode) ptr list:List
 
 # ast sema operations
 
-decl findAliasImport func(ctx ptr parser:Context, moduleName,name ptr uint8) ptr ast:Type
-decl findAliasLocal func(node ptr ast:PNode, name ptr uint8) ptr ast:Type
-decl findRecAlias func(ctx ptr parser:Context, scope ptr ast:PNode, ralias ptr ast:Type) ptr ast:Type
+decl func findAliasImport(ctx ptr parser:Context, moduleName,name ptr uint8) ptr ast:Type
+decl func findAliasLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
+decl func findRecAlias(ctx ptr parser:Context, scope ptr ast:PNode, ralias ptr ast:Type) ptr ast:Type
 
-decl findSymModule func(ctx ptr parser:Context, moduleName, name ptr uint8) ptr ast:Type
+decl func findSymModule(ctx ptr parser:Context, moduleName, name ptr uint8) ptr ast:Type
 
-decl typeIsAssignable func(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
-decl typeIsCastable func(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
-decl typeChooseLarger func(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
+decl func typeIsAssignable(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
+decl func typeIsCastable(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
+decl func typeChooseLarger(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool

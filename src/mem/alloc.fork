@@ -15,7 +15,7 @@ import proc
 
 
 func alloc(len uintptr) data
-  decl malloc func(cap uintptr) data
+  decl func malloc(cap uintptr) data
   mut ret = malloc(len)
 
   if ret == null and len != 0
@@ -27,7 +27,7 @@ func alloc(len uintptr) data
 
 
 func zalloc(len uintptr) data
-  decl calloc func(len uintptr, storageSize uintptr) data
+  decl func calloc(len uintptr, storageSize uintptr) data
   mut ret = calloc(1, len)
 
   if ret == null and len != 0
@@ -39,7 +39,7 @@ func zalloc(len uintptr) data
 
 
 func free(d data)
-  decl free func(d data)
+  decl func free(d data)
 
   free(d)
 /func

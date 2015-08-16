@@ -27,6 +27,6 @@ alias CFILE data
 
 
 # libc std streams wrapper functions
-decl stderr_file func() CFILE
-decl stdin_file func() CFILE
-decl stdout_file func() CFILE
+decl mut stderr_file func() CFILE
+decl mut stdin_file func() CFILE
+decl mut stdout_file func() CFILE

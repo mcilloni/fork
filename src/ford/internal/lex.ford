@@ -23,13 +23,13 @@ alias Lineno struct(
   lineno,pos uintptr
 )
 
-decl linenoClone func(line ptr Lineno) ptr Lineno
-decl linenoFree func(line ptr Lineno)
-decl linenoNew func(file ptr uint8, line,pos uintptr) ptr Lineno
+decl func linenoClone(line ptr Lineno) ptr Lineno
+decl func linenoFree(line ptr Lineno)
+decl func linenoNew(file ptr uint8, line,pos uintptr) ptr Lineno
 
-decl lineMake func(lexl ptr Lineno) ast:Line
+decl func lineMake(lexl ptr Lineno) ast:Line
 
-decl issueFromLexError func(err ptr err:Error, lineno ptr Lineno) ptr parser:Issue
+decl func issueFromLexError(err ptr err:Error, lineno ptr Lineno) ptr parser:Issue
 
 alias StringTok struct(
   str ptr uint8,
@@ -53,25 +53,25 @@ alias Token struct (
 )
 
 
-decl lexerClose func(lex ptr Lexer)
-decl lexerEof func(lex ptr Lexer) bool
-decl lexerError func(lex ptr Lexer) ptr err:Error
-decl lexerFromStream func(stream ptr io:Stream, name ptr uint8, err ptr ptr err:Error) ptr Lexer
-decl lexerNew func(name ptr uint8, err ptr ptr err:Error) ptr Lexer
-decl lexerNext func(lex ptr Lexer) ptr Token
+decl func lexerClose(lex ptr Lexer)
+decl func lexerEof(lex ptr Lexer) bool
+decl func lexerError(lex ptr Lexer) ptr err:Error
+decl func lexerFromStream(stream ptr io:Stream, name ptr uint8, err ptr ptr err:Error) ptr Lexer
+decl func lexerNew(name ptr uint8, err ptr ptr err:Error) ptr Lexer
+decl func lexerNext(lex ptr Lexer) ptr Token
 
-decl tokenFree func(tok ptr Token)
-decl tokenNew func(type uint16, value uintptr, line ptr Lineno, end uintptr) ptr Token
-decl tokenStr func(tok ptr Token) ptr uint8
+decl func tokenFree(tok ptr Token)
+decl func tokenNew(type uint16, value uintptr, line ptr Lineno, end uintptr) ptr Token
+decl func tokenStr(tok ptr Token) ptr uint8
 
-decl ttypeStr func(tt uint16) ptr uint8
+decl func ttypeStr(tt uint16) ptr uint8
 
-decl error func(line ptr Lineno, msg ptr uint8) ptr parser:Issue
-decl errorMism func(line ptr Lineno, got ptr uint8, expected ptr uint8) ptr parser:Issue
-decl errorLex func(lex ptr Lexer, msg ptr uint8) ptr err:Error
+decl func error(line ptr Lineno, msg ptr uint8) ptr parser:Issue
+decl func errorMism(line ptr Lineno, got ptr uint8, expected ptr uint8) ptr parser:Issue
+decl func errorLex(lex ptr Lexer, msg ptr uint8) ptr err:Error
 
-decl tokExtractBegin func(tok ptr Token) ast:Line
-decl tokExtractEnd func(tok ptr Token) ast:Line
+decl func tokExtractBegin(tok ptr Token) ast:Line
+decl func tokExtractEnd(tok ptr Token) ast:Line
 
-decl tokDiscardEnd func(tok ptr Token) ast:Line
-decl tokDiscardBegin func(tok ptr Token) ast:Line
+decl func tokDiscardEnd(tok ptr Token) ast:Line
+decl func tokDiscardBegin(tok ptr Token) ast:Line

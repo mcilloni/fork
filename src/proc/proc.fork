@@ -22,21 +22,21 @@ func args() ptr proc:Args
 
 
 func abort()
-  decl abort func()
+  decl func abort()
 
   abort()
 /func
 
 
 func exit(retval int16)
-  decl exit func(retval int16)
+  decl func exit(retval int16)
 
   exit(retval)
 /func
 
 
 func getenv(variable ptr uint8) ptr uint8
-  decl getenv func(variable ptr uint8) ptr uint8
+  decl func getenv(variable ptr uint8) ptr uint8
 
   return getenv(variable)
 /func
