@@ -21,10 +21,10 @@ build:
 
 stage1:
 	$(MAKE) build
-	mv build build.1
 
 bootstrap:
 	$(MAKE) stage1
+	mv build build.1
 
 	$(MAKE) -C libfork clean
 	rm -rf build
