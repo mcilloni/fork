@@ -10,7 +10,9 @@ clean:
 	rm -rf build
 	rm -rf build.1
 	rm -rf ctrans-release
+	rm -rf ctrans-devrel
 	rm -f ctrans-release.txz
+	rm -f ctrans-devrel.txz
 
 
 build:
@@ -50,3 +52,13 @@ tarball: bootstrap
 	mv build ctrans-release
 
 	tar -cf - ctrans-release | xz -9e -c - > ctrans-release.txz
+
+
+tarball-fast: stage1
+	rm -f build/*.o
+	rm -rf build/ford
+	rm -rf build/include
+
+	mv build ctrans-devrel
+
+	tar -cf - ctrans-devrel | xz -9e -c - > ctrans-devrel.txz
