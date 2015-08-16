@@ -2,7 +2,7 @@
 
 all:
 	@ mkdir -p build/
-	cp -rf src/ford/ build/
+	cp -rf src/ford build/ford
 	$(MAKE) -C src
 
 clean:
