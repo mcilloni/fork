@@ -8,4 +8,8 @@ This is incredibly alpha, so it may crash in unpredictable ways.
 
 Everything is available under the MPL v2 license.
 
-*Building:* you need [first-step](http://github.com/mcilloni/first-step/) to build this, a C++ compiler (like clang or gcc) and GNU/Linux.
+# Building
+libfork's main usage is (by now) in [ctrans](http://github.com/forklang/ctrans), a transpiler from Fork to C that uses libfork's parser module to parse and then transpile Fork sources.
+
+Libfork needs ctrans to compile, and they are generally developed in sync.
+Use a current build of ctrans to build libfork, or otherwise get it from an official build (see ctrans releases for more informations).

@@ -633,8 +633,7 @@ func validateArrayAccess(rsv sema:Resolver,
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "an expression of integer type is required for array access"))
   /if
 
-  # because of first-step bug with recursive types
-  return cast<ptr ast:Type>(ltype'retType)
+  return ltype'retType
 /func
 
 

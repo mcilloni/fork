@@ -159,7 +159,7 @@ func ptypeDump(ptype ptr ast:PType)
 
   if ptype'descr != null
 
-    ptypeDescrDump(cast<ptr ast:PTypeDescr>(ptype'descr))
+    ptypeDescrDump(ptype'descr)
   /if
 /func
 

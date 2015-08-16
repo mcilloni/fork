@@ -75,7 +75,7 @@ func convertPtrLocType(rsv sema:Resolver,
                         ptype ptr ast:PType,
                         errors,recList ptr list:List) ptr ast:Type
 
-  mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
+  mut ptdes = ptype'descr
   mut isLoc = ptdes'type == ast:PTYPE_LOC
 
   # validate ptdes'retType
@@ -153,7 +153,7 @@ func convertStructType(rsv sema:Resolver,
                        ptype ptr ast:PType,
                        errors,recList ptr list:List) ptr ast:Type
 
-  mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
+  mut ptdes = ptype'descr
 
   mut members = convertSymbolList(rsv, ptdes'arguments, errors, recList, false)
 
@@ -165,7 +165,7 @@ func convertFuncType(rsv sema:Resolver,
                      ptype ptr ast:PType,
                      errors,recList ptr list:List) ptr ast:Type
 
-  mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
+  mut ptdes = ptype'descr
 
   mut retVal ptr ast:Type = null
   if ptdes'retType != null
@@ -312,7 +312,7 @@ func convertType(rsv sema:Resolver,
                  recList,errors ptr list:List,
                  ignoreSize bool) ptr ast:Type
 
-  mut ptdes = cast<ptr ast:PTypeDescr>(ptype'descr)
+  mut ptdes = ptype'descr
 
   # if we've found an id, it can be 1. an id type 2. builtin 3. an invalid type
   if ptdes'type == ast:PTYPE_ID

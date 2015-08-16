@@ -30,8 +30,7 @@ alias Line struct(
 alias PType struct (
   refc mem:Ref,
   name, moduleName ptr uint8,
-  # anonymous because of first-step parser limitations; actually a PTypeDescr
-  descr data,
+  descr ptr PTypeDescr,
   begin, end Line
 )
 
