@@ -23,13 +23,6 @@ import txt
 import utils
 
 
-decl validatePBlock func(rsv sema:Resolver,
-                         pblock ptr ast:PBlock,
-                         funcInfo ast:Symbol,
-                         inLoop bool,
-                         errors ptr list:List) bool
-
-
 func validateBreakContinue(rsv sema:Resolver,
                            stmt ptr ast:PNode,
                            inLoop bool,

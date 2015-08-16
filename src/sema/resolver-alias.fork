@@ -44,18 +44,6 @@ func checkNotFuncType(rsv sema:Resolver, type ptr ast:Type) ptr parser:Issue
 /func
 
 
-decl registerAliasReal func(rsv sema:Resolver,
-                           name ptr uint8,
-                           ptype ptr ast:PType,
-                           recList,errors ptr list:List,
-                           ignoreSize bool) ptr ast:Type
-
-decl resolveTypeReal func(rsv sema:Resolver,
-                          ptype ptr ast:PType,
-                          recList,errors ptr list:List,
-                          ignSize bool) ptr ast:Type
-
-
 func convertRetType(rsv sema:Resolver,
                     retPType ptr ast:PType,
                     errors,recList ptr list:List,

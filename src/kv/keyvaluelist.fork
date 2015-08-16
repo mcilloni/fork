@@ -51,8 +51,6 @@ func kvContains(kv ptr kv:KVList, key data) bool
   return kv:kvGetPos(kv, key, ptr discard) >= 0
 /func
 
-decl kvFreeContents func(kv ptr kv:KVList)
-
 
 func kvDeinit(kv ptr kv:KVList)
   kvFreeContents(kv)

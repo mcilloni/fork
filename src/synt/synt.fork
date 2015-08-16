@@ -188,9 +188,6 @@ func tokenIsTypeStart(tok ptr lex:Token) bool
 /func
 
 
-decl parserParseType func(ctx ptr synt:ParserContext) ptr ast:PType
-
-
 # if the next token exists and it's a tokens:NEWLINE, then discards it
 func parserDiscardNewLine(ctx ptr synt:ParserContext)
   if ctx'next != null and ctx'next'type == tokens:NEWLINE
@@ -579,9 +576,6 @@ func parserParseAlias(ctx ptr synt:ParserContext) ptr ast:PNode
 
   return null
 /func
-
-
-decl parserParseBody func(ctx ptr synt:ParserContext, isEndToken ptr func(tok ptr lex:Token) bool) ptr ast:PBlock
 
 
 func matchWhileEndTok(tok ptr lex:Token) bool
