@@ -16,6 +16,7 @@ import ctrans
 import err
 import io
 import kv
+import libfork
 import list
 import mem
 import proc
@@ -25,6 +26,10 @@ import tty
 
 
 func translDump(tr ptr ctrans:Transl, stream ptr io:Stream) ptr err:Error
+  io:streamWrite(stream, "// generated with ctrans+libfork v")
+  io:streamWrite(stream, libfork:VERSION)
+  io:streamWrite(stream, "\n\n\n")
+
   if tr'header
     io:streamWrite(stream, "#ifndef ford$$")
     io:streamWrite(stream, tr'modName )
@@ -139,16 +144,6 @@ func lrDump(lr LRStr, cs ptr txt:Charstash)
   mem:free(right)
 /func
 
-
-decl csymType func(lr LRStr, type ptr ast:Type, full bool)
-decl csymGen func(lr LRStr,
-                  moduleName,name ptr uint8,
-                  type ptr ast:Type,
-                  tdf bool)
-decl csym func(cs ptr txt:Charstash,
-               moduleName,name ptr uint8,
-               type ptr ast:Type,
-               tdf bool)
 
 func csymTypeWrap(cs ptr txt:Charstash, type ptr ast:Type)
   mut lr = lrNew()
@@ -457,13 +452,6 @@ func blNew() BlTrans
 
   return ret
 /func
-
-
-decl translBlock func(cs ptr txt:Charstash,
-                      root ptr ast:PRoot,
-                      block ptr ast:PBlock,
-                      fname ptr uint8,
-                      p uintptr)
 
 
 func isBinOp(tok uint16) bool

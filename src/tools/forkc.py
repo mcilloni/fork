@@ -73,7 +73,7 @@ def cc(ccCommand, cfile, ofile=None, libfork=True, includes=[]):
     if platform.machine() in ['x86_64', 'amd64']:
         fpic = ['-fPIC']
 
-    params = [cfile, '-w', '-g', '-c', '-std=c89','-o', ofile]
+    params = [cfile, '-w', '-g', '-c', '-std=c99','-o', ofile]
 
     for include in includes:
         params += ['-I' + include[0]]
