@@ -11,10 +11,10 @@
 module libfork
 
 
-mut RELEASE uint64 = 1
+mut RELEASE uint64 = 2
 
 mut VER_MAJ uint8 = 0
 mut VER_MIN uint8 = 0
-mut VER_PATCH uint8 = 1
+mut VER_PATCH uint8 = 2
 
-mut VERSION = "0.0.1"
+mut VERSION = "0.0.2"
