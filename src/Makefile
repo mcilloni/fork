@@ -59,7 +59,7 @@ all:
 	@ $(AR) rc ../build/$(ARNAME) ../build/*/*.o
 	@ $(RANLIB) ../build/$(ARNAME)
 
-	cp -r ford/ ../build
+	cp -r ford ../build/ford
 
 clean:
 	$(MAKE) -C c clean
