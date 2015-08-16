@@ -567,9 +567,7 @@ func translStringEscape(cs ptr txt:Charstash, str ptr uint8)
                   txt:csAppendStr(cs, "\\v")
                 else
                   if ch == 92
-                    # first-step lexer is CRAP
-                    txt:csAppend(cs, 92)
-                    txt:csAppend(cs, 92)
+                    txt:csAppendStr(cs, "\\\\")
                   else
                     if ch == 39
                       txt:csAppendStr(cs, "\\'")
