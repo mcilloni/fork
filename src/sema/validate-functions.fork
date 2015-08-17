@@ -168,6 +168,8 @@ func validateReturn(rsv sema:Resolver,
 
     mut msg = txt:csUnwrap(cs)
 
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, stmt'begin, rsv'root'fileName, msg))
+
     mem:free(msg)
 
     return false
@@ -180,6 +182,8 @@ func validateReturn(rsv sema:Resolver,
     txt:csAppendStr(cs, "' has no return value, but an expression is given to return")
 
     mut msg = txt:csUnwrap(cs)
+
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, stmt'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -199,13 +203,15 @@ func validateReturn(rsv sema:Resolver,
       mut cs = txt:csNew(20)
       txt:csAppendStr(cs, "cannot return type '")
       ast:typeSummarize(cs, exprType)
-      txt:csAppendStr(cs, "' from '")
+      txt:csAppendStr(cs, "' from function ")
       txt:csAppendStr(cs, funcInfo'name)
-      txt:csAppendStr(cs, "', expected '")
+      txt:csAppendStr(cs, "(), returning '")
       ast:typeSummarize(cs, retType)
       txt:csAppendStr(cs, "'")
 
       mut msg = txt:csUnwrap(cs)
+
+      list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, stmt'begin, rsv'root'fileName, msg))
 
       mem:free(msg)
 
