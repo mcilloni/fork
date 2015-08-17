@@ -466,6 +466,10 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     type = tokens:DIFFERENT
   /if
 
+  if txt:strequals(strToken, ".")
+    type = tokens:DOT
+  /if
+
   if txt:strequals(strToken, "mod")
     type = tokens:MOD
   /if
@@ -489,6 +493,10 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 
       if txt:strequals(savedTok, "if")
         type = tokens:ENDIF
+      /if
+
+      if txt:strequals(savedTok, "method")
+        type = tokens:ENDMETHOD
       /if
 
       if txt:strequals(savedTok, "while")
@@ -549,6 +557,14 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 
   if txt:strequals(strToken, ">")
     type = tokens:MAJOR
+  /if
+
+  if txt:strequals(strToken, "me")
+    type = tokens:ME
+  /if
+
+  if txt:strequals(strToken, "method")
+    type = tokens:METHOD
   /if
 
   if txt:strequals(strToken, "<=")
@@ -738,6 +754,10 @@ func ttypeStr(tt uint16) ptr uint8
     return "/"
   /if
 
+  if tt == tokens:DOT
+    return "."
+  /if
+
   if tt == tokens:ELSE
     return "else"
   /if
@@ -752,6 +772,10 @@ func ttypeStr(tt uint16) ptr uint8
 
   if tt == tokens:ENDIF
     return "/if"
+  /if
+
+  if tt == tokens:ENDMETHOD
+    return "/method"
   /if
 
   if tt == tokens:ENDWHILE
@@ -800,6 +824,14 @@ func ttypeStr(tt uint16) ptr uint8
 
   if tt == tokens:MAJOR
     return ">"
+  /if
+
+  if tt == tokens:ME
+    return "me"
+  /if
+
+  if tt == tokens:METHOD
+    return "method"
   /if
 
   if tt == tokens:MINEQ

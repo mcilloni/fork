@@ -29,10 +29,12 @@ decl mut DEC uint16
 decl mut DECL uint16
 decl mut DIFFERENT uint16
 decl mut DIV uint16
+decl mut DOT uint16
 decl mut ELSE uint16
 decl mut ENDENTRY uint16
 decl mut ENDFUNC uint16
 decl mut ENDIF uint16
+decl mut ENDMETHOD uint16
 decl mut ENDWHILE uint16
 decl mut ENTRY uint16
 decl mut EQUAL uint16
@@ -45,6 +47,8 @@ decl mut IMPORT uint16
 decl mut INC uint16
 decl mut MAJEQ uint16
 decl mut MAJOR uint16
+decl mut ME uint16
+decl mut METHOD uint16
 decl mut MINEQ uint16
 decl mut MINOR uint16
 decl mut MINUS uint16
