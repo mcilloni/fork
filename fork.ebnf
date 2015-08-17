@@ -1,7 +1,7 @@
 program ::= [module], {import}, { definition }
 module ::= 'module', id
 import ::= 'import', id
-definition ::= entry | function | mut | alias | decl
+definition ::= entry | function | mut | alias | decl | method
 entry ::= 'entry', stmtEnd, body, '/entry'
 funcHead ::= 'func', id, '(', argList, ')', [type]
 function ::= funcHead, stmtEnd, body, '/func'
