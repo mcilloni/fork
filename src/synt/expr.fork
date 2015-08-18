@@ -148,7 +148,7 @@ func parserParseSizeOp(ctx ptr synt:ParserContext) ptr ast:PExpr
 
 
 func tokIsPostfixExpressionSuffixStart(tok ptr lex:Token) bool
-  return tok != null and (tok'type == tokens:OPAR or tok'type == tokens:OBRAC or tok'type == tokens:INC or tok'type == tokens:DEC or tok'type == tokens:APOS)
+  return tok != null and (tok'type == tokens:OPAR or tok'type == tokens:OBRAC or tok'type == tokens:INC or tok'type == tokens:DEC or tok'type == tokens:APOS or tok'type == tokens:DOT)
 /func
 
 
@@ -211,7 +211,7 @@ func parserParsePrimaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
     return null
   /if
 
-  if ctx'next'type == tokens:FALSE or ctx'next'type == tokens:TRUE or ctx'next'type == tokens:STRING or ctx'next'type == tokens:NUMBER or ctx'next'type == tokens:NULLPTR
+  if ctx'next'type == tokens:FALSE or ctx'next'type == tokens:TRUE or ctx'next'type == tokens:STRING or ctx'next'type == tokens:NUMBER or ctx'next'type == tokens:NULLPTR or ctx'next'type == tokens:ME
     return astfn:pexprNewSingle(synt:nextTok(ctx))
   /if
 
@@ -309,19 +309,20 @@ func parserParseCallExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:
 /func
 
 
-func parserParseFieldExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:PExpr
+func parserParseFieldDotExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:PExpr
 
-  mut apos = synt:nextTok(ctx)
+  # APOS or DOT
+  mut op = synt:nextTok(ctx)
   mut id = synt:expect(ctx, tokens:ID)
 
   if id == null
-    lex:tokenFree(apos)
+    lex:tokenFree(op)
     return null
   /if
 
   mut idExpr = astfn:pexprNewSingle(id)
 
-  return astfn:pexprNew(apos, lhs, idExpr, lhs'node'begin, idExpr'node'end)
+  return astfn:pexprNew(op, lhs, idExpr, lhs'node'begin, idExpr'node'end)
 /func
 
 
@@ -344,8 +345,8 @@ func parserParsePostfixSuffix(ctx ptr synt:ParserContext, primaryLhs ptr ast:PEx
           mut incDec = synt:nextTok(ctx)
           lhs = astfn:pexprNew(incDec, lhs, null, lhs'node'begin, lex:tokExtractEnd(incDec))
         else
-          if ctx'next'type == tokens:APOS
-            lhs = parserParseFieldExpr(ctx, lhs)
+          if ctx'next'type == tokens:APOS or ctx'next'type == tokens:DOT
+            lhs = parserParseFieldDotExpr(ctx, lhs)
           else
             break
           /if
