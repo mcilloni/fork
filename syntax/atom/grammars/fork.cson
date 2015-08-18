@@ -12,7 +12,7 @@
     'include': '#fork_function_call'
   }
   {
-    'match': '\\b(alias|break|continue|else|entry|func|if|import|module|return|while)\\b|(\\/entry|\\/func|\\/if|\\/while)\\b'
+    'match': '\\b(alias|break|continue|else|entry|func|if|import|method|module|return|while)\\b|(\\/entry|\\/func|\\/method|\\/if|\\/while)\\b'
     "name": "keyword.control.c"
   }
   {
@@ -32,7 +32,7 @@
     "name": "keyword.control.c"
   }
   {
-    "match": "\\b(null|true|false)\\b"
+    "match": "\\b(null|true|false|me)\\b"
     "name": "constant.language.c++"
   }
   {
