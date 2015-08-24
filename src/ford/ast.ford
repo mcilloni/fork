@@ -174,7 +174,8 @@ alias StringDef struct(
 
 alias PDecl struct(
   node PNode,
-  sym ptr PSymbol
+  sym ptr PSymbol,
+  methodToType ptr uint8
 )
 
 decl func isPDecl(node ptr PNode) bool
@@ -224,6 +225,7 @@ decl mut PIF        uint16
 decl mut PIFELSE    uint16
 decl mut PWHILE     uint16
 decl mut PBLOCK     uint16
+decl mut PMETHOD    uint16
 
 #end pnode
 

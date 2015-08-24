@@ -40,6 +40,20 @@ func strequals(s1, s2 ptr uint8) bool
 /func
 
 
+func strhash(str ptr uint8) uintptr
+  mut hash uintptr = 0
+  mut mulc = size(uintptr) - 1
+
+  while val str != 0
+    hash = mulc * hash + val str
+
+    str++
+  /while
+
+  return hash
+/func
+
+
 func strreverse(str ptr uint8, len uintptr)
   mut end = str + len - 1
 

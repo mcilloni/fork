@@ -190,6 +190,10 @@ func pnodeTypeToString(ptype uint16) ptr uint8
     return "Decl"
   /if
 
+  if ptype == ast:PMETHOD
+    return "Method"
+  /if
+
   if ptype == ast:PMUT
     return "Mut"
   /if
@@ -264,6 +268,15 @@ func pdeclDumpInfo(pdecl ptr ast:PDecl, depth uintptr)
   printPadding(depth + 1)
 
   psymbolDump(pdecl'sym)
+
+  if pdecl'methodToType != null
+    tty:outch(10)
+    printPadding(depth + 1)
+
+    tty:out("(method of ")
+    tty:out(pdecl'methodToType)
+    tty:outln(")")
+  /if
 /func
 
 

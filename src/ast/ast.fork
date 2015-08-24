@@ -79,6 +79,8 @@ func pnodeFree(pnode ptr ast:PNode)
       mut pdecl = cast<ptr ast:PDecl>(pnode)
       mem:decRef(pdecl'sym)
 
+      mem:free(pdecl'methodToType)
+
     /if
 
     if ast:isPBlock(pnode)
@@ -145,7 +147,7 @@ func prootHasImported(root ptr ast:PRoot, name ptr uint8) bool
 
 
 func isPDecl(pnode ptr ast:PNode) bool
-  return pnode != null and pnode'type == ast:PALIAS or pnode'type == ast:PDECL or pnode'type == ast:PMUT or pnode'type == ast:PENTRY or pnode'type == ast:PFUNCTION
+  return pnode != null and pnode'type == ast:PALIAS or pnode'type == ast:PDECL or pnode'type == ast:PMUT or pnode'type == ast:PENTRY or pnode'type == ast:PFUNCTION or pnode'type == ast:PMETHOD
 /func
 
 
@@ -178,3 +180,4 @@ mut PRETURN    uint16 = 110
 mut PIFELSE    uint16 = 120
 mut PWHILE     uint16 = 130
 mut PBLOCK     uint16 = 140
+mut PMETHOD    uint16 = 150

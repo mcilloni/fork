@@ -46,6 +46,7 @@ all:
 	$(MAKE) -C list
 	$(MAKE) -C kv
 	$(MAKE) -C map
+	$(MAKE) -C hash
 	$(MAKE) -C proc
 	$(MAKE) -C dyn
 	$(MAKE) -C utils

@@ -963,6 +963,10 @@ func validateUnaryExpr(rsv sema:Resolver,
   mut arg = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
   mut atype = sema:validateExprRecl(rsv, arg, recList, errors)
 
+  if atype == null
+    return null
+  /if
+
   if op == tokens:NOT
     return validateNotExpr(rsv, pexpr, atype, errors)
   /if
