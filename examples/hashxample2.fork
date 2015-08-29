@@ -1,0 +1,62 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import hash
+import pair
+import tty
+
+
+func identHash(item data) uintptr
+  return cast<uintptr>(item)
+/func
+
+
+func hashIntDump(hash ptr hash:Hash)
+  tty:out("[ ")
+
+  mut iter = hash:hashiterStart(hash)
+  mut pair ptr pair:Pair = null
+  mut first = true
+
+  while (pair = hash:hashiterNext(iter)) != null
+    if first
+      first = false
+    else
+      tty:out(", ")
+    /if
+
+    tty:outint(cast<uintptr>(pair'key))
+    tty:out(": ")
+    tty:outint(cast<uintptr>(pair'value))
+
+    pair:pairFree(pair)
+  /while
+
+  hash:hashiterFree(iter)
+
+  tty:outln(" ]")
+/func
+
+
+entry
+  mut hash = hash:hashNew(6, ptr identHash)
+
+  mut i uintptr = 0
+
+  while i < 30000000
+    hash:hashPut(hash, cast<data>(i), cast<data>(i))
+
+    i++
+  /while
+
+  hashIntDump(hash)
+
+  hash:hashFree(hash)
+/entry

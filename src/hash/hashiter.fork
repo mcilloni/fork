@@ -1,0 +1,69 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module hash
+
+
+import hash
+import list
+import mem
+import pair
+import vect
+
+
+func hashiterStart(hash ptr hash:Hash) ptr hash:HashIter
+  mut iter = cast<ptr hash:HashIter>(mem:zalloc(size(hash:HashIter)))
+
+  iter'hash = hash
+  iter'curBucket = cast<ptr list:List>(val vect:vectGet(hash'buckets, 0))
+
+  return iter
+/func
+
+
+func hashiterLoadNextBucket(iter ptr hash:HashIter)
+  iter'curBucket = null
+
+  while iter'curBucket == null or list:listLen(iter'curBucket) == 0
+    iter'buckIndex++
+
+    # if we've reached the last bucket, return null and stop
+    if iter'buckIndex == vect:vectLen(iter'hash'buckets)
+      iter'end = true
+      break
+    /if
+
+    iter'curBucket = cast<ptr list:List>(val vect:vectGet(iter'hash'buckets, iter'buckIndex))
+    iter'pos = 0
+  /while
+/func
+
+
+func hashiterNext(iter ptr hash:HashIter) ptr pair:Pair
+
+  # load next bucket
+  if iter'curBucket == null or list:listLen(iter'curBucket) == 0 or iter'pos == list:listLen(iter'curBucket)
+    hashiterLoadNextBucket(iter)
+  /if
+
+  if iter'end
+    return null
+  /if
+
+  mut ent = cast<ptr hash:Entry>(val list:listGet(iter'curBucket, iter'pos))
+  iter'pos++
+
+  return pair:pairNew(ent'key, ent'value)
+/func
+
+
+func hashiterFree(iter ptr hash:HashIter)
+  mem:free(iter)
+/func

@@ -1,0 +1,65 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module hash
+
+
+import list
+import pair
+import vect
+
+
+alias hashfn ptr func(item data) uintptr
+
+
+alias Hash struct(
+  buckets ptr vect:Vect,
+  hf hashfn,
+  len uintptr,
+  freeKey,freeVal ptr func(item data)
+)
+
+
+alias HashIter struct (
+  hash ptr Hash,
+  curBucket ptr list:List,
+  buckIndex,pos uintptr,
+  end bool
+)
+
+
+alias Entry struct(
+  hash uintptr,
+  key,value data
+)
+
+
+decl func hashClone(hash ptr Hash) ptr Hash
+decl func hashContains(hash ptr Hash, key data) bool
+decl func hashDeinit(hash ptr Hash)
+decl func hashFree(hash ptr Hash)
+decl func hashGet(hash ptr Hash, key data, value ptr data) bool
+decl func hashInit(hash ptr Hash, cap uintptr, hf hashfn) ptr Hash
+decl func hashLen(hash ptr Hash) uintptr
+decl func hashNew(cap uintptr, hf hashfn) ptr Hash
+decl func hashPrint(hash ptr Hash)
+decl func hashPut(hash ptr Hash, key data, value data)
+decl func hashRemove(hash ptr Hash, key data) bool
+decl func hashSetFreeFuncs(hash ptr Hash, freeKey ptr func(item data), freeVal ptr func(item data))
+
+decl func strhashInit(hash ptr Hash, cap uintptr) ptr Hash
+decl func strhashNew(cap uintptr) ptr Hash
+
+
+# hashiter functions
+
+decl func hashiterStart(hash ptr Hash) ptr HashIter
+decl func hashiterNext(hash ptr HashIter) ptr pair:Pair
+decl func hashiterFree(hash ptr HashIter)

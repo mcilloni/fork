@@ -1,0 +1,318 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module hash
+
+
+import hash
+import list
+import mem
+import pair
+import tty
+import txt
+import vect
+
+
+func entryNew(hash uintptr, key,value data) ptr hash:Entry
+  mut ent = cast<ptr hash:Entry>(mem:alloc(size(hash:Entry)))
+
+  ent'hash = hash
+  ent'key = key
+  ent'value = value
+
+  return ent
+/func
+
+
+func hashClone(hash ptr hash:Hash) ptr hash:Hash
+  mut newHash = hash:hashNew(hash'buckets'cap, hash'hf)
+
+  mut hiter = hash:hashiterStart(hash)
+
+  mut pair ptr pair:Pair = null
+
+  while (pair = hash:hashiterNext(hiter)) != null
+    hash:hashPut(newHash, pair'key, pair'value)
+
+    pair:pairFree(pair)
+  /while
+
+  hash:hashiterFree(hiter)
+
+  return newHash
+/func
+
+
+func hashContains(hash ptr hash:Hash, key data) bool
+  mut discard data
+  return hash:hashGet(hash, key, ptr discard)
+/func
+
+
+func hashDeinit(hash ptr hash:Hash)
+  mut i uintptr = 0
+  mut len = vect:vectLen(hash'buckets)
+
+  while i < len
+    mut bucket = cast<ptr list:List>(val vect:vectGet(hash'buckets, i))
+
+    if bucket != null
+      mut j uintptr = 0
+      mut bucketLen = list:listLen(bucket)
+
+      while j < bucketLen
+        mut item = cast<ptr hash:Entry>(val list:listGet(bucket, j))
+
+        if hash'freeKey != null
+          hash'freeKey(item'key)
+        /if
+
+        if hash'freeVal != null
+          hash'freeVal(item'value)
+        /if
+
+        mem:free(item)
+
+        j++
+      /while
+
+      list:listFree(bucket)
+    /if
+
+    i++
+  /while
+
+  vect:vectDeinit(hash'buckets)
+/func
+
+
+func hashFree(hash ptr hash:Hash)
+  if hash != null
+    hash:hashDeinit(hash)
+    mem:free(hash)
+  /if
+/func
+
+
+func hashGet(hash ptr hash:Hash, key data, value ptr data) bool
+  mut keyHash = hash'hf(key)
+  mut bucketLen = vect:vectLen(hash'buckets)
+
+  mut bucket = cast<ptr list:List>(val vect:vectGet(hash'buckets, keyHash mod bucketLen))
+
+  if bucket != null
+    mut entLen = list:listLen(bucket)
+    mut i uintptr = 0
+
+    while i < entLen
+      mut ent = cast<ptr hash:Entry>(val list:listGet(bucket, i))
+
+      if ent'hash == keyHash
+        val value = ent'value
+
+        return true
+      /if
+
+      i++
+    /while
+  /if
+
+  val value = null
+  return false
+/func
+
+
+func hashInit(hash ptr hash:Hash, cap uintptr, hf hash:hashfn) ptr hash:Hash
+  mem:memset(hash, 0, size(hash:Hash))
+
+  hash'buckets = vect:vectNew(cap)
+  hash'hf = hf
+
+  return hash
+/func
+
+
+func hashLen(hash ptr hash:Hash) uintptr
+  return hash'len
+/func
+
+
+# the load factor is expressed as a percentage, because there are no floating point
+# numbers at the moment.
+func hashLoadFactor(hash ptr hash:Hash) uint8
+  mut buckNum = vect:vectCap(hash'buckets)
+
+  if buckNum == 0
+    return 0
+  /if
+
+  return cast<uint8>((hash:hashLen(hash) * 100) / buckNum)
+/func
+
+
+func hashNew(cap uintptr, hf hash:hashfn) ptr hash:Hash
+  return hash:hashInit(cast<ptr hash:Hash>(mem:alloc(size(hash:Hash))), cap, hf)
+/func
+
+
+func hashPrint(hash ptr hash:Hash)
+  # TODO: complete
+  if hash == null
+    tty:outln("<null>")
+  /if
+
+  tty:out("[ ")
+
+  mut hiter = hash:hashiterStart(hash)
+
+  mut pair ptr pair:Pair = null
+  mut first = true
+
+  while (pair = hash:hashiterNext(hiter)) != null
+    if first
+      first = false
+    else
+      tty:out(", ")
+    /if
+
+    tty:out(cast<ptr uint8>(pair'key))
+    tty:out(": ")
+    tty:out(cast<ptr uint8>(pair'value))
+
+    pair:pairFree(pair)
+  /while
+
+  hash:hashiterFree(hiter)
+
+  tty:out(" ]")
+/func
+
+
+func hashPut(hash ptr hash:Hash, key data, value data)
+
+  # if the load factor is above or equal 75%, then the hash must be resized.
+  if hashLoadFactor(hash) >= 75
+    hashRehash(hash)
+  /if
+
+  mut keyHash = hash'hf(key)
+  mut bucketsNum = vect:vectCap(hash'buckets)
+  mut index = keyHash mod bucketsNum
+
+  mut buckAddr = vect:vectGet(hash'buckets, index)
+  mut bucket ptr list:List = null
+
+  if buckAddr == null
+    bucket = list:listNew()
+    vect:vectPut(hash'buckets, index, bucket)
+  else
+    bucket = cast<ptr list:List>(val buckAddr)
+
+    if bucket == null
+      bucket = list:listNew()
+      vect:vectPut(hash'buckets, index, bucket)
+    /if
+  /if
+
+  list:listAppend(bucket, entryNew(keyHash, key, value))
+/func
+
+
+func hashRehash(hash ptr hash:Hash)
+  mut old = hash'buckets
+  mut oldLen = vect:vectLen(old)
+
+  hash:hashInit(hash, 2 * oldLen, hash'hf)
+
+  mut i uintptr = 0
+
+  while i < oldLen
+    mut bucket = cast<ptr list:List>(val vect:vectGet(old, i))
+
+    if bucket != null
+      mut buckLen = list:listLen(bucket)
+      mut j uintptr = 0
+
+      while j < buckLen
+        mut ent = cast<ptr hash:Entry>(val list:listGet(bucket, j))
+
+        hash:hashPut(hash, ent'key, ent'value)
+
+        mem:free(ent)
+
+        j++
+      /while
+
+      list:listFree(bucket)
+    /if
+
+    i++
+  /while
+
+  vect:vectFree(old)
+/func
+
+
+func hashRemove(hash ptr hash:Hash, key data) bool
+  mut keyHash = hash'hf(key)
+  mut bucketsNum = vect:vectCap(hash'buckets)
+  mut index = keyHash mod bucketsNum
+
+  mut bucket = cast<ptr list:List>(val vect:vectGet(hash'buckets, index))
+
+  if bucket == null
+    return false
+  /if
+
+  mut i uintptr = 0
+  mut buckLen = list:listLen(bucket)
+
+  while i < buckLen
+    mut elem = cast<ptr hash:Entry>(val list:listGet(bucket, i))
+
+    if elem'hash == keyHash
+      list:listRemove(bucket, i, null)
+
+      if hash'freeKey != null
+        hash'freeKey(elem'key)
+      /if
+
+      if hash'freeVal != null
+        hash'freeVal(elem'value)
+      /if
+
+      mem:free(elem)
+
+      hash'len--
+
+      return true
+    /if
+
+    i++
+  /while
+
+  return false
+/func
+
+
+func hashSetFreeFuncs(hash ptr hash:Hash, freeKey ptr func(item data), freeVal ptr func(item data))
+  hash'freeKey = freeKey
+  hash'freeVal = freeVal
+/func
+
+
+func strhashInit(hash ptr hash:Hash, cap uintptr) ptr hash:Hash
+  return hash:hashInit(hash, cap, ptr txt:strhash)
+/func
+
+
+func strhashNew(cap uintptr) ptr hash:Hash
+  return hash:hashNew(cap, ptr txt:strhash)
+/func

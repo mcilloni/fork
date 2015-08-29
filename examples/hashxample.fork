@@ -1,0 +1,55 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import hash
+import tty
+
+
+entry
+  mut hash = hash:strhashNew(6)
+
+  hash:hashPut(hash, "potato", "battery")
+  hash:hashPut(hash, "honey", "poney")
+  hash:hashPut(hash, "flare", "guaxxa")
+  hash:hashPut(hash, "guagua", "lelzie")
+
+  hash:hashPrint(hash)
+
+  tty:out("\nDelete potato: ")
+  tty:outln(hash:hashRemove(hash, "potato") => "OK\n" || "FAILED\n")
+
+  hash:hashPrint(hash)
+
+  tty:out("\nDelete tomato: ")
+  tty:outln(hash:hashRemove(hash, "tomato") => "OK\n" || "FAILED\n")
+
+  hash:hashPrint(hash)
+
+  tty:outln("\n\nAdd potato again: ")
+  hash:hashPut(hash, "potato", "battery")
+
+  hash:hashPrint(hash)
+
+  tty:out("\n\nhash[\"flare\"] == ")
+
+  mut value ptr uint8
+
+  hash:hashGet(hash, "flare", ptr value)
+
+  tty:outln(value)
+
+  tty:out("hash[\"potato\"] == ")
+
+  hash:hashGet(hash, "potato", ptr value)
+
+  tty:outln(value)
+
+  hash:hashFree(hash)
+/entry
