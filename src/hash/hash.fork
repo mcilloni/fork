@@ -20,6 +20,17 @@ import txt
 import vect
 
 
+func entryDeinit(ent ptr hash:Entry, hash ptr hash:Hash)
+  if hash'freeKey != null
+    hash'freeKey(ent'key)
+  /if
+
+  if hash'freeVal != null
+    hash'freeVal(ent'value)
+  /if
+/func
+
+
 func entryNew(hash uintptr, key,value data) ptr hash:Entry
   mut ent = cast<ptr hash:Entry>(mem:alloc(size(hash:Entry)))
 
@@ -70,14 +81,7 @@ func hashDeinit(hash ptr hash:Hash)
       while j < bucketLen
         mut item = cast<ptr hash:Entry>(val list:listGet(bucket, j))
 
-        if hash'freeKey != null
-          hash'freeKey(item'key)
-        /if
-
-        if hash'freeVal != null
-          hash'freeVal(item'value)
-        /if
-
+        entryDeinit(item, hash)
         mem:free(item)
 
         j++
@@ -89,7 +93,7 @@ func hashDeinit(hash ptr hash:Hash)
     i++
   /while
 
-  vect:vectDeinit(hash'buckets)
+  vect:vectFree(hash'buckets)
 /func
 
 
@@ -103,9 +107,19 @@ func hashFree(hash ptr hash:Hash)
 
 func hashGet(hash ptr hash:Hash, key data, value ptr data) bool
   mut keyHash = hash'hf(key)
-  mut bucketLen = vect:vectLen(hash'buckets)
+  mut bucketCap = vect:vectCap(hash'buckets)
 
-  mut bucket = cast<ptr list:List>(val vect:vectGet(hash'buckets, keyHash mod bucketLen))
+  if bucketCap == 0
+    return false
+  /if
+
+  mut buckAddr = vect:vectGet(hash'buckets, keyHash mod bucketCap)
+
+  if buckAddr == null
+    return false
+  /if
+
+  mut bucket = cast<ptr list:List>(val buckAddr)
 
   if bucket != null
     mut entLen = list:listLen(bucket)
@@ -208,6 +222,7 @@ func hashPut(hash ptr hash:Hash, key data, value data)
 
   mut buckAddr = vect:vectGet(hash'buckets, index)
   mut bucket ptr list:List = null
+  mut exists = false
 
   if buckAddr == null
     bucket = list:listNew()
@@ -221,7 +236,27 @@ func hashPut(hash ptr hash:Hash, key data, value data)
     /if
   /if
 
+  mut buckLen = list:listLen(bucket)
+  mut i uintptr = 0
+
+  while i < buckLen
+    mut ent = cast<ptr hash:Entry>(val list:listGet(bucket, i))
+
+    if ent'hash == keyHash
+      entryDeinit(ent, hash)
+
+      ent'key = key
+      ent'value = value
+
+      return
+    /if
+
+    i++
+  /while
+
+  hash'len++
   list:listAppend(bucket, entryNew(keyHash, key, value))
+
 /func
 
 
@@ -261,6 +296,10 @@ func hashRehash(hash ptr hash:Hash)
 
 
 func hashRemove(hash ptr hash:Hash, key data) bool
+  if hash:hashLen(hash) == 0
+    return false
+  /if
+
   mut keyHash = hash'hf(key)
   mut bucketsNum = vect:vectCap(hash'buckets)
   mut index = keyHash mod bucketsNum

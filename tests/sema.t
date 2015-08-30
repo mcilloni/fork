@@ -1,9 +1,10 @@
 Checks sema functionality:
 
   $ $TESTDIR/../examples/ex semxample $TESTDIR/../examples/sexample.fork
-  == IMPORTS: 16
+  == IMPORTS: 18
   Imported ast
   Imported err
+  Imported hash
   Imported io
   Imported kv
   Imported lex
@@ -18,6 +19,7 @@ Checks sema functionality:
   Imported tty
   Imported txt
   Imported utils
+  Imported vect
   
   
   == ALIASES: 0

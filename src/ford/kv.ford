@@ -11,14 +11,15 @@
 module kv
 
 
+import hash
 import list
 import pair
 import sort
 
 
 alias KVList struct(
+    hash hash:Hash,
     list list:List,
-    cmp sort:comparator,
     freeKey,freeVal ptr func(item data)
 )
 
@@ -30,13 +31,13 @@ decl func kvFree(kv ptr KVList)
 decl func kvGet(kv ptr KVList, key data, value ptr data) bool
 decl func kvGetAt(kv ptr KVList, index uintptr) ptr pair:Pair
 decl func kvGetPos(kv ptr KVList, key data, value ptr data) intptr
-decl func kvInit(kv ptr KVList, cmp sort:comparator) ptr KVList
+decl func kvInit(kv ptr KVList, cap uintptr, hf hash:hashfn) ptr KVList
 decl func kvLen(kv ptr KVList) uintptr
-decl func kvNew(cmp sort:comparator) ptr KVList
+decl func kvNew(cap uintptr, hf hash:hashfn) ptr KVList
 decl func kvPrint(kv ptr KVList)
 decl func kvPut(kv ptr KVList, key data, value data)
 decl func kvRemove(kv ptr KVList, key data) bool
 decl func kvSetFreeFuncs(kv ptr KVList, freeKey ptr func(item data), freeVal ptr func(item data))
 
-decl func strkvInit(kv ptr KVList) ptr KVList
-decl func strkvNew() ptr KVList
+decl func strkvInit(kv ptr KVList, cap uintptr) ptr KVList
+decl func strkvNew(cap uintptr) ptr KVList

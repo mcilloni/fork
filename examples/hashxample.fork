@@ -51,5 +51,9 @@ entry
 
   tty:outln(value)
 
+  hash:hashPut(hash, "guagua", "memma")
+
+  hash:hashPrint(hash)
+
   hash:hashFree(hash)
 /entry

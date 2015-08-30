@@ -100,15 +100,15 @@ func convertSymbolList(rsv sema:Resolver,
                        funcArgs bool) ptr kv:KVList
 
 
-  mut members = kv:strkvNew()
 
   if pargs == null
-    return members
+    return kv:strkvNew(0)
   /if
 
+  mut plen = list:listLen(pargs)
+  mut members = kv:strkvNew(plen)
   mut errLen = list:listLen(errors)
 
-  mut plen = list:listLen(pargs)
   mut i uintptr = 0
   kv:kvSetFreeFuncs(members, ptr mem:free, null)
 

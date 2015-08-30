@@ -271,7 +271,7 @@ func symbolListClone(pool ptr mem:FreePool, symList ptr kv:KVList) ptr kv:KVList
   /if
 
   mut len = kv:kvLen(symList)
-  mut ret = kv:strkvNew()
+  mut ret = kv:strkvNew(len)
   mut i uintptr = 0
 
   while i < len

@@ -171,7 +171,7 @@ func typeIsStruct(type ptr ast:Type) bool
 func stabNew() ptr ast:Symtable
   mut stab = cast<ptr ast:Symtable>(mem:zalloc(size(ast:Symtable)))
 
-  stab'syms = kv:strkvNew()
+  stab'syms = kv:strkvNew(10)
 
   kv:kvSetFreeFuncs(stab'syms, ptr mem:free, ptr astfn:declInfoFree)
 

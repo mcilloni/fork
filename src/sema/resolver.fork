@@ -34,12 +34,12 @@ func resolverCollect(rsv ptr sema:Resolver,
                      root ptr ast:PRoot,
                      errors ptr list:List) ptr kv:KVList
 
-  rsv'aliases = kv:strkvNew()
-  rsv'decls = kv:strkvNew()
+  rsv'aliases = kv:strkvNew(5)
+  rsv'decls = kv:strkvNew(10)
   rsv'root = root
   rsv'ctx = ctx
 
-  mut ret = kv:strkvNew()
+  mut ret = kv:strkvNew(20)
 
   kv:kvSetFreeFuncs(ret, ptr mem:free, null)
 

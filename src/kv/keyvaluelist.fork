@@ -7,18 +7,15 @@
 #  Exhibit B is not attached; this software is compatible with the
 #  licenses expressed under Section 1.12 of the MPL v2.
 
-# A KeyValueList is a linked list that exports the sametionalities as a map.
-# The KeyValueList provides a costant traversal performance and easy deletion
-# at the expense of random access time and search.
-# The main reason for its usage is that
-# 1. the map:Map deletion code has weird bugs
-# 2. this structure mantains the insertion order, adding new values at the end
-# 3. it's cheap to iterate on it.
-
+# KVList'list contains (key, data) pairs; contents are there freed itereratively.
+# KVList'hash contains (key, (index,data)) pairs; the only freed thing there is
+# the (index, data) pair itself (data is left untouched because it has been
+# freed before)
 
 module kv
 
 
+import hash
 import kv
 import list
 import mem
@@ -30,7 +27,7 @@ import utils
 
 
 func kvClone(kv ptr kv:KVList) ptr kv:KVList
-  mut ret = kv:kvNew(kv'cmp)
+  mut ret = kv:kvNew(kv'hash'buckets'cap, kv'hash'hf)
 
   mut len = kv:kvLen(kv)
   mut i uintptr = 0
@@ -47,34 +44,36 @@ func kvClone(kv ptr kv:KVList) ptr kv:KVList
 
 
 func kvContains(kv ptr kv:KVList, key data) bool
-  mut discard data
-  return kv:kvGetPos(kv, key, ptr discard) >= 0
+  return hash:hashContains(ptr kv'hash, key)
 /func
 
 
 func kvDeinit(kv ptr kv:KVList)
   kvFreeContents(kv)
+
+  hash:hashDeinit(ptr kv'hash)
   list:listDeinitAll(ptr kv'list, ptr pair:pairFree)
-/func
-
-
-func kvInit(kv ptr kv:KVList, cmp sort:comparator) ptr kv:KVList
-  mem:memset(kv, 0, size(kv:KVList))
-
-  list:listInit(ptr kv'list)
-  kv'cmp = cmp
-
-  return kv
-/func
-
-
-func kvNew(cmp sort:comparator) ptr kv:KVList
-  return kv:kvInit(cast<ptr kv:KVList>(mem:alloc(size(kv:KVList))), cmp)
 /func
 
 
 func kvFirst(kv ptr kv:KVList) ptr pair:Pair
   return list:listLen(ptr kv'list) > 0 => cast<ptr pair:Pair>(val list:listGet(ptr kv'list, 0)) || null
+/func
+
+
+func kvFixIndices(kv ptr kv:KVList, pos uintptr)
+  mut len = list:listLen(ptr kv'list)
+
+  while pos < len
+    mut pair = kv:kvGetAt(kv, pos)
+    mut indexValue ptr pair:Pair = null
+
+    hash:hashGet(ptr kv'hash, pair'key, ptr indexValue)
+
+    indexValue'key = cast<data>(pos)
+
+    pos++
+  /while
 /func
 
 
@@ -110,7 +109,12 @@ func kvFreeContents(kv ptr kv:KVList)
 
 
 func kvGet(kv ptr kv:KVList, key data, value ptr data) bool
-  return kv:kvGetPos(kv, key, value) >= 0
+  mut indexValue ptr pair:Pair = null
+  mut res = hash:hashGet(ptr kv'hash, key, ptr indexValue)
+
+  val value = res => indexValue'value || null
+
+  return res
 /func
 
 
@@ -120,42 +124,43 @@ func kvGetAt(kv ptr kv:KVList, index uintptr) ptr pair:Pair
 /func
 
 
-func kvGetPairAndPos(kv ptr kv:KVList, key data, pair ptr ptr pair:Pair) intptr
-  mut len = kv:kvLen(kv)
-  mut i intptr = 0
+func kvGetPos(kv ptr kv:KVList, key data, value ptr data) intptr
+  mut indexValue ptr pair:Pair = null
+  mut res = hash:hashGet(ptr kv'hash, key, ptr indexValue)
 
-  while i < len
-    mut keyValuePair = kv:kvGetAt(kv, i)
+  val value = res => indexValue'value || null
 
-    if kv'cmp(keyValuePair'key, key) == 0
-      val pair = keyValuePair
-
-      return i
-    /if
-
-    i++
-  /while
-
-  return -1
+  return res => cast<intptr>(indexValue'key) || -1
 /func
 
 
-func kvGetPos(kv ptr kv:KVList, key data, value ptr data) intptr
-  mut pair ptr pair:Pair
-  mut pos = kvGetPairAndPos(kv, key, ptr pair)
+func kvHashFreePairs(pairV data)
+  mut pair = cast<ptr pair:Pair>(pairV)
 
-  if pos < 0
-    return -1
-  /if
+  pair:pairFree(pair)
+/func
 
-  val value = pair'value
 
-  return pos
+func kvInit(kv ptr kv:KVList, cap uintptr, hf hash:hashfn) ptr kv:KVList
+  mem:memset(kv, 0, size(kv:KVList))
+
+  hash:hashInit(ptr kv'hash, cap, hf)
+
+  hash:hashSetFreeFuncs(ptr kv'hash, null, ptr kvHashFreePairs)
+
+  list:listInit(ptr kv'list)
+
+  return kv
 /func
 
 
 func kvLen(kv ptr kv:KVList) uintptr
   return list:listLen(ptr kv'list)
+/func
+
+
+func kvNew(cap uintptr, hf hash:hashfn) ptr kv:KVList
+  return kv:kvInit(cast<ptr kv:KVList>(mem:alloc(size(kv:KVList))), cap, hf)
 /func
 
 
@@ -190,16 +195,25 @@ func kvPrint(kv ptr kv:KVList)
 
 
 func kvPut(kv ptr kv:KVList, key data, value data)
-  mut pair ptr pair:Pair
-  mut pos = kvGetPairAndPos(kv, key, ptr pair)
+  mut indexValue ptr pair:Pair
+  mut res = hash:hashGet(ptr kv'hash, key, ptr indexValue)
 
-  if pos < 0
+  # if no key matches, then create a new element in list and hash
+  # The index of this element will be the current length of the list (obviously).
+  if !res
+    indexValue = pair:pairNew(cast<data>(list:listLen(ptr kv'list)), value)
+
+    hash:hashPut(ptr kv'hash, key, indexValue)
     list:listAppend(ptr kv'list, pair:pairNew(key, value))
   else
-    kvFreePairContents(kv, pair)
+    mut index = cast<uintptr>(indexValue'key)
+    mut pair = cast<ptr pair:Pair>(val list:listGet(ptr kv'list, index))
 
+    kvFreePairContents(kv, pair)
+    # bug: check for double frees. Won't fix because it's better to improve the
+    # language with destructors and methods, then making hacks.
     pair'key = key
-    pair'value = value
+    pair'value = indexValue'value = value
   /if
 /func
 
@@ -207,12 +221,18 @@ func kvPut(kv ptr kv:KVList, key data, value data)
 func kvRemove(kv ptr kv:KVList, key data) bool
   mut pair ptr pair:Pair
 
-  mut pos = kvGetPairAndPos(kv, key, ptr pair)
+  # pair value will be discarded.
+  mut pos = kv:kvGetPos(kv, key, ptr pair)
 
   if pos >= 0
+    pair = cast<ptr pair:Pair>(val list:listGet(ptr kv'list, pos))
+
     kvFreePairContents(kv, pair)
 
     list:listRemove(ptr kv'list, pos, ptr pair:pairFree)
+    hash:hashRemove(ptr kv'hash, key)
+
+    kvFixIndices(kv, pos)
 
     return true
   /if
@@ -227,11 +247,11 @@ func kvSetFreeFuncs(kv ptr kv:KVList, freeKey ptr func(item data), freeVal ptr f
 /func
 
 
-func strkvInit(kv ptr kv:KVList) ptr kv:KVList
-  return kv:kvInit(kv, ptr txt:strcompare)
+func strkvInit(kv ptr kv:KVList, cap uintptr) ptr kv:KVList
+  return kv:kvInit(kv, cap, ptr txt:strhash)
 /func
 
 
-func strkvNew() ptr kv:KVList
-  return kv:kvNew(ptr txt:strcompare)
+func strkvNew(cap uintptr) ptr kv:KVList
+  return kv:kvNew(cap, ptr txt:strhash)
 /func
