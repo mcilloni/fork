@@ -17,7 +17,7 @@ import vect
 
 
 func vectInit(arr ptr vect:Vect, cap uintptr) ptr vect:Vect
-  mem:memset(arr, 0, size(vect:Vect))
+  mem:set(arr, 0, size(vect:Vect))
 
   if cap != 0
     arr'arr = cast<ptr uintptr>(mem:zalloc(cap * size(uintptr)))
@@ -45,7 +45,7 @@ func vectNewCap(vect ptr vect:Vect, newcap uintptr)
 
   mut newarr = cast<ptr uintptr>(mem:zalloc(newcap * size(uintptr)))
 
-  mem:memmove(newarr, vect'arr, lowercap * size(uintptr))
+  mem:move(newarr, vect'arr, lowercap * size(uintptr))
 
   mem:free(vect'arr)
 
@@ -175,7 +175,7 @@ func vectFreeAll(vect ptr vect:Vect,  freefunc ptr func(item data))
 
 
 func vectPrune(vect ptr vect:Vect)
-  mem:memset(vect'arr, 0, vect'cap)
+  mem:set(vect'arr, 0, vect'cap)
   vect'len = 0
 /func
 

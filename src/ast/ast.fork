@@ -79,7 +79,8 @@ func pnodeFree(pnode ptr ast:PNode)
       mut pdecl = cast<ptr ast:PDecl>(pnode)
       mem:decRef(pdecl'sym)
 
-      mem:free(pdecl'methodToType)
+      mem:free(pdecl'methodTypeModule)
+      mem:free(pdecl'methodType)
 
     /if
 

@@ -175,7 +175,7 @@ alias StringDef struct(
 alias PDecl struct(
   node PNode,
   sym ptr PSymbol,
-  methodToType ptr uint8
+  methodTypeModule,methodType ptr uint8
 )
 
 decl func isPDecl(node ptr PNode) bool

@@ -38,7 +38,8 @@ decl func fpZAlloc(fp ptr FreePool, len uintptr) data
 
 decl func alloc(bytes uintptr) data
 decl func free(location data)
-decl func memcpy(dest data, src data, len uintptr) data
-decl func memmove(dest data, src data, len uintptr) data
-decl func memset(dest data, value uintptr, len uintptr) data
+decl func copy(dest data, src data, len uintptr) data
+decl func move(dest data, src data, len uintptr) data
+decl func set(dest data, value uintptr, len uintptr) data
 decl func zalloc(bytes uintptr) data
+decl func zero(dest data, len uintptr) data

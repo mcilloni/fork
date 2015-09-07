@@ -145,7 +145,7 @@ func listAddint(list ptr list:List, pos uintptr, value uintptr) intptr
 mut listAdd = cast<ptr func(list ptr list:List, index uintptr, item data) intptr>(ptr listAddint)
 
 func listInit(list ptr list:List) ptr list:List
-  mem:memset(list, 0, size(list:List))
+  mem:set(list, 0, size(list:List))
   return list
 /func
 
@@ -323,7 +323,7 @@ func listPopint(list ptr list:List) uintptr
   /if
 
   if list'start == list'end
-    mem:memset(list, 0, size(list:List))
+    mem:set(list, 0, size(list:List))
   else
     list'start = next
     list'len--
@@ -337,7 +337,7 @@ mut listPop = cast<ptr func(list ptr list:List) data>(ptr listPopint)
 
 func listPrune(list ptr list:List)
   lnodeFree(list'start)
-  mem:memset(list, 0, size(list:List))
+  mem:set(list, 0, size(list:List))
 /func
 
 

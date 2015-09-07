@@ -144,7 +144,7 @@ func hashGet(hash ptr hash:Hash, key data, value ptr data) bool
 
 
 func hashInit(hash ptr hash:Hash, cap uintptr, hf hash:hashfn) ptr hash:Hash
-  mem:memset(hash, 0, size(hash:Hash))
+  mem:set(hash, 0, size(hash:Hash))
 
   hash'buckets = vect:vectNew(cap)
   hash'hf = hf

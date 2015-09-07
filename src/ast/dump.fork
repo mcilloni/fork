@@ -269,12 +269,18 @@ func pdeclDumpInfo(pdecl ptr ast:PDecl, depth uintptr)
 
   psymbolDump(pdecl'sym)
 
-  if pdecl'methodToType != null
+  if pdecl'methodType != null
     tty:outch(10)
     printPadding(depth + 1)
 
     tty:out("(method of ")
-    tty:out(pdecl'methodToType)
+
+    if pdecl'methodTypeModule != null
+      tty:out(pdecl'methodTypeModule)
+      tty:out(":")
+    /if
+
+    tty:out(pdecl'methodType)
     tty:outln(")")
   /if
 /func

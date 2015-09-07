@@ -346,7 +346,7 @@ func typeClone(pool ptr mem:FreePool, type ptr ast:Type) ptr ast:Type
     return null
   /if
 
-  mut newInst = cast<ptr ast:Type>(mem:memcpy(mem:fpAlloc(pool, size(ast:Type)), type, size(ast:Type)))
+  mut newInst = cast<ptr ast:Type>(mem:copy(mem:fpAlloc(pool, size(ast:Type)), type, size(ast:Type)))
   newInst'moduleName = txt:strclone(type'moduleName)
   newInst'name = txt:strclone(type'name)
   newInst'retType = astfn:typeClone(pool, type'retType)

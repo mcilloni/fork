@@ -142,7 +142,7 @@ func kvHashFreePairs(pairV data)
 
 
 func kvInit(kv ptr kv:KVList, cap uintptr, hf hash:hashfn) ptr kv:KVList
-  mem:memset(kv, 0, size(kv:KVList))
+  mem:set(kv, 0, size(kv:KVList))
 
   hash:hashInit(ptr kv'hash, cap, hf)
 

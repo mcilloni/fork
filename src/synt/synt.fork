@@ -907,13 +907,34 @@ func matchMethodEndTok(tok ptr lex:Token) bool
 /func
 
 
-func parserParseMethodHead(ctx ptr synt:ParserContext, typeName,name ptr ptr uint8, type ptr ptr ast:PType) bool
-  val typeName = parserParseIdentifier(ctx)
-  if val typeName == null
+func parserParseMethodHead(ctx ptr synt:ParserContext, typeModule,typeName,name ptr ptr uint8, type ptr ptr ast:PType) bool
+  mut firstId = parserParseIdentifier(ctx)
+  if firstId == null
     return false
   /if
 
+  if ctx'next == null
+    mem:free(firstId)
+    return false
+  /if
+
+  if ctx'next'type == tokens:COLON
+    discardTok(ctx)
+
+    val typeName = parserParseIdentifier(ctx)
+    if val typeName == null
+      mem:free(firstId)
+      return false
+    /if
+
+    val typeModule = firstId
+  else
+    val typeModule = null
+    val typeName = firstId
+  /if
+
   if !synt:expectDiscard(ctx, tokens:DOT)
+    mem:free(firstId)
     mem:free(val typeName)
     mem:free(val name)
     return false
@@ -934,10 +955,12 @@ func parserParseMethodHead(ctx ptr synt:ParserContext, typeName,name ptr ptr uin
 /func
 
 
-func parserMakeMethod(ctx ptr synt:ParserContext, typeName,name ptr uint8, ptype ptr ast:PType) ptr ast:PNode
+func parserMakeMethod(ctx ptr synt:ParserContext, typeModule,typeName,name ptr uint8, ptype ptr ast:PType) ptr ast:PNode
   mut pnode = parserMakeFunction(ctx, ast:PMETHOD, name, ptype, tokens:ENDMETHOD, ptr matchMethodEndTok)
 
-  cast<ptr ast:PDecl>(pnode)'methodToType = typeName
+  mut pdecl = cast<ptr ast:PDecl>(pnode)
+  pdecl'methodType = typeName
+  pdecl'methodTypeModule = typeModule
 
   return pnode
 /func
@@ -946,15 +969,16 @@ func parserMakeMethod(ctx ptr synt:ParserContext, typeName,name ptr uint8, ptype
 func parserParseMethod(ctx ptr synt:ParserContext) ptr ast:PNode
   mut begin = lex:tokDiscardBegin(synt:nextTok(ctx)) #discard "method"
 
+  mut typeModule ptr uint8
   mut typeName ptr uint8
   mut name ptr uint8
   mut ptype ptr ast:PType
 
-  if !parserParseMethodHead(ctx, ptr typeName, ptr name, ptr ptype)
+  if !parserParseMethodHead(ctx, ptr typeModule, ptr typeName, ptr name, ptr ptype)
     return null
   /if
 
-  mut methodNode = parserMakeMethod(ctx, typeName, name, ptype)
+  mut methodNode = parserMakeMethod(ctx, typeModule, typeName, name, ptype)
   if methodNode == null
     return null
   /if

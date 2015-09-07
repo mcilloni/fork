@@ -18,7 +18,7 @@ import txt
 func csEnlarge(cs ptr txt:Charstash, offset,inc uintptr)
   cs'cap = cs'cap + inc
   mut new = cast<ptr uint8>(mem:alloc(cs'cap))
-  mem:memmove(new + offset, cs'base, cs'len)
+  mem:move(new + offset, cs'base, cs'len)
   mem:free(cs'base)
   cs'base = new
   cs'work = cs'base + cs'len + offset
@@ -81,12 +81,12 @@ func csPrependStr(cs ptr txt:Charstash, str ptr uint8) ptr txt:Charstash
     csEnlarge(cs, slen, slen > 10 => slen || 10)
     cs'len = cs'len + slen
   else
-    mem:memmove(cs'base + slen, cs'base, cs'len)
+    mem:move(cs'base + slen, cs'base, cs'len)
     cs'len = cs'len + slen
     cs'work = cs'base + cs'len
   /if
 
-  mem:memcpy(cs'base, str, slen)
+  mem:copy(cs'base, str, slen)
 
   return cs
 /func
