@@ -40,6 +40,11 @@ func findSymModule(ctx ptr parser:Context, moduleName, name ptr uint8) ptr ast:T
 /func
 
 
+func findMethodModule(ctx ptr parser:Context, curModule,moduleName,typeName,methodName ptr uint8) ptr ast:Type
+
+/func
+
+
 func rootDeclsRegister(rsv sema:Resolver, name ptr uint8, type ptr ast:Type, declType uint16)
   ast:stabAdd(rsv'root'node'syms, name, type, declType)
 
@@ -212,6 +217,7 @@ func registerTopDecl(rsv sema:Resolver,
 
   return ret
 /func
+
 
 func resolveDeclType(rsv sema:Resolver,
                      name ptr uint8,

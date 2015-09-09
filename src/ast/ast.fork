@@ -70,6 +70,7 @@ func pnodeFree(pnode ptr ast:PNode)
       mem:free(proot'fileName)
       list:listFreeAll(proot'imports, cast<ptr func(inst data)>(ptr astfn:strdefFree))
       ast:stabFree(proot'aliases)
+      ast:stabFree(proot'methods)
 
       mem:fpFree(proot'typePool)
     /if

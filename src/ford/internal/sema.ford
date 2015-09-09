@@ -30,7 +30,7 @@ decl func resolverCollect(rsv ptr Resolver,
                           root ptr ast:PRoot,
                           errors ptr list:List) ptr kv:KVList
 
-decl func resolverDeinit(rsv Resolver)
+decl func resolverDeinit(rsv ptr Resolver)
 
 
 decl func registerAlias(rsv Resolver,
@@ -91,3 +91,7 @@ decl func findSymModule(ctx ptr parser:Context, moduleName, name ptr uint8) ptr 
 decl func typeIsAssignable(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
 decl func typeIsCastable(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
 decl func typeChooseLarger(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
+
+decl func methodKey(pdecl ptr ast:PDecl) ptr uint8
+
+decl mut METHOD_PREF ptr uint8

@@ -185,7 +185,7 @@ alias PRoot struct(
   moduleName ptr StringDef,
   fileName ptr uint8,
   imports ptr list:List,
-  aliases ptr Symtable,
+  aliases,methods ptr Symtable,
   typePool ptr mem:FreePool,
   entryNode ptr PDecl
 )

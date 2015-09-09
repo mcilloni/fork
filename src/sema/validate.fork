@@ -27,7 +27,7 @@ import utils
 func validatePDecl(rsv sema:Resolver, pdecl ptr ast:PDecl, errors ptr list:List) bool
   mut ntype = pdecl'node'type
 
-  if ntype == ast:PDECL or ntype == ast:PMUT or ntype == ast:PFUNCTION or ntype == ast:PENTRY
+  if ntype == ast:PDECL or ntype == ast:PMUT or ntype == ast:PFUNCTION or ntype == ast:PENTRY or ntype == ast:PMETHOD
     return sema:registerTopDecl(rsv, pdecl, errors) != null
   else
     if ntype == ast:PALIAS
@@ -87,7 +87,7 @@ func semaValidateAstRoot(ctx ptr parser:Context, root ptr ast:PRoot, errors ptr 
   /while
 
   kv:kvFree(decls)
-  sema:resolverDeinit(rsv)
+  sema:resolverDeinit(ptr rsv)
 
   return result
 /func
