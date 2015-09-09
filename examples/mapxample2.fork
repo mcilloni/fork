@@ -1,0 +1,65 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import map
+import pair
+import tty
+
+
+func numcmp(a,b data) int8
+  mut x = cast<uintptr>(a)
+  mut y = cast<uintptr>(b)
+
+  return x > y => 1 || (x < y => -1 || 0)
+/func
+
+
+func mapIntDump(map ptr map:Map)
+  tty:out("[ ")
+
+  mut iter = map:mapiterStart(map)
+  mut pair ptr pair:Pair = null
+  mut first = true
+
+  while (pair = map:mapiterNext(iter)) != null
+    if first
+      first = false
+    else
+      tty:out(", ")
+    /if
+
+    tty:outint(cast<uintptr>(pair'key))
+    tty:out(": ")
+    tty:outint(cast<uintptr>(pair'value))
+
+    pair:pairFree(pair)
+  /while
+
+  map:mapiterFree(iter)
+
+  tty:outln(" ]")
+/func
+
+
+entry
+  mut map = map:mapNew(ptr numcmp)
+
+  mut i uintptr = 0
+
+  while i < 30000000
+    map:mapPut(map, cast<data>(i), cast<data>(i), map:FREE_NONE)
+
+    i++
+  /while
+
+  mapIntDump(map)
+
+  map:mapFree(map)
+/entry
