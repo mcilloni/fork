@@ -56,7 +56,7 @@ func ttypeIsComparison(tt uint16) bool
 
 
 func ttypeIsConst(tt uint16) bool
-  return tt == tokens:STRING or tt == tokens:NUMBER or tt == tokens:NULLPTR or tt == tokens:TRUE or tt == tokens:FALSE
+  return tt == tokens:STRING or tt == tokens:NUMBER or tt == tokens:NULL or tt == tokens:TRUE or tt == tokens:FALSE
 /func
 
 
@@ -284,7 +284,7 @@ func validateExprConst(rsv sema:Resolver,
     return parser:ctxMatchBuiltin(rsv'ctx, "bool")
   /if
 
-  if op == tokens:NULLPTR
+  if op == tokens:NULL
     return parser:ctxMatchBuiltin(rsv'ctx, "null")
   /if
 

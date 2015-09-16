@@ -211,7 +211,7 @@ func parserParsePrimaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
     return null
   /if
 
-  if ctx'next'type == tokens:FALSE or ctx'next'type == tokens:TRUE or ctx'next'type == tokens:STRING or ctx'next'type == tokens:NUMBER or ctx'next'type == tokens:NULLPTR or ctx'next'type == tokens:ME
+  if ctx'next'type == tokens:FALSE or ctx'next'type == tokens:TRUE or ctx'next'type == tokens:STRING or ctx'next'type == tokens:NUMBER or ctx'next'type == tokens:NULL or ctx'next'type == tokens:ME
     return astfn:pexprNewSingle(synt:nextTok(ctx))
   /if
 

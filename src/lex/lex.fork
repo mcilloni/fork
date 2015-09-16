@@ -592,7 +592,7 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
   /if
 
   if txt:strequals(strToken, "null")
-    type = tokens:NULLPTR
+    type = tokens:NULL
   /if
 
   if txt:strequals(strToken, "[")
@@ -862,7 +862,7 @@ func ttypeStr(tt uint16) ptr uint8
     return "!"
   /if
 
-  if tt == tokens:NULLPTR
+  if tt == tokens:NULL
     return "null"
   /if
 
