@@ -1,4 +1,4 @@
-.PHONY: all clean tests
+.PHONY: all clean tests st
 
 all: clean
 	$(MAKE) -C src
@@ -7,6 +7,9 @@ all: clean
 
 tests:
 	cram tests/*.t
+
+st:
+	@ sh selftest.sh
 
 clean:
 	rm -rf build

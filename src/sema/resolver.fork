@@ -23,26 +23,32 @@ import txt
 import utils
 
 
-mut METHOD_PREF = "$$METHOD$"
-
-
-func methodKey(pdecl ptr ast:PDecl) ptr uint8
-  if pdecl'node'type != ast:PMETHOD
-    return txt:strclone(pdecl'sym'name)
-  /if
-
+func methodKey(typeModule,typeName,methodName ptr uint8) ptr uint8
   mut cs = txt:csNew(10)
 
-  txt:csAppendStr(cs, sema:METHOD_PREF)
-
-  if pdecl'methodTypeModule != null
-    txt:csAppendStr(cs, pdecl'methodTypeModule)
+  if typeModule != null
+    txt:csAppendStr(cs, typeModule)
     txt:csAppendStr(cs, ":")
   /if
 
-  txt:csAppendStr(cs, pdecl'methodType)
+  txt:csAppendStr(cs, typeName)
+
+  txt:csAppendStr(cs, ".")
+
+  txt:csAppendStr(cs, methodName)
 
   return txt:csUnwrap(cs)
+/func
+
+
+func declKey(pdecl ptr ast:PDecl) ptr uint8
+  mut isMet =  pdecl'node'type == ast:PMETHOD
+
+  if !isMet
+    return txt:strclone(pdecl'sym'name)
+  /if
+
+  return sema:methodKey(pdecl'methodTypeModule, pdecl'methodType, pdecl'sym'name)
 /func
 
 
@@ -83,30 +89,21 @@ func resolverCollectDecls(rsv ptr sema:Resolver,
                           errors ptr list:List) bool
 
   mut existent ptr ast:PDecl
-  mut name = sema:methodKey(pdecl)
+  mut name = sema:declKey(pdecl)
 
   if kv:kvGet(rsv'decls, name, ptr existent)
-    if pdecl'node'type != ast:PDECL and existent'node'type != ast:PDECL
+    mut cs = txt:csNew(20)
+    txt:csAppendStr(cs, "symbol ")
+    txt:csAppendStr(cs, name)
+    txt:csAppendStr(cs, " defined twice")
 
-      mut cs = txt:csNew(20)
-      txt:csAppendStr(cs, "symbol ")
-      txt:csAppendStr(cs, name)
-      txt:csAppendStr(cs, " defined twice")
+    mut str = txt:csUnwrap(cs)
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
 
-      mut str = txt:csUnwrap(cs)
-      list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
+    mem:free(str)
+    mem:free(name)
 
-      mem:free(str)
-      mem:free(name)
-
-      return false
-    else
-
-      # ignore the decl, reset the value
-      if pdecl'node'type == ast:PDECL
-        pdecl = existent
-      /if
-    /if
+    return false
   /if
 
   #search for method in module
@@ -123,6 +120,7 @@ func resolverCollect(rsv ptr sema:Resolver,
 
   rsv'aliases = kv:strkvNew(5)
   rsv'decls = kv:strkvNew(10)
+
   rsv'root = root
   rsv'ctx = ctx
 
@@ -139,7 +137,7 @@ func resolverCollect(rsv ptr sema:Resolver,
     mut pdecl = cast<ptr ast:PDecl>(val list:listGet(root'node'node'leaves, i))
     mut ntype = pdecl'node'type
 
-    if ntype == ast:PDECL or ntype == ast:PMUT or ntype == ast:PFUNCTION or ntype == ast:PMETHOD
+    if ntype == ast:PMUT or ntype == ast:PFUNCTION or ntype == ast:PMETHOD
       if !resolverCollectDecls(rsv, pdecl, root, errors)
         failure = true
         break
@@ -169,7 +167,7 @@ func resolverCollect(rsv ptr sema:Resolver,
       /if
     /if
 
-    kv:kvPut(ret, sema:methodKey(pdecl), pdecl)
+    kv:kvPut(ret, sema:declKey(pdecl), pdecl)
 
     i++
   /while

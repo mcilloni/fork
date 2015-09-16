@@ -12,6 +12,7 @@ module sema
 
 
 import ast
+import hash
 import kv
 import list
 import mem
@@ -19,6 +20,18 @@ import parser
 import sema
 import txt
 import utils
+
+
+
+func miHash(typeModule,typeName,methodName ptr uint8) data
+  mut mi ast:MethodInfo
+
+  mi'typeModule = typeModule
+  mi'typeName = typeName
+  mi'typeModule = typeModule
+
+  return cast<data>(ast:methodInfoHash(ptr mi))
+/func
 
 
 func findRecAlias(ctx ptr parser:Context, scope ptr ast:PNode, ralias ptr ast:Type) ptr ast:Type
@@ -40,8 +53,39 @@ func findSymModule(ctx ptr parser:Context, moduleName, name ptr uint8) ptr ast:T
 /func
 
 
-func findMethodModule(ctx ptr parser:Context, curModule,moduleName,typeName,methodName ptr uint8) ptr ast:Type
+# 'module:Type.method' can be defined 1. in current module 2. in the type's
+# module, with this precedence order.
+# Otherwise, it's pretty complicated to handle conflicts, and, most important,
+# you don't really know who calls what.
+func findMethod(ctx ptr parser:Context,
+                node ptr ast:PNode,
+                typeModule,typeName,methodName ptr uint8) ptr ast:Type
 
+  mut name = sema:methodKey(null, typeName,methodName)
+
+  mut ret = ast:findSym(node, name)
+  if ret != null
+    mem:free(name)
+    return ret
+  /if
+
+  mut root = ast:findPRoot(node)
+
+  # fetch this from the current ford.
+  if root'moduleName != null
+    ret = sema:findSymModule(ctx, root'moduleName'name, name)
+    if ret != null
+      mem:free(name)
+      return ret
+    /if
+  /if
+
+  # otherwise, lookup in the type's module.
+
+  ret = sema:findSymModule(ctx, typeModule, name)
+  mem:free(name)
+
+  return ret
 /func
 
 
@@ -65,19 +109,20 @@ func registerDeclReal(rsv sema:Resolver,
                       recursive bool,
                       recList,errors ptr list:List) ptr ast:Type
 
-  mut name = pdecl'sym'name
+  mut name = sema:declKey(pdecl)
   mut ptype = pdecl'sym'type
 
-  mut isDecl = pdecl'node'type == ast:PDECL
+  mut isDecl = pdecl'isDecl
   mut isEntry = pdecl'node'type == ast:PENTRY
-  mut isFunc = pdecl'node'type == ast:PFUNCTION or isEntry
+  mut isMethod = pdecl'node'type == ast:PMETHOD
+  mut isFunc = pdecl'node'type == ast:PFUNCTION or isEntry or isMethod
 
 
   mut realType ptr ast:Type = ast:findSym(cast<ptr ast:PNode>(pdecl), name)
   mut typeResolved = realType != null
   mut inMap = typeResolved
 
-  # check: if this symbol is present, than it's because it has already been
+  # check: if this symbol is present, it's because it has already been
   # type-resolved (we ensured univocity of declarations while collecting decls)
   # and maybe not validated yet. Return type if validated.
   if typeResolved and pdecl'node'validated
@@ -97,7 +142,7 @@ func registerDeclReal(rsv sema:Resolver,
 
   if !pdecl'node'validated
 
-    if isFunc
+    if isFunc and !isDecl
 
       # register function BEFORE because it can be recursive
       # realType will always be non-null
@@ -116,22 +161,7 @@ func registerDeclReal(rsv sema:Resolver,
 
     else
 
-      mut hasLeaves = list:listLen(pdecl'node'leaves) > 0
-
-      if !hasLeaves and !typeResolved
-        list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, "declaration with neither a type nor an initializer"))
-
-        return null
-      /if
-
-      if hasLeaves
-        if isDecl
-          # because we're sure that ptype was null and there's a leaf, then
-          # we have a malformed 'decl'
-          list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, "decls can't have initializers"))
-
-          return null
-        /if
+      if list:listLen(pdecl'node'leaves) > 0
 
         mut pexpr = cast<ptr ast:PExpr>(val list:listGet(pdecl'node'leaves, 0))
 
@@ -194,11 +224,11 @@ func registerTopDeclReal(rsv sema:Resolver,
                          pdecl ptr ast:PDecl,
                          recList,errors ptr list:List) ptr ast:Type
 
-  list:listPush(recList, cast<ptr uint8>(pdecl'sym'name))
+  list:listPush(recList, sema:declKey(pdecl))
 
   mut ret = registerDeclReal(rsv, pdecl, false, recList, errors)
 
-  list:listPop(recList)
+  mem:free(list:listPop(recList))
 
   return ret
 /func

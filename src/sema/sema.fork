@@ -12,6 +12,7 @@ module sema
 
 
 import ast
+import hash
 import kv
 import list
 import mem
@@ -19,6 +20,11 @@ import parser
 import sema
 import synt
 import utils
+
+
+func intHash(n data) uintptr
+  return cast<uintptr>(n)
+/func
 
 
 func semaValidateAst(ctx ptr parser:Context, root ptr ast:PNode) ptr list:List
@@ -41,7 +47,6 @@ func semaValidateAst(ctx ptr parser:Context, root ptr ast:PNode) ptr list:List
   proot'typePool = mem:fpNew(cast<ptr func(item data)>(ptr ast:typeFree))
 
   proot'aliases = ast:stabNew()
-  proot'methods = ast:stabNew()
 
   sema:semaValidateAstRoot(ctx, proot, errors)
 

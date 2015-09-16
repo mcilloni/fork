@@ -35,6 +35,12 @@ alias HashIter struct (
 )
 
 
+alias HashNum uintptr
+
+decl func hnNum(hn ptr HashNum, n uintptr) HashNum
+decl func hnString(hn ptr HashNum, str ptr uint8) HashNum
+
+
 alias Entry struct(
   hash uintptr,
   key,value data

@@ -101,14 +101,15 @@ entry
     mut dinfo = cast<ptr ast:DeclInfo>(pair'value)
     mut typeStr ptr uint8 = null
 
+
     if dinfo'declType == ast:PFUNCTION
       typeStr = "func "
     else
       if dinfo'declType == ast:PENTRY
         typeStr = "entry "
       else
-        if dinfo'declType == ast:PDECL
-          typeStr = "decl "
+        if dinfo'declType == ast:PMETHOD
+          typeStr = "method "
         else
           typeStr = "mut "
         /if

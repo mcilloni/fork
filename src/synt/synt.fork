@@ -457,7 +457,7 @@ func parserParseMut(ctx ptr synt:ParserContext, external bool) ptr ast:PNode
     end = type'end
   /if
 
-  mut pdecl = astfn:pdeclNew(ast:PMUT, astfn:psymbolNew(id, type))
+  mut pdecl = astfn:pdeclNew(ast:PMUT, astfn:psymbolNew(id, type), external)
   mut pnode = cast<ptr ast:PNode>(pdecl)
 
   if ctx'next != null and ctx'next'type == tokens:ASSIGN
@@ -494,43 +494,64 @@ func parserParseDecl(ctx ptr synt:ParserContext) ptr ast:PNode
   mut begin = lex:tokDiscardBegin(synt:nextTok(ctx))
 
   if ctx'next == null
-    ctx'prs'err = lex:errorMism(ctx'last, "`mut` or `func`", "EOF")
+    ctx'prs'err = lex:errorMism(ctx'last, "`mut`,`method` or `func`", "EOF")
     return null
   /if
 
+  mut ret ptr ast:PDecl = null
+
   if ctx'next'type == tokens:MUT
-    mut mutDef = parserParseMut(ctx, true)
-    if mutDef == null
-      return null
+    ret = cast<ptr ast:PDecl>(parserParseMut(ctx, true))
+  else
+    if ctx'next'type == tokens:FUNC
+      # discard 'func'
+      synt:discardTok(ctx)
+
+      mut name ptr uint8
+      mut type ptr ast:PType
+
+      if !parserParseFuncHead(ctx, ptr name, ptr type)
+        return null
+      /if
+
+      ret = astfn:pdeclNew(ast:PFUNCTION, astfn:psymbolNew(name, type), true)
+
+      ret'node'end = type'end
+    else
+      if ctx'next'type == tokens:METHOD
+        # discard 'method'
+        synt:discardTok(ctx)
+
+        mut typeModule ptr uint8
+        mut typeName ptr uint8
+        mut name ptr uint8
+        mut ptype ptr ast:PType
+
+        if !parserParseMethodHead(ctx, ptr typeModule, ptr typeName, ptr name, ptr ptype)
+          return null
+        /if
+
+        ret = astfn:pdeclNew(ast:PMETHOD, astfn:psymbolNew(name, ptype), true)
+
+        ret'methodTypeModule = typeModule
+        ret'methodType = typeName
+
+        ret'node'end = ptype'end
+
+      else
+        ctx'prs'err = lex:errorMism(ctx'last, "`mut`, `method` or `func`", lex:tokenStr(ctx'next))
+        return null
+      /if
     /if
-
-    mutDef'type = ast:PDECL
-    mutDef'begin = begin
-
-    return mutDef
   /if
 
-  if ctx'next'type == tokens:FUNC
-    # discard 'func'
-    synt:discardTok(ctx)
-
-    mut name ptr uint8
-    mut type ptr ast:PType
-
-    if !parserParseFuncHead(ctx, ptr name, ptr type)
-      return null
-    /if
-
-    mut pdecl = astfn:pdeclNew(ast:PDECL, astfn:psymbolNew(name, type))
-
-    pdecl'node'begin = begin
-    pdecl'node'end = type'end
-
-    return cast<ptr ast:PNode>(pdecl)
+  if ret == null
+    return null
   /if
 
-  ctx'prs'err = lex:errorMism(ctx'last, "`mut` or `func`", lex:tokenStr(ctx'next))
-  return null
+  ret'node'begin = begin
+
+  return cast<ptr ast:PNode>(ret)
 /func
 
 
@@ -545,7 +566,7 @@ func parserParseAlias(ctx ptr synt:ParserContext) ptr ast:PNode
       return null
     /if
 
-    mut palias = astfn:pdeclNew(ast:PALIAS, astfn:psymbolNew(cast<ptr uint8>(name'value), type))
+    mut palias = astfn:pdeclNew(ast:PALIAS, astfn:psymbolNew(cast<ptr uint8>(name'value), type), false)
     mut pnode = cast<ptr ast:PNode>(palias)
     pnode'begin = begin
     pnode'end = type'end
@@ -795,7 +816,7 @@ func parserMakeFunction(ctx ptr synt:ParserContext,
     return null
   /if
 
-  mut funcNode = cast<ptr ast:PNode>(astfn:pdeclNew(pType, astfn:psymbolNew(name, type)))
+  mut funcNode = cast<ptr ast:PNode>(astfn:pdeclNew(pType, astfn:psymbolNew(name, type), false))
   mut body = cast<ptr ast:PNode>(parserParseBody(ctx, isEndToken))
 
   if body == null
@@ -957,6 +978,10 @@ func parserParseMethodHead(ctx ptr synt:ParserContext, typeModule,typeName,name 
 
 func parserMakeMethod(ctx ptr synt:ParserContext, typeModule,typeName,name ptr uint8, ptype ptr ast:PType) ptr ast:PNode
   mut pnode = parserMakeFunction(ctx, ast:PMETHOD, name, ptype, tokens:ENDMETHOD, ptr matchMethodEndTok)
+
+  if pnode == null
+    return null
+  /if
 
   mut pdecl = cast<ptr ast:PDecl>(pnode)
   pdecl'methodType = typeName

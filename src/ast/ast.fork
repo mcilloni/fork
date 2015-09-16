@@ -13,6 +13,7 @@ module ast
 
 import ast
 import astfn
+import hash
 import lex
 import list
 import mem
@@ -30,6 +31,19 @@ func findPBlock(node ptr ast:PNode) ptr ast:PNode
   /if
 
   return node
+/func
+
+
+func findPRoot(node ptr ast:PNode) ptr ast:PRoot
+  if node == null
+    return null
+  /if
+
+  if !ast:isPRoot(node)
+    return findPRoot(node'parent)
+  /if
+
+  return cast<ptr ast:PRoot>(node)  
 /func
 
 
@@ -61,6 +75,52 @@ func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 /func
 
 
+func isPDecl(pnode ptr ast:PNode) bool
+  return pnode != null and pnode'type == ast:PALIAS or pnode'type == ast:PMUT or pnode'type == ast:PENTRY or pnode'type == ast:PFUNCTION or pnode'type == ast:PMETHOD
+/func
+
+
+func isPBlock(pnode ptr ast:PNode) bool
+  return pnode != null and (pnode'type == ast:PBLOCK or ast:isPRoot(pnode))
+/func
+
+
+func isPExpr(pnode ptr ast:PNode) bool
+  return pnode != null and pnode'type == ast:PEXPR
+/func
+
+
+func isPRoot(pnode ptr ast:PNode) bool
+  return pnode != null and pnode'type == ast:PROOT
+/func
+
+
+func menFree(men ptr ast:MethodEntry)
+  mem:free(men)
+/func
+
+
+func menNew(mi ast:MethodInfo, hasImpl bool) ptr ast:MethodEntry
+  mut men = cast<ptr ast:MethodEntry>(mem:alloc(size(ast:MethodEntry)))
+
+  men'mi = mi
+  men'hasImpl = hasImpl
+
+  return men
+/func
+
+
+func methodInfoHash(mi ptr ast:MethodInfo) hash:HashNum
+  mut hn hash:HashNum = 1
+
+  hash:hnString(ptr hn, mi'name)
+  hash:hnString(ptr hn, mi'typeName)
+  hash:hnString(ptr hn, mi'typeModule)
+
+  return hn
+/func
+
+
 func pnodeFree(pnode ptr ast:PNode)
   if pnode != null
     if ast:isPRoot(pnode)
@@ -70,7 +130,6 @@ func pnodeFree(pnode ptr ast:PNode)
       mem:free(proot'fileName)
       list:listFreeAll(proot'imports, cast<ptr func(inst data)>(ptr astfn:strdefFree))
       ast:stabFree(proot'aliases)
-      ast:stabFree(proot'methods)
 
       mem:fpFree(proot'typePool)
     /if
@@ -106,7 +165,7 @@ func pnodeIsBreakContinue(pnode ptr ast:PNode) bool
 
 
 func pnodeIsDecl(pnode ptr ast:PNode) bool
-  return pnode'type == ast:PDECL or pnode'type == ast:PMUT
+  return pnode'type == ast:PMUT or (isPDecl(pnode) and cast<ptr ast:PDecl>(pnode)'isDecl)
 /func
 
 
@@ -148,31 +207,10 @@ func prootHasImported(root ptr ast:PRoot, name ptr uint8) bool
 /func
 
 
-func isPDecl(pnode ptr ast:PNode) bool
-  return pnode != null and pnode'type == ast:PALIAS or pnode'type == ast:PDECL or pnode'type == ast:PMUT or pnode'type == ast:PENTRY or pnode'type == ast:PFUNCTION or pnode'type == ast:PMETHOD
-/func
-
-
-func isPBlock(pnode ptr ast:PNode) bool
-  return pnode != null and (pnode'type == ast:PBLOCK or ast:isPRoot(pnode))
-/func
-
-
-func isPExpr(pnode ptr ast:PNode) bool
-  return pnode != null and pnode'type == ast:PEXPR
-/func
-
-
-func isPRoot(pnode ptr ast:PNode) bool
-  return pnode != null and pnode'type == ast:PROOT
-/func
-
-
 mut PROOT      uint16 = 10
 mut PENTRY     uint16 = 20
 mut PFUNCTION  uint16 = 30
 mut PALIAS     uint16 = 40
-mut PDECL      uint16 = 50
 mut PMUT       uint16 = 60
 mut PIF        uint16 = 70
 mut PEXPR      uint16 = 80

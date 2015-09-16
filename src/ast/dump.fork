@@ -186,10 +186,6 @@ func pnodeTypeToString(ptype uint16) ptr uint8
     return "Alias"
   /if
 
-  if ptype == ast:PDECL
-    return "Decl"
-  /if
-
   if ptype == ast:PMETHOD
     return "Method"
   /if
@@ -268,6 +264,10 @@ func pdeclDumpInfo(pdecl ptr ast:PDecl, depth uintptr)
   printPadding(depth + 1)
 
   psymbolDump(pdecl'sym)
+
+  if pdecl'isDecl
+    tty:out(" (decl only)")
+  /if
 
   if pdecl'methodType != null
     tty:outch(10)

@@ -399,3 +399,18 @@ func resolveType(rsv sema:Resolver,
 
   return resolveTypeReal(rsv, ptype, null, errors, false)
 /func
+
+
+func resolveTypeName(rsv sema:Resolver,
+                     name ptr uint8,
+                     errors ptr list:List) ptr ast:Type
+
+  mut ptd = astfn:ptypeDescrNew(ast:PTYPE_ID, null, null)
+  mut ptype = astfn:ptypeNew(name, null, ptd)
+
+  mut ret = sema:resolveType(rsv, ptype, errors)
+
+  mem:decRef(ptype)
+
+  return ret
+/func

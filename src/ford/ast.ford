@@ -11,6 +11,7 @@
 module ast
 
 
+import hash
 import kv
 import list
 import map
@@ -126,6 +127,14 @@ alias DeclInfo struct(
   type ptr Type
 )
 
+alias MethodInfo struct(
+  typeModule,typeName,name ptr uint8,
+  type ptr Type
+)
+
+decl func methodInfoHash(mi ptr MethodInfo) uintptr
+
+
 alias Symtable struct(
   syms ptr kv:KVList
 )
@@ -175,6 +184,7 @@ alias StringDef struct(
 alias PDecl struct(
   node PNode,
   sym ptr PSymbol,
+  isDecl bool,
   methodTypeModule,methodType ptr uint8
 )
 
@@ -185,7 +195,7 @@ alias PRoot struct(
   moduleName ptr StringDef,
   fileName ptr uint8,
   imports ptr list:List,
-  aliases,methods ptr Symtable,
+  aliases ptr Symtable,
   typePool ptr mem:FreePool,
   entryNode ptr PDecl
 )
@@ -206,9 +216,19 @@ decl mut emptyExpr PExpr
 
 
 decl func findPBlock(node ptr PNode) ptr PNode
+decl func findPRoot(node ptr PNode) ptr PRoot
 decl func findSym(node ptr PNode, name ptr uint8) ptr Type
 decl func findSymLocal(node ptr PNode, name ptr uint8) ptr Type
 decl func findStab(node ptr PNode) ptr Symtable
+
+
+alias MethodEntry struct(
+  mi MethodInfo,
+  hasImpl bool
+)
+
+decl func menFree(men ptr MethodEntry)
+decl func menNew(mi MethodInfo, hasImpl bool) ptr MethodEntry
 
 
 decl mut PROOT      uint16
@@ -216,7 +236,6 @@ decl mut PENTRY     uint16
 decl mut PEXPR      uint16
 decl mut PFUNCTION  uint16
 decl mut PALIAS     uint16
-decl mut PDECL      uint16
 decl mut PMUT       uint16
 decl mut PBREAK     uint16
 decl mut PCONTINUE  uint16

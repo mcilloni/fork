@@ -746,7 +746,13 @@ func validateAssignExpr(rsv sema:Resolver,
                         errors ptr list:List) ptr ast:Type
 
   if !ttypeCanBeAssignTarget(left'opType, ltype)
-    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, left'node'begin, rsv'root'fileName, "expression cannot be target of assignment"))
+    mut msg = "expression cannot be target of assignment"
+
+    if left'opType == tokens:ME
+      msg = "can't reassign 'me'"
+    /if
+
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, left'node'begin, rsv'root'fileName, msg))
     return null
   /if
 
@@ -771,6 +777,73 @@ func validateAssignExpr(rsv sema:Resolver,
   return ltype
 /func
 
+# a.b syntax is allowed ONLY if it's a method call.
+# Otherwise method access is semantically nonsense (until closures, of course).
+func pnodeAllowedToUseDot(node ptr ast:PNode) bool
+  return node'type == ast:PEXPR and cast<ptr ast:PExpr>(node)'opType == tokens:OPAR
+/func
+
+
+func resolveMethod(rsv sema:Resolver,
+                   pexpr ptr ast:PExpr,
+                   typeModule,typeName,methodName ptr uint8,
+                   recList,errors ptr list:List) ptr ast:Type
+
+  mut type = sema:findMethod(rsv'ctx, cast<ptr ast:PNode>(pexpr), typeModule, typeName, methodName)
+
+  if type != null
+    return type
+  /if
+
+  mut name = sema:methodKey(typeModule, typeName, methodName)
+
+  # try searching for a top declaration
+  type = sema:resolveDeclType(rsv, name, cast<ptr ast:PNode>(pexpr), recList, errors)
+
+  mem:free(name)
+
+  return type
+/func
+
+
+func validateMethodExpr(rsv sema:Resolver,
+                        pexpr ptr ast:PExpr,
+                        ltype ptr ast:Type,
+                        recList,errors ptr list:List) ptr ast:Type
+
+  if !pnodeAllowedToUseDot(pexpr'node'parent)
+    mut msg = "methods can be accessed only when invoked"
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+
+    return null
+  /if
+
+  mut accType = ltype
+
+  if ltype'type == ast:TYPE_PTR
+    accType = resolveRecType(rsv, ltype'retType)
+  /if
+
+  if accType'name == null
+    mut cs = txt:csNew(20)
+    txt:csAppendStr(cs, "'")
+    ast:typeSummarize(cs, accType)
+    txt:csAppendStr(cs, "' is not a named type. Raw struct, pointer or function types can't have methods")
+
+    mut msg = txt:csUnwrap(cs)
+
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+
+    mem:free(msg)
+
+    return null
+  /if
+
+  mut methodName = cast<ptr uint8>(cast<ptr ast:PNode>(val list:listGet(pexpr'node'leaves, 1))'value)
+
+  return resolveMethod(rsv, pexpr, accType'moduleName, accType'name, methodName, recList, errors)
+/func
+
 
 func validateBinaryExpr(rsv sema:Resolver,
                         pexpr ptr ast:PExpr,
@@ -778,7 +851,7 @@ func validateBinaryExpr(rsv sema:Resolver,
 
   mut op = pexpr'opType
 
-  # handle apos, colon and call operators before because they are special
+  # handle apos, dot, colon and call operators before because they are special
   # (i.e. no expressions or expressions only on lhs)
 
   if op == tokens:COLON
@@ -790,6 +863,11 @@ func validateBinaryExpr(rsv sema:Resolver,
 
   if ltype == null
     return null
+  /if
+
+  # method access
+  if op == tokens:DOT
+    return validateMethodExpr(rsv, pexpr, ltype, recList, errors)
   /if
 
   # structure field access
@@ -1055,6 +1133,20 @@ func validateTernaryExpr(rsv sema:Resolver,
 /func
 
 
+func validateMeExpr(rsv sema:Resolver,
+                    pexpr ptr ast:PExpr,
+                    errors ptr list:List) ptr ast:Type
+
+  mut meType = ast:findSym(cast<ptr ast:PNode>(pexpr), "me")
+  if meType == null
+    mut msg = "'me' outside of method body"
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+  /if
+
+  return meType
+/func
+
+
 func validateExprRecl(rsv sema:Resolver,
                       pexpr ptr ast:PExpr,
                       recList,errors ptr list:List) ptr ast:Type
@@ -1070,22 +1162,26 @@ func validateExprRecl(rsv sema:Resolver,
   if ttypeIsConst(op)
     return (pexpr'type = validateExprConst(rsv, pexpr))
   else
-    if op == tokens:ID
-      pexpr'type = validateExprId(rsv, pexpr, recList, errors)
+    if op == tokens:ME
+      pexpr'type = validateMeExpr(rsv, pexpr, errors)
     else
-      if op == tokens:CAST
-        pexpr'type = validateExprCast(rsv, pexpr, recList, errors)
+      if op == tokens:ID
+        pexpr'type = validateExprId(rsv, pexpr, recList, errors)
       else
-        if op == tokens:SIZE
-          pexpr'type = validateSizeExpr(rsv, pexpr, errors)
+        if op == tokens:CAST
+          pexpr'type = validateExprCast(rsv, pexpr, recList, errors)
         else
-          if ttypeIsTernary(op)
-            pexpr'type = validateTernaryExpr(rsv, pexpr, recList, errors)
+          if op == tokens:SIZE
+            pexpr'type = validateSizeExpr(rsv, pexpr, errors)
           else
-            if ttypeIsBinary(op)
-              pexpr'type = validateBinaryExpr(rsv, pexpr, recList, errors)
+            if ttypeIsTernary(op)
+              pexpr'type = validateTernaryExpr(rsv, pexpr, recList, errors)
             else
-              pexpr'type = validateUnaryExpr(rsv, pexpr, recList, errors)
+              if ttypeIsBinary(op)
+                pexpr'type = validateBinaryExpr(rsv, pexpr, recList, errors)
+              else
+                pexpr'type = validateUnaryExpr(rsv, pexpr, recList, errors)
+              /if
             /if
           /if
         /if

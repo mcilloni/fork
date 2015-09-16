@@ -47,11 +47,12 @@ func pblockNew() ptr ast:PBlock
 /func
 
 
-func pdeclNew(nodeType uint16, sym ptr ast:PSymbol) ptr ast:PDecl
+func pdeclNew(nodeType uint16, sym ptr ast:PSymbol, isDecl bool) ptr ast:PDecl
 
   mut pdecl = cast<ptr ast:PDecl>(mem:zalloc(size(ast:PDecl)))
   pdecl'node'type = nodeType
   pdecl'node'leaves = list:listNew()
+  pdecl'isDecl = isDecl
 
   mem:incRef(sym)
 

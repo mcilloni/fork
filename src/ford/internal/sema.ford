@@ -58,6 +58,10 @@ decl func resolveType(rsv Resolver,
                       ptype ptr ast:PType,
                       errors ptr list:List) ptr ast:Type
 
+decl func resolveTypeName(rsv Resolver,
+                          name ptr uint8,
+                          errors ptr list:List) ptr ast:Type
+
 decl func validateExprRecl(rsv Resolver,
                            pexpr ptr ast:PExpr,
                            recList,errors ptr list:List) ptr ast:Type
@@ -84,6 +88,11 @@ decl func semaValidateAst(context ptr parser:Context,
 
 decl func findAliasImport(ctx ptr parser:Context, moduleName,name ptr uint8) ptr ast:Type
 decl func findAliasLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
+
+decl func findMethod(ctx ptr parser:Context,
+                     node ptr ast:PNode,
+                     typeModule,typeName,methodName ptr uint8) ptr ast:Type
+
 decl func findRecAlias(ctx ptr parser:Context, scope ptr ast:PNode, ralias ptr ast:Type) ptr ast:Type
 
 decl func findSymModule(ctx ptr parser:Context, moduleName, name ptr uint8) ptr ast:Type
@@ -92,6 +101,7 @@ decl func typeIsAssignable(ctx ptr parser:Context, scope ptr ast:PNode, dest,src
 decl func typeIsCastable(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
 decl func typeChooseLarger(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
 
-decl func methodKey(pdecl ptr ast:PDecl) ptr uint8
+decl func declKey(pdecl ptr ast:PDecl) ptr uint8
+decl func methodKey(typeModule,typeName,methodName ptr uint8) ptr uint8
 
-decl mut METHOD_PREF ptr uint8
+decl func miHash(typeModule,typeName,methodName ptr uint8) data
