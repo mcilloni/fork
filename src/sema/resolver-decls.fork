@@ -49,7 +49,7 @@ func findMethod(rsv sema:Resolver,
                 node ptr ast:PNode,
                 typeModule,typeName,methodName ptr uint8) ptr ast:Type
 
-  mut name = ast:methodKey(null, typeName,methodName)
+  mut name = ast:methodKey(typeModule, typeName,methodName)
 
   mut ret = ast:findSym(node, name)
   if ret != null
