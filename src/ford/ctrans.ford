@@ -30,7 +30,7 @@ decl func translDump(tr ptr Transl, stream ptr io:Stream) ptr err:Error
 decl func translExtern(tr ptr Transl, sym ptr uint8)
 decl func translFunc(tr ptr Transl, root ptr ast:PRoot, fname,sym ptr uint8, fn ptr ast:PDecl)
 decl func translFordInc(tr ptr Transl, fordName ptr uint8)
-decl func translGenSym(moduleName,name ptr uint8, dinfo ptr ast:DeclInfo) ptr uint8
+decl func translGenSym(moduleName ptr uint8, pdecl ptr ast:PDecl, dinfo ptr ast:DeclInfo) ptr uint8
 decl func translGlobVar(tr ptr Transl, sym ptr uint8, root ptr ast:PRoot, expr ptr ast:PExpr)
 decl func translInit(tr ptr Transl, header bool, name ptr uint8)
 decl func translTypedef(tr ptr Transl, name ptr uint8, type ptr ast:Type)

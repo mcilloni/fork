@@ -19,6 +19,7 @@ import kv
 import libfork
 import list
 import mem
+import parser
 import proc
 import tokens
 import txt
@@ -119,6 +120,32 @@ func symMod(cs ptr txt:Charstash, modName,name ptr uint8)
 /func
 
 
+func symModRet(modName,name ptr uint8) ptr uint8
+  mut cs = txt:csNew(10)
+
+  symMod(cs, modName, name)
+
+  return txt:csUnwrap(cs)
+/func
+
+
+func methSym(cs ptr txt:Charstash, typeName,name ptr uint8)
+  txt:csAppendStr(cs, typeName)
+  txt:csAppendStr(cs, "$$")
+  txt:csAppendStr(cs, name)
+/func
+
+
+func genSym(cs ptr txt:Charstash, typeName,modName,name ptr uint8)
+  if typeName != null
+    methSym(cs, typeName, name)
+  else
+    symMod(cs, modName, name)
+  /if
+/func
+
+
+
 alias LRStr struct(
   left,right ptr txt:Charstash
 )
@@ -147,13 +174,13 @@ func lrDump(lr LRStr, cs ptr txt:Charstash)
 
 func csymTypeWrap(cs ptr txt:Charstash, type ptr ast:Type)
   mut lr = lrNew()
-  csymType(lr, type, false)
+  csymType(lr, null, type, false)
   lrDump(lr, cs)
 /func
 
 
-func csymFuncType(lr LRStr, type ptr ast:Type)
-  csymType(lr, type'retType, false)
+func csymFuncType(lr LRStr, methTarget ptr uint8, type ptr ast:Type)
+  csymType(lr, null, type'retType, false)
 
   mut paramsCs = txt:csNew(30)
 
@@ -162,13 +189,22 @@ func csymFuncType(lr LRStr, type ptr ast:Type)
 
   txt:csAppendStr(paramsCs, "(")
 
+  if methTarget != null
+    txt:csAppendStr(paramsCs, methTarget)
+    txt:csAppendStr(paramsCs, "* me")
+
+    if len > 0
+      txt:csAppendStr(paramsCs, ", ")
+    /if
+  /if
+
   while i < len
     if i != 0
       txt:csAppendWord(paramsCs, ",")
     /if
 
     mut pair = kv:kvGetAt(type'members, i)
-    csym(paramsCs, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value), false)
+    csym(paramsCs, null, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value), false)
     i++
   /while
 
@@ -185,7 +221,7 @@ func csymFuncType(lr LRStr, type ptr ast:Type)
 func csymPtrArrType(lr LRStr, type ptr ast:Type)
   mut tofn = type'retType'type == ast:TYPE_FUNC
 
-  csymType(lr, type'retType, false)
+  csymType(lr, null, type'retType, false)
 
   if tofn
     txt:csAppendStr(lr'left, "(")
@@ -223,7 +259,7 @@ func csymStructType(cs ptr txt:Charstash, type ptr ast:Type)
     mut pair = kv:kvGetAt(type'members, i)
 
     txt:csAppendStr(cs, "  ")
-    csym(cs, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value), false)
+    csym(cs, null, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value), false)
     txt:csAppendLine(cs, ";")
 
     i++
@@ -233,7 +269,7 @@ func csymStructType(cs ptr txt:Charstash, type ptr ast:Type)
 /func
 
 
-func csymType(lr LRStr, type ptr ast:Type, full bool)
+func csymType(lr LRStr, methTarget ptr uint8, type ptr ast:Type, full bool)
 
   if type == null or type'type == ast:TYPE_EMPTY
     txt:csAppendStr(lr'left, "void ")
@@ -253,7 +289,7 @@ func csymType(lr LRStr, type ptr ast:Type, full bool)
       txt:csAppendStr(lr'left, "void *")
     else
       if type'type == ast:TYPE_FUNC
-        csymFuncType(lr, type)
+        csymFuncType(lr, methTarget, type)
       else
         if type'type == ast:TYPE_INT
           if !type'isSigned
@@ -288,22 +324,23 @@ func csymType(lr LRStr, type ptr ast:Type, full bool)
 
 
 func csymGen(lr LRStr,
-             moduleName,name ptr uint8,
+             typeName,moduleName,name ptr uint8,
              type ptr ast:Type,
              tdf bool)
 
-  csymType(lr, type, tdf)
-  symMod(lr'left, moduleName, name)
+  csymType(lr, typeName, type, tdf)
+
+  genSym(lr'left, typeName, moduleName, name)
 /func
 
 
 func csym(cs ptr txt:Charstash,
-          moduleName,name ptr uint8,
+          typeName,moduleName,name ptr uint8,
           type ptr ast:Type,
           tdf bool)
 
   mut lr = lrNew()
-  csymGen(lr, moduleName, name, type, tdf)
+  csymGen(lr, typeName, moduleName, name, type, tdf)
   lrDump(lr, cs)
 
 /func
@@ -596,6 +633,20 @@ func translStringEscape(cs ptr txt:Charstash, str ptr uint8)
 /func
 
 
+func translDotExpr(cs ptr txt:Charstash, pexpr ptr ast:PExpr)
+  mut e1 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+  mut e2 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
+
+  mut targetType = e1'type
+  mut typeName = symModRet(targetType'moduleName, targetType'name)
+  mut methName = cast<ptr uint8>(e2'node'value)
+
+  methSym(cs, typeName, methName)
+
+  mem:free(typeName)
+/func
+
+
 func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
 
   mut value = pexpr'node'value
@@ -620,7 +671,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
     mut modName ptr uint8 = root'moduleName != null => root'moduleName'name || null
     mut fDecl = ast:stabGet(root'node'syms, name)
 
-    if fDecl != null and fDecl'declType != ast:PDECL and ast:findSym(cast<ptr ast:PNode>(pexpr), name) == fDecl'type
+    if fDecl != null and !fDecl'declOnly and ast:findSym(cast<ptr ast:PNode>(pexpr), name) == fDecl'type
       symMod(cs, modName, name)
     else
       txt:csAppendStr(cs, name)
@@ -629,7 +680,13 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
     return
   /if
 
-  if pexpr'opType == tokens:NULLPTR
+  if pexpr'opType == tokens:ME
+    txt:csAppendStr(cs, "me")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:NULL
     txt:csAppendStr(cs, "(void*) 0")
 
     return
@@ -693,13 +750,39 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
 
   if pexpr'opType == tokens:OPAR
     mut toCall = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+    mut methCall = toCall'opType == tokens:DOT
 
-    translExpr(cs, root, toCall)
+    if methCall
+      translDotExpr(cs, toCall)
+    else
+      translExpr(cs, root, toCall)
+    /if
 
     txt:csAppendStr(cs, "(")
 
-    mut i uintptr = 1
     mut len = list:listLen(pexpr'node'leaves)
+
+    # add me parameter
+    if methCall
+      mut target = cast<ptr ast:PExpr>(val list:listGet(toCall'node'leaves, 0))
+      mut notPtr = !ast:typeIsPtr(target'type)
+
+      if notPtr
+        txt:csAppendStr(cs, "&(")
+      /if
+
+      translExpr(cs, root, target)
+
+      if notPtr
+        txt:csAppendStr(cs, ")")
+      /if
+
+      if len > 0
+        txt:csAppendWord(cs, ",")
+      /if
+    /if
+
+    mut i uintptr = 1
 
     while i < len
       mut param = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, i))
@@ -730,6 +813,38 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
     translExpr(cs, root, e2)
 
     txt:csAppendStr(cs, "]")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:DQUEST
+    mut e1 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+    mut e2 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
+
+    # warn: due to constraints, every expression will be evaluated twice.
+    # Please don't use "??" with complex expressions on the left.
+    if e1'opType != tokens:APOS and e1'opType != tokens:ID and e1'opType != tokens:COLON
+      mut msg = "ctrans: unsupported operation - lhs would be evaluated twice"
+      mut issue = parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, root'fileName, msg)
+
+      parser:issueWriteOut(issue, ptr tty:err)
+
+      proc:exit(1)
+    /if
+
+    txt:csAppendStr(cs, "(")
+
+    translExpr(cs, root, e1)
+
+    txt:csAppendStr(cs, " != (void*)0) ? (")
+
+    translExpr(cs, root, e1)
+
+    txt:csAppendStr(cs, ") : (")
+
+    translExpr(cs, root, e2)
+
+    txt:csAppendStr(cs, ")")
 
     return
   /if
@@ -770,6 +885,17 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
     translExpr(cs, root, e)
 
     txt:csAppendStr(cs, "++")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:QUEST
+    mut e = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+
+    txt:csAppendStr(cs, "(")
+    translExpr(cs, root, e)
+
+    txt:csAppendStr(cs, " != (void*) 0)")
 
     return
   /if
@@ -861,8 +987,13 @@ func translDecl(bl BlTrans, root ptr ast:PRoot, block ptr ast:PBlock, stmt ptr a
   mut pdecl = cast<ptr ast:PDecl>(stmt)
   mut sym = txt:csNew(20)
   mut type = ast:stabTypeof(block'syms, pdecl'sym'name)
+  mut methodType ptr uint8 = null
 
-  csym(sym, null, pdecl'sym'name, type, false)
+  if stmt'type == ast:PMETHOD
+    methodType = symModRet(pdecl'methodTypeModule, pdecl'methodType)
+  /if
+
+  csym(sym, methodType, null, pdecl'sym'name, type, false)
 
   mut ls = lsNew(stmt'begin,txt:csUnwrap(sym))
 
@@ -903,7 +1034,7 @@ func translStmt(bl BlTrans, root ptr ast:PRoot, block ptr ast:PBlock, stmt ptr a
   if stmt'type == ast:PIF or stmt'type == ast:PIFELSE
     list:listAppend(bl'stmts, lsNew(stmt'begin, translIf(stmt, root, fname, p)))
   else
-    if stmt'type == ast:PMUT or stmt'type == ast:PDECL
+    if stmt'type == ast:PMUT or stmt'type == ast:PFUNCTION or stmt'type == ast:PMETHOD
       translDecl(bl, root, block, stmt)
     else
       if stmt'type == ast:PWHILE
@@ -995,14 +1126,23 @@ func ctransGenEntry(tr ptr ctrans:Transl, root ptr ast:PRoot)
 /func
 
 
-func translGenSym(moduleName,name ptr uint8, dinfo ptr ast:DeclInfo) ptr uint8
+func translGenSym(moduleName ptr uint8, pdecl ptr ast:PDecl, dinfo ptr ast:DeclInfo) ptr uint8
   mut cs = txt:csNew(30)
+  mut name = pdecl'sym'name
 
   # big hack for int main(int argc, char *argv[])
   if moduleName == null and txt:strequals(name, "main") and dinfo'declType == ast:PFUNCTION
     txt:csAppendStr(cs, "int main(int argc, char *argv[])")
   else
-    csym(cs, moduleName, name, dinfo'type, false)
+    mut typeName ptr uint8 = null
+
+    if dinfo'declType == ast:PMETHOD
+      typeName = symModRet(pdecl'methodTypeModule, pdecl'methodType)
+    /if
+
+    csym(cs, typeName, moduleName, name, dinfo'type, false)
+
+    mem:free(typeName)
   /if
 
   return txt:csUnwrap(cs)
@@ -1024,7 +1164,7 @@ func translGlobVar(tr ptr ctrans:Transl, sym ptr uint8, root ptr ast:PRoot, expr
 func translTypedef(tr ptr ctrans:Transl, name ptr uint8, type ptr ast:Type)
   txt:csAppendWord(tr'typedefs, "typedef")
 
-  csym(tr'typedefs, tr'modName, name, type, true)
+  csym(tr'typedefs, null, tr'modName, name, type, true)
 
   txt:csAppendLine(tr'typedefs, ";\n")
 /func

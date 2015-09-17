@@ -31,21 +31,28 @@ func ctransGenDecls(tr ptr ctrans:Transl,
     mut child = cast<ptr ast:PDecl>(val list:listGet(root'node'node'leaves, i))
 
     if child'node'type != ast:PALIAS and child'node'type != ast:PENTRY
-      mut dinfo = ast:stabGet(root'node'syms, child'sym'name)
 
-      mut wantsModName = tr'header or child'node'type != ast:PDECL
+      mut key = ast:declKey(child)
 
-      mut sym = ctrans:translGenSym(wantsModName => moduleName || null, child'sym'name, dinfo)
+      mut dinfo = ast:stabGet(root'node'syms, key)
+
+      mem:free(key)
+
+      mut wantsModName = tr'header or !child'isDecl
+
+      mut sym = ctrans:translGenSym(wantsModName => moduleName || null, child, dinfo)
 
       ctrans:translExtern(tr, sym)
 
-      if child'node'type == ast:PMUT
-        mut expr = list:listGet(child'node'leaves, 0)
+      if !child'isDecl
+        if child'node'type == ast:PMUT
+          mut expr = list:listGet(child'node'leaves, 0)
 
-        ctrans:translGlobVar(tr, sym, root, expr != null => cast<ptr ast:PExpr>(val expr) || null)
-      else
-        if child'node'type == ast:PFUNCTION
-          ctrans:translFunc(tr, root, root'fileName, sym, child)
+          ctrans:translGlobVar(tr, sym, root, expr != null => cast<ptr ast:PExpr>(val expr) || null)
+        else
+          if child'node'type == ast:PFUNCTION or child'node'type == ast:PMETHOD
+            ctrans:translFunc(tr, root, root'fileName, sym, child)
+          /if
         /if
       /if
 
