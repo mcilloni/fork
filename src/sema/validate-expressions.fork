@@ -839,7 +839,7 @@ func resolveMethod(rsv sema:Resolver,
     return type
   /if
 
-  mut name = sema:methodKey(typeModule, typeName, methodName)
+  mut name = ast:methodKey(typeModule, typeName, methodName)
 
   # try searching for a top declaration
   type = sema:resolveDeclType(rsv, name, cast<ptr ast:PNode>(pexpr), recList, errors)

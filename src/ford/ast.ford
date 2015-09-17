@@ -223,13 +223,8 @@ decl func findSymLocal(node ptr PNode, name ptr uint8) ptr Type
 decl func findStab(node ptr PNode) ptr Symtable
 
 
-alias MethodEntry struct(
-  mi MethodInfo,
-  hasImpl bool
-)
-
-decl func menFree(men ptr MethodEntry)
-decl func menNew(mi MethodInfo, hasImpl bool) ptr MethodEntry
+decl func declKey(pdecl ptr PDecl) ptr uint8
+decl func methodKey(typeModule,typeName,methodName ptr uint8) ptr uint8
 
 
 decl mut PROOT      uint16

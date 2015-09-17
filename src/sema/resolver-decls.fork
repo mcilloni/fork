@@ -22,18 +22,6 @@ import txt
 import utils
 
 
-
-func miHash(typeModule,typeName,methodName ptr uint8) data
-  mut mi ast:MethodInfo
-
-  mi'typeModule = typeModule
-  mi'typeName = typeName
-  mi'typeModule = typeModule
-
-  return cast<data>(ast:methodInfoHash(ptr mi))
-/func
-
-
 func findRecAlias(ctx ptr parser:Context, scope ptr ast:PNode, ralias ptr ast:Type) ptr ast:Type
   if ralias'type != ast:TYPE_RECALIAS
     return ralias
@@ -61,7 +49,7 @@ func findMethod(ctx ptr parser:Context,
                 node ptr ast:PNode,
                 typeModule,typeName,methodName ptr uint8) ptr ast:Type
 
-  mut name = sema:methodKey(null, typeName,methodName)
+  mut name = ast:methodKey(null, typeName,methodName)
 
   mut ret = ast:findSym(node, name)
   if ret != null
@@ -109,7 +97,7 @@ func registerDeclReal(rsv sema:Resolver,
                       recursive bool,
                       recList,errors ptr list:List) ptr ast:Type
 
-  mut name = sema:declKey(pdecl)
+  mut name = ast:declKey(pdecl)
   mut ptype = pdecl'sym'type
 
   mut isDecl = pdecl'isDecl
@@ -224,7 +212,7 @@ func registerTopDeclReal(rsv sema:Resolver,
                          pdecl ptr ast:PDecl,
                          recList,errors ptr list:List) ptr ast:Type
 
-  list:listPush(recList, sema:declKey(pdecl))
+  list:listPush(recList, ast:declKey(pdecl))
 
   mut ret = registerDeclReal(rsv, pdecl, false, recList, errors)
 

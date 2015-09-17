@@ -23,35 +23,6 @@ import txt
 import utils
 
 
-func methodKey(typeModule,typeName,methodName ptr uint8) ptr uint8
-  mut cs = txt:csNew(10)
-
-  if typeModule != null
-    txt:csAppendStr(cs, typeModule)
-    txt:csAppendStr(cs, ":")
-  /if
-
-  txt:csAppendStr(cs, typeName)
-
-  txt:csAppendStr(cs, ".")
-
-  txt:csAppendStr(cs, methodName)
-
-  return txt:csUnwrap(cs)
-/func
-
-
-func declKey(pdecl ptr ast:PDecl) ptr uint8
-  mut isMet =  pdecl'node'type == ast:PMETHOD
-
-  if !isMet
-    return txt:strclone(pdecl'sym'name)
-  /if
-
-  return sema:methodKey(pdecl'methodTypeModule, pdecl'methodType, pdecl'sym'name)
-/func
-
-
 func resolverDeinit(rsv ptr sema:Resolver)
   kv:kvFree(rsv'aliases)
   kv:kvFree(rsv'decls)
@@ -89,7 +60,7 @@ func resolverCollectDecls(rsv ptr sema:Resolver,
                           errors ptr list:List) bool
 
   mut existent ptr ast:PDecl
-  mut name = sema:declKey(pdecl)
+  mut name = ast:declKey(pdecl)
 
   if kv:kvGet(rsv'decls, name, ptr existent)
     mut cs = txt:csNew(20)
@@ -167,7 +138,7 @@ func resolverCollect(rsv ptr sema:Resolver,
       /if
     /if
 
-    kv:kvPut(ret, sema:declKey(pdecl), pdecl)
+    kv:kvPut(ret, ast:declKey(pdecl), pdecl)
 
     i++
   /while

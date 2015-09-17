@@ -21,6 +21,35 @@ import txt
 import utils
 
 
+func methodKey(typeModule,typeName,methodName ptr uint8) ptr uint8
+  mut cs = txt:csNew(10)
+
+  if typeModule != null
+    txt:csAppendStr(cs, typeModule)
+    txt:csAppendStr(cs, ":")
+  /if
+
+  txt:csAppendStr(cs, typeName)
+
+  txt:csAppendStr(cs, ".")
+
+  txt:csAppendStr(cs, methodName)
+
+  return txt:csUnwrap(cs)
+/func
+
+
+func declKey(pdecl ptr ast:PDecl) ptr uint8
+  mut isMet =  pdecl'node'type == ast:PMETHOD
+
+  if !isMet
+    return txt:strclone(pdecl'sym'name)
+  /if
+
+  return ast:methodKey(pdecl'methodTypeModule, pdecl'methodType, pdecl'sym'name)
+/func
+
+
 func findPBlock(node ptr ast:PNode) ptr ast:PNode
   if node == null
     return null
@@ -43,7 +72,7 @@ func findPRoot(node ptr ast:PNode) ptr ast:PRoot
     return findPRoot(node'parent)
   /if
 
-  return cast<ptr ast:PRoot>(node)  
+  return cast<ptr ast:PRoot>(node)
 /func
 
 
@@ -92,32 +121,6 @@ func isPExpr(pnode ptr ast:PNode) bool
 
 func isPRoot(pnode ptr ast:PNode) bool
   return pnode != null and pnode'type == ast:PROOT
-/func
-
-
-func menFree(men ptr ast:MethodEntry)
-  mem:free(men)
-/func
-
-
-func menNew(mi ast:MethodInfo, hasImpl bool) ptr ast:MethodEntry
-  mut men = cast<ptr ast:MethodEntry>(mem:alloc(size(ast:MethodEntry)))
-
-  men'mi = mi
-  men'hasImpl = hasImpl
-
-  return men
-/func
-
-
-func methodInfoHash(mi ptr ast:MethodInfo) hash:HashNum
-  mut hn hash:HashNum = 1
-
-  hash:hnString(ptr hn, mi'name)
-  hash:hnString(ptr hn, mi'typeName)
-  hash:hnString(ptr hn, mi'typeModule)
-
-  return hn
 /func
 
 

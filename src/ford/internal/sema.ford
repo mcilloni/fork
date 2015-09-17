@@ -100,8 +100,3 @@ decl func findSymModule(ctx ptr parser:Context, moduleName, name ptr uint8) ptr 
 decl func typeIsAssignable(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
 decl func typeIsCastable(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
 decl func typeChooseLarger(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
-
-decl func declKey(pdecl ptr ast:PDecl) ptr uint8
-decl func methodKey(typeModule,typeName,methodName ptr uint8) ptr uint8
-
-decl func miHash(typeModule,typeName,methodName ptr uint8) data
