@@ -777,6 +777,50 @@ func validateAssignExpr(rsv sema:Resolver,
   return ltype
 /func
 
+
+func validateNullCoalescingExpr(rsv sema:Resolver,
+                                pexpr ptr ast:PExpr,
+                                ltype,rtype ptr ast:Type,
+                                errors ptr list:List) ptr ast:Type
+
+  if !ast:typeIsPtr(ltype)
+    mut cs = txt:csNew(20)
+
+    txt:csAppendStr(cs, "cannot coalesce non pointer type '")
+    ast:typeSummarize(cs, ltype)
+    txt:csAppendStr(cs, "'")
+
+    mut str = txt:csUnwrap(cs)
+
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+
+    mem:free(str)
+
+    return null
+  /if
+
+  if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
+    mut cs = txt:csNew(20)
+
+    txt:csAppendStr(cs, "cannot coalesce type '")
+    ast:typeSummarize(cs, ltype)
+    txt:csAppendStr(cs, "' with type '")
+    ast:typeSummarize(cs, rtype)
+    txt:csAppendStr(cs, "'")
+
+    mut str = txt:csUnwrap(cs)
+
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+
+    mem:free(str)
+
+    return null
+  /if
+
+  return ltype
+/func
+
+
 # a.b syntax is allowed ONLY if it's a method call.
 # Otherwise method access is semantically nonsense (until closures, of course).
 func pnodeAllowedToUseDot(node ptr ast:PNode) bool
@@ -890,6 +934,10 @@ func validateBinaryExpr(rsv sema:Resolver,
   # array access
   if op == tokens:OBRAC
     return validateArrayAccess(rsv, pexpr, ltype, rtype, errors)
+  /if
+
+  if op == tokens:DQUEST
+    return validateNullCoalescingExpr(rsv, pexpr, ltype, rtype, errors)
   /if
 
   if ttypeIsBool(op)
@@ -1032,6 +1080,30 @@ func validateIncDecExpr(rsv sema:Resolver,
 /func
 
 
+func validateQuestExpr(rsv sema:Resolver,
+                       pexpr ptr ast:PExpr,
+                       atype ptr ast:Type,
+                       errors ptr list:List) ptr ast:Type
+
+  if !ast:typeIsPtr(atype)
+    mut cs = txt:csNew(20)
+    txt:csAppendStr(cs, "cannot apply '?' to type '")
+    ast:typeSummarize(cs, atype)
+    txt:csAppendStr(cs, "'")
+
+    mut msg = txt:csUnwrap(cs)
+
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+
+    mem:free(msg)
+
+    return null
+  /if
+
+  return parser:ctxMatchBuiltin(rsv'ctx, "bool")
+/func
+
+
 func validateUnaryExpr(rsv sema:Resolver,
                        pexpr ptr ast:PExpr,
                        recList, errors ptr list:List) ptr ast:Type
@@ -1059,6 +1131,10 @@ func validateUnaryExpr(rsv sema:Resolver,
 
   if op == tokens:UMINUS
     return validateUMinusExpr(rsv, pexpr, atype, errors)
+  /if
+
+  if op == tokens:QUEST
+    return validateQuestExpr(rsv, pexpr, atype, errors)
   /if
 
   # if we've reached this point then it's '++' or '--'
