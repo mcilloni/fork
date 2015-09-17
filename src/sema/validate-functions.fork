@@ -52,6 +52,14 @@ func ensureMethodCorrectness(rsv sema:Resolver,
   if pdecl'methodTypeModule != null
     type = sema:findAliasImport(rsv'ctx, pdecl'methodTypeModule, pdecl'methodType)
 
+    # if it's not present, then it may be possibile that it belongs to the current scope
+    # if this file is in the same module of this type.
+    if type == null
+      if rsv'root'moduleName != null and txt:strequals(rsv'root'moduleName'name, pdecl'methodTypeModule)
+        type = sema:findAliasLocal(cast<ptr ast:PNode>(pdecl), pdecl'methodType)
+      /if
+    /if
+
     if type == null
       mut cs = txt:csNew(20)
 

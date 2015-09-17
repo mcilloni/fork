@@ -45,7 +45,7 @@ func findSymModule(ctx ptr parser:Context, moduleName, name ptr uint8) ptr ast:T
 # module, with this precedence order.
 # Otherwise, it's pretty complicated to handle conflicts, and, most important,
 # you don't really know who calls what.
-func findMethod(ctx ptr parser:Context,
+func findMethod(rsv sema:Resolver,
                 node ptr ast:PNode,
                 typeModule,typeName,methodName ptr uint8) ptr ast:Type
 
@@ -61,7 +61,7 @@ func findMethod(ctx ptr parser:Context,
 
   # fetch this from the current ford.
   if root'moduleName != null
-    ret = sema:findSymModule(ctx, root'moduleName'name, name)
+    ret = sema:findSymModule(rsv'ctx, root'moduleName'name, name)
     if ret != null
       mem:free(name)
       return ret
@@ -70,7 +70,7 @@ func findMethod(ctx ptr parser:Context,
 
   # otherwise, lookup in the type's module.
 
-  ret = sema:findSymModule(ctx, typeModule, name)
+  ret = sema:findSymModule(rsv'ctx, typeModule, name)
   mem:free(name)
 
   return ret

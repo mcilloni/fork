@@ -89,7 +89,7 @@ decl func semaValidateAst(context ptr parser:Context,
 decl func findAliasImport(ctx ptr parser:Context, moduleName,name ptr uint8) ptr ast:Type
 decl func findAliasLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 
-decl func findMethod(ctx ptr parser:Context,
+decl func findMethod(rsv Resolver,
                      node ptr ast:PNode,
                      typeModule,typeName,methodName ptr uint8) ptr ast:Type
 

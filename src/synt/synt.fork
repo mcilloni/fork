@@ -950,7 +950,7 @@ func parserParseMethodHead(ctx ptr synt:ParserContext, typeModule,typeName,name 
 
     val typeModule = firstId
   else
-    val typeModule = null
+    val typeModule = ctx'moduleName
     val typeName = firstId
   /if
 
@@ -1066,6 +1066,8 @@ func parserParseProgram(ctx ptr synt:ParserContext) ptr ast:PNode
     return null
   /if
 
+  ctx'moduleName = moduleName != null => moduleName'name || null
+
   # parse imports
   mut imports = parserParseImports(ctx)
 
@@ -1122,6 +1124,7 @@ func parserParse(parser ptr synt:Parser) ptr ast:PNode
   ctx'lex = lex
   ctx'next = lex:lexerNext(lex)
   ctx'last = firstLineno
+  ctx'moduleName = null
 
   if (lexErr = lex:lexerError(lex)) != null
     parser'err = lex:issueFromLexError(lexErr, firstLineno)

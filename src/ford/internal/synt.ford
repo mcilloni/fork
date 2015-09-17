@@ -26,7 +26,8 @@ alias ParserContext struct (
   prs ptr Parser,
   lex ptr lex:Lexer,
   next ptr lex:Token,
-  last ptr lex:Lineno
+  last ptr lex:Lineno,
+  moduleName ptr uint8
 )
 
 decl func parserParseExpr(ctx ptr ParserContext) ptr ast:PExpr

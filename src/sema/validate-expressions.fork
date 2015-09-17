@@ -833,7 +833,7 @@ func resolveMethod(rsv sema:Resolver,
                    typeModule,typeName,methodName ptr uint8,
                    recList,errors ptr list:List) ptr ast:Type
 
-  mut type = sema:findMethod(rsv'ctx, cast<ptr ast:PNode>(pexpr), typeModule, typeName, methodName)
+  mut type = sema:findMethod(rsv, cast<ptr ast:PNode>(pexpr), typeModule, typeName, methodName)
 
   if type != null
     return type
