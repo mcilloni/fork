@@ -470,6 +470,10 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     type = tokens:DOT
   /if
 
+  if txt:strequals(strToken, "??")
+    type = tokens:DQUEST
+  /if
+
   if txt:strequals(strToken, "mod")
     type = tokens:MOD
   /if
@@ -623,6 +627,10 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     type = tokens:PTR
   /if
 
+  if txt:strequals(strToken, "?")
+    type = tokens:QUEST
+  /if
+
   if txt:strequals(strToken, "return")
     type = tokens:RETURN
   /if
@@ -756,6 +764,10 @@ func ttypeStr(tt uint16) ptr uint8
 
   if tt == tokens:DOT
     return "."
+  /if
+
+  if tt == tokens:DQUEST
+    return "??"
   /if
 
   if tt == tokens:ELSE
@@ -896,6 +908,10 @@ func ttypeStr(tt uint16) ptr uint8
 
   if tt == tokens:PTR
     return "ptr"
+  /if
+
+  if tt == tokens:QUEST
+    return "?"
   /if
 
   if tt == tokens:RETURN

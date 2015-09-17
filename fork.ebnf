@@ -32,7 +32,8 @@ assignExpr ::= assign | conditional
 assign ::= unary, assignOp, assignExpr
 assignOp ::= '=' | '+=' | '-=' | '*=' | '/=' | '&=' | '|=' | '^=' | '**='
 idname ::= id, [':', id]
-conditional ::= (or, '=>', expr, '||', conditional) | or
+conditional ::= (coalesc, '=>', expr, '||', conditional) | coalesc
+coalesc ::= (coalesc, '??', or) | or
 or ::= ( or, 'or', and ) | and
 and ::= ( and, 'and', binOr ) | binOr
 binOr ::= ( binOr, '|', binAnd ) | binAnd

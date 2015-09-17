@@ -341,9 +341,9 @@ func parserParsePostfixSuffix(ctx ptr synt:ParserContext, primaryLhs ptr ast:PEx
       if ctx'next'type == tokens:OPAR
         lhs = parserParseCallExpr(ctx, lhs)
       else
-        if ctx'next'type == tokens:INC or ctx'next'type == tokens:DEC
-          mut incDec = synt:nextTok(ctx)
-          lhs = astfn:pexprNew(incDec, lhs, null, lhs'node'begin, lex:tokExtractEnd(incDec))
+        if ctx'next'type == tokens:INC or ctx'next'type == tokens:DEC or ctx'next'type == tokens:QUEST
+          mut pfOp = synt:nextTok(ctx)
+          lhs = astfn:pexprNew(pfOp, lhs, null, lhs'node'begin, lex:tokExtractEnd(pfOp))
         else
           if ctx'next'type == tokens:APOS or ctx'next'type == tokens:DOT
             lhs = parserParseFieldDotExpr(ctx, lhs)

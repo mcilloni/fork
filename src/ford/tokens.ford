@@ -30,6 +30,7 @@ decl mut DECL uint16
 decl mut DIFFERENT uint16
 decl mut DIV uint16
 decl mut DOT uint16
+decl mut DQUEST uint16
 decl mut ELSE uint16
 decl mut ENDENTRY uint16
 decl mut ENDFUNC uint16
@@ -65,6 +66,7 @@ decl mut PIPE uint16
 decl mut PLUS uint16
 decl mut POW uint16
 decl mut PTR uint16
+decl mut QUEST uint16
 decl mut RETURN uint16
 decl mut SEPARATOR uint16
 decl mut SIZE uint16

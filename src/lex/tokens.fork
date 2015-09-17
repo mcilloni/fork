@@ -59,6 +59,7 @@ mut WHILE uint16 = 540
 
 mut TWOCOLONS uint16 = 16520
 
+mut QUEST uint16 = 15192
 mut INC uint16 = 15092
 mut OPAR uint16 = 15411
 mut OBRAC uint16 = 15401
@@ -98,6 +99,8 @@ mut AND uint16 = 5040
 
 mut OR uint16 = 4420
 
-mut FATARROW uint16 = 3061
+mut DQUEST uint16 = 3000
 
-mut ASSIGN uint16 = 2061
+mut FATARROW uint16 = 2061
+
+mut ASSIGN uint16 = 1061
