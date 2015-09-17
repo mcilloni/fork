@@ -34,7 +34,7 @@ func addAllSymbolsToStab(stab ptr ast:Symtable, syms ptr kv:KVList)
     mut name = cast<ptr uint8>(pair'key)
     mut type = cast<ptr ast:Type>(pair'value)
 
-    ast:stabAdd(stab, name, type, 0) #0 ignored
+    ast:stabAdd(stab, name, true, type, 0) #0 ignored
 
     i++
   /while
@@ -82,7 +82,7 @@ func ensureMethodCorrectness(rsv sema:Resolver,
   mut pblock = cast<ptr ast:PBlock>(val list:listGet(pdecl'node'leaves, 0))
   mut meType = astfn:typeNewPtr(rsv'root'typePool, null, null, type)
 
-  ast:stabAdd(pblock'syms, "me", meType, 0)
+  ast:stabAdd(pblock'syms, "me", true, meType, 0)
 
   return true
 /func

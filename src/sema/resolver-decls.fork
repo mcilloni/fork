@@ -89,8 +89,8 @@ func findMethod(ctx ptr parser:Context,
 /func
 
 
-func rootDeclsRegister(rsv sema:Resolver, name ptr uint8, type ptr ast:Type, declType uint16)
-  ast:stabAdd(rsv'root'node'syms, name, type, declType)
+func rootDeclsRegister(rsv sema:Resolver, name ptr uint8, isDecl bool, type ptr ast:Type, declType uint16)
+  ast:stabAdd(rsv'root'node'syms, name, isDecl, type, declType)
 
   mut pdecl ptr ast:PDecl
 
@@ -147,7 +147,7 @@ func registerDeclReal(rsv sema:Resolver,
       # register function BEFORE because it can be recursive
       # realType will always be non-null
       if !inMap and !isEntry
-        rootDeclsRegister(rsv, name, realType, pdecl'node'type)
+        rootDeclsRegister(rsv, name, pdecl'isDecl, realType, pdecl'node'type)
         inMap = true
       /if
 
@@ -209,7 +209,7 @@ func registerDeclReal(rsv sema:Resolver,
 
   # functions are already registered
   if !inMap and realType != null and pdecl'node'type != ast:PENTRY
-    rootDeclsRegister(rsv, name, realType, pdecl'node'type)
+    rootDeclsRegister(rsv, name, pdecl'isDecl, realType, pdecl'node'type)
   /if
 
   if isEntry
@@ -305,7 +305,7 @@ func registerDecl(rsv sema:Resolver,
     return null
   /if
 
-  ast:stabAdd(stab, name, type, declType)
+  ast:stabAdd(stab, name, pdecl'isDecl, type, declType)
 
   return type
 /func

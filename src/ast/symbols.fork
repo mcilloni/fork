@@ -179,8 +179,8 @@ func stabNew() ptr ast:Symtable
 /func
 
 
-func stabAdd(stab ptr ast:Symtable, name ptr uint8, type ptr ast:Type, symType uint16)
-  kv:kvPut(stab'syms, txt:strclone(name), astfn:declInfoNew(symType, type))
+func stabAdd(stab ptr ast:Symtable, name ptr uint8, isDecl bool, type ptr ast:Type, symType uint16)
+  kv:kvPut(stab'syms, txt:strclone(name), astfn:declInfoNew(symType, isDecl, type))
 /func
 
 

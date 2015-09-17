@@ -27,7 +27,7 @@ import utils
 func rootAliasRegister(rsv sema:Resolver, name ptr uint8, type ptr ast:Type)
   type'name = txt:strclone(name)
   type'moduleName = rsv'root'moduleName != null => txt:strclone(rsv'root'moduleName'name) || null
-  ast:stabAdd(rsv'root'aliases, name, type, ast:PALIAS)
+  ast:stabAdd(rsv'root'aliases, name, false, type, ast:PALIAS)
 
   mut pdecl ptr ast:PDecl
 

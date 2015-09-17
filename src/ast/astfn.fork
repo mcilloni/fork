@@ -27,9 +27,10 @@ func declInfoFree(declInfo ptr ast:DeclInfo)
 /func
 
 
-func declInfoNew(declType uint16, type ptr ast:Type) ptr ast:DeclInfo
+func declInfoNew(declType uint16, declOnly bool, type ptr ast:Type) ptr ast:DeclInfo
   mut ret = cast<ptr ast:DeclInfo>(mem:alloc(size(ast:DeclInfo)))
   ret'declType = declType
+  ret'declOnly = declOnly
   ret'type = type
 
   return ret

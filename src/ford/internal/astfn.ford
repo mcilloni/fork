@@ -43,7 +43,7 @@ decl func typeSetBoundaries(type ptr ast:Type, begin,end ast:Line)
 
 
 decl func declInfoFree(declInfo ptr ast:DeclInfo)
-decl func declInfoNew(declType uint16, type ptr ast:Type) ptr ast:DeclInfo
+decl func declInfoNew(declType uint16, declOnly bool, type ptr ast:Type) ptr ast:DeclInfo
 
 
 decl func strdefFree(strdef ptr ast:StringDef)

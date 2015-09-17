@@ -124,6 +124,7 @@ decl func typeSummarize(cs ptr txt:Charstash, type ptr Type)
 
 alias DeclInfo struct(
   declType uint16,
+  declOnly bool,
   type ptr Type
 )
 
@@ -140,7 +141,7 @@ alias Symtable struct(
 )
 
 decl func stabNew() ptr Symtable
-decl func stabAdd(stab ptr Symtable, name ptr uint8, type ptr Type, symType uint16)
+decl func stabAdd(stab ptr Symtable, name ptr uint8, isDecl bool, type ptr Type, symType uint16)
 decl func stabGet(stab ptr Symtable, name ptr uint8) ptr DeclInfo
 decl func stabTypeof(stab ptr Symtable, name ptr uint8) ptr Type
 decl func stabFree(stab ptr Symtable)
