@@ -28,7 +28,7 @@
     "name": "storage.modifier.c"
   }
   {
-    "match": "\\b(and|cast|mod|or|size)\\b"
+    "match": "\\b(and|cast|mod|not|or|size)\\b"
     "name": "keyword.control.c"
   }
   {

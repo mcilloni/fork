@@ -70,7 +70,7 @@ func pathListFiles(path ptr uint8, error ptr ptr err:Error) ptr list:List
   mut ret = list:listNew()
   mut buf [512] uint8
 
-  if !path_listAll(path, ret, cast<ptr func(to data, elem ptr uint8)>(list:listAppend), ptr buf[0], 512)
+  if not path_listAll(path, ret, cast<ptr func(to data, elem ptr uint8)>(list:listAppend), ptr buf[0], 512)
     list:listFree(ret)
 
     val error = err:errorNew(ptr buf[0])

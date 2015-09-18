@@ -72,7 +72,7 @@ func findImport(ctx ptr parser:Context, importName ptr ast:StringDef, importAst 
 
 func ctxImport(ctx ptr parser:Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr list:List
 
-  if !map:mapGet(ctx'imports, importName, value)
+  if not map:mapGet(ctx'imports, importName, value)
     mut errors = findImport(ctx, importName, value)
     if list:listLen(errors) == 0
       map:mapPut(ctx'imports, txt:strclone(importName'name), val value, map:FREE_KEY | map:FREE_VALUE)

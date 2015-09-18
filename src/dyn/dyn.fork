@@ -68,7 +68,7 @@ func sobjInit(sobj ptr dyn:SObj, name ptr uint8, err ptr ptr err:Error) bool
 func sobjNew(name ptr uint8, err ptr ptr err:Error) ptr dyn:SObj
   mut ret = cast<ptr dyn:SObj>(mem:alloc(size(dyn:SObj)))
 
-  if !dyn:sobjInit(ret, name, err)
+  if not dyn:sobjInit(ret, name, err)
     mem:free(ret)
 
     return null

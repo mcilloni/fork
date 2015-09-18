@@ -47,7 +47,7 @@ func typeEqualsList(list1, list2 ptr kv:KVList) bool
     mut type1 = cast<ptr ast:Type>(pair1'value)
     mut type2 = cast<ptr ast:Type>(pair2'value)
 
-    if !txt:strequals(name1, name2) or !ast:typeEquals(type1, type2)
+    if not txt:strequals(name1, name2) or not ast:typeEquals(type1, type2)
       return false
     /if
 

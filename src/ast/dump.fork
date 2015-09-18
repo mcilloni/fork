@@ -466,7 +466,7 @@ func typeDump(cs ptr txt:Charstash, type ptr ast:Type)
             txt:csAppendStr(cs, "bool")
           else
             if type'type == ast:TYPE_INT
-              if !type'isSigned
+              if not type'isSigned
                 txt:csAppendStr(cs, "u")
               /if
 

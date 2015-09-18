@@ -125,7 +125,7 @@ func vectAppendint(vect ptr vect:Vect, value uintptr) bool
 
 
 func vectDeinit(vect ptr vect:Vect)
-  if !vect'isSlice
+  if not vect'isSlice
     mem:free(vect'arr)
   /if
 /func

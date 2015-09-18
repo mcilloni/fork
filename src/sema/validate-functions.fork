@@ -101,7 +101,7 @@ func validateBreakContinue(rsv sema:Resolver,
                            inLoop bool,
                            errors ptr list:List) bool
 
-  if !inLoop
+  if not inLoop
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, stmt'begin, rsv'root'fileName, "break or continue outside of a loop"))
 
     return false
@@ -146,7 +146,7 @@ func validateDecl(rsv sema:Resolver,
     /if
 
     if type != null
-      if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pdecl), type, exprType)
+      if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pdecl), type, exprType)
         mut cs = txt:csNew(20)
         txt:csAppendStr(cs, "cannot assign an expression of type '")
         ast:typeSummarize(cs, exprType)
@@ -199,7 +199,7 @@ func validateFunc(rsv sema:Resolver,
   addAllSymbolsToStab(pblock'syms, funcType'members)
 
   if pdecl'node'type == ast:PMETHOD
-    if !ensureMethodCorrectness(rsv, pdecl, funcType, errors)
+    if not ensureMethodCorrectness(rsv, pdecl, funcType, errors)
       return false
     /if
   /if
@@ -221,7 +221,7 @@ func validateIf(rsv sema:Resolver,
     return false
   /if
 
-  if !ast:typeIsBool(condType)
+  if not ast:typeIsBool(condType)
     mut cs = txt:csNew(20)
     txt:csAppendStr(cs, "expected a boolean expression, got type '")
     ast:typeSummarize(cs, condType)
@@ -237,13 +237,13 @@ func validateIf(rsv sema:Resolver,
   /if
 
   mut firstBlock = cast<ptr ast:PBlock>(val list:listGet(stmt'leaves, 1))
-  if !validatePBlock(rsv, firstBlock, funcInfo, inLoop, errors)
+  if not validatePBlock(rsv, firstBlock, funcInfo, inLoop, errors)
     return false
   /if
 
   if stmt'type == ast:PIFELSE
     mut elseBlock = cast<ptr ast:PBlock>(val list:listGet(stmt'leaves, 2))
-    if !validatePBlock(rsv, elseBlock, funcInfo, inLoop, errors)
+    if not validatePBlock(rsv, elseBlock, funcInfo, inLoop, errors)
       return false
     /if
   /if
@@ -268,7 +268,7 @@ func validatePBlock(rsv sema:Resolver,
   while i < len
     mut stmt = cast<ptr ast:PNode>(val list:listGet(pblock'node'leaves, i))
 
-    if !validateStmt(rsv, stmt, funcInfo, inLoop, errors)
+    if not validateStmt(rsv, stmt, funcInfo, inLoop, errors)
       return false
     /if
 
@@ -287,7 +287,7 @@ func validateReturn(rsv sema:Resolver,
   mut hasRetExpr = list:listLen(stmt'leaves) == 1
   mut funcRetTypeEmpty = funcInfo'type'retType == null or funcInfo'type'retType'type == ast:TYPE_EMPTY
 
-  if !hasRetExpr and !funcRetTypeEmpty
+  if not hasRetExpr and not funcRetTypeEmpty
     mut cs = txt:csNew(20)
     txt:csAppendStr(cs, "function '")
     txt:csAppendStr(cs, funcInfo'name)
@@ -326,7 +326,7 @@ func validateReturn(rsv sema:Resolver,
       return false
     /if
 
-    if !sema:typeIsAssignable(rsv'ctx, stmt, retType, exprType)
+    if not sema:typeIsAssignable(rsv'ctx, stmt, retType, exprType)
       mut cs = txt:csNew(20)
       txt:csAppendStr(cs, "cannot return type '")
       ast:typeSummarize(cs, exprType)
@@ -400,7 +400,7 @@ func validateWhile(rsv sema:Resolver,
     return false
   /if
 
-  if !ast:typeIsBool(condType)
+  if not ast:typeIsBool(condType)
     mut cs = txt:csNew(20)
     txt:csAppendStr(cs, "expected a boolean expression, got type '")
     ast:typeSummarize(cs, condType)

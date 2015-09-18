@@ -15,7 +15,7 @@ import txt
 
 entry
   mut cs = txt:csNew(20)
-  txt:csPrependStr(cs, "works!")
+  txt:csPrependStr(cs, "worksnot ")
   tty:outln(cs'base)
   txt:csPrependStr(cs, "actually ")
   tty:outln(cs'base)

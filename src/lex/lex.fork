@@ -91,7 +91,7 @@ func nextChar(lex ptr lex:Lexer) Char
 func lexDiscardComment(lex ptr lex:Lexer)
   mut ch Char
   ch'ch = 0
-  while !lex:lexerEof(lex) and ch'ch != 10
+  while not lex:lexerEof(lex) and ch'ch != 10
     if (ch = nextChar(lex))'ch == 0 #discard
       return #exit on error
     /if
@@ -105,7 +105,7 @@ mut STX = 2 # There is no reason for using 2 and not another reserved character.
 
 func applyEscape(ch uint8, escape bool) uint8
 
-  if !escape
+  if not escape
     return ch
   /if
 
@@ -143,14 +143,14 @@ func lexExtractString(lex ptr lex:Lexer) ptr lex:StringTok
 
   mut escape = false
 
-  while !lex:lexerEof(lex) and utils:charCanBeInString(lex'peek, escape)
+  while not lex:lexerEof(lex) and utils:charCanBeInString(lex'peek, escape)
     ch = nextChar(lex)
     if ch'ch == 0
       txt:csFree(cs)
       return null
     /if
 
-    if !escape and ch'ch == 92 # `\\`
+    if not escape and ch'ch == 92 # `\\`
       escape = true
     else
       txt:csAppend(cs, applyEscape(ch'ch, escape))
@@ -185,7 +185,7 @@ func lexExtractSym(lex ptr lex:Lexer) ptr lex:StringTok
   mut first = true
   mut begin uintptr = 0
 
-  while !lex:lexerEof(lex) and utils:charIsSym(lex'peek) and i < 2
+  while not lex:lexerEof(lex) and utils:charIsSym(lex'peek) and i < 2
     ch = nextChar(lex)
     if ch'ch == 0
       txt:csFree(cs)
@@ -232,7 +232,7 @@ func lexHandleId(lex ptr lex:Lexer) ptr lex:StringTok
 func skipWhites(lex ptr lex:Lexer, ignoreNewline bool)
   while utils:charIsWhite(lex'peek)
     mut ch = nextChar(lex)
-    if !ignoreNewline and ch'ch == 10 and !lex'firstLineTok #character `\n`
+    if not ignoreNewline and ch'ch == 10 and not lex'firstLineTok #character `\n`
       lex'firstLineTok = true
       lex'newline = true
     /if
@@ -260,7 +260,7 @@ func extractNextToken(lex ptr lex:Lexer) ptr lex:StringTok
 
   if lex'peek == 35 # character `#` - means the beginning of a single line comment
     lexDiscardComment(lex)
-    if !lex:lexerEof(lex) and !lex'firstLineTok
+    if not lex:lexerEof(lex) and not lex'firstLineTok
       lex'newline = true
       lex'firstLineTok = true
     /if
@@ -970,7 +970,7 @@ func ttypeStr(tt uint16) ptr uint8
     return "^"
   /if
 
-  return "<unknown, please, report!>"
+  return "<unknown, please, reportnot >"
 /func
 
 

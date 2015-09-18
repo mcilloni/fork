@@ -150,7 +150,7 @@ func intForVal(ctx ptr parser:Context, value intptr) ptr ast:Type
 func intTypesFindLargestCompatible(ctx ptr parser:Context, type1, type2 ptr ast:Type) ptr ast:Type
 
   mut bothSigned = type1'isSigned and type2'isSigned
-  mut bothUnsigned = !type1'isSigned and !type2'isSigned
+  mut bothUnsigned = not type1'isSigned and not type2'isSigned
 
 
   if bothUnsigned or bothSigned
@@ -171,7 +171,7 @@ func typeIsAssignable(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr 
     return false
   /if
 
-  if dest'name != null and src'name != null and !dest'builtin and !src'builtin
+  if dest'name != null and src'name != null and not dest'builtin and not src'builtin
     mut ret = txt:strequals(dest'name, src'name)
 
     if ret and dest'moduleName != null and src'moduleName != null
@@ -220,7 +220,7 @@ func typeIsAssignable(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr 
       mut type1 = cast<ptr ast:Type>(pair1'value)
       mut type2 = cast<ptr ast:Type>(pair2'value)
 
-      if !typeIsAssignable(ctx, scope, type2, type1)
+      if not typeIsAssignable(ctx, scope, type2, type1)
         return false
       /if
 
@@ -229,7 +229,7 @@ func typeIsAssignable(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr 
   /if
 
   if isPtr or isLoc or isFunc
-    if !typeIsAssignable(ctx, scope, dest'retType, src'retType)
+    if not typeIsAssignable(ctx, scope, dest'retType, src'retType)
       return false
     /if
   /if
@@ -306,7 +306,7 @@ func validateExprCast(rsv sema:Resolver,
   mut childExpr = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
   mut chType = sema:validateExprRecl(rsv, childExpr, recList, errors)
 
-  if chType == null or !sema:typeIsCastable(rsv'ctx, cast<ptr ast:PNode>(pexpr), chType, pexpr'type)
+  if chType == null or not sema:typeIsCastable(rsv'ctx, cast<ptr ast:PNode>(pexpr), chType, pexpr'type)
     mut cs = txt:csNew(20)
 
     txt:csAppendStr(cs, "can't cast ")
@@ -389,7 +389,7 @@ func validateBoolExpr(rsv sema:Resolver,
 
   mut op = pexpr'opType
 
-  if !ast:typeIsBool(ltype) or !ast:typeIsBool(rtype)
+  if not ast:typeIsBool(ltype) or not ast:typeIsBool(rtype)
     mut cs = txt:csNew(20)
 
     txt:csAppendStr(cs, "cannot apply ")
@@ -417,7 +417,7 @@ func validateArithPtrExpr(rsv sema:Resolver,
                           ltype,rtype ptr ast:Type,
                           recList,errors ptr list:List) ptr ast:Type
 
-  if !ttypeOpCanDoPtrArith(pexpr'opType)
+  if not ttypeOpCanDoPtrArith(pexpr'opType)
     mut cs = txt:csNew(20)
 
     txt:csAppendStr(cs, "operator ")
@@ -435,7 +435,7 @@ func validateArithPtrExpr(rsv sema:Resolver,
 
   if ast:typeIsPtr(ltype) and ast:typeIsPtr(rtype)
     if pexpr'opType == tokens:MINUS
-      if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
+      if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
         mut cs = txt:csNew(20)
 
         txt:csAppendStr(cs, "types ")
@@ -474,7 +474,7 @@ func validateArithExpr(rsv sema:Resolver,
 
   mut op = pexpr'opType
 
-  if !(ast:typeIsInt(ltype) or ast:typeIsPtr(ltype)) or !(ast:typeIsPtr(rtype) or ast:typeIsInt(rtype))
+  if not (ast:typeIsInt(ltype) or ast:typeIsPtr(ltype)) or not (ast:typeIsPtr(rtype) or ast:typeIsInt(rtype))
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "arithmetic operations can only involve pointers and integers"))
 
     return null
@@ -501,16 +501,16 @@ func validateEqDiffExpr(rsv sema:Resolver,
   if ltype'type != rtype'type
     # the only case in which we can accept a comparison between different types
     # is when we are comparing a pointer with null.
-    if !((ast:typeIsNull(ltype) and ast:typeIsPtr(rtype)) or (ast:typeIsPtr(ltype) and ast:typeIsNull(rtype)))
+    if not ((ast:typeIsNull(ltype) and ast:typeIsPtr(rtype)) or (ast:typeIsPtr(ltype) and ast:typeIsNull(rtype)))
       success = false
     /if
   else
-    if !(ast:typeIsPtr(ltype) or ast:typeIsInt(ltype) or ast:typeIsBool(ltype))
+    if not (ast:typeIsPtr(ltype) or ast:typeIsInt(ltype) or ast:typeIsBool(ltype))
       success = false
     /if
   /if
 
-  if !success
+  if not success
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "cannot evaluate the equivalence of two incompatible types"))
   /if
 
@@ -523,7 +523,7 @@ func validateModuleAccessExpr(rsv sema:Resolver,
                               errors ptr list:List) ptr ast:Type
 
   mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val list:listGet(pexpr'node'leaves, 0))'value)
-  if !ast:prootHasImported(rsv'root, modName)
+  if not ast:prootHasImported(rsv'root, modName)
     mut msg = txt:strappend(modName, " has never been imported")
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
     mem:free(msg)
@@ -581,7 +581,7 @@ func validateStructureAccessExpr(rsv sema:Resolver,
     accType = resolveRecType(rsv, ltype'retType)
   /if
 
-  if !ast:typeIsStruct(accType)
+  if not ast:typeIsStruct(accType)
     mut cs = txt:csNew(20)
     txt:csAppendStr(cs, "'")
     ast:typeSummarize(cs, accType)
@@ -600,7 +600,7 @@ func validateStructureAccessExpr(rsv sema:Resolver,
 
   mut type ptr ast:Type = null
 
-  if !kv:kvGet(accType'members, field, ptr type)
+  if not kv:kvGet(accType'members, field, ptr type)
     mut cs = txt:csNew(20)
     txt:csAppendStr(cs, "no field called '")
     txt:csAppendStr(cs, field)
@@ -625,11 +625,11 @@ func validateArrayAccess(rsv sema:Resolver,
                          ltype,rtype ptr ast:Type,
                          errors ptr list:List) ptr ast:Type
 
-  if ltype'type != ast:TYPE_PTR and !ast:typeIsLoc(ltype)
+  if ltype'type != ast:TYPE_PTR and not ast:typeIsLoc(ltype)
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "array access is allowed only for pointers and locations"))
   /if
 
-  if !ast:typeIsInt(rtype)
+  if not ast:typeIsInt(rtype)
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "an expression of integer type is required for array access"))
   /if
 
@@ -653,7 +653,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
     accType = ltype'retType
   /if
 
-  if !ast:typeIsFunc(accType)
+  if not ast:typeIsFunc(accType)
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression is neither a function nor a pointer to a function"))
 
     return null
@@ -710,7 +710,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
       return null
     /if
 
-    if !sema:typeIsAssignable(rsv'ctx, scope, expType, gotType)
+    if not sema:typeIsAssignable(rsv'ctx, scope, expType, gotType)
       mut cs = txt:csNew(20)
       txt:csAppendStr(cs, "passing '")
 
@@ -745,7 +745,7 @@ func validateAssignExpr(rsv sema:Resolver,
                         ltype,rtype ptr ast:Type,
                         errors ptr list:List) ptr ast:Type
 
-  if !ttypeCanBeAssignTarget(left'opType, ltype)
+  if not ttypeCanBeAssignTarget(left'opType, ltype)
     mut msg = "expression cannot be target of assignment"
 
     if left'opType == tokens:ME
@@ -756,7 +756,7 @@ func validateAssignExpr(rsv sema:Resolver,
     return null
   /if
 
-  if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
+  if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
     mut cs = txt:csNew(20)
 
     txt:csAppendStr(cs, "cannot assign expression of type '")
@@ -783,7 +783,7 @@ func validateNullCoalescingExpr(rsv sema:Resolver,
                                 ltype,rtype ptr ast:Type,
                                 errors ptr list:List) ptr ast:Type
 
-  if !ast:typeIsPtr(ltype)
+  if not ast:typeIsPtr(ltype)
     mut cs = txt:csNew(20)
 
     txt:csAppendStr(cs, "cannot coalesce non pointer type '")
@@ -799,7 +799,7 @@ func validateNullCoalescingExpr(rsv sema:Resolver,
     return null
   /if
 
-  if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
+  if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
     mut cs = txt:csNew(20)
 
     txt:csAppendStr(cs, "cannot coalesce type '")
@@ -855,7 +855,7 @@ func validateMethodExpr(rsv sema:Resolver,
                         ltype ptr ast:Type,
                         recList,errors ptr list:List) ptr ast:Type
 
-  if !pnodeAllowedToUseDot(pexpr'node'parent)
+  if not pnodeAllowedToUseDot(pexpr'node'parent)
     mut msg = "methods can be accessed only when invoked"
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -961,7 +961,7 @@ func validateNotExpr(rsv sema:Resolver,
                      atype ptr ast:Type,
                      errors ptr list:List) ptr ast:Type
 
-  if !ast:typeIsBool(atype)
+  if not ast:typeIsBool(atype)
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression must be boolean"))
 
     return null
@@ -1016,7 +1016,7 @@ func validateUMinusExpr(rsv sema:Resolver,
                         atype ptr ast:Type,
                         errors ptr list:List) ptr ast:Type
 
-  if !ast:typeIsInt(atype)
+  if not ast:typeIsInt(atype)
     mut cs = txt:csNew(20)
     txt:csAppendStr(cs, "cannot apply unary '-' to type '")
     ast:typeSummarize(cs, atype)
@@ -1031,7 +1031,7 @@ func validateUMinusExpr(rsv sema:Resolver,
     return null
   /if
 
-  if !atype'isSigned
+  if not atype'isSigned
     mut cs = txt:csNew(20)
     txt:csAppendStr(cs, "cannot apply unary '-' to unsigned type '")
     ast:typeSummarize(cs, atype)
@@ -1055,7 +1055,7 @@ func validateIncDecExpr(rsv sema:Resolver,
                         atype ptr ast:Type,
                         errors ptr list:List) ptr ast:Type
 
-  if !ast:typeIsInt(atype) and !ast:typeIsPtr(atype)
+  if not ast:typeIsInt(atype) and not ast:typeIsPtr(atype)
     mut cs = txt:csNew(20)
     txt:csAppendStr(cs, "type '")
     ast:typeSummarize(cs, atype)
@@ -1070,7 +1070,7 @@ func validateIncDecExpr(rsv sema:Resolver,
     return null
   /if
 
-  if !ttypeCanBeAssignTarget(atarget'opType, atype)
+  if not ttypeCanBeAssignTarget(atarget'opType, atype)
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, atarget'node'begin, rsv'root'fileName, "expression is not assignable"))
 
     return null
@@ -1085,7 +1085,7 @@ func validateQuestExpr(rsv sema:Resolver,
                        atype ptr ast:Type,
                        errors ptr list:List) ptr ast:Type
 
-  if !ast:typeIsPtr(atype)
+  if not ast:typeIsPtr(atype)
     mut cs = txt:csNew(20)
     txt:csAppendStr(cs, "cannot apply '?' to type '")
     ast:typeSummarize(cs, atype)
@@ -1160,7 +1160,7 @@ func validateTernaryExpr(rsv sema:Resolver,
     return null
   /if
 
-  if !ast:typeIsBool(condType)
+  if not ast:typeIsBool(condType)
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "non boolean ternary condition"))
 
     return null
@@ -1171,7 +1171,7 @@ func validateTernaryExpr(rsv sema:Resolver,
   # ternary operator the position of the two conditional choices is irrelevant
   # for sake of type determination, so we must run it twice with reversed
   # arguments
-  if !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), leftType, rightType) and !sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), rightType, leftType)
+  if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), leftType, rightType) and not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), rightType, leftType)
     mut cs = txt:csNew(20)
     txt:csAppendStr(cs, "ternary expression arguments have incompatible types '")
     ast:typeSummarize(cs, leftType)

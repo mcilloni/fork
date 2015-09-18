@@ -64,16 +64,16 @@ func charIsWhite(ch uint8) bool
 
 # backslash is not a symbol. It should never be grouped with anything.
 func charIsSym(ch uint8) bool
-  return !charIsIdVal(ch) and !charIsPar(ch) and !charIsWhite(ch) and !charIsBackslash(ch)
+  return not charIsIdVal(ch) and not charIsPar(ch) and not charIsWhite(ch) and not charIsBackslash(ch)
 /func
 
 
 func charCanBeInString(ch uint8, escape bool) bool
-  if !escape and ch == 34 # `"`
+  if not escape and ch == 34 # `"`
     return false #if the matching " is found, then stop
   /if
 
-  return !charIsControl(ch)
+  return not charIsControl(ch)
 /func
 
 

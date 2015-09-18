@@ -35,7 +35,7 @@ func isBinary(tok ptr lex:Token) bool
 
 
 func isUnary(tok ptr lex:Token) bool
-  return tok != null and !isBinary(tok)
+  return tok != null and not isBinary(tok)
 /func
 
 
@@ -45,7 +45,7 @@ func assocRight(tok ptr lex:Token) bool
 
 
 func assocLeft(tok ptr lex:Token) bool
-  return tok != null and !assocRight(tok)
+  return tok != null and not assocRight(tok)
 /func
 
 
@@ -81,7 +81,7 @@ func parserParseCastTag(ctx ptr synt:ParserContext) ptr ast:PExpr
 
   mut castTok = synt:nextTok(ctx)
 
-  if !synt:expectDiscard(ctx, tokens:MINOR)
+  if not synt:expectDiscard(ctx, tokens:MINOR)
     lex:tokenFree(castTok)
     return null
   /if
@@ -92,7 +92,7 @@ func parserParseCastTag(ctx ptr synt:ParserContext) ptr ast:PExpr
     return null
   /if
 
-  if !synt:expectDiscard(ctx, tokens:MAJOR) or !synt:expectDiscard(ctx, tokens:OPAR)
+  if not synt:expectDiscard(ctx, tokens:MAJOR) or not synt:expectDiscard(ctx, tokens:OPAR)
     lex:tokenFree(castTok)
     mem:decRef(type)
     return null
@@ -123,7 +123,7 @@ func parserParseSizeOp(ctx ptr synt:ParserContext) ptr ast:PExpr
   mut sizeTok = synt:nextTok(ctx)
 
 
-  if !synt:expectDiscard(ctx, tokens:OPAR)
+  if not synt:expectDiscard(ctx, tokens:OPAR)
     lex:tokenFree(sizeTok)
     return null
   /if
@@ -269,7 +269,7 @@ func parserParseCallExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:
 
   while ctx'next != null and ctx'next'type != tokens:CPAR
 
-    if ctx'next'type != tokens:COMMA and !first
+    if ctx'next'type != tokens:COMMA and not first
 
       ctx'prs'err = lex:errorMism(ctx'last, "a comma ','", lex:tokenStr(ctx'next))
       ast:pnodeFree(callPNode)
@@ -278,7 +278,7 @@ func parserParseCallExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:
     else
 
     #if it's not the first argument than it is COMMA
-      if !first
+      if not first
         synt:discardTok(ctx)
       else
         first = false
@@ -421,7 +421,7 @@ func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri 
     mut ternaryMiddle ptr ast:PExpr = null
 
     if isConditionalOperator(opTok)
-      if (ternaryMiddle = synt:parserParseExpr(ctx)) == null or !synt:expectDiscard(ctx, tokens:SEPARATOR)
+      if (ternaryMiddle = synt:parserParseExpr(ctx)) == null or not synt:expectDiscard(ctx, tokens:SEPARATOR)
         lex:tokenFree(opTok)
         return null
       /if
@@ -437,7 +437,7 @@ func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri 
 
     if ctx'next != null and (nextOpPrec > curOpPrec or (opIsRight and nextOpPrec == curOpPrec))
       mut rhsMinPrec = curOpPrec
-      if !opIsRight
+      if not opIsRight
         curOpPrec++
       /if
 

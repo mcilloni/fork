@@ -75,8 +75,8 @@ func semaValidateAstRoot(ctx ptr parser:Context, root ptr ast:PRoot, errors ptr 
     # PDecl because root can only have pdecl children
     mut pdecl = cast<ptr ast:PDecl>(kv:kvGetAt(decls, i)'value)
 
-    if !pdecl'node'validated
-      if !validatePDecl(rsv, pdecl, errors)
+    if not pdecl'node'validated
+      if not validatePDecl(rsv, pdecl, errors)
         result = false
 
         break

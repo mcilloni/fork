@@ -74,9 +74,9 @@ func nodeRotateRight(node ptr map:Mnode) ptr map:Mnode
 
 
 func nodeColorFlip(node ptr map:Mnode)
-  node'color = !node'color
-  node'left'color = !node'left'color
-  node'right'color = !node'right'color
+  node'color = not node'color
+  node'left'color = not node'left'color
+  node'right'color = not node'right'color
 /func
 
 

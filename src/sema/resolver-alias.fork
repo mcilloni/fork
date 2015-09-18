@@ -52,7 +52,7 @@ func convertRetType(rsv sema:Resolver,
   mut res ptr ast:Type = null
 
   # if this condition evaluates to true, than we're in the case of a recursive alias.
-  if !isLoc and retPType'moduleName == null and retPType'name != null and recList != null and utils:listContains(recList, retPType'name)
+  if not isLoc and retPType'moduleName == null and retPType'name != null and recList != null and utils:listContains(recList, retPType'name)
     res = astfn:typeNewRecursiveAlias(rsv'root'typePool, rsv'root'moduleName'name, retPType'name)
   else
     # otherwise, this is a normal type. Validate it with validateAlias.
@@ -60,7 +60,7 @@ func convertRetType(rsv sema:Resolver,
   /if
 
   # if this is not the retType of a ptr, then it's an error having a function
-  if res != null and res'type == ast:TYPE_FUNC and !isPtr
+  if res != null and res'type == ast:TYPE_FUNC and not isPtr
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, retPType'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
 
     return null
@@ -79,7 +79,7 @@ func convertPtrLocType(rsv sema:Resolver,
   mut isLoc = ptdes'type == ast:PTYPE_LOC
 
   # validate ptdes'retType
-  mut res = convertRetType(rsv, ptdes'retType, errors, recList, isLoc, !isLoc)
+  mut res = convertRetType(rsv, ptdes'retType, errors, recList, isLoc, not isLoc)
 
   if res == null
     return null
@@ -214,7 +214,7 @@ func resolveModuleAlias(rsv sema:Resolver,
                         errors ptr list:List) ptr ast:Type
 
 
-  if !ast:prootHasImported(rsv'root, ptype'moduleName)
+  if not ast:prootHasImported(rsv'root, ptype'moduleName)
     mut msg = txt:strappend("no import called ", ptype'moduleName)
     list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
     mem:free(msg)

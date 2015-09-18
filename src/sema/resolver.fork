@@ -109,14 +109,14 @@ func resolverCollect(rsv ptr sema:Resolver,
     mut ntype = pdecl'node'type
 
     if ntype == ast:PMUT or ntype == ast:PFUNCTION or ntype == ast:PMETHOD
-      if !resolverCollectDecls(rsv, pdecl, root, errors)
+      if not resolverCollectDecls(rsv, pdecl, root, errors)
         failure = true
         break
       /if
     else
 
       if ntype == ast:PALIAS
-        if !resolverCollectAlias(rsv, pdecl, root, errors)
+        if not resolverCollectAlias(rsv, pdecl, root, errors)
           failure = true
           break
         /if

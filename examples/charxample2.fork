@@ -17,7 +17,7 @@ entry
   mut cs = txt:csNew(20)
   txt:csAppendStr(cs, "This ")
   txt:csAppendStr(cs, "actually ")
-  txt:csAppendStr(cs, "works!")
+  txt:csAppendStr(cs, "worksnot ")
 
   mut str = txt:csUnwrap(cs)
   tty:outln(str)

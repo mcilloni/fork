@@ -111,7 +111,7 @@ func parserParseModuleName(ctx ptr synt:ParserContext) ptr ast:StringDef
 
     mut name = expect(ctx, tokens:ID)
     if name != null
-      if !synt:expectDiscard(ctx, tokens:NEWLINE)
+      if not synt:expectDiscard(ctx, tokens:NEWLINE)
         return null
       /if
 
@@ -132,7 +132,7 @@ func parserParseImport(ctx ptr synt:ParserContext) ptr ast:StringDef
 
     mut name = synt:expect(ctx, tokens:ID)
     if name != null
-      if !synt:expectDiscard(ctx, tokens:NEWLINE)
+      if not synt:expectDiscard(ctx, tokens:NEWLINE)
         return null
       /if
 
@@ -274,7 +274,7 @@ func parserParseStructBodyVars(ctx ptr synt:ParserContext, syms ptr list:List) b
 
 
 func parserParseStructBody(ctx ptr synt:ParserContext, end ptr ast:Line) ptr list:List
-  if !expectDiscard(ctx, tokens:OPAR)
+  if not expectDiscard(ctx, tokens:OPAR)
     return null
   /if
 
@@ -289,7 +289,7 @@ func parserParseStructBody(ctx ptr synt:ParserContext, end ptr ast:Line) ptr lis
       break
     /if
 
-    if !synt:expectDiscard(ctx, tokens:COMMA)
+    if not synt:expectDiscard(ctx, tokens:COMMA)
       list:listFreeAll(strBody, cast<ptr func(item data)>(ptr mem:decRef))
       return null
     /if
@@ -342,7 +342,7 @@ func parserParseLocType(ctx ptr synt:ParserContext) ptr ast:PType
 
   lex:tokenFree(locLengthTok)
 
-  if !expectDiscard(ctx, tokens:CBRAC)
+  if not expectDiscard(ctx, tokens:CBRAC)
     return null
   /if
 
@@ -412,7 +412,7 @@ func parserParseType(ctx ptr synt:ParserContext) ptr ast:PType
   /if
 
   if ret == null
-    if !theresError(ctx)
+    if not theresError(ctx)
       ctx'prs'err = lex:errorMism(ctx'last, "a valid type", lex:tokenStr(tok))
     /if
 
@@ -510,7 +510,7 @@ func parserParseDecl(ctx ptr synt:ParserContext) ptr ast:PNode
       mut name ptr uint8
       mut type ptr ast:PType
 
-      if !parserParseFuncHead(ctx, ptr name, ptr type)
+      if not parserParseFuncHead(ctx, ptr name, ptr type)
         return null
       /if
 
@@ -527,7 +527,7 @@ func parserParseDecl(ctx ptr synt:ParserContext) ptr ast:PNode
         mut name ptr uint8
         mut ptype ptr ast:PType
 
-        if !parserParseMethodHead(ctx, ptr typeModule, ptr typeName, ptr name, ptr ptype)
+        if not parserParseMethodHead(ctx, ptr typeModule, ptr typeName, ptr name, ptr ptype)
           return null
         /if
 
@@ -594,7 +594,7 @@ func parserParseWhile(ctx ptr synt:ParserContext) ptr ast:PNode
     return null
   /if
 
-  if !synt:expectDiscard(ctx, tokens:NEWLINE)
+  if not synt:expectDiscard(ctx, tokens:NEWLINE)
     ast:pnodeFree(expr)
     return null
   /if
@@ -634,7 +634,7 @@ func parserParseIf(ctx ptr synt:ParserContext) ptr ast:PNode
     return null
   /if
 
-  if !synt:expectDiscard(ctx, tokens:NEWLINE)
+  if not synt:expectDiscard(ctx, tokens:NEWLINE)
     ast:pnodeFree(expr)
     return null
   /if
@@ -653,7 +653,7 @@ func parserParseIf(ctx ptr synt:ParserContext) ptr ast:PNode
 
   if ctx'next'type == tokens:ELSE
     synt:discardTok(ctx) #discard else
-    if !synt:expectDiscard(ctx, tokens:NEWLINE)
+    if not synt:expectDiscard(ctx, tokens:NEWLINE)
       ast:pnodeFree(block)
       return null
     /if
@@ -769,7 +769,7 @@ func parserParseBody(ctx ptr synt:ParserContext, isEndToken ptr func(tok ptr lex
   mut block = astfn:pblockNew()
   mut pnode = cast<ptr ast:PNode>(block)
 
-  while ctx'next != null and !isEndToken(ctx'next)
+  while ctx'next != null and not isEndToken(ctx'next)
     statement = parserParseStatement(ctx)
     if statement == null
       ast:pnodeFree(pnode)
@@ -783,7 +783,7 @@ func parserParseBody(ctx ptr synt:ParserContext, isEndToken ptr func(tok ptr lex
       first = false
     /if
 
-    if !synt:expectDiscard(ctx, tokens:NEWLINE)
+    if not synt:expectDiscard(ctx, tokens:NEWLINE)
       ast:pnodeFree(pnode)
       return null
     /if
@@ -812,7 +812,7 @@ func parserMakeFunction(ctx ptr synt:ParserContext,
                         endTType uint16,
                         isEndToken ptr func(tok ptr lex:Token) bool) ptr ast:PNode
 
-  if !expectDiscard(ctx, tokens:NEWLINE)
+  if not expectDiscard(ctx, tokens:NEWLINE)
     return null
   /if
 
@@ -908,7 +908,7 @@ func parserParseFunc(ctx ptr synt:ParserContext) ptr ast:PNode
   mut name ptr uint8
   mut ptype ptr ast:PType
 
-  if !parserParseFuncHead(ctx, ptr name, ptr ptype)
+  if not parserParseFuncHead(ctx, ptr name, ptr ptype)
     return null
   /if
 
@@ -954,7 +954,7 @@ func parserParseMethodHead(ctx ptr synt:ParserContext, typeModule,typeName,name 
     val typeName = firstId
   /if
 
-  if !synt:expectDiscard(ctx, tokens:DOT)
+  if not synt:expectDiscard(ctx, tokens:DOT)
     mem:free(firstId)
     mem:free(val typeName)
     mem:free(val name)
@@ -999,7 +999,7 @@ func parserParseMethod(ctx ptr synt:ParserContext) ptr ast:PNode
   mut name ptr uint8
   mut ptype ptr ast:PType
 
-  if !parserParseMethodHead(ctx, ptr typeModule, ptr typeName, ptr name, ptr ptype)
+  if not parserParseMethodHead(ctx, ptr typeModule, ptr typeName, ptr name, ptr ptype)
     return null
   /if
 
@@ -1083,7 +1083,7 @@ func parserParseProgram(ctx ptr synt:ParserContext) ptr ast:PNode
   while (definition = parserParseDefinition(ctx)) != null
     astfn:pnodeAppendChild(pnode, definition)
 
-    if ctx'next != null and !synt:expectDiscard(ctx, tokens:NEWLINE)
+    if ctx'next != null and not synt:expectDiscard(ctx, tokens:NEWLINE)
       ast:pnodeFree(pnode)
       return null
     /if

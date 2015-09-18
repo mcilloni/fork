@@ -200,7 +200,7 @@ func kvPut(kv ptr kv:KVList, key data, value data)
 
   # if no key matches, then create a new element in list and hash
   # The index of this element will be the current length of the list (obviously).
-  if !res
+  if not res
     indexValue = pair:pairNew(cast<data>(list:listLen(ptr kv'list)), value)
 
     hash:hashPut(ptr kv'hash, key, indexValue)

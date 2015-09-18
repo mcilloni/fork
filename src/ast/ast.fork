@@ -42,7 +42,7 @@ func methodKey(typeModule,typeName,methodName ptr uint8) ptr uint8
 func declKey(pdecl ptr ast:PDecl) ptr uint8
   mut isMet =  pdecl'node'type == ast:PMETHOD
 
-  if !isMet
+  if not isMet
     return txt:strclone(pdecl'sym'name)
   /if
 
@@ -55,7 +55,7 @@ func findPBlock(node ptr ast:PNode) ptr ast:PNode
     return null
   /if
 
-  if !ast:isPBlock(node)
+  if not ast:isPBlock(node)
     return findPBlock(node'parent)
   /if
 
@@ -68,7 +68,7 @@ func findPRoot(node ptr ast:PNode) ptr ast:PRoot
     return null
   /if
 
-  if !ast:isPRoot(node)
+  if not ast:isPRoot(node)
     return findPRoot(node'parent)
   /if
 
