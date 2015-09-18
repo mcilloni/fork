@@ -603,7 +603,7 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     type = tokens:MUT
   /if
 
-  if txt:strequals(strToken, "!")
+  if txt:strequals(strToken, "not")
     type = tokens:NOT
   /if
 
@@ -883,7 +883,7 @@ func ttypeStr(tt uint16) ptr uint8
   /if
 
   if tt == tokens:NOT
-    return "!"
+    return "not"
   /if
 
   if tt == tokens:NULL
