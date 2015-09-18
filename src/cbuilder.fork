@@ -276,7 +276,7 @@ func csymType(lr LRStr, methTarget ptr uint8, type ptr ast:Type, full bool)
     return
   /if
 
-  if !full and type'name != null and (type'type == ast:TYPE_STRUCT or type'type == ast:TYPE_FUNC)
+  if not full and type'name != null and (type'type == ast:TYPE_STRUCT or type'type == ast:TYPE_FUNC)
     symMod(lr'left, type'moduleName, type'name)
     txt:csAppendStr(lr'left, " ")
     return
@@ -292,7 +292,7 @@ func csymType(lr LRStr, methTarget ptr uint8, type ptr ast:Type, full bool)
         csymFuncType(lr, methTarget, type)
       else
         if type'type == ast:TYPE_INT
-          if !type'isSigned
+          if not type'isSigned
             txt:csAppendStr(lr'left, "u")
           /if
 
@@ -671,7 +671,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
     mut modName ptr uint8 = root'moduleName != null => root'moduleName'name || null
     mut fDecl = ast:stabGet(root'node'syms, name)
 
-    if fDecl != null and !fDecl'declOnly and ast:findSym(cast<ptr ast:PNode>(pexpr), name) == fDecl'type
+    if fDecl != null and not fDecl'declOnly and ast:findSym(cast<ptr ast:PNode>(pexpr), name) == fDecl'type
       symMod(cs, modName, name)
     else
       txt:csAppendStr(cs, name)
@@ -765,7 +765,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
     # add me parameter
     if methCall
       mut target = cast<ptr ast:PExpr>(val list:listGet(toCall'node'leaves, 0))
-      mut notPtr = !ast:typeIsPtr(target'type)
+      mut notPtr = not ast:typeIsPtr(target'type)
 
       if notPtr
         txt:csAppendStr(cs, "&(")

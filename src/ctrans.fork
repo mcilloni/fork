@@ -38,13 +38,13 @@ func ctransGenDecls(tr ptr ctrans:Transl,
 
       mem:free(key)
 
-      mut wantsModName = tr'header or !child'isDecl
+      mut wantsModName = tr'header or not child'isDecl
 
       mut sym = ctrans:translGenSym(wantsModName => moduleName || null, child, dinfo)
 
       ctrans:translExtern(tr, sym)
 
-      if !child'isDecl
+      if not child'isDecl
         if child'node'type == ast:PMUT
           mut expr = list:listGet(child'node'leaves, 0)
 
