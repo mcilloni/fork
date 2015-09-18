@@ -638,6 +638,11 @@ func translDotExpr(cs ptr txt:Charstash, pexpr ptr ast:PExpr)
   mut e2 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
 
   mut targetType = e1'type
+
+  if ast:typeIsPtr(targetType)
+    targetType = targetType'retType
+  /if
+
   mut typeName = symModRet(targetType'moduleName, targetType'name)
   mut methName = cast<ptr uint8>(e2'node'value)
 
@@ -777,7 +782,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
         txt:csAppendStr(cs, ")")
       /if
 
-      if len > 0
+      if len > 1
         txt:csAppendWord(cs, ",")
       /if
     /if
