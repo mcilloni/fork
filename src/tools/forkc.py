@@ -33,12 +33,14 @@ def forkc1(forkfile, libfork = True):
     tmpfile = os.path.join(tempfile.gettempdir(), cname)
 
     newenv = os.environ.copy()
+
+    newenv['FORDPATHS'] = os.path.dirname(os.path.abspath(forkfile))
+
     if libfork:
-        newenv['FORDPATHS'] = buildpath + '/libfork/ford/'
+        newenv['FORDPATHS'] += ':' + buildpath + '/libfork/ford/'
 
     if 'FORDPATHS' in os.environ:
-        newenv['FORDPATHS'] = newenv['FORDPATHS'] \
-            + ':' + os.environ['FORDPATHS']
+        newenv['FORDPATHS'] += ':' + os.environ['FORDPATHS']
 
     proc = subprocess.Popen([forkc1path, forkfile],
                             env=newenv, stdout=subprocess.PIPE)
@@ -73,7 +75,8 @@ def cc(ccCommand, cfile, ofile=None, libfork=True, includes=[]):
     if platform.machine() in ['x86_64', 'amd64']:
         fpic = ['-fPIC']
 
-    params = [cfile, '-w', '-g', '-c', '-std=c99','-o', ofile]
+    cfiledir = os.path.dirname(os.path.abspath(cfile))
+    params = [cfile, '-w', '-g', '-c', '-std=c99', '-I' + cfiledir, '-o', ofile]
 
     for include in includes:
         params += ['-I' + include[0]]

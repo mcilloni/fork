@@ -21,18 +21,22 @@ def forkc1(fordfile, outdir, libfork):
 
     hname = "ford$${}.h".format(os.path.basename(fordfile).replace('.ford', '', 1))
 
+    filedir = os.path.dirname(os.path.abspath(fordfile))
+
     if outdir is None:
-        outdir = os.path.dirname(fordfile)
+        outdir = filedir
 
     hfile = os.path.join(outdir, hname)
 
     newenv = os.environ.copy()
+
+    newenv['FORDPATHS'] = filedir
+
     if libfork:
-        newenv['FORDPATHS'] = buildpath + '/libfork/ford/'
+        newenv['FORDPATHS'] += ':' + buildpath + '/libfork/ford/'
 
     if 'FORDPATHS' in os.environ:
-        newenv['FORDPATHS'] = newenv['FORDPATHS'] \
-            + ':' + os.environ['FORDPATHS']
+        newenv['FORDPATHS'] += ':' + os.environ['FORDPATHS']
 
     proc = subprocess.Popen([forkc1path, fordfile],
                             env=newenv, stdout=subprocess.PIPE)
