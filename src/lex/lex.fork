@@ -229,21 +229,33 @@ func lexHandleId(lex ptr lex:Lexer) ptr lex:StringTok
 /func
 
 
+func skipWhites(lex ptr lex:Lexer, ignoreNewline bool)
+  while utils:charIsWhite(lex'peek)
+    mut ch = nextChar(lex)
+    if !ignoreNewline and ch'ch == 10 and !lex'firstLineTok #character `\n`
+      lex'firstLineTok = true
+      lex'newline = true
+    /if
+  /while
+/func
+
+
 func extractNextToken(lex ptr lex:Lexer) ptr lex:StringTok
 
   if io:streamEnded(lex'file)
     return null
   /if
 
-  while utils:charIsWhite(lex'peek)
-    mut ch = nextChar(lex)
-    if ch'ch == 10 and !lex'firstLineTok #character `\n`
-      lex'firstLineTok = true
-      lex'newline = true
-    /if
-  /while
+  skipWhites(lex, false)
+
   if lex'peek == 0
     return null
+  /if
+
+  # if we have a '\', then ignore the next newline
+  if lex'peek == 92
+    nextChar(lex) # discard `\`
+    skipWhites(lex, true)
   /if
 
   if lex'peek == 35 # character `#` - means the beginning of a single line comment

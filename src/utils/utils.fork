@@ -41,6 +41,11 @@ func charIsIdVal(ch uint8) bool
 /func
 
 
+func charIsBackslash(ch uint8) bool
+  return ch == 92
+/func
+
+
 func charIsControl(ch uint8) bool
   return ch < 20 or ch > 126
 /func
@@ -57,9 +62,9 @@ func charIsWhite(ch uint8) bool
   return ch == 32 or ch == 10 or ch == 13 or ch == 12 or ch == 11 or ch == 9
 /func
 
-
+# backslash is not a symbol. It should never be grouped with anything.
 func charIsSym(ch uint8) bool
-  return !charIsIdVal(ch) and !charIsPar(ch) and !charIsWhite(ch)
+  return !charIsIdVal(ch) and !charIsPar(ch) and !charIsWhite(ch) and !charIsBackslash(ch)
 /func
 
 
