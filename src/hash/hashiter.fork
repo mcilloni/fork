@@ -22,7 +22,7 @@ func hashiterStart(hash ptr hash:Hash) ptr hash:HashIter
   mut iter = cast<ptr hash:HashIter>(mem:zalloc(size(hash:HashIter)))
 
   iter'hash = hash
-  iter'curBucket = cast<ptr list:List>(val vect:vectGet(hash'buckets, 0))
+  iter'curBucket = cast<ptr list:List>(val hash'buckets.get(0))
 
   return iter
 /func
@@ -35,12 +35,12 @@ func hashiterLoadNextBucket(iter ptr hash:HashIter)
     iter'buckIndex++
 
     # if we've reached the last bucket, return null and stop
-    if iter'buckIndex == vect:vectLen(iter'hash'buckets)
+    if iter'buckIndex == iter'hash'buckets.len()
       iter'end = true
       break
     /if
 
-    iter'curBucket = cast<ptr list:List>(val vect:vectGet(iter'hash'buckets, iter'buckIndex))
+    iter'curBucket = cast<ptr list:List>(val iter'hash'buckets.get(iter'buckIndex))
     iter'pos = 0
   /while
 /func

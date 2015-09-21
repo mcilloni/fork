@@ -69,10 +69,10 @@ func hashContains(hash ptr hash:Hash, key data) bool
 
 func hashDeinit(hash ptr hash:Hash)
   mut i uintptr = 0
-  mut len = vect:vectLen(hash'buckets)
+  mut len = hash'buckets.len()
 
   while i < len
-    mut bucket = cast<ptr list:List>(val vect:vectGet(hash'buckets, i))
+    mut bucket = cast<ptr list:List>(val hash'buckets.get(i))
 
     if bucket != null
       mut j uintptr = 0
@@ -93,7 +93,7 @@ func hashDeinit(hash ptr hash:Hash)
     i++
   /while
 
-  vect:vectFree(hash'buckets)
+  vect:free(hash'buckets)
 /func
 
 
@@ -107,13 +107,13 @@ func hashFree(hash ptr hash:Hash)
 
 func hashGet(hash ptr hash:Hash, key data, value ptr data) bool
   mut keyHash = hash'hf(key)
-  mut bucketCap = vect:vectCap(hash'buckets)
+  mut bucketCap = hash'buckets.cap()
 
   if bucketCap == 0
     return false
   /if
 
-  mut buckAddr = vect:vectGet(hash'buckets, keyHash mod bucketCap)
+  mut buckAddr = hash'buckets.get(keyHash mod bucketCap)
 
   if buckAddr == null
     return false
@@ -146,7 +146,7 @@ func hashGet(hash ptr hash:Hash, key data, value ptr data) bool
 func hashInit(hash ptr hash:Hash, cap uintptr, hf hash:hashfn) ptr hash:Hash
   mem:set(hash, 0, size(hash:Hash))
 
-  hash'buckets = vect:vectNew(cap)
+  hash'buckets = vect:new(cap)
   hash'hf = hf
 
   return hash
@@ -161,7 +161,7 @@ func hashLen(hash ptr hash:Hash) uintptr
 # the load factor is expressed as a percentage, because there are no floating point
 # numbers at the moment.
 func hashLoadFactor(hash ptr hash:Hash) uint8
-  mut buckNum = vect:vectCap(hash'buckets)
+  mut buckNum = hash'buckets.cap()
 
   if buckNum == 0
     return 0
@@ -217,22 +217,22 @@ func hashPut(hash ptr hash:Hash, key data, value data)
   /if
 
   mut keyHash = hash'hf(key)
-  mut bucketsNum = vect:vectCap(hash'buckets)
+  mut bucketsNum = hash'buckets.cap()
   mut index = keyHash mod bucketsNum
 
-  mut buckAddr = vect:vectGet(hash'buckets, index)
+  mut buckAddr = hash'buckets.get(index)
   mut bucket ptr list:List = null
   mut exists = false
 
   if buckAddr == null
     bucket = list:new()
-    vect:vectPut(hash'buckets, index, bucket)
+    hash'buckets.put(index, bucket)
   else
     bucket = cast<ptr list:List>(val buckAddr)
 
     if bucket == null
       bucket = list:new()
-      vect:vectPut(hash'buckets, index, bucket)
+      hash'buckets.put(index, bucket)
     /if
   /if
 
@@ -262,14 +262,14 @@ func hashPut(hash ptr hash:Hash, key data, value data)
 
 func hashRehash(hash ptr hash:Hash)
   mut old = hash'buckets
-  mut oldLen = vect:vectLen(old)
+  mut oldLen = old.len()
 
   hash:hashInit(hash, 2 * oldLen, hash'hf)
 
   mut i uintptr = 0
 
   while i < oldLen
-    mut bucket = cast<ptr list:List>(val vect:vectGet(old, i))
+    mut bucket = cast<ptr list:List>(val old.get(i))
 
     if bucket != null
       mut buckLen = bucket.len()
@@ -291,7 +291,7 @@ func hashRehash(hash ptr hash:Hash)
     i++
   /while
 
-  vect:vectFree(old)
+  vect:free(old)
 /func
 
 
@@ -301,10 +301,10 @@ func hashRemove(hash ptr hash:Hash, key data) bool
   /if
 
   mut keyHash = hash'hf(key)
-  mut bucketsNum = vect:vectCap(hash'buckets)
+  mut bucketsNum = hash'buckets.cap()
   mut index = keyHash mod bucketsNum
 
-  mut bucket = cast<ptr list:List>(val vect:vectGet(hash'buckets, index))
+  mut bucket = cast<ptr list:List>(val hash'buckets.get(index))
 
   if bucket == null
     return false
