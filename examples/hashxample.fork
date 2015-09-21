@@ -13,47 +13,45 @@ import tty
 
 
 entry
-  mut hash = hash:strhashNew(6)
+  mut hash = hash:strnew(6)
 
-  hash:hashPut(hash, "potato", "battery")
-  hash:hashPut(hash, "honey", "poney")
-  hash:hashPut(hash, "flare", "guaxxa")
-  hash:hashPut(hash, "guagua", "lelzie")
+  hash.put("potato", "battery")
+  hash.put("honey", "poney")
+  hash.put("flare", "guaxxa")
+  hash.put("guagua", "lelzie")
 
-  hash:hashPrint(hash)
+  hash.print()
 
   tty:out("\nDelete potato: ")
-  tty:outln(hash:hashRemove(hash, "potato") => "OK\n" || "FAILED\n")
+  tty:outln(hash.remove("potato") => "OK\n" || "FAILED\n")
 
-  hash:hashPrint(hash)
+  hash.print()
 
   tty:out("\nDelete tomato: ")
-  tty:outln(hash:hashRemove(hash, "tomato") => "OK\n" || "FAILED\n")
+  tty:outln(hash.remove("tomato") => "OK\n" || "FAILED\n")
 
-  hash:hashPrint(hash)
+  hash.print()
 
   tty:outln("\n\nAdd potato again: ")
-  hash:hashPut(hash, "potato", "battery")
+  hash.put("potato", "battery")
 
-  hash:hashPrint(hash)
+  hash.print()
 
   tty:out("\n\nhash[\"flare\"] == ")
 
-  mut value ptr uint8
-
-  hash:hashGet(hash, "flare", ptr value)
+  mut value = cast<ptr uint8>(hash.get("flare"))
 
   tty:outln(value)
 
   tty:out("hash[\"potato\"] == ")
 
-  hash:hashGet(hash, "potato", ptr value)
+  value = cast<ptr uint8>(hash.get("potato"))
 
   tty:outln(value)
 
-  hash:hashPut(hash, "guagua", "memma")
+  hash.put("guagua", "memma")
 
-  hash:hashPrint(hash)
+  hash.print()
 
-  hash:hashFree(hash)
+  hash:free(hash)
 /entry

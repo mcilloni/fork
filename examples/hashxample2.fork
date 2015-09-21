@@ -46,17 +46,17 @@ func hashIntDump(hash ptr hash:Hash)
 
 
 entry
-  mut hash = hash:hashNew(6, ptr identHash)
+  mut hash = hash:new(6, ptr identHash)
 
   mut i uintptr = 0
 
   while i < 30000000
-    hash:hashPut(hash, cast<data>(i), cast<data>(i))
+    hash.put(cast<data>(i), cast<data>(i))
 
     i++
   /while
 
   hashIntDump(hash)
 
-  hash:hashFree(hash)
+  hash:free(hash)
 /entry

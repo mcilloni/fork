@@ -47,21 +47,27 @@ alias Entry struct(
 )
 
 
-decl func hashClone(hash ptr Hash) ptr Hash
-decl func hashContains(hash ptr Hash, key data) bool
-decl func hashDeinit(hash ptr Hash)
-decl func hashFree(hash ptr Hash)
-decl func hashGet(hash ptr Hash, key data, value ptr data) bool
-decl func hashInit(hash ptr Hash, cap uintptr, hf hashfn) ptr Hash
-decl func hashLen(hash ptr Hash) uintptr
-decl func hashNew(cap uintptr, hf hashfn) ptr Hash
-decl func hashPrint(hash ptr Hash)
-decl func hashPut(hash ptr Hash, key data, value data)
-decl func hashRemove(hash ptr Hash, key data) bool
-decl func hashSetFreeFuncs(hash ptr Hash, freeKey ptr func(item data), freeVal ptr func(item data))
+# hash init/deinit functions
 
-decl func strhashInit(hash ptr Hash, cap uintptr) ptr Hash
-decl func strhashNew(cap uintptr) ptr Hash
+decl func deinit(hash ptr Hash)
+decl func free(hash ptr Hash)
+decl func new(cap uintptr, hf hashfn) ptr Hash
+decl func init(hash ptr Hash, cap uintptr, hf hashfn) ptr Hash
+
+decl func strinit(hash ptr Hash, cap uintptr) ptr Hash
+decl func strnew(cap uintptr) ptr Hash
+
+
+# hash methods
+
+decl method Hash.clone() ptr Hash
+decl method Hash.contains(key data) bool
+decl method Hash.get(key data) data
+decl method Hash.len() uintptr
+decl method Hash.print()
+decl method Hash.put(key data, value data)
+decl method Hash.remove(key data) bool
+decl method Hash.setFreeFuncs(freeKey,freeVal ptr func(item data))
 
 
 # hashiter functions

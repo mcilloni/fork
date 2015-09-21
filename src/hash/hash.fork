@@ -20,6 +20,8 @@ import txt
 import vect
 
 
+# entry init/deinit functions
+
 func entryDeinit(ent ptr hash:Entry, hash ptr hash:Hash)
   if hash'freeKey != null
     hash'freeKey(ent'key)
@@ -42,32 +44,9 @@ func entryNew(hash uintptr, key,value data) ptr hash:Entry
 /func
 
 
-func hashClone(hash ptr hash:Hash) ptr hash:Hash
-  mut newHash = hash:hashNew(hash'buckets'cap, hash'hf)
+# hash init/deinit functions
 
-  mut hiter = hash:hashiterStart(hash)
-
-  mut pair ptr pair:Pair = null
-
-  while (pair = hash:hashiterNext(hiter)) != null
-    hash:hashPut(newHash, pair'key, pair'value)
-
-    pair:pairFree(pair)
-  /while
-
-  hash:hashiterFree(hiter)
-
-  return newHash
-/func
-
-
-func hashContains(hash ptr hash:Hash, key data) bool
-  mut discard data
-  return hash:hashGet(hash, key, ptr discard)
-/func
-
-
-func hashDeinit(hash ptr hash:Hash)
+func deinit(hash ptr hash:Hash)
   mut i uintptr = 0
   mut len = hash'buckets.len()
 
@@ -97,23 +76,73 @@ func hashDeinit(hash ptr hash:Hash)
 /func
 
 
-func hashFree(hash ptr hash:Hash)
+func free(hash ptr hash:Hash)
   if hash != null
-    hash:hashDeinit(hash)
+    hash:deinit(hash)
     mem:free(hash)
   /if
 /func
 
 
-func hashGet(hash ptr hash:Hash, key data, value ptr data) bool
-  mut keyHash = hash'hf(key)
-  mut bucketCap = hash'buckets.cap()
+func init(hash ptr hash:Hash, cap uintptr, hf hash:hashfn) ptr hash:Hash
+  mem:set(hash, 0, size(hash:Hash))
+
+  hash'buckets = vect:new(cap)
+  hash'hf = hf
+
+  return hash
+/func
+
+
+func new(cap uintptr, hf hash:hashfn) ptr hash:Hash
+  return hash:init(cast<ptr hash:Hash>(mem:alloc(size(hash:Hash))), cap, hf)
+/func
+
+
+# hash methods
+
+method hash:Hash.clone() ptr hash:Hash
+  mut newHash = hash:new(me'buckets'cap, me'hf)
+
+  mut hiter = hash:hashiterStart(me)
+
+  mut pair ptr pair:Pair = null
+
+  while (pair = hash:hashiterNext(hiter)) != null
+    newHash.put(pair'key, pair'value)
+
+    pair:pairFree(pair)
+  /while
+
+  hash:hashiterFree(hiter)
+
+  return newHash
+/method
+
+
+method hash:Hash.contains(key data) bool
+  mut discard data
+  return me.getInternal(key, ptr discard)
+/method
+
+
+method hash:Hash.get(key data) data
+  mut discard data = null
+  me.getInternal(key, ptr discard)
+
+  return discard
+/method
+
+
+method hash:Hash.getInternal(key data, value ptr data) bool
+  mut keyHash = me'hf(key)
+  mut bucketCap = me'buckets.cap()
 
   if bucketCap == 0
     return false
   /if
 
-  mut buckAddr = hash'buckets.get(keyHash mod bucketCap)
+  mut buckAddr = me'buckets.get(keyHash mod bucketCap)
 
   if buckAddr == null
     return false
@@ -140,51 +169,33 @@ func hashGet(hash ptr hash:Hash, key data, value ptr data) bool
 
   val value = null
   return false
-/func
+/method
 
 
-func hashInit(hash ptr hash:Hash, cap uintptr, hf hash:hashfn) ptr hash:Hash
-  mem:set(hash, 0, size(hash:Hash))
-
-  hash'buckets = vect:new(cap)
-  hash'hf = hf
-
-  return hash
-/func
-
-
-func hashLen(hash ptr hash:Hash) uintptr
-  return hash'len
-/func
+method hash:Hash.len() uintptr
+  return me'len
+/method
 
 
 # the load factor is expressed as a percentage, because there are no floating point
 # numbers at the moment.
-func hashLoadFactor(hash ptr hash:Hash) uint8
-  mut buckNum = hash'buckets.cap()
+method hash:Hash.loadFactor() uint8
+  mut buckNum = me'buckets.cap()
 
   if buckNum == 0
     return 0
   /if
 
-  return cast<uint8>((hash:hashLen(hash) * 100) / buckNum)
-/func
+  return cast<uint8>((me.len() * 100) / buckNum)
+/method
 
 
-func hashNew(cap uintptr, hf hash:hashfn) ptr hash:Hash
-  return hash:hashInit(cast<ptr hash:Hash>(mem:alloc(size(hash:Hash))), cap, hf)
-/func
-
-
-func hashPrint(hash ptr hash:Hash)
+method hash:Hash.print()
   # TODO: complete
-  if hash == null
-    tty:outln("<null>")
-  /if
 
   tty:out("[ ")
 
-  mut hiter = hash:hashiterStart(hash)
+  mut hiter = hash:hashiterStart(me)
 
   mut pair ptr pair:Pair = null
   mut first = true
@@ -206,33 +217,33 @@ func hashPrint(hash ptr hash:Hash)
   hash:hashiterFree(hiter)
 
   tty:out(" ]")
-/func
+/method
 
 
-func hashPut(hash ptr hash:Hash, key data, value data)
+method hash:Hash.put(key data, value data)
 
   # if the load factor is above or equal 75%, then the hash must be resized.
-  if hashLoadFactor(hash) >= 75
-    hashRehash(hash)
+  if me.loadFactor() >= 75
+    me.rehash()
   /if
 
-  mut keyHash = hash'hf(key)
-  mut bucketsNum = hash'buckets.cap()
+  mut keyHash = me'hf(key)
+  mut bucketsNum = me'buckets.cap()
   mut index = keyHash mod bucketsNum
 
-  mut buckAddr = hash'buckets.get(index)
+  mut buckAddr = me'buckets.get(index)
   mut bucket ptr list:List = null
   mut exists = false
 
   if buckAddr == null
     bucket = list:new()
-    hash'buckets.put(index, bucket)
+    me'buckets.put(index, bucket)
   else
     bucket = cast<ptr list:List>(val buckAddr)
 
     if bucket == null
       bucket = list:new()
-      hash'buckets.put(index, bucket)
+      me'buckets.put(index, bucket)
     /if
   /if
 
@@ -243,7 +254,7 @@ func hashPut(hash ptr hash:Hash, key data, value data)
     mut ent = cast<ptr hash:Entry>(val bucket.get(i))
 
     if ent'hash == keyHash
-      entryDeinit(ent, hash)
+      entryDeinit(ent, me)
 
       ent'key = key
       ent'value = value
@@ -254,17 +265,17 @@ func hashPut(hash ptr hash:Hash, key data, value data)
     i++
   /while
 
-  hash'len++
+  me'len++
   bucket.append(entryNew(keyHash, key, value))
 
-/func
+/method
 
 
-func hashRehash(hash ptr hash:Hash)
-  mut old = hash'buckets
+method hash:Hash.rehash()
+  mut old = me'buckets
   mut oldLen = old.len()
 
-  hash:hashInit(hash, 2 * oldLen, hash'hf)
+  hash:init(me, 2 * oldLen, me'hf)
 
   mut i uintptr = 0
 
@@ -278,7 +289,7 @@ func hashRehash(hash ptr hash:Hash)
       while j < buckLen
         mut ent = cast<ptr hash:Entry>(val bucket.get(j))
 
-        hash:hashPut(hash, ent'key, ent'value)
+        me.put(ent'key, ent'value)
 
         mem:free(ent)
 
@@ -292,19 +303,19 @@ func hashRehash(hash ptr hash:Hash)
   /while
 
   vect:free(old)
-/func
+/method
 
 
-func hashRemove(hash ptr hash:Hash, key data) bool
-  if hash:hashLen(hash) == 0
+method hash:Hash.remove(key data) bool
+  if me.len() == 0
     return false
   /if
 
-  mut keyHash = hash'hf(key)
-  mut bucketsNum = hash'buckets.cap()
+  mut keyHash = me'hf(key)
+  mut bucketsNum = me'buckets.cap()
   mut index = keyHash mod bucketsNum
 
-  mut bucket = cast<ptr list:List>(val hash'buckets.get(index))
+  mut bucket = cast<ptr list:List>(val me'buckets.get(index))
 
   if bucket == null
     return false
@@ -319,17 +330,17 @@ func hashRemove(hash ptr hash:Hash, key data) bool
     if elem'hash == keyHash
       bucket.remove(i, null)
 
-      if hash'freeKey != null
-        hash'freeKey(elem'key)
+      if me'freeKey != null
+        me'freeKey(elem'key)
       /if
 
-      if hash'freeVal != null
-        hash'freeVal(elem'value)
+      if me'freeVal != null
+        me'freeVal(elem'value)
       /if
 
       mem:free(elem)
 
-      hash'len--
+      me'len--
 
       return true
     /if
@@ -338,20 +349,20 @@ func hashRemove(hash ptr hash:Hash, key data) bool
   /while
 
   return false
+/method
+
+
+method hash:Hash.setFreeFuncs(freeKey,freeVal ptr func(item data))
+  me'freeKey = freeKey
+  me'freeVal = freeVal
+/method
+
+
+func strinit(hash ptr hash:Hash, cap uintptr) ptr hash:Hash
+  return hash:init(hash, cap, ptr txt:strhash)
 /func
 
 
-func hashSetFreeFuncs(hash ptr hash:Hash, freeKey ptr func(item data), freeVal ptr func(item data))
-  hash'freeKey = freeKey
-  hash'freeVal = freeVal
-/func
-
-
-func strhashInit(hash ptr hash:Hash, cap uintptr) ptr hash:Hash
-  return hash:hashInit(hash, cap, ptr txt:strhash)
-/func
-
-
-func strhashNew(cap uintptr) ptr hash:Hash
-  return hash:hashNew(cap, ptr txt:strhash)
+func strnew(cap uintptr) ptr hash:Hash
+  return hash:new(cap, ptr txt:strhash)
 /func

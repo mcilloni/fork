@@ -44,14 +44,14 @@ func kvClone(kv ptr kv:KVList) ptr kv:KVList
 
 
 func kvContains(kv ptr kv:KVList, key data) bool
-  return hash:hashContains(ptr kv'hash, key)
+  return kv'hash.contains(key)
 /func
 
 
 func kvDeinit(kv ptr kv:KVList)
   kvFreeContents(kv)
 
-  hash:hashDeinit(ptr kv'hash)
+  hash:deinit(ptr kv'hash)
   list:deinitAll(ptr kv'list, ptr pair:pairFree)
 /func
 
@@ -66,9 +66,7 @@ func kvFixIndices(kv ptr kv:KVList, pos uintptr)
 
   while pos < len
     mut pair = kv:kvGetAt(kv, pos)
-    mut indexValue ptr pair:Pair = null
-
-    hash:hashGet(ptr kv'hash, pair'key, ptr indexValue)
+    mut indexValue = cast<ptr pair:Pair>(kv'hash.get(pair'key))
 
     indexValue'key = cast<data>(pos)
 
@@ -109,12 +107,11 @@ func kvFreeContents(kv ptr kv:KVList)
 
 
 func kvGet(kv ptr kv:KVList, key data, value ptr data) bool
-  mut indexValue ptr pair:Pair = null
-  mut res = hash:hashGet(ptr kv'hash, key, ptr indexValue)
+  mut indexValue = cast<ptr pair:Pair>(kv'hash.get(key))
 
-  val value = res => indexValue'value || null
+  val value = indexValue? => indexValue'value || null
 
-  return res
+  return indexValue?
 /func
 
 
@@ -125,12 +122,11 @@ func kvGetAt(kv ptr kv:KVList, index uintptr) ptr pair:Pair
 
 
 func kvGetPos(kv ptr kv:KVList, key data, value ptr data) intptr
-  mut indexValue ptr pair:Pair = null
-  mut res = hash:hashGet(ptr kv'hash, key, ptr indexValue)
+  mut indexValue = cast<ptr pair:Pair>(kv'hash.get(key))
 
-  val value = res => indexValue'value || null
+  val value = indexValue? => indexValue'value || null
 
-  return res => cast<intptr>(indexValue'key) || -1
+  return indexValue? => cast<intptr>(indexValue'key) || -1
 /func
 
 
@@ -144,9 +140,9 @@ func kvHashFreePairs(pairV data)
 func kvInit(kv ptr kv:KVList, cap uintptr, hf hash:hashfn) ptr kv:KVList
   mem:set(kv, 0, size(kv:KVList))
 
-  hash:hashInit(ptr kv'hash, cap, hf)
+  hash:init(ptr kv'hash, cap, hf)
 
-  hash:hashSetFreeFuncs(ptr kv'hash, null, ptr kvHashFreePairs)
+  kv'hash.setFreeFuncs(null, ptr kvHashFreePairs)
 
   list:init(ptr kv'list)
 
@@ -195,15 +191,14 @@ func kvPrint(kv ptr kv:KVList)
 
 
 func kvPut(kv ptr kv:KVList, key data, value data)
-  mut indexValue ptr pair:Pair
-  mut res = hash:hashGet(ptr kv'hash, key, ptr indexValue)
+  mut indexValue = cast<ptr pair:Pair>(kv'hash.get(key))
 
   # if no key matches, then create a new element in list and hash
   # The index of this element will be the current length of the list (obviously).
-  if not res
+  if not indexValue?
     indexValue = pair:pairNew(cast<data>(kv'list.len()), value)
 
-    hash:hashPut(ptr kv'hash, key, indexValue)
+    kv'hash.put(key, indexValue)
     kv'list.append(pair:pairNew(key, value))
   else
     mut index = cast<uintptr>(indexValue'key)
@@ -230,8 +225,8 @@ func kvRemove(kv ptr kv:KVList, key data) bool
     kvFreePairContents(kv, pair)
 
     kv'list.remove(pos, ptr pair:pairFree)
-    
-    hash:hashRemove(ptr kv'hash, key)
+
+    kv'hash.remove(key)
 
     kvFixIndices(kv, pos)
 
