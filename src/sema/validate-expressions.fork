@@ -689,7 +689,8 @@ func validateFunctionCallExpr(rsv sema:Resolver,
 
     mut msg = txt:csUnwrap(cs)
 
-    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                                              rsv'root'fileName, msg))
 
     mem:free(msg)
 
@@ -726,7 +727,8 @@ func validateFunctionCallExpr(rsv sema:Resolver,
 
       mut msg = txt:csUnwrap(cs)
 
-      list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+      list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, \
+                            pexpr'node'begin, rsv'root'fileName, msg))
 
       mem:free(msg)
 
@@ -752,7 +754,8 @@ func validateAssignExpr(rsv sema:Resolver,
       msg = "can't reassign 'me'"
     /if
 
-    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, left'node'begin, rsv'root'fileName, msg))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, left'node'begin, \
+                                              rsv'root'fileName, msg))
     return null
   /if
 
@@ -767,7 +770,8 @@ func validateAssignExpr(rsv sema:Resolver,
 
     mut str = txt:csUnwrap(cs)
 
-    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                                              rsv'root'fileName, str))
 
     mem:free(str)
 
