@@ -40,7 +40,7 @@ func semaValidateAst(ctx ptr parser:Context, root ptr ast:PNode) ptr list:List
 
   parser:ctxSetCurrentFile(ctx, proot'fileName)
 
-  if list:listLen(errors) != 0
+  if errors.len() != 0
     return errors
   /if
 

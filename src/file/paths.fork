@@ -66,12 +66,17 @@ func pathContains(path,filename ptr uint8) bool
 /func
 
 
+func listAppend(to data, elem ptr uint8)
+  cast<ptr list:List>(to).append(elem)
+/func
+
+
 func pathListFiles(path ptr uint8, error ptr ptr err:Error) ptr list:List
-  mut ret = list:listNew()
+  mut ret = list:new()
   mut buf [512] uint8
 
-  if not path_listAll(path, ret, cast<ptr func(to data, elem ptr uint8)>(list:listAppend), ptr buf[0], 512)
-    list:listFree(ret)
+  if not path_listAll(path, ret, ptr listAppend, ptr buf[0], 512)
+    list:free(ret)
 
     val error = err:errorNew(ptr buf[0])
 

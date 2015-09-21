@@ -76,10 +76,10 @@ func hashDeinit(hash ptr hash:Hash)
 
     if bucket != null
       mut j uintptr = 0
-      mut bucketLen = list:listLen(bucket)
+      mut bucketLen = bucket.len()
 
       while j < bucketLen
-        mut item = cast<ptr hash:Entry>(val list:listGet(bucket, j))
+        mut item = cast<ptr hash:Entry>(val bucket.get(j))
 
         entryDeinit(item, hash)
         mem:free(item)
@@ -87,7 +87,7 @@ func hashDeinit(hash ptr hash:Hash)
         j++
       /while
 
-      list:listFree(bucket)
+      list:free(bucket)
     /if
 
     i++
@@ -122,11 +122,11 @@ func hashGet(hash ptr hash:Hash, key data, value ptr data) bool
   mut bucket = cast<ptr list:List>(val buckAddr)
 
   if bucket != null
-    mut entLen = list:listLen(bucket)
+    mut entLen = bucket.len()
     mut i uintptr = 0
 
     while i < entLen
-      mut ent = cast<ptr hash:Entry>(val list:listGet(bucket, i))
+      mut ent = cast<ptr hash:Entry>(val bucket.get(i))
 
       if ent'hash == keyHash
         val value = ent'value
@@ -225,22 +225,22 @@ func hashPut(hash ptr hash:Hash, key data, value data)
   mut exists = false
 
   if buckAddr == null
-    bucket = list:listNew()
+    bucket = list:new()
     vect:vectPut(hash'buckets, index, bucket)
   else
     bucket = cast<ptr list:List>(val buckAddr)
 
     if bucket == null
-      bucket = list:listNew()
+      bucket = list:new()
       vect:vectPut(hash'buckets, index, bucket)
     /if
   /if
 
-  mut buckLen = list:listLen(bucket)
+  mut buckLen = bucket.len()
   mut i uintptr = 0
 
   while i < buckLen
-    mut ent = cast<ptr hash:Entry>(val list:listGet(bucket, i))
+    mut ent = cast<ptr hash:Entry>(val bucket.get(i))
 
     if ent'hash == keyHash
       entryDeinit(ent, hash)
@@ -255,7 +255,7 @@ func hashPut(hash ptr hash:Hash, key data, value data)
   /while
 
   hash'len++
-  list:listAppend(bucket, entryNew(keyHash, key, value))
+  bucket.append(entryNew(keyHash, key, value))
 
 /func
 
@@ -272,11 +272,11 @@ func hashRehash(hash ptr hash:Hash)
     mut bucket = cast<ptr list:List>(val vect:vectGet(old, i))
 
     if bucket != null
-      mut buckLen = list:listLen(bucket)
+      mut buckLen = bucket.len()
       mut j uintptr = 0
 
       while j < buckLen
-        mut ent = cast<ptr hash:Entry>(val list:listGet(bucket, j))
+        mut ent = cast<ptr hash:Entry>(val bucket.get(j))
 
         hash:hashPut(hash, ent'key, ent'value)
 
@@ -285,7 +285,7 @@ func hashRehash(hash ptr hash:Hash)
         j++
       /while
 
-      list:listFree(bucket)
+      list:free(bucket)
     /if
 
     i++
@@ -311,13 +311,13 @@ func hashRemove(hash ptr hash:Hash, key data) bool
   /if
 
   mut i uintptr = 0
-  mut buckLen = list:listLen(bucket)
+  mut buckLen = bucket.len()
 
   while i < buckLen
-    mut elem = cast<ptr hash:Entry>(val list:listGet(bucket, i))
+    mut elem = cast<ptr hash:Entry>(val bucket.get(i))
 
     if elem'hash == keyHash
-      list:listRemove(bucket, i, null)
+      bucket.remove(i, null)
 
       if hash'freeKey != null
         hash'freeKey(elem'key)

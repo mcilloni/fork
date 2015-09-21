@@ -92,16 +92,16 @@ func strIsUInt(str ptr uint8) bool
 
 func listContains(list ptr list:List, value ptr uint8) bool
   mut i uintptr = 0
-  mut len = list:listLen(list)
+  mut len = list.len()
 
 
   mut clone = val list
 
   # this fixes a weird bug in list:List that I haven't found yet.
-  list:listSeekZero(list)
+  list.seekZero()
 
   while i < len
-    mut ptrElem = list:listGet(list, i)
+    mut ptrElem = list.get(i)
     mut elem = cast<ptr uint8>(val ptrElem)
 
     if txt:strequals(elem, value)
@@ -116,7 +116,7 @@ func listContains(list ptr list:List, value ptr uint8) bool
 
 
 func listDumpHierarchyIntoCS(list ptr list:List, cs ptr txt:Charstash)
-  mut len = list:listLen(list)
+  mut len = list.len()
 
   txt:csAppendStr(cs, "(")
 
@@ -127,12 +127,12 @@ func listDumpHierarchyIntoCS(list ptr list:List, cs ptr txt:Charstash)
     while i > 0
       i--
 
-      txt:csAppendStr(cs, cast<ptr uint8>(val list:listGet(list, i)))
+      txt:csAppendStr(cs, cast<ptr uint8>(val list.get(i)))
 
       txt:csAppendStr(cs, " => ")
     /while
 
-    txt:csAppendStr(cs, cast<ptr uint8>(val list:listGet(list, len - 1)))
+    txt:csAppendStr(cs, cast<ptr uint8>(val list.get(len - 1)))
   else
     txt:csAppendStr(cs, "alias of itself")
   /if

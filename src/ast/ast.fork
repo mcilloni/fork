@@ -131,7 +131,7 @@ func pnodeFree(pnode ptr ast:PNode)
       mut proot = cast<ptr ast:PRoot>(pnode)
       astfn:strdefFree(proot'moduleName)
       mem:free(proot'fileName)
-      list:listFreeAll(proot'imports, cast<ptr func(inst data)>(ptr astfn:strdefFree))
+      list:freeAll(proot'imports, cast<ptr func(inst data)>(ptr astfn:strdefFree))
       ast:stabFree(proot'aliases)
 
       mem:fpFree(proot'typePool)
@@ -155,7 +155,7 @@ func pnodeFree(pnode ptr ast:PNode)
 
     # remember to fix PEXPR leaks.
 
-    list:listFreeAll(pnode'leaves, ptr pnodeFree)
+    list:freeAll(pnode'leaves, ptr pnodeFree)
 
     mem:free(pnode)
   /if
@@ -194,10 +194,10 @@ func pnodeIsWhile(pnode ptr ast:PNode) bool
 
 func prootHasImported(root ptr ast:PRoot, name ptr uint8) bool
   mut i uintptr = 0
-  mut len = list:listLen(root'imports)
+  mut len = root'imports.len()
 
   while i < len
-    mut elem = cast<ptr ast:StringDef>(val list:listGet(root'imports, i))
+    mut elem = cast<ptr ast:StringDef>(val root'imports.get(i))
 
     if txt:strequals(elem'name, name)
       return true

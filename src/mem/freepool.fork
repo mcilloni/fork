@@ -18,21 +18,21 @@ import utils
 
 func fpAlloc(fp ptr mem:FreePool, len uintptr) data
   mut ret = mem:alloc(len)
-  list:listAppend(fp'ptrs, ret)
+  fp'ptrs.append(ret)
 
   return ret
 /func
 
 func fpFree(fp ptr mem:FreePool)
   if fp != null
-    list:listFreeAll(fp'ptrs, fp'freeFunc)
+    list:freeAll(fp'ptrs, fp'freeFunc)
     mem:free(fp)
   /if
 /func
 
 func fpNew(freeFunc ptr func(item data)) ptr mem:FreePool
   mut ret = cast<ptr mem:FreePool>(mem:alloc(size(mem:FreePool)))
-  ret'ptrs = list:listNew()
+  ret'ptrs = list:new()
   ret'freeFunc = freeFunc
 
   return ret
@@ -40,7 +40,7 @@ func fpNew(freeFunc ptr func(item data)) ptr mem:FreePool
 
 func fpZAlloc(fp ptr mem:FreePool, len uintptr) data
   mut ret = mem:zalloc(len)
-  list:listAppend(fp'ptrs, ret)
+  fp'ptrs.append(ret)
 
   return ret
 /func

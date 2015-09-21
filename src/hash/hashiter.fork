@@ -31,7 +31,7 @@ func hashiterStart(hash ptr hash:Hash) ptr hash:HashIter
 func hashiterLoadNextBucket(iter ptr hash:HashIter)
   iter'curBucket = null
 
-  while iter'curBucket == null or list:listLen(iter'curBucket) == 0
+  while iter'curBucket == null or iter'curBucket.len() == 0
     iter'buckIndex++
 
     # if we've reached the last bucket, return null and stop
@@ -49,7 +49,7 @@ func hashiterLoadNextBucket(iter ptr hash:HashIter)
 func hashiterNext(iter ptr hash:HashIter) ptr pair:Pair
 
   # load next bucket
-  if iter'curBucket == null or list:listLen(iter'curBucket) == 0 or iter'pos == list:listLen(iter'curBucket)
+  if iter'curBucket == null or iter'curBucket.len() == 0 or iter'pos == iter'curBucket.len()
     hashiterLoadNextBucket(iter)
   /if
 
@@ -57,7 +57,7 @@ func hashiterNext(iter ptr hash:HashIter) ptr pair:Pair
     return null
   /if
 
-  mut ent = cast<ptr hash:Entry>(val list:listGet(iter'curBucket, iter'pos))
+  mut ent = cast<ptr hash:Entry>(val iter'curBucket.get(iter'pos))
   iter'pos++
 
   return pair:pairNew(ent'key, ent'value)

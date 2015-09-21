@@ -43,7 +43,7 @@ func resolverCollectAlias(rsv ptr sema:Resolver,
     txt:csAppendStr(cs, name)
     txt:csAppendStr(cs, " is already defined")
 
-    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, txt:csUnwrap(cs)))
+    errors.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, txt:csUnwrap(cs)))
 
     return false
   /if
@@ -69,7 +69,7 @@ func resolverCollectDecls(rsv ptr sema:Resolver,
     txt:csAppendStr(cs, " defined twice")
 
     mut str = txt:csUnwrap(cs)
-    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
+    errors.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
 
     mem:free(str)
     mem:free(name)
@@ -99,13 +99,13 @@ func resolverCollect(rsv ptr sema:Resolver,
 
   kv:kvSetFreeFuncs(ret, ptr mem:free, null)
 
-  mut len = list:listLen(root'node'node'leaves)
+  mut len = root'node'node'leaves.len()
   mut i uintptr = 0
   mut entryNode ptr ast:PDecl = null
   mut failure = false
 
   while i < len
-    mut pdecl = cast<ptr ast:PDecl>(val list:listGet(root'node'node'leaves, i))
+    mut pdecl = cast<ptr ast:PDecl>(val root'node'node'leaves.get(i))
     mut ntype = pdecl'node'type
 
     if ntype == ast:PMUT or ntype == ast:PFUNCTION or ntype == ast:PMETHOD
@@ -126,7 +126,7 @@ func resolverCollect(rsv ptr sema:Resolver,
           if entryNode == null
             entryNode = pdecl
           else
-            list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, "entry declared twice in same file"))
+            errors.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, "entry declared twice in same file"))
 
             failure = true
             break

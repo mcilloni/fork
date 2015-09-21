@@ -73,7 +73,7 @@ func ptypeDescrDumpStructuredDataArgs(args ptr list:List)
     return
   /if
 
-  mut len = list:listLen(args)
+  mut len = args.len()
   mut first = true
   mut i uintptr = 0
 
@@ -86,7 +86,7 @@ func ptypeDescrDumpStructuredDataArgs(args ptr list:List)
       tty:out(", ")
     /if
 
-    mut sym = cast<ptr ast:PSymbol>(val list:listGet(args, i))
+    mut sym = cast<ptr ast:PSymbol>(val args.get(i))
     psymbolDump(sym)
 
     i++
@@ -237,7 +237,7 @@ func prootDumpInfo(proot ptr ast:PRoot, depth uintptr)
 
   tty:outch(10)
 
-  mut len = list:listLen(proot'imports)
+  mut len = proot'imports.len()
   if len > 0
     printPadding(depth)
     tty:outln("Imports: ")
@@ -246,7 +246,7 @@ func prootDumpInfo(proot ptr ast:PRoot, depth uintptr)
 
     while i < len
       printPadding(depth + 1)
-      mut imp = cast<ptr ast:StringDef>(val list:listGet(proot'imports, i))
+      mut imp = cast<ptr ast:StringDef>(val proot'imports.get(i))
 
       tty:out(imp'name)
       tty:outch(32)
@@ -350,11 +350,11 @@ func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
 
   tty:outch(10)
 
-  mut len = list:listLen(pnode'leaves)
+  mut len = pnode'leaves.len()
   mut i uintptr = 0
 
   while i < len
-    mut child = cast<ptr ast:PNode>(val list:listGet(pnode'leaves, i))
+    mut child = cast<ptr ast:PNode>(val pnode'leaves.get(i))
 
     pnodeDumpRec(child, depth + 1)
 

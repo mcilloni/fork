@@ -28,12 +28,12 @@ import utils
 func findImport(ctx ptr parser:Context, importName ptr ast:StringDef, importAst ptr ptr ast:PNode) ptr list:List
   mut fordName = txt:strappend(importName'name, ".ford")
 
-  mut len = list:listLen(ctx'fordPaths)
+  mut len = ctx'fordPaths.len()
 
   mut i uintptr = 0
 
   while i < len
-    mut path = cast<ptr uint8>(val list:listGet(ctx'fordPaths, i))
+    mut path = cast<ptr uint8>(val ctx'fordPaths.get(i))
     mut joinedPath = file:pathJoin(path, fordName)
 
     if file:pathExists(joinedPath)
@@ -50,7 +50,7 @@ func findImport(ctx ptr parser:Context, importName ptr ast:StringDef, importAst 
     i++
   /while
 
-  mut errors = list:listNew()
+  mut errors = list:new()
 
   mut toGlue [4] ptr uint8
 
@@ -61,7 +61,7 @@ func findImport(ctx ptr parser:Context, importName ptr ast:StringDef, importAst 
 
   mut glued = txt:strglue(ptr toGlue[0])
 
-  list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, importName'begin, ctx'currentFile, glued))
+  errors.append(parser:issueNew(parser:ISSUE_ERR, importName'begin, ctx'currentFile, glued))
 
   mem:free(fordName)
   mem:free(glued)
@@ -74,40 +74,40 @@ func ctxImport(ctx ptr parser:Context, importName ptr ast:StringDef, value ptr p
 
   if not map:mapGet(ctx'imports, importName, value)
     mut errors = findImport(ctx, importName, value)
-    if list:listLen(errors) == 0
+    if errors.len() == 0
       map:mapPut(ctx'imports, txt:strclone(importName'name), val value, map:FREE_KEY | map:FREE_VALUE)
     /if
 
     return errors
   else
-    return list:listNew()
+    return list:new()
   /if
 
 /func
 
 
 func ctxImportAll(ctx ptr parser:Context, imports ptr list:List) ptr list:List
-  mut len = list:listLen(imports)
+  mut len = imports.len()
   mut i uintptr = 0
 
   while i < len
     mut value ptr ast:PNode
-    mut importName = cast<ptr ast:StringDef>(val list:listGet(imports, i))
+    mut importName = cast<ptr ast:StringDef>(val imports.get(i))
     mut errs = ctxImport(ctx, importName, ptr value)
 
-    if list:listLen(errs) != 0
+    if errs.len() != 0
       return errs
     /if
 
     i++
   /while
 
-  return list:listNew()
+  return list:new()
 /func
 
 
 func envExtractFordPaths() ptr list:List
-  mut list = list:listNew()
+  mut list = list:new()
 
   mut paths = proc:getenv("FORDPATHS")
   if paths != null
@@ -115,7 +115,7 @@ func envExtractFordPaths() ptr list:List
     mut path ptr uint8
 
     while (path = txt:tokenizerNext(tkz)) != null
-      list:listAppend(list, path)
+      list.append(path)
     /while
 
   /if
@@ -140,7 +140,7 @@ func ctxFree(ctx ptr parser:Context)
     /if
 
     if ctx'fordPaths != null
-      list:listFreeAll(ctx'fordPaths, ptr mem:free)
+      list:freeAll(ctx'fordPaths, ptr mem:free)
     /if
 
     map:mapFreeSpec(ctx'builtins, null, cast<ptr func(item data)>(ptr ast:typeFree))
@@ -186,8 +186,8 @@ func ctxParseFile(ctx ptr parser:Context, fileName ptr uint8, newRoot ptr ptr as
   synt:parserFree(parser)
 
   if val newRoot == null
-    mut list = list:listNew()
-    list:listAppend(list, error)
+    mut list = list:new()
+    list.append(error)
 
     return list
   /if

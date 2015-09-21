@@ -16,180 +16,173 @@ import mem
 import tty
 
 
-func listSeekAhead(list ptr list:List, pos uintptr)
+# lnode init/deinit functions
 
-  if (list'current == null) or (pos == 0)
-    list'current = list'start
-    list'pos = 0
-  /if
 
-  while list'pos < pos
-    list'current = list'current'next
-    list'pos++
+func lnodeFree(lnode ptr list:Lnode)
+  while lnode?
+    mut next = lnode'next
+    mem:free(lnode)
+    lnode = next
   /while
-
 /func
 
 
-func listSeekBehind(list ptr list:List, pos uintptr)
-
-  if (list'current == null) or ((list'len - 1) == pos)
-    list'current = list'end
-    list'pos = list'len - 1
-  /if
-
-  while list'pos > pos
-    list'current = list'current'prec
-    list'pos--
+func lnodeFreeAll(lnode ptr list:Lnode, freefunc ptr func(item data))
+  while lnode?
+    mut next = lnode'next
+    freefunc(cast<data>(lnode'value))
+    mem:free(lnode)
+    lnode = next
   /while
-
 /func
 
 
-func listSeekZero(list ptr list:List)
-  list'current = list'start
-  list'pos = 0
+func lnodeFreeContents(lnode ptr list:Lnode, freefunc ptr func(item data))
+  while lnode?
+    mut next = lnode'next
+    freefunc(cast<data>(lnode'value))
+    lnode = next
+  /while
 /func
 
 
-func listSeek(list ptr list:List, pos uintptr)
-  if (list'current == null) and (pos == 0)
-     list:listSeekZero(list)
+# list init/deinit functions
+
+
+func deinit(list ptr list:List)
+  lnodeFree(list'start)
+/func
+
+
+func deinitAll(list ptr list:List, freefunc ptr func(item data))
+  lnodeFreeAll(list'start, freefunc)
+/func
+
+
+func free(list ptr list:List)
+  if list?
+    list:deinit(list)
+
+    mem:free(list)
+  /if
+/func
+
+
+func freeAll(list ptr list:List, freefunc ptr func(item data))
+  list:deinitAll(list, freefunc)
+  mem:free(list)
+/func
+
+
+func init(list ptr list:List) ptr list:List
+  mem:set(list, 0, size(list:List))
+  return list
+/func
+
+
+func new() ptr list:List
+  return list:init(cast<ptr list:List>(mem:alloc(size(list:List))))
+/func
+
+
+# list methods
+
+
+method list:List.addInt(pos uintptr, value uintptr) intptr
+  if pos > me'len
+    return -1
   /if
 
-  if pos > list'pos
-    listSeekAhead(list, pos)
-  else
-    if pos < list'pos
-      listSeekBehind(list, pos)
-    /if
+  if pos == me'len
+    return me.appendInt(value)
   /if
-/func
 
+  me.seek(pos)
 
-func listPushint(list ptr list:List, value uintptr)
   mut new = cast<ptr list:Lnode>(mem:zalloc(size(list:Lnode)))
+  mut prec = me'current'prec
 
-  new'next = list'start
-  if list'start != null
-    list'start'prec = new
+  if prec?
+    prec'next = new
   /if
 
-  if list'end == null
-    list'end = new
-    list'current = new
-  else
-    list'pos++
-  /if
-
+  new'prec = prec
   new'value = value
-  list'start = new
+  new'next = me'current
+  me'current'prec = new
 
-  list'len++
-/func
+  me'current = cast<ptr list:Lnode>(me'pos = 0)
+
+  me'len++
+
+  return cast<intptr>(pos)
+/method
 
 
-mut listPush = cast<ptr func(list ptr list:List, item data)>(ptr listPushint)
+method list:List.add(index uintptr, item data) intptr
+  return me.addInt(index, cast<uintptr>(item))
+/method
 
-func listAppendint(list ptr list:List, value uintptr) intptr
-  if list'start == null
-    listPushint(list, value)
+
+method list:List.appendInt(value uintptr) intptr
+  if not me'start?
+    me.pushInt(value)
     return 1
   /if
 
   mut new = cast<ptr list:Lnode>(mem:zalloc(size(list:Lnode)))
 
   new'value = value
-  new'prec = list'end
-  list'end'next = new
+  new'prec = me'end
+  me'end'next = new
 
-  list'end = new
+  me'end = new
 
-  return cast<intptr>(list'len++)
-/func
-
-
-mut listAppend = cast<ptr func(list ptr list:List, item data) intptr>(ptr listAppendint)
-
-func listAddint(list ptr list:List, pos uintptr, value uintptr) intptr
-  if pos > list'len
-    return -1
-  /if
-
-  if pos == list'len
-    return listAppendint(list, value)
-  /if
-
-  listSeek(list, pos)
-
-  mut new = cast<ptr list:Lnode>(mem:zalloc(size(list:Lnode)))
-  mut prec = list'current'prec
-
-  if prec != null
-    prec'next = new
-  /if
-
-  new'prec = prec
-  new'value = value
-  new'next = list'current
-  list'current'prec = new
-
-  list'current = cast<ptr list:Lnode>(list'pos = 0)
-
-  list'len++
-
-  return cast<intptr>(pos)
-/func
+  return cast<intptr>(me'len++)
+/method
 
 
-mut listAdd = cast<ptr func(list ptr list:List, index uintptr, item data) intptr>(ptr listAddint)
-
-func listInit(list ptr list:List) ptr list:List
-  mem:set(list, 0, size(list:List))
-  return list
-/func
+method list:List.append(item data) intptr
+  return me.appendInt(cast<uintptr>(item))
+/method
 
 
-func listNew() ptr list:List
-  return list:listInit(cast<ptr list:List>(mem:alloc(size(list:List))))
-/func
+method list:List.extract(start uintptr, len intptr) ptr list:List
+  mut extract = list:new()
 
-
-func listExtract(list ptr list:List, start uintptr, len intptr) ptr list:List
-
-  mut extract = listNew()
-
-  if start < list'len
-    if len > list'len
-      len = cast<intptr>(list'len - start)
+  if start < me'len
+    if len > me'len
+      len = cast<intptr>(me'len - start)
     /if
 
     if len < 0
-      len = cast<intptr>(list'len - start)
+      len = cast<intptr>(me'len - start)
     /if
-    listSeek(list, start)
 
-    mut prec = list'current'prec
+    me.seek(start)
+
+    mut prec = me'current'prec
     mut link1 ptr ptr list:Lnode
-    if prec != null
+    if prec?
       link1 = ptr prec'next
     else
-      link1 = ptr list'start
+      link1 = ptr me'start
     /if
 
-    extract'current = extract'start = extract'end = list'current
+    extract'current = extract'start = extract'end = me'current
 
-    listSeek(list, start + len - 1)
+    me.seek(start + len - 1)
 
-    mut next = list'current'next
+    mut next = me'current'next
     mut link2 ptr ptr list:Lnode
-    if next != null
+    if next?
       link2 = ptr next'prec
     else
-      link2 = ptr list'end
+      link2 = ptr me'end
     /if
 
-    extract'end = list'current
+    extract'end = me'current
 
     extract'len = len
 
@@ -198,167 +191,104 @@ func listExtract(list ptr list:List, start uintptr, len intptr) ptr list:List
 
     extract'start'prec = extract'end'next = null
 
-    list'len = list'len - len
+    me'len = me'len - len
 
-    list'current = list'start
-    list'pos = 0
+    me'current = me'start
+    me'pos = 0
   /if
 
   return extract
-
-/func
-
-
-func lnodeFree(lnode ptr list:Lnode)
-  while lnode != null
-    mut next = lnode'next
-    mem:free(lnode)
-    lnode = next
-  /while
-/func
+/method
 
 
-func listDeinit(list ptr list:List)
-  lnodeFree(list'start)
-/func
+method list:List.freeContents(freeFunc ptr func(item data))
+  lnodeFreeContents(me'start, freeFunc)
+/method
 
 
-func listFree(list ptr list:List)
-  if list != null
-    list:listDeinit(list)
-
-    mem:free(list)
-  /if
-/func
-
-
-func lnodeFreeAll(lnode ptr list:Lnode, freefunc ptr func(item data))
-  while lnode != null
-    mut next = lnode'next
-    freefunc(cast<data>(lnode'value))
-    mem:free(lnode)
-    lnode = next
-  /while
-/func
-
-
-func listDeinitAll(list ptr list:List, freefunc ptr func(item data))
-  lnodeFreeAll(list'start, freefunc)
-/func
-
-
-func listFreeAll(list ptr list:List, freefunc ptr func(item data))
-  list:listDeinitAll(list, freefunc)
-  mem:free(list)
-/func
-
-
-func lnodeFreeContents(lnode ptr list:Lnode, freefunc ptr func(item data))
-  while lnode != null
-    mut next = lnode'next
-    freefunc(cast<data>(lnode'value))
-    lnode = next
-  /while
-/func
-
-
-func listFreeContents(list ptr list:List, freefunc ptr func(item data))
-  lnodeFreeContents(list'start, freefunc)
-/func
-
-
-func listGetint(list ptr list:List, pos uintptr) ptr uintptr
-  if pos >= list'len
+method list:List.getInt(pos uintptr) ptr uintptr
+  if pos >= me'len
     return null
   /if
 
-  listSeek(list, pos)
+  me.seek(pos)
 
-  if list'current != null
-    return ptr list'current'value
+  if me'current?
+    return ptr me'current'value
   /if
 
   return null
-/func
+/method
 
 
-mut listGet = cast<ptr func(list ptr list:List, index uintptr) ptr data>(ptr listGetint)
+method list:List.get(pos uintptr) ptr data
+  return cast<ptr data>(me.getInt(pos))
+/method
 
-func listInsertint(list ptr list:List, pos uintptr, value uintptr) intptr
-  if pos > list'len
+
+method list:List.insertInt(pos uintptr, value uintptr) intptr
+  mut len = me.len()
+
+  if pos > len
     return -1
   /if
 
-  if pos == list'len
-    return listAppendint(list, value)
+  if pos == len
+    return me.appendInt(value)
   /if
 
-  listSeek(list, pos)
+  me.seek(pos)
 
-  list'current'value = value
+  me'current'value = value
 
-  return cast<intptr>(list'pos)
-/func
-
-
-mut listInsert = cast<ptr func(list ptr list:List, index uintptr, item data) intptr>(ptr listInsertint)
-
-func listLen(list ptr list:List) uintptr
-  return list'len
-/func
+  return cast<intptr>(me'pos)
+/method
 
 
-func listPopint(list ptr list:List) uintptr
-  if list'start == null
+method list:List.insert(index uintptr, item data) intptr
+  return me.insertInt(index, cast<uintptr>(item))
+/method
+
+
+method list:List.len() uintptr
+  return me'len
+/method
+
+
+method list:List.popInt() uintptr
+  if not me'start?
     return 0
   /if
 
-  mut next = list'start'next
-  mut ret = list'start'value
+  mut next = me'start'next
+  mut ret = me'start'value
 
-  mem:free(list'start)
+  mem:free(me'start)
 
-  if next != null
+  if next?
     next'prec = null
   /if
 
-  if list'start == list'end
-    mem:set(list, 0, size(list:List))
+  if me'start == me'end
+    mem:set(me, 0, size(list:List))
   else
-    list'start = next
-    list'len--
+    me'start = next
+    me'len--
   /if
 
   return ret
-/func
+/method
 
 
-mut listPop = cast<ptr func(list ptr list:List) data>(ptr listPopint)
-
-func listPrune(list ptr list:List)
-  lnodeFree(list'start)
-  mem:set(list, 0, size(list:List))
-/func
+method list:List.pop() data
+  return cast<data>(me.popInt())
+/method
 
 
-func listShallowCopy(list ptr list:List) ptr list:List
-  mut new = listNew()
-  mut len = listLen(list)
-  mut i uintptr = 0
-
-  while i < len
-    listAppendint(new, val listGetint(list, i))
-    i++
-  /while
-
-  return new
-/func
-
-
-func listPrint(list ptr list:List)
+method list:List.print()
   mut inside = false
   tty:out("[ ")
-  mut len = listLen(list)
+  mut len = me.len()
   mut i uint8 = 0
 
   while i < len
@@ -368,56 +298,154 @@ func listPrint(list ptr list:List)
       inside = true
     /if
 
-    tty:outint(val listGetint(list, i))
+    tty:outint(val me.getInt(i))
     i++
   /while
   tty:outln(" ]")
-/func
+/method
 
 
+method list:List.prune()
+  lnodeFree(me'start)
+  mem:set(me, 0, size(list:List))
+/method
 
-func listRemove(list ptr list:List, item uintptr, freefunc ptr func(item data)) bool
-  mut len = list:listLen(list)
+
+method list:List.pushInt(value uintptr)
+  mut new = cast<ptr list:Lnode>(mem:zalloc(size(list:Lnode)))
+
+  new'next = me'start
+  if me'start?
+    me'start'prec = new
+  /if
+
+  if not me'end?
+    me'end = new
+    me'current = new
+  else
+    me'pos++
+  /if
+
+  new'value = value
+  me'start = new
+
+  me'len++
+/method
+
+
+method list:List.push(item data)
+  me.pushInt(cast<uintptr>(item))
+/method
+
+
+method list:List.remove(item uintptr, freefunc ptr func(item data)) bool
+  mut len = me.len()
 
   if item >= len
     return false
   /if
 
-  listSeek(list, item)
+  me.seek(item)
 
-  mut prec = list'current'prec
-  mut next = list'current'next
+  mut prec = me'current'prec
+  mut next = me'current'next
 
-  mut precNodeNext = ptr list'start
+  mut precNodeNext = ptr me'start
 
-  if prec != null
+  if prec?
     precNodeNext = ptr prec'next
   /if
 
-  mut nextNodePrec = ptr list'end
+  mut nextNodePrec = ptr me'end
 
-  if next != null
+  if next?
     nextNodePrec = ptr next'prec
   /if
 
   val precNodeNext = next
   val nextNodePrec = prec
 
-  if freefunc != null
-    freefunc(cast<data>(list'current'value))
+  if freefunc?
+    freefunc(cast<data>(me'current'value))
   /if
 
-  mem:free(list'current)
+  mem:free(me'current)
 
-  list'len--
+  me'len--
 
   if item == 0
-    list'current = next
+    me'current = next
     # position is 0 already
   else
-    list'current = prec
-    list'pos--
+    me'current = prec
+    me'pos--
   /if
 
   return true
-/func
+/method
+
+
+method list:List.seek(pos uintptr)
+  if not me'current? and (pos == 0)
+     me.seekZero()
+  /if
+
+  if pos > me'pos
+    me.seekAhead(pos)
+  else
+    if pos < me'pos
+      me.seekBehind(pos)
+    /if
+  /if
+/method
+
+
+method list:List.seekAhead(pos uintptr)
+
+  if not me'current? or (pos == 0)
+    me'current = me'start
+    me'pos = 0
+  /if
+
+  while me'pos < pos
+    me'current = me'current'next
+    me'pos++
+  /while
+
+/method
+
+
+method list:List.seekBehind(pos uintptr)
+  mut len = me.len()
+
+  if not me'current? or ((len - 1) == pos)
+    me'current = me'end
+    me'pos = len - 1
+  /if
+
+  while me'pos > pos
+    me'current = me'current'prec
+    me'pos--
+  /while
+
+/method
+
+
+method list:List.seekZero()
+  me'current = me'start
+  me'pos = 0
+/method
+
+
+method list:List.shallowCopy() ptr list:List
+  mut new = list:new()
+  mut len = me.len()
+  mut i uintptr = 0
+
+  while i < len
+    new.appendInt(val me.getInt(i))
+    i++
+  /while
+
+  return new
+/method

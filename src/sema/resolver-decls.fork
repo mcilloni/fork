@@ -149,9 +149,9 @@ func registerDeclReal(rsv sema:Resolver,
 
     else
 
-      if list:listLen(pdecl'node'leaves) > 0
+      if pdecl'node'leaves.len() > 0
 
-        mut pexpr = cast<ptr ast:PExpr>(val list:listGet(pdecl'node'leaves, 0))
+        mut pexpr = cast<ptr ast:PExpr>(val pdecl'node'leaves.get(0))
 
         # if we're are validating the declaration directly and not because of
         # recursive resolution, or if we still have no type, resolve the
@@ -173,7 +173,7 @@ func registerDeclReal(rsv sema:Resolver,
 
               mut msg = txt:csUnwrap(cs)
 
-              list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
+              errors.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
 
               mem:free(msg)
 
@@ -181,7 +181,7 @@ func registerDeclReal(rsv sema:Resolver,
             /if
           else
             if ast:typeIsNull(valType)
-              list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, "can't declare a variable with type 'null'"))
+              errors.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, "can't declare a variable with type 'null'"))
               return null
             /if
 
@@ -212,11 +212,11 @@ func registerTopDeclReal(rsv sema:Resolver,
                          pdecl ptr ast:PDecl,
                          recList,errors ptr list:List) ptr ast:Type
 
-  list:listPush(recList, ast:declKey(pdecl))
+  recList.push(ast:declKey(pdecl))
 
   mut ret = registerDeclReal(rsv, pdecl, false, recList, errors)
 
-  mem:free(list:listPop(recList))
+  mem:free(recList.pop())
 
   return ret
 /func
@@ -227,11 +227,11 @@ func registerTopDecl(rsv sema:Resolver,
                      errors ptr list:List) ptr ast:Type
 
   mut recList list:List
-  list:listInit(ptr recList)
+  list:init(ptr recList)
 
   mut ret = registerTopDeclReal(rsv, pdecl, ptr recList, errors)
 
-  list:listDeinit(ptr recList)
+  list:deinit(ptr recList)
 
   return ret
 /func
@@ -260,7 +260,7 @@ func resolveDeclType(rsv sema:Resolver,
   # The declaration is absent
 
   mut msg = txt:strappend(name, " is not defined in current scope")
-  list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, node'begin, rsv'root'fileName, msg))
+  errors.append(parser:issueNew(parser:ISSUE_ERR, node'begin, rsv'root'fileName, msg))
 
   mem:free(msg)
 
@@ -286,7 +286,7 @@ func registerDecl(rsv sema:Resolver,
 
     mut msg = txt:csUnwrap(cs)
 
-    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, declNode'begin, rsv'root'fileName, msg))
+    errors.append(parser:issueNew(parser:ISSUE_ERR, declNode'begin, rsv'root'fileName, msg))
 
     mem:free(msg)
 

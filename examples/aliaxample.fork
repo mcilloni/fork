@@ -32,24 +32,24 @@ entry
   mut ast ptr ast:PNode
   mut errors = parser:ctxParseFile(ctx, argv'args[0], ptr ast)
 
-  mut errLen = list:listLen(errors)
+  mut errLen = errors.len()
 
   if errLen > 0
     mut i uintptr = 0
 
     while i < errLen
-      mut issue = cast<ptr parser:Issue>(val list:listGet(errors, i))
+      mut issue = cast<ptr parser:Issue>(val errors.get(i))
 
       parser:issueWriteOut(issue, ptr tty:out)
 
       i++
     /while
 
-    list:listFree(errors)
+    list:free(errors)
     proc:exit(1)
   /if
 
-  list:listFree(errors)
+  list:free(errors)
 
   mut syms = cast<ptr ast:PRoot>(ast)'aliases'syms
 

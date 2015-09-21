@@ -42,7 +42,7 @@ func pblockNew() ptr ast:PBlock
   mut pnode = cast<ptr ast:PNode>(pblock)
 
   pnode'type = ast:PBLOCK
-  pnode'leaves = list:listNew()
+  pnode'leaves = list:new()
 
   return pblock
 /func
@@ -52,7 +52,7 @@ func pdeclNew(nodeType uint16, sym ptr ast:PSymbol, isDecl bool) ptr ast:PDecl
 
   mut pdecl = cast<ptr ast:PDecl>(mem:zalloc(size(ast:PDecl)))
   pdecl'node'type = nodeType
-  pdecl'node'leaves = list:listNew()
+  pdecl'node'leaves = list:new()
   pdecl'isDecl = isDecl
 
   mem:incRef(sym)
@@ -77,7 +77,7 @@ func pexprNewTernary(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end ast
     mut pexpr = cast<ptr ast:PExpr>(mem:zalloc(size(ast:PExpr)))
     pexpr'node'type = ast:PEXPR
     pexpr'node'value = tok'value
-    pexpr'node'leaves = list:listNew()
+    pexpr'node'leaves = list:new()
     pexpr'opType = tok'type
     tok'value = 0 # now the value belongs to this PExpr
 
@@ -98,7 +98,7 @@ func pexprNewTernary(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end ast
 func pnodeAppendChild(pnode, child ptr ast:PNode) ptr ast:PNode
 
   if pnode != null and child != null
-    list:listAppend(pnode'leaves, child)
+    pnode'leaves.append(child)
 
     child'parent = pnode
   /if
@@ -112,7 +112,7 @@ func pnodeNew(type uint16, value uintptr) ptr ast:PNode
   mut pnode = cast<ptr ast:PNode>(mem:zalloc(size(ast:PNode)))
   pnode'type = type
   pnode'value = value
-  pnode'leaves = list:listNew()
+  pnode'leaves = list:new()
 
   return pnode
 /func
@@ -124,7 +124,7 @@ func prootNew(moduleName ptr ast:StringDef, imports ptr list:List, fileName ptr 
   mut pnode = cast<ptr ast:PNode>(proot)
 
   pnode'type = ast:PROOT
-  pnode'leaves = list:listNew()
+  pnode'leaves = list:new()
   pnode'parent = null
 
   proot'moduleName = moduleName
@@ -165,7 +165,7 @@ func ptypeDescrFree(descr ptr ast:PTypeDescr)
     /if
 
     if descr'arguments != null
-      list:listFreeAll(descr'arguments, ptr psymbolFree)
+      list:freeAll(descr'arguments, ptr psymbolFree)
     /if
   /if
 /func

@@ -61,7 +61,7 @@ func convertRetType(rsv sema:Resolver,
 
   # if this is not the retType of a ptr, then it's an error having a function
   if res != null and res'type == ast:TYPE_FUNC and not isPtr
-    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, retPType'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
+    errors.append(parser:issueNew(parser:ISSUE_ERR, retPType'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
 
     return null
   /if
@@ -105,15 +105,15 @@ func convertSymbolList(rsv sema:Resolver,
     return kv:strkvNew(0)
   /if
 
-  mut plen = list:listLen(pargs)
+  mut plen = pargs.len()
   mut members = kv:strkvNew(plen)
-  mut errLen = list:listLen(errors)
+  mut errLen = errors.len()
 
   mut i uintptr = 0
   kv:kvSetFreeFuncs(members, ptr mem:free, null)
 
   while i < plen
-    mut member = cast<ptr ast:PSymbol>(val list:listGet(pargs, i))
+    mut member = cast<ptr ast:PSymbol>(val pargs.get(i))
     mut ptype = member'type
 
     mut type ptr ast:Type = null
@@ -129,7 +129,7 @@ func convertSymbolList(rsv sema:Resolver,
     if type != null
       # if this is not the retType of a ptr, then it's an error having a function
       if type'type == ast:TYPE_FUNC
-        list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
+        errors.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
 
         return null
       /if
@@ -140,7 +140,7 @@ func convertSymbolList(rsv sema:Resolver,
     i++
   /while
 
-  if list:listLen(errors) > errLen
+  if errors.len() > errLen
     kv:kvFree(members)
     return null
   /if
@@ -216,7 +216,7 @@ func resolveModuleAlias(rsv sema:Resolver,
 
   if not ast:prootHasImported(rsv'root, ptype'moduleName)
     mut msg = txt:strappend("no import called ", ptype'moduleName)
-    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
+    errors.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
     mem:free(msg)
 
     return null
@@ -236,7 +236,7 @@ func resolveModuleAlias(rsv sema:Resolver,
   txt:csAppendStr(cs, ptype'moduleName)
 
   mut msg = txt:csUnwrap(cs)
-  list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
+  errors.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
   mem:free(msg)
 
   return null
@@ -266,7 +266,7 @@ func resolveIdType(rsv sema:Resolver,
     utils:listDumpHierarchyIntoCS(recList, cs)
 
     mut msg = txt:csUnwrap(cs)
-    list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
+    errors.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
     mem:free(msg)
 
     return null
@@ -300,7 +300,7 @@ func resolveIdType(rsv sema:Resolver,
   txt:csAppendStr(cs, " in current scope")
 
   mut msg = txt:csUnwrap(cs)
-  list:listAppend(errors, parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
+  errors.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
   mem:free(msg)
 
   return null
@@ -357,13 +357,13 @@ func registerAliasReal(rsv sema:Resolver,
   mut needsList = recList == null
 
   if needsList
-    recList = list:listNew()
+    recList = list:new()
   /if
 
 
-  list:listPush(recList, name)
+  recList.push(name)
   mut ret = resolveTypeReal(rsv, ptype, recList, errors, ignSize)
-  list:listPop(recList)
+  recList.pop()
 
   if ret != null
     rootAliasRegister(rsv, name, ret)
@@ -371,7 +371,7 @@ func registerAliasReal(rsv sema:Resolver,
 
 
   if needsList
-    list:listFree(recList)
+    list:free(recList)
   /if
 
   return ret
@@ -383,11 +383,11 @@ func registerAlias(rsv sema:Resolver,
                   errors ptr list:List) ptr ast:Type
 
   mut recList list:List
-  list:listInit(ptr recList)
+  list:init(ptr recList)
 
   mut ret = registerAliasReal(rsv, pdecl'sym'name, pdecl'sym'type, ptr recList, errors, false)
 
-  list:listDeinit(ptr recList)
+  list:deinit(ptr recList)
 
   return ret
 /func

@@ -52,17 +52,17 @@ func kvDeinit(kv ptr kv:KVList)
   kvFreeContents(kv)
 
   hash:hashDeinit(ptr kv'hash)
-  list:listDeinitAll(ptr kv'list, ptr pair:pairFree)
+  list:deinitAll(ptr kv'list, ptr pair:pairFree)
 /func
 
 
 func kvFirst(kv ptr kv:KVList) ptr pair:Pair
-  return list:listLen(ptr kv'list) > 0 => cast<ptr pair:Pair>(val list:listGet(ptr kv'list, 0)) || null
+  return kv'list.len() > 0 => cast<ptr pair:Pair>(val kv'list.get(0)) || null
 /func
 
 
 func kvFixIndices(kv ptr kv:KVList, pos uintptr)
-  mut len = list:listLen(ptr kv'list)
+  mut len = kv'list.len()
 
   while pos < len
     mut pair = kv:kvGetAt(kv, pos)
@@ -119,7 +119,7 @@ func kvGet(kv ptr kv:KVList, key data, value ptr data) bool
 
 
 func kvGetAt(kv ptr kv:KVList, index uintptr) ptr pair:Pair
-  mut ret = list:listGet(ptr kv'list, index)
+  mut ret = kv'list.get(index)
   return ret != null => cast<ptr pair:Pair>(val ret) || null
 /func
 
@@ -148,14 +148,14 @@ func kvInit(kv ptr kv:KVList, cap uintptr, hf hash:hashfn) ptr kv:KVList
 
   hash:hashSetFreeFuncs(ptr kv'hash, null, ptr kvHashFreePairs)
 
-  list:listInit(ptr kv'list)
+  list:init(ptr kv'list)
 
   return kv
 /func
 
 
 func kvLen(kv ptr kv:KVList) uintptr
-  return list:listLen(ptr kv'list)
+  return kv'list.len()
 /func
 
 
@@ -201,13 +201,13 @@ func kvPut(kv ptr kv:KVList, key data, value data)
   # if no key matches, then create a new element in list and hash
   # The index of this element will be the current length of the list (obviously).
   if not res
-    indexValue = pair:pairNew(cast<data>(list:listLen(ptr kv'list)), value)
+    indexValue = pair:pairNew(cast<data>(kv'list.len()), value)
 
     hash:hashPut(ptr kv'hash, key, indexValue)
-    list:listAppend(ptr kv'list, pair:pairNew(key, value))
+    kv'list.append(pair:pairNew(key, value))
   else
     mut index = cast<uintptr>(indexValue'key)
-    mut pair = cast<ptr pair:Pair>(val list:listGet(ptr kv'list, index))
+    mut pair = cast<ptr pair:Pair>(val kv'list.get(index))
 
     kvFreePairContents(kv, pair)
     # bug: check for double frees. Won't fix because it's better to improve the
@@ -225,11 +225,12 @@ func kvRemove(kv ptr kv:KVList, key data) bool
   mut pos = kv:kvGetPos(kv, key, ptr pair)
 
   if pos >= 0
-    pair = cast<ptr pair:Pair>(val list:listGet(ptr kv'list, pos))
+    pair = cast<ptr pair:Pair>(val kv'list.get(pos))
 
     kvFreePairContents(kv, pair)
 
-    list:listRemove(ptr kv'list, pos, ptr pair:pairFree)
+    kv'list.remove(pos, ptr pair:pairFree)
+    
     hash:hashRemove(ptr kv'hash, key)
 
     kvFixIndices(kv, pos)

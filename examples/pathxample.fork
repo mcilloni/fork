@@ -30,15 +30,15 @@ entry
   /if
 
   mut i uintptr = 0
-  mut len = list:listLen(paths)
+  mut len = paths.len()
 
   while i < len
-    mut elem = cast<ptr uint8>(val list:listGet(paths, i))
+    mut elem = cast<ptr uint8>(val paths.get(i))
 
     tty:outln(elem)
 
     i++
   /while
 
-  list:listFreeAll(paths, ptr mem:free)
+  list:freeAll(paths, ptr mem:free)
 /entry
