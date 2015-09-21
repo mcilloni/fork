@@ -27,7 +27,7 @@ alias Hash struct(
 )
 
 
-alias HashIter struct (
+alias Iter struct (
   hash ptr Hash,
   curBucket ptr list:List,
   buckIndex,pos uintptr,
@@ -63,6 +63,7 @@ decl func strnew(cap uintptr) ptr Hash
 decl method Hash.clone() ptr Hash
 decl method Hash.contains(key data) bool
 decl method Hash.get(key data) data
+decl method Hash.iter() ptr Iter
 decl method Hash.len() uintptr
 decl method Hash.print()
 decl method Hash.put(key data, value data)
@@ -70,8 +71,8 @@ decl method Hash.remove(key data) bool
 decl method Hash.setFreeFuncs(freeKey,freeVal ptr func(item data))
 
 
-# hashiter functions
+# hashiter functions/methods
 
-decl func hashiterStart(hash ptr Hash) ptr HashIter
-decl func hashiterNext(hash ptr HashIter) ptr pair:Pair
-decl func hashiterFree(hash ptr HashIter)
+decl method Iter.next() ptr pair:Pair
+
+decl func iterFree(hash ptr Iter)

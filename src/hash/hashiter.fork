@@ -18,52 +18,51 @@ import pair
 import vect
 
 
-func hashiterStart(hash ptr hash:Hash) ptr hash:HashIter
-  mut iter = cast<ptr hash:HashIter>(mem:zalloc(size(hash:HashIter)))
+method hash:Hash.iter() ptr hash:Iter
+  mut iter = cast<ptr hash:Iter>(mem:zalloc(size(hash:Iter)))
 
-  iter'hash = hash
-  iter'curBucket = cast<ptr list:List>(val hash'buckets.get(0))
+  iter'hash = me
+  iter'curBucket = cast<ptr list:List>(val me'buckets.get(0))
 
   return iter
-/func
+/method
 
 
-func hashiterLoadNextBucket(iter ptr hash:HashIter)
-  iter'curBucket = null
+method hash:Iter.loadNextBucket()
+  me'curBucket = null
 
-  while iter'curBucket == null or iter'curBucket.len() == 0
-    iter'buckIndex++
+  while (not me'curBucket?) or me'curBucket.len() == 0
+    me'buckIndex++
 
     # if we've reached the last bucket, return null and stop
-    if iter'buckIndex == iter'hash'buckets.len()
-      iter'end = true
+    if me'buckIndex == me'hash'buckets.len()
+      me'end = true
       break
     /if
 
-    iter'curBucket = cast<ptr list:List>(val iter'hash'buckets.get(iter'buckIndex))
-    iter'pos = 0
+    me'curBucket = cast<ptr list:List>(val me'hash'buckets.get(me'buckIndex))
+    me'pos = 0
   /while
-/func
+/method
 
 
-func hashiterNext(iter ptr hash:HashIter) ptr pair:Pair
-
+method hash:Iter.next() ptr pair:Pair
   # load next bucket
-  if iter'curBucket == null or iter'curBucket.len() == 0 or iter'pos == iter'curBucket.len()
-    hashiterLoadNextBucket(iter)
+  if me'curBucket == null or me'curBucket.len() == 0 or me'pos == me'curBucket.len()
+    me.loadNextBucket()
   /if
 
-  if iter'end
+  if me'end
     return null
   /if
 
-  mut ent = cast<ptr hash:Entry>(val iter'curBucket.get(iter'pos))
-  iter'pos++
+  mut ent = cast<ptr hash:Entry>(val me'curBucket.get(me'pos))
+  me'pos++
 
   return pair:pairNew(ent'key, ent'value)
-/func
+/method
 
 
-func hashiterFree(iter ptr hash:HashIter)
+func iterFree(iter ptr hash:Iter)
   mem:free(iter)
 /func

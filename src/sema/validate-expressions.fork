@@ -356,7 +356,7 @@ func validateExprId(rsv sema:Resolver,
   mut name = cast<ptr uint8>(pexpr'node'value)
   mut type = ast:findSym(cast<ptr ast:PNode>(pexpr), name)
 
-  if recList != null and utils:listContains(recList, name)
+  if recList? and utils:listContains(recList, name)
     mut cs = txt:csNew(20)
 
     txt:csAppendStr(cs, "type ")
@@ -374,8 +374,8 @@ func validateExprId(rsv sema:Resolver,
   /if
 
   # try searching for a top declaration
-  if type == null and (type = sema:resolveDeclType(rsv, name, cast<ptr ast:PNode>(pexpr), recList, errors)) == null
-    return null
+  if not type?
+    return sema:resolveDeclType(rsv, name, cast<ptr ast:PNode>(pexpr), recList, errors)
   /if
 
   return type
@@ -1269,7 +1269,7 @@ func validateExprRecl(rsv sema:Resolver,
     /if
   /if
 
-  if pexpr'type != null
+  if pexpr'type?
     pexpr'node'validated = true
   /if
 

@@ -23,11 +23,11 @@ import vect
 # entry init/deinit functions
 
 func entryDeinit(ent ptr hash:Entry, hash ptr hash:Hash)
-  if hash'freeKey != null
+  if hash'freeKey?
     hash'freeKey(ent'key)
   /if
 
-  if hash'freeVal != null
+  if hash'freeVal?
     hash'freeVal(ent'value)
   /if
 /func
@@ -53,7 +53,7 @@ func deinit(hash ptr hash:Hash)
   while i < len
     mut bucket = cast<ptr list:List>(val hash'buckets.get(i))
 
-    if bucket != null
+    if bucket?
       mut j uintptr = 0
       mut bucketLen = bucket.len()
 
@@ -77,7 +77,7 @@ func deinit(hash ptr hash:Hash)
 
 
 func free(hash ptr hash:Hash)
-  if hash != null
+  if hash?
     hash:deinit(hash)
     mem:free(hash)
   /if
@@ -104,17 +104,17 @@ func new(cap uintptr, hf hash:hashfn) ptr hash:Hash
 method hash:Hash.clone() ptr hash:Hash
   mut newHash = hash:new(me'buckets'cap, me'hf)
 
-  mut hiter = hash:hashiterStart(me)
+  mut hiter = me.iter()
 
   mut pair ptr pair:Pair = null
 
-  while (pair = hash:hashiterNext(hiter)) != null
+  while (pair = hiter.next())?
     newHash.put(pair'key, pair'value)
 
     pair:pairFree(pair)
   /while
 
-  hash:hashiterFree(hiter)
+  hash:iterFree(hiter)
 
   return newHash
 /method
@@ -144,13 +144,13 @@ method hash:Hash.getInternal(key data, value ptr data) bool
 
   mut buckAddr = me'buckets.get(keyHash mod bucketCap)
 
-  if buckAddr == null
+  if not buckAddr?
     return false
   /if
 
   mut bucket = cast<ptr list:List>(val buckAddr)
 
-  if bucket != null
+  if bucket?
     mut entLen = bucket.len()
     mut i uintptr = 0
 
@@ -195,12 +195,12 @@ method hash:Hash.print()
 
   tty:out("[ ")
 
-  mut hiter = hash:hashiterStart(me)
+  mut hiter = me.iter()
 
   mut pair ptr pair:Pair = null
   mut first = true
 
-  while (pair = hash:hashiterNext(hiter)) != null
+  while (pair = hiter.next())?
     if first
       first = false
     else
@@ -214,7 +214,7 @@ method hash:Hash.print()
     pair:pairFree(pair)
   /while
 
-  hash:hashiterFree(hiter)
+  hash:iterFree(hiter)
 
   tty:out(" ]")
 /method
@@ -235,13 +235,13 @@ method hash:Hash.put(key data, value data)
   mut bucket ptr list:List = null
   mut exists = false
 
-  if buckAddr == null
+  if not buckAddr?
     bucket = list:new()
     me'buckets.put(index, bucket)
   else
     bucket = cast<ptr list:List>(val buckAddr)
 
-    if bucket == null
+    if not bucket?
       bucket = list:new()
       me'buckets.put(index, bucket)
     /if
@@ -282,7 +282,7 @@ method hash:Hash.rehash()
   while i < oldLen
     mut bucket = cast<ptr list:List>(val old.get(i))
 
-    if bucket != null
+    if bucket?
       mut buckLen = bucket.len()
       mut j uintptr = 0
 
@@ -330,11 +330,11 @@ method hash:Hash.remove(key data) bool
     if elem'hash == keyHash
       bucket.remove(i, null)
 
-      if me'freeKey != null
+      if me'freeKey?
         me'freeKey(elem'key)
       /if
 
-      if me'freeVal != null
+      if me'freeVal?
         me'freeVal(elem'value)
       /if
 

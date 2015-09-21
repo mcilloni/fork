@@ -21,11 +21,11 @@ func identHash(item data) uintptr
 func hashIntDump(hash ptr hash:Hash)
   tty:out("[ ")
 
-  mut iter = hash:hashiterStart(hash)
+  mut iter = hash.iter()
   mut pair ptr pair:Pair = null
   mut first = true
 
-  while (pair = hash:hashiterNext(iter)) != null
+  while (pair = iter.next()) != null
     if first
       first = false
     else
@@ -39,7 +39,7 @@ func hashIntDump(hash ptr hash:Hash)
     pair:pairFree(pair)
   /while
 
-  hash:hashiterFree(iter)
+  hash:iterFree(iter)
 
   tty:outln(" ]")
 /func
