@@ -23,12 +23,12 @@ import txt
 func ctransGenDecls(tr ptr ctrans:Transl,
                     root ptr ast:PRoot)
 
-  mut len = list:listLen(root'node'node'leaves)
+  mut len = root'node'node'leaves.len()
   mut i uintptr = 0
   mut moduleName ptr uint8 = (root'moduleName != null) => root'moduleName'name || null
 
   while i < len
-    mut child = cast<ptr ast:PDecl>(val list:listGet(root'node'node'leaves, i))
+    mut child = cast<ptr ast:PDecl>(val root'node'node'leaves.get(i))
 
     if child'node'type != ast:PALIAS and child'node'type != ast:PENTRY
 
@@ -46,7 +46,7 @@ func ctransGenDecls(tr ptr ctrans:Transl,
 
       if not child'isDecl
         if child'node'type == ast:PMUT
-          mut expr = list:listGet(child'node'leaves, 0)
+          mut expr = child'node'leaves.get(0)
 
           ctrans:translGlobVar(tr, sym, root, expr != null => cast<ptr ast:PExpr>(val expr) || null)
         else
@@ -69,10 +69,10 @@ func ctransGenImports(tr ptr ctrans:Transl,
                       root ptr ast:PRoot)
 
   mut i uintptr = 0
-  mut len = list:listLen(root'imports)
+  mut len = root'imports.len()
 
   while i < len
-    mut impdef = cast<ptr ast:StringDef>(val list:listGet(root'imports, i))
+    mut impdef = cast<ptr ast:StringDef>(val root'imports.get(i))
 
     ctrans:translFordInc(tr, impdef'name)
 

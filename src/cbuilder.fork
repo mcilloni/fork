@@ -414,10 +414,10 @@ func lsNew(line ast:Line, str ptr uint8) ptr LineStr
 
 func blDump(blt BlTrans, cs ptr txt:Charstash, fname ptr uint8, p uintptr)
   mut i uintptr = 0
-  mut dLen = list:listLen(blt'decls)
+  mut dLen = blt'decls.len()
 
   while i < dLen
-    mut dcl = cast<ptr LineStr>(val list:listGet(blt'decls, i))
+    mut dcl = cast<ptr LineStr>(val blt'decls.get(i))
 
     dbgLine(cs, fname, dcl'line'line, p)
 
@@ -432,12 +432,12 @@ func blDump(blt BlTrans, cs ptr txt:Charstash, fname ptr uint8, p uintptr)
     i++
   /while
 
-  mut vLen = list:listLen(blt'vars)
+  mut vLen = blt'vars.len()
 
   i = 0
 
   while i < vLen
-    mut var = cast<ptr LineStr>(val list:listGet(blt'vars, i))
+    mut var = cast<ptr LineStr>(val blt'vars.get(i))
 
     dbgLine(cs, fname, var'line'line, p)
 
@@ -455,12 +455,12 @@ func blDump(blt BlTrans, cs ptr txt:Charstash, fname ptr uint8, p uintptr)
     txt:csAppendLine(cs, "\n")
   /if
 
-  mut sLen = list:listLen(blt'stmts)
+  mut sLen = blt'stmts.len()
 
   i = 0
 
   while i < sLen
-    mut stmt = cast<ptr LineStr>(val list:listGet(blt'stmts, i))
+    mut stmt = cast<ptr LineStr>(val blt'stmts.get(i))
 
     dbgLine(cs, fname, stmt'line'line, p)
 
@@ -474,18 +474,18 @@ func blDump(blt BlTrans, cs ptr txt:Charstash, fname ptr uint8, p uintptr)
     i++
   /while
 
-  list:listFree(blt'decls)
-  list:listFree(blt'vars)
-  list:listFree(blt'stmts)
+  list:free(blt'decls)
+  list:free(blt'vars)
+  list:free(blt'stmts)
 /func
 
 
 func blNew() BlTrans
   mut ret BlTrans
 
-  ret'decls = list:listNew()
-  ret'vars = list:listNew()
-  ret'stmts = list:listNew()
+  ret'decls = list:new()
+  ret'vars = list:new()
+  ret'stmts = list:new()
 
   return ret
 /func
@@ -634,8 +634,8 @@ func translStringEscape(cs ptr txt:Charstash, str ptr uint8)
 
 
 func translDotExpr(cs ptr txt:Charstash, pexpr ptr ast:PExpr)
-  mut e1 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
-  mut e2 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
+  mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
   mut targetType = e1'type
 
@@ -710,8 +710,8 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:COLON
-    mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val list:listGet(pexpr'node'leaves, 0))'value)
-    mut name = cast<ptr uint8>(cast<ptr ast:PNode>(val list:listGet(pexpr'node'leaves, 1))'value)
+    mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
+    mut name = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
 
     symMod(cs, modName, name)
 
@@ -719,8 +719,8 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:APOS
-    mut e1 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
-    mut e2 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
     translExpr(cs, root, e1)
 
@@ -740,7 +740,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:CAST
-    mut expr = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+    mut expr = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
     txt:csAppendStr(cs, "((")
     csymTypeWrap(cs, pexpr'type)
@@ -754,7 +754,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:OPAR
-    mut toCall = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+    mut toCall = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut methCall = toCall'opType == tokens:DOT
 
     if methCall
@@ -765,11 +765,11 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
 
     txt:csAppendStr(cs, "(")
 
-    mut len = list:listLen(pexpr'node'leaves)
+    mut len = pexpr'node'leaves.len()
 
     # add me parameter
     if methCall
-      mut target = cast<ptr ast:PExpr>(val list:listGet(toCall'node'leaves, 0))
+      mut target = cast<ptr ast:PExpr>(val toCall'node'leaves.get(0))
       mut notPtr = not ast:typeIsPtr(target'type)
 
       if notPtr
@@ -790,7 +790,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
     mut i uintptr = 1
 
     while i < len
-      mut param = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, i))
+      mut param = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(i))
 
       if i > 1
         txt:csAppendWord(cs, ",")
@@ -806,8 +806,8 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:OBRAC
-    mut e1 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
-    mut e2 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
     txt:csAppendStr(cs, "(")
 
@@ -823,8 +823,8 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:DQUEST
-    mut e1 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
-    mut e2 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
     # warn: due to constraints, every expression will be evaluated twice.
     # Please don't use "??" with complex expressions on the left.
@@ -855,9 +855,9 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:FATARROW
-    mut e1 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
-    mut e2 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
-    mut e3 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 2))
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+    mut e3 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(2))
 
     txt:csAppendStr(cs, "(")
 
@@ -877,7 +877,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:DEC
-    mut e = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     translExpr(cs, root, e)
 
     txt:csAppendStr(cs, "--")
@@ -886,7 +886,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:INC
-    mut e = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     translExpr(cs, root, e)
 
     txt:csAppendStr(cs, "++")
@@ -895,7 +895,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:QUEST
-    mut e = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
     txt:csAppendStr(cs, "(")
     translExpr(cs, root, e)
@@ -906,8 +906,8 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if isBinOp(pexpr'opType) or pexpr'opType == tokens:MINUS
-    mut e1 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
-    mut e2 = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 1))
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
     if pexpr'opType == tokens:POW
       txt:csAppendStr(cs, "math$__forkpow(")
@@ -932,7 +932,7 @@ func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
 
   #assume prefix unary now
 
-  mut e = cast<ptr ast:PExpr>(val list:listGet(pexpr'node'leaves, 0))
+  mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
   txt:csAppendStr(cs, opConv(pexpr'opType))
   txt:csAppendStr(cs, "(")
   translExpr(cs, root, e)
@@ -946,20 +946,20 @@ func translIf(stmt ptr ast:PNode, root ptr ast:PRoot, fname ptr uint8, p uintptr
 
   txt:csAppendStr(cs, "if (")
 
-  mut pexpr = cast<ptr ast:PExpr>(val list:listGet(stmt'leaves, 0))
+  mut pexpr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
 
   translExpr(cs, root, pexpr)
 
   txt:csAppendWord(cs, ")")
 
-  mut block = cast<ptr ast:PBlock>(val list:listGet(stmt'leaves, 1))
+  mut block = cast<ptr ast:PBlock>(val stmt'leaves.get(1))
 
   translBlock(cs, root, block, fname, p + 2)
 
   if stmt'type == ast:PIFELSE
     txt:csAppendStr(cs, " else ")
 
-    block = cast<ptr ast:PBlock>(val list:listGet(stmt'leaves, 2))
+    block = cast<ptr ast:PBlock>(val stmt'leaves.get(2))
 
     translBlock(cs, root, block, fname, p + 2)
   /if
@@ -973,13 +973,13 @@ func translWhile(stmt ptr ast:PNode, root ptr ast:PRoot, fname ptr uint8, p uint
 
   txt:csAppendStr(cs, "while (")
 
-  mut pexpr = cast<ptr ast:PExpr>(val list:listGet(stmt'leaves, 0))
+  mut pexpr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
 
   translExpr(cs, root, pexpr)
 
   txt:csAppendWord(cs, ")")
 
-  mut block = cast<ptr ast:PBlock>(val list:listGet(stmt'leaves, 1))
+  mut block = cast<ptr ast:PBlock>(val stmt'leaves.get(1))
 
   translBlock(cs, root, block, fname, p + 2)
 
@@ -1002,10 +1002,10 @@ func translDecl(bl BlTrans, root ptr ast:PRoot, block ptr ast:PBlock, stmt ptr a
 
   mut ls = lsNew(stmt'begin,txt:csUnwrap(sym))
 
-  list:listAppend(isMut => bl'vars || bl'decls, ls)
+  (isMut => bl'vars || bl'decls).append(ls)
 
-  if isMut and list:listLen(stmt'leaves) > 0
-    mut expr = cast<ptr ast:PExpr>(val list:listGet(stmt'leaves, 0))
+  if isMut and stmt'leaves.len() > 0
+    mut expr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
     mut cs = txt:csNew(30)
 
     txt:csAppendStr(cs, pdecl'sym'name)
@@ -1013,7 +1013,7 @@ func translDecl(bl BlTrans, root ptr ast:PRoot, block ptr ast:PBlock, stmt ptr a
 
     translExpr(cs, root, expr)
 
-    list:listAppend(bl'stmts, lsNew(expr'node'begin, txt:csUnwrap(cs)))
+    bl'stmts.append(lsNew(expr'node'begin, txt:csUnwrap(cs)))
   /if
 /func
 
@@ -1023,7 +1023,7 @@ func translReturn(stmt ptr ast:PNode, root ptr ast:PRoot) ptr uint8
 
   txt:csAppendStr(cs, "return")
 
-  mut expr = list:listGet(stmt'leaves, 0)
+  mut expr = stmt'leaves.get(0)
 
   if expr != null
     txt:csAppend(cs, 32)
@@ -1037,29 +1037,29 @@ func translReturn(stmt ptr ast:PNode, root ptr ast:PRoot) ptr uint8
 func translStmt(bl BlTrans, root ptr ast:PRoot, block ptr ast:PBlock, stmt ptr ast:PNode, fname ptr uint8, p uintptr)
 
   if stmt'type == ast:PIF or stmt'type == ast:PIFELSE
-    list:listAppend(bl'stmts, lsNew(stmt'begin, translIf(stmt, root, fname, p)))
+    bl'stmts.append(lsNew(stmt'begin, translIf(stmt, root, fname, p)))
   else
     if stmt'type == ast:PMUT or stmt'type == ast:PFUNCTION or stmt'type == ast:PMETHOD
       translDecl(bl, root, block, stmt)
     else
       if stmt'type == ast:PWHILE
-        list:listAppend(bl'stmts, lsNew(stmt'begin, translWhile(stmt, root, fname, p)))
+        bl'stmts.append(lsNew(stmt'begin, translWhile(stmt, root, fname, p)))
       else
         if stmt'type == ast:PCONTINUE
-          list:listAppend(bl'stmts, lsNew(stmt'begin, txt:strclone("continue")))
+          bl'stmts.append(lsNew(stmt'begin, txt:strclone("continue")))
         else
           if stmt'type == ast:PBREAK
-            list:listAppend(bl'stmts, lsNew(stmt'begin, txt:strclone("break")))
+            bl'stmts.append(lsNew(stmt'begin, txt:strclone("break")))
           else
             if stmt'type == ast:PRETURN
-              list:listAppend(bl'stmts, lsNew(stmt'begin, translReturn(stmt, root)))
+              bl'stmts.append(lsNew(stmt'begin, translReturn(stmt, root)))
             else
               if stmt'type == ast:PEXPR
                 mut cs = txt:csNew(30)
 
                 translExpr(cs, root, cast<ptr ast:PExpr>(stmt))
 
-                list:listAppend(bl'stmts, lsNew(stmt'begin, txt:csUnwrap(cs)))
+                bl'stmts.append(lsNew(stmt'begin, txt:csUnwrap(cs)))
               /if
             /if
           /if
@@ -1082,11 +1082,11 @@ func translBlock(cs ptr txt:Charstash,
 
   mut bl = blNew()
 
-  mut bLen = list:listLen(block'node'leaves)
+  mut bLen = block'node'leaves.len()
   mut i uintptr = 0
 
   while i < bLen
-    mut stmt = cast<ptr ast:PNode>(val list:listGet(block'node'leaves, i))
+    mut stmt = cast<ptr ast:PNode>(val block'node'leaves.get(i))
 
     translStmt(bl, root, block, stmt, fname, p)
 
@@ -1109,7 +1109,7 @@ func translFunc(tr ptr ctrans:Transl,
   dbgLine(tr'funcs, fname, fn'node'begin'line, 0)
   txt:csAppendWord(tr'funcs, sym)
 
-  mut block = cast<ptr ast:PBlock>(val list:listGet(fn'node'leaves, 0))
+  mut block = cast<ptr ast:PBlock>(val fn'node'leaves.get(0))
 
   translBlock(tr'funcs, root, block, fname, 2)
 
@@ -1123,7 +1123,7 @@ func ctransGenEntry(tr ptr ctrans:Transl, root ptr ast:PRoot)
   dbgLine(tr'funcs, root'fileName, entryN'node'begin'line, 0)
   txt:csAppendStr(tr'funcs, "void __fork_entry() ")
 
-  mut block = cast<ptr ast:PBlock>(val list:listGet(entryN'node'leaves, 0))
+  mut block = cast<ptr ast:PBlock>(val entryN'node'leaves.get(0))
 
   translBlock(tr'funcs, root, block, root'fileName, 2)
 
