@@ -24,11 +24,11 @@ func numcmp(a,b data) int8
 func mapIntDump(map ptr map:Map)
   tty:out("[ ")
 
-  mut iter = map:mapiterStart(map)
+  mut iter = map.iter()
   mut pair ptr pair:Pair = null
   mut first = true
 
-  while (pair = map:mapiterNext(iter)) != null
+  while (pair = iter.next())?
     if first
       first = false
     else
@@ -42,24 +42,24 @@ func mapIntDump(map ptr map:Map)
     pair:pairFree(pair)
   /while
 
-  map:mapiterFree(iter)
+  map:iterFree(iter)
 
   tty:outln(" ]")
 /func
 
 
 entry
-  mut map = map:mapNew(ptr numcmp)
+  mut map = map:new(ptr numcmp)
 
   mut i uintptr = 0
 
   while i < 30000000
-    map:mapPut(map, cast<data>(i), cast<data>(i), map:FREE_NONE)
+    map.put(cast<data>(i), cast<data>(i))
 
     i++
   /while
 
   mapIntDump(map)
 
-  map:mapFree(map)
+  map:free(map)
 /entry

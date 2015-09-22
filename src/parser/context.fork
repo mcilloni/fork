@@ -71,11 +71,12 @@ func findImport(ctx ptr parser:Context, importName ptr ast:StringDef, importAst 
 
 
 func ctxImport(ctx ptr parser:Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr list:List
+  val value = cast<ptr ast:PNode>(ctx'imports.get(importName))
 
-  if not map:mapGet(ctx'imports, importName, value)
+  if not (val value)?
     mut errors = findImport(ctx, importName, value)
     if errors.len() == 0
-      map:mapPut(ctx'imports, txt:strclone(importName'name), val value, map:FREE_KEY | map:FREE_VALUE)
+      ctx'imports.put(txt:strclone(importName'name), val value)
     /if
 
     return errors
@@ -125,25 +126,21 @@ func envExtractFordPaths() ptr list:List
 
 
 func ctxGetImport(ctx ptr parser:Context, name ptr uint8) ptr ast:PRoot
-  mut ret ptr ast:PRoot = null
-
-  map:mapGet(ctx'imports, name, ptr ret)
-
-  return ret
+  return cast<ptr ast:PRoot>(ctx'imports.get(name))
 /func
 
 
 func ctxFree(ctx ptr parser:Context)
   if ctx != null
     if ctx'imports != null
-      map:mapFreeSpec(ctx'imports, ptr mem:free, cast<ptr func(item data)>(ptr ast:pnodeFree))
+      map:free(ctx'imports)
     /if
 
     if ctx'fordPaths != null
       list:freeAll(ctx'fordPaths, ptr mem:free)
     /if
 
-    map:mapFreeSpec(ctx'builtins, null, cast<ptr func(item data)>(ptr ast:typeFree))
+    map:free(ctx'builtins)
 
     mem:free(ctx'currentFile)
     mem:free(ctx)
@@ -160,7 +157,9 @@ func ctxSetCurrentFile(ctx ptr parser:Context, filename ptr uint8)
 
 func ctxNew() ptr parser:Context
   mut ctx = cast<ptr parser:Context>(mem:zalloc(size(parser:Context)))
-  ctx'imports = map:strmapNew()
+  ctx'imports = map:strnew()
+
+  ctx'imports.setFreeFuncs(ptr mem:free, cast<ptr func(item data)>(ptr ast:pnodeFree))
 
   ctx'fordPaths = envExtractFordPaths()
   ctx'builtins = astfn:builtinSetNew()
@@ -169,10 +168,7 @@ func ctxNew() ptr parser:Context
 
 
 func ctxMatchBuiltin(ctx ptr parser:Context, name ptr uint8) ptr ast:Type
-  mut value ptr ast:Type = null
-
-  map:mapGet(ctx'builtins, name, ptr value)
-  return value
+  return cast<ptr ast:Type>(ctx'builtins.get(name))
 /func
 
 
@@ -185,7 +181,7 @@ func ctxParseFile(ctx ptr parser:Context, fileName ptr uint8, newRoot ptr ptr as
 
   synt:parserFree(parser)
 
-  if val newRoot == null
+  if not (val newRoot)?
     mut list = list:new()
     list.append(error)
 

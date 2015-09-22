@@ -54,21 +54,21 @@ entry
   mut root = cast<ptr ast:PRoot>(ast)
 
   tty:out("== IMPORTS: ")
-  tty:outint(map:mapLen(ctx'imports))
+  tty:outint(ctx'imports.len())
   tty:outch(10)
 
-  mut iter = map:mapiterStart(ctx'imports)
+  mut iter = ctx'imports.iter()
 
   mut pair ptr pair:Pair
 
-  while (pair = map:mapiterNext(iter)) != null
+  while (pair = iter.next())?
     tty:out("Imported ")
     tty:outln(cast<ptr uint8>(pair'key))
 
     pair:pairFree(pair)
   /while
 
-  map:mapiterFree(iter)
+  map:iterFree(iter)
 
   mut aliases = cast<ptr ast:PRoot>(ast)'aliases'syms
 

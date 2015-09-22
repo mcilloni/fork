@@ -431,24 +431,27 @@ func typeNewBuiltinString(uint8t ptr ast:Type) ptr ast:Type
 
 func builtinSetNew() ptr map:Map
 
-  mut ret = map:strmapNew()
+  mut ret = map:strnew()
+
+  ret.setFreeFuncs(null, cast<ptr func(item data)>(ptr ast:typeFree))
+
   mut uint8t = typeNewBuiltinInt("uint8", 1, false)
 
-  map:mapPut(ret, "uint8", uint8t, map:FREE_VALUE)
-  map:mapPut(ret, "uint16", typeNewBuiltinInt("uint16", 2, false), map:FREE_VALUE)
-  map:mapPut(ret, "uint32", typeNewBuiltinInt("uint32", 4, false), map:FREE_VALUE)
-  map:mapPut(ret, "uint64", typeNewBuiltinInt("uint64", 8, false), map:FREE_VALUE)
-  map:mapPut(ret, "int8", typeNewBuiltinInt("int8", 1, true), map:FREE_VALUE)
-  map:mapPut(ret, "int16", typeNewBuiltinInt("int16", 2, true), map:FREE_VALUE)
-  map:mapPut(ret, "int32", typeNewBuiltinInt("int32", 4, true), map:FREE_VALUE)
-  map:mapPut(ret, "int64", typeNewBuiltinInt("int64", 8, true), map:FREE_VALUE)
-  map:mapPut(ret, "uintptr", typeNewBuiltinInt("uintptr", platform:ptrSize, false), map:FREE_VALUE)
-  map:mapPut(ret, "intptr", typeNewBuiltinInt("intptr", platform:ptrSize, true), map:FREE_VALUE)
-  map:mapPut(ret, "bool", typeNewBuiltinBool(), map:FREE_VALUE)
-  map:mapPut(ret, "data", typeNewBuiltinData(), map:FREE_VALUE)
-  map:mapPut(ret, "\0", typeNewBuiltinEmpty(), map:FREE_VALUE)
-  map:mapPut(ret, "null", typeNewBuiltinNull(), map:FREE_VALUE)
-  map:mapPut(ret, "ptr uint8", typeNewBuiltinString(uint8t), map:FREE_VALUE)
+  ret.put("uint8", uint8t)
+  ret.put("uint16", typeNewBuiltinInt("uint16", 2, false))
+  ret.put("uint32", typeNewBuiltinInt("uint32", 4, false))
+  ret.put("uint64", typeNewBuiltinInt("uint64", 8, false))
+  ret.put("int8", typeNewBuiltinInt("int8", 1, true))
+  ret.put("int16", typeNewBuiltinInt("int16", 2, true))
+  ret.put("int32", typeNewBuiltinInt("int32", 4, true))
+  ret.put("int64", typeNewBuiltinInt("int64", 8, true))
+  ret.put("uintptr", typeNewBuiltinInt("uintptr", platform:ptrSize, false))
+  ret.put("intptr", typeNewBuiltinInt("intptr", platform:ptrSize, true))
+  ret.put("bool", typeNewBuiltinBool())
+  ret.put("data", typeNewBuiltinData())
+  ret.put("\0", typeNewBuiltinEmpty())
+  ret.put("null", typeNewBuiltinNull())
+  ret.put("ptr uint8", typeNewBuiltinString(uint8t))
 
   return ret
 /func

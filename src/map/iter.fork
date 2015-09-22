@@ -16,63 +16,62 @@ import mem
 import pair
 
 
-func mapiterStart(map ptr map:Map) ptr map:MapIter
-  mut iter = cast<ptr map:MapIter>(mem:alloc(size(map:MapIter)))
-  iter'map = map
+method map:Map.iter() ptr map:Iter
+  mut iter = cast<ptr map:Iter>(mem:alloc(size(map:Iter)))
+  iter'map = me
   iter'lastKey = null
   iter'begin = true
   return iter
-/func
+/method
 
 
-func iterIntNext(node ptr map:Mnode, lastKey data) ptr pair:Pair
+method map:Iter.intNext(node ptr map:Node) ptr pair:Pair
 
-  if node == null
+  if not node?
     return null
   /if
 
-  mut cmp = node'cmp(lastKey, node'key)
+  mut cmp = node'cmp(me'lastKey, node'key)
 
   #lastKey < node'key
   if cmp < 0
-    mut pair = iterIntNext(node'left, lastKey)
-    if pair != null
+    mut pair = me.intNext(node'left)
+    if pair?
       return pair
     /if
 
     return map:nodeMkpair(node)
   /if
 
-  return iterIntNext(node'right, lastKey)
+  return me.intNext(node'right)
+/method
 
-/func
 
+method map:Iter.next() ptr pair:Pair
+  mut root = me'map'root
 
-func mapiterNext(iter ptr map:MapIter) ptr pair:Pair
-  mut root = iter'map'root
-
-  if root == null
+  if not root?
     return null
   /if
 
-  if iter'begin
-    iter'begin = false
+  if me'begin
+    me'begin = false
     mut pair = map:nodeMinpair(root)
-    iter'lastKey = pair'key
+    me'lastKey = pair'key
     return pair
   /if
 
-  mut pair = iterIntNext(root, iter'lastKey)
+  mut pair = me.intNext(me'map'root)
 
-  if pair != null
-    iter'lastKey = pair'key
+  if pair?
+    me'lastKey = pair'key
   /if
 
   return pair
 
-/func
+/method
 
 
-func mapiterFree(iter ptr map:MapIter)
+func iterFree(iter ptr map:Iter)
   mem:free(iter)
 /func
