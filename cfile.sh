@@ -5,10 +5,10 @@
 # must be capable to parse itself.
 # All the .fork and .ford files under src/ must parse.
 
-ROOTDIR="$(dirname $0)"
+ROOTDIR="$(cd $(dirname $0); pwd)"
 
 
-for FILE in $(find src/ -name '*.fork' -or -name '*.ford')
+for FILE in $(find src/ -name '*.fork')
 do
 
   echo "Adding $FILE..."
