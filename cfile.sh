@@ -8,12 +8,12 @@
 ROOTDIR="$(cd $(dirname $0); pwd)"
 
 
-for FILE in $(find src/ -name '*.fork')
+for FILE in $(find $ROOTDIR/src/ -name '*.fork')
 do
 
   echo "Adding $FILE..."
 
-  if not env FORDPATHS="$ROOTDIR/build/ford/internal/":"$ROOTDIR/build/ford/" forkc1 "$FILE" >> libfork.c
+  if ! env FORDPATHS="$ROOTDIR/build/ford/internal/":"$ROOTDIR/build/ford/" forkc1 "$FILE" >> libfork.c
   then
     exit $?
   fi
