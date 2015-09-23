@@ -29,13 +29,11 @@ func rootAliasRegister(rsv sema:Resolver, name ptr uint8, type ptr ast:Type)
   type'moduleName = rsv'root'moduleName != null => txt:strclone(rsv'root'moduleName'name) || null
   ast:stabAdd(rsv'root'aliases, name, false, type, ast:PALIAS)
 
-  mut pdecl ptr ast:PDecl
-
-  kv:kvGet(rsv'aliases, name, ptr pdecl)
+  mut pdecl = cast<ptr ast:PDecl>(rsv'aliases.get(name))
 
   pdecl'node'validated = true
 
-  kv:kvRemove(rsv'aliases, name)
+  rsv'aliases.remove(name)
 /func
 
 
@@ -102,15 +100,15 @@ func convertSymbolList(rsv sema:Resolver,
 
 
   if pargs == null
-    return kv:strkvNew(0)
+    return kv:strnew(0)
   /if
 
   mut plen = pargs.len()
-  mut members = kv:strkvNew(plen)
   mut errLen = errors.len()
-
   mut i uintptr = 0
-  kv:kvSetFreeFuncs(members, ptr mem:free, null)
+
+  mut members = kv:strnew(plen)
+  members.setFreeFuncs(ptr mem:free, null)
 
   while i < plen
     mut member = cast<ptr ast:PSymbol>(val pargs.get(i))
@@ -134,14 +132,14 @@ func convertSymbolList(rsv sema:Resolver,
         return null
       /if
 
-      kv:kvPut(members, member'name, type)
+      members.put(member'name, type)
     /if
 
     i++
   /while
 
   if errors.len() > errLen
-    kv:kvFree(members)
+    kv:free(members)
     return null
   /if
 
@@ -281,10 +279,10 @@ func resolveIdType(rsv sema:Resolver,
   # If here, then it's either undefined, or not validated yet.
   # So, we try to find a valid ptype, or otherwise it's an error.
 
-  mut whichDecl ptr ast:PDecl
   mut missingPType ptr ast:PType
+  mut whichDecl = cast<ptr ast:PDecl>(rsv'aliases.get(ptype'name))
 
-  if kv:kvGet(rsv'aliases, ptype'name, ptr whichDecl)
+  if whichDecl?
     if whichDecl'node'validated
       tty:errln("This should not be reachable")
       proc:abort()

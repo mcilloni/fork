@@ -384,12 +384,12 @@ func symlistDump(cs ptr txt:Charstash, symlist ptr kv:KVList)
 
   txt:csAppendStr(cs, "(")
 
-  if symlist != null
-    mut len = kv:kvLen(symlist)
+  if symlist?
+    mut len = symlist.len()
     mut i uintptr = 0
 
     while i < len
-      mut pair = kv:kvGetAt(symlist, i)
+      mut pair = symlist.getAt(i)
       mut sym ast:Symbol
 
       sym'name = cast<ptr uint8>(pair'key)
@@ -502,7 +502,7 @@ func typeDump(cs ptr txt:Charstash, type ptr ast:Type)
 
 
 func symbolSummarize(cs ptr txt:Charstash, sym ptr ast:Symbol)
-  if sym == null
+  if not sym?
     return
   /if
 
@@ -516,12 +516,12 @@ func symlistSummarize(cs ptr txt:Charstash, symlist ptr kv:KVList)
 
   txt:csAppendStr(cs, "(")
 
-  if symlist != null
-    mut len = kv:kvLen(symlist)
+  if symlist?
+    mut len = symlist.len()
     mut i uintptr = 0
 
     while i < len
-      mut pair = kv:kvGetAt(symlist, i)
+      mut pair = symlist.getAt(i)
       mut sym ast:Symbol
 
       sym'name = cast<ptr uint8>(pair'key)
@@ -542,13 +542,13 @@ func symlistSummarize(cs ptr txt:Charstash, symlist ptr kv:KVList)
 
 
 func typeSummarize(cs ptr txt:Charstash, type ptr ast:Type)
-  if type == null
+  if not type?
     txt:csAppendStr(cs, "<<null type please report>>")
     return
   /if
 
-  if type'name != null
-    if type'moduleName != null
+  if type'name?
+    if type'moduleName?
       txt:csAppendStr(cs, type'moduleName)
       txt:csAppendStr(cs, ":")
     /if

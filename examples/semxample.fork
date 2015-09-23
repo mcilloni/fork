@@ -73,14 +73,14 @@ entry
   mut aliases = cast<ptr ast:PRoot>(ast)'aliases'syms
 
   tty:out("\n\n== ALIASES: ")
-  tty:outint(kv:kvLen(aliases))
+  tty:outint(aliases.len())
   tty:outch(10)
 
   mut i uintptr = 0
-  mut len = kv:kvLen(aliases)
+  mut len = aliases.len()
 
   while i < len
-    pair = kv:kvGetAt(aliases, i)
+    pair = aliases.getAt(i)
     tty:out("alias ")
     tty:outln(cast<ptr uint8>(pair'key))
 
@@ -90,14 +90,14 @@ entry
   mut decls = cast<ptr ast:PRoot>(ast)'node'syms'syms
 
   tty:out("\n\n== DECLS: ")
-  tty:outint(kv:kvLen(decls))
+  tty:outint(decls.len())
   tty:outch(10)
 
   i = 0
-  len = kv:kvLen(decls)
+  len = decls.len()
 
   while i < len
-    pair = kv:kvGetAt(decls, i)
+    pair = decls.getAt(i)
     mut dinfo = cast<ptr ast:DeclInfo>(pair'value)
     mut typeStr ptr uint8 = null
 

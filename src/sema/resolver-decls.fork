@@ -80,11 +80,7 @@ func findMethod(rsv sema:Resolver,
 func rootDeclsRegister(rsv sema:Resolver, name ptr uint8, isDecl bool, type ptr ast:Type, declType uint16)
   ast:stabAdd(rsv'root'node'syms, name, isDecl, type, declType)
 
-  mut pdecl ptr ast:PDecl
-
-  kv:kvGet(rsv'decls, name, ptr pdecl)
-
-  kv:kvRemove(rsv'decls, name)
+  rsv'decls.remove(name)
 /func
 
 
@@ -251,9 +247,9 @@ func resolveDeclType(rsv sema:Resolver,
   # in this case we should look if there is a global declaration value left with
   # this name
 
-  mut whichDecl ptr ast:PDecl
+  mut whichDecl = cast<ptr ast:PDecl>(rsv'decls.get(name))
 
-  if kv:kvGet(rsv'decls, name, ptr whichDecl)
+  if whichDecl?
     return registerDeclReal(rsv, whichDecl, false, recList, errors)
   /if
 

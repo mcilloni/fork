@@ -15,45 +15,45 @@ import txt
 
 
 entry
-  mut kv = kv:strkvNew(10)
+  mut kv = kv:strnew(10)
 
-  kv:kvSetFreeFuncs(kv, ptr mem:free, ptr mem:free)
+  kv.setFreeFuncs(ptr mem:free, ptr mem:free)
 
-  kv:kvPut(kv, txt:strclone("aaa"), txt:strclone("eee"))
-  kv:kvPrint(kv)
+  kv.put(txt:strclone("aaa"), txt:strclone("eee"))
+  kv.print()
   tty:outch(10)
 
-  kv:kvPut(kv, txt:strclone("aaa"), txt:strclone("rrr"))
-  kv:kvPrint(kv)
+  kv.put(txt:strclone("aaa"), txt:strclone("rrr"))
+  kv.print()
   tty:outch(10)
 
-  kv:kvPut(kv, txt:strclone("ooo"), txt:strclone("uuu"))
-  kv:kvPrint(kv)
+  kv.put(txt:strclone("ooo"), txt:strclone("uuu"))
+  kv.print()
   tty:outch(10)
 
-  kv:kvPut(kv, txt:strclone("uuu"), txt:strclone("ppp"))
-  kv:kvPrint(kv)
+  kv.put(txt:strclone("uuu"), txt:strclone("ppp"))
+  kv.print()
   tty:outch(10)
 
-  kv:kvPut(kv, txt:strclone("qwe"), txt:strclone("rere"))
-  kv:kvPrint(kv)
+  kv.put(txt:strclone("qwe"), txt:strclone("rere"))
+  kv.print()
   tty:outch(10)
 
-  kv:kvRemove(kv, "ooo")
-  kv:kvPrint(kv)
+  kv.remove("ooo")
+  kv.print()
   tty:outch(10)
 
-  if kv:kvContains(kv, "qwe")
+  if kv.contains("qwe")
     tty:outln("kv contains \"qwe\"")
   /if
 
-  if kv:kvContains(kv, "ooo")
+  if kv.contains("ooo")
     tty:outln("kv contains \"ooo\"")
   /if
 
-  kv:kvPut(kv, txt:strclone("qwe"), txt:strclone("zwewe"))
-  kv:kvPrint(kv)
+  kv.put(txt:strclone("qwe"), txt:strclone("zwewe"))
+  kv.print()
   tty:outch(10)
 
-  kv:kvFree(kv)
+  kv:free(kv)
 /entry

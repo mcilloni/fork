@@ -24,8 +24,8 @@ import utils
 
 
 func resolverDeinit(rsv ptr sema:Resolver)
-  kv:kvFree(rsv'aliases)
-  kv:kvFree(rsv'decls)
+  kv:free(rsv'aliases)
+  kv:free(rsv'decls)
 /func
 
 
@@ -36,7 +36,7 @@ func resolverCollectAlias(rsv ptr sema:Resolver,
 
   mut name = pdecl'sym'name
 
-  if kv:kvContains(rsv'aliases, name)
+  if rsv'aliases.contains(name)
 
     mut cs = txt:csNew(20)
     txt:csAppendStr(cs, "alias ")
@@ -48,7 +48,7 @@ func resolverCollectAlias(rsv ptr sema:Resolver,
     return false
   /if
 
-  kv:kvPut(rsv'aliases, name, pdecl)
+  rsv'aliases.put(name, pdecl)
 
   return true
 /func
@@ -59,10 +59,10 @@ func resolverCollectDecls(rsv ptr sema:Resolver,
                           root ptr ast:PRoot,
                           errors ptr list:List) bool
 
-  mut existent ptr ast:PDecl
   mut name = ast:declKey(pdecl)
+  mut existent = cast<ptr ast:PDecl>(rsv'decls.get(name))
 
-  if kv:kvGet(rsv'decls, name, ptr existent)
+  if existent?
     mut cs = txt:csNew(20)
     txt:csAppendStr(cs, "symbol ")
     txt:csAppendStr(cs, name)
@@ -79,7 +79,7 @@ func resolverCollectDecls(rsv ptr sema:Resolver,
 
   #search for method in module
 
-  kv:kvPut(rsv'decls, name, pdecl)
+  rsv'decls.put(name, pdecl)
   return true
 /func
 
@@ -89,15 +89,15 @@ func resolverCollect(rsv ptr sema:Resolver,
                      root ptr ast:PRoot,
                      errors ptr list:List) ptr kv:KVList
 
-  rsv'aliases = kv:strkvNew(5)
-  rsv'decls = kv:strkvNew(10)
+  rsv'aliases = kv:strnew(5)
+  rsv'decls = kv:strnew(10)
 
   rsv'root = root
   rsv'ctx = ctx
 
-  mut ret = kv:strkvNew(20)
+  mut ret = kv:strnew(20)
 
-  kv:kvSetFreeFuncs(ret, ptr mem:free, null)
+  ret.setFreeFuncs(ptr mem:free, null)
 
   mut len = root'node'node'leaves.len()
   mut i uintptr = 0
@@ -138,13 +138,13 @@ func resolverCollect(rsv ptr sema:Resolver,
       /if
     /if
 
-    kv:kvPut(ret, ast:declKey(pdecl), pdecl)
+    ret.put(ast:declKey(pdecl), pdecl)
 
     i++
   /while
 
   if failure
-    kv:kvFree(ret)
+    kv:free(ret)
     resolverDeinit(rsv)
 
     return null

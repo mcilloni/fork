@@ -272,16 +272,16 @@ func symbolListClone(pool ptr mem:FreePool, symList ptr kv:KVList) ptr kv:KVList
     return null
   /if
 
-  mut len = kv:kvLen(symList)
-  mut ret = kv:strkvNew(len)
+  mut len = symList.len()
+  mut ret = kv:strnew(len)
   mut i uintptr = 0
 
   while i < len
-    mut elem = kv:kvGetAt(symList, i)
+    mut elem = symList.getAt(i)
     mut newStr = txt:strclone(cast<ptr uint8>(elem'key))
     mut newType = astfn:typeClone(pool, cast<ptr ast:Type>(elem'value))
 
-    kv:kvPut(ret, newStr, newType)
+    ret.put(newStr, newType)
 
     i++
   /while
@@ -309,10 +309,10 @@ func typeCalculateAlign(members ptr kv:KVList) AlignResult
   ret'typeSize  = 0
 
   mut i uintptr = 0
-  mut len = kv:kvLen(members)
+  mut len = members.len()
 
   while i < len
-    mut member = cast<ptr ast:Type>(kv:kvGetAt(members, i)'value)
+    mut member = cast<ptr ast:Type>(members.getAt(i)'value)
 
     # calculate the alignment offset of the member against the current starting address.
     mut offset = ret'typeSize mod member'typeAlign

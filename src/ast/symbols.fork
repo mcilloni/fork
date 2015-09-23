@@ -29,17 +29,17 @@ func symbolEquals(sym1,sym2 ptr ast:Symbol) bool
 
 
 func typeEqualsList(list1, list2 ptr kv:KVList) bool
-  mut len = kv:kvLen(list1)
+  mut len = list1.len()
 
-  if len != kv:kvLen(list2)
+  if len != list2.len()
     return false
   /if
 
   mut i uintptr = 0
 
   while i < len
-    mut pair1 = kv:kvGetAt(list1, i)
-    mut pair2 = kv:kvGetAt(list2, i)
+    mut pair1 = list1.getAt(i)
+    mut pair2 = list2.getAt(i)
 
     mut name1 = cast<ptr uint8>(pair1'key)
     mut name2 = cast<ptr uint8>(pair2'key)
@@ -120,7 +120,7 @@ func typeFree(type ptr ast:Type)
     mem:free(type'name)
 
     if type'members != null
-      kv:kvFree(type'members)
+      kv:free(type'members)
     /if
 
     mem:free(type)
@@ -171,25 +171,21 @@ func typeIsStruct(type ptr ast:Type) bool
 func stabNew() ptr ast:Symtable
   mut stab = cast<ptr ast:Symtable>(mem:zalloc(size(ast:Symtable)))
 
-  stab'syms = kv:strkvNew(10)
+  stab'syms = kv:strnew(10)
 
-  kv:kvSetFreeFuncs(stab'syms, ptr mem:free, ptr astfn:declInfoFree)
+  stab'syms.setFreeFuncs(ptr mem:free, ptr astfn:declInfoFree)
 
   return stab
 /func
 
 
 func stabAdd(stab ptr ast:Symtable, name ptr uint8, isDecl bool, type ptr ast:Type, symType uint16)
-  kv:kvPut(stab'syms, txt:strclone(name), astfn:declInfoNew(symType, isDecl, type))
+  stab'syms.put(txt:strclone(name), astfn:declInfoNew(symType, isDecl, type))
 /func
 
 
 func stabGet(stab ptr ast:Symtable, name ptr uint8) ptr ast:DeclInfo
-  mut value ptr ast:DeclInfo = null
-
-  kv:kvGet(stab'syms, name, ptr value)
-
-  return value
+  return cast<ptr ast:DeclInfo>(stab'syms.get(name))
 /func
 
 
@@ -202,7 +198,7 @@ func stabTypeof(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
 
 func stabFree(stab ptr ast:Symtable)
   if stab != null
-    kv:kvFree(stab'syms)
+    kv:free(stab'syms)
     mem:free(stab)
   /if
 /func

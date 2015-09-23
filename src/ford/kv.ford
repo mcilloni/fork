@@ -23,21 +23,29 @@ alias KVList struct(
     freeKey,freeVal ptr func(item data)
 )
 
-decl func kvClone(kv ptr KVList) ptr KVList
-decl func kvContains(kv ptr KVList, key data) bool
-decl func kvDeinit(kv ptr KVList)
-decl func kvFirst(kv ptr KVList) ptr pair:Pair
-decl func kvFree(kv ptr KVList)
-decl func kvGet(kv ptr KVList, key data, value ptr data) bool
-decl func kvGetAt(kv ptr KVList, index uintptr) ptr pair:Pair
-decl func kvGetPos(kv ptr KVList, key data, value ptr data) intptr
-decl func kvInit(kv ptr KVList, cap uintptr, hf hash:hashfn) ptr KVList
-decl func kvLen(kv ptr KVList) uintptr
-decl func kvNew(cap uintptr, hf hash:hashfn) ptr KVList
-decl func kvPrint(kv ptr KVList)
-decl func kvPut(kv ptr KVList, key data, value data)
-decl func kvRemove(kv ptr KVList, key data) bool
-decl func kvSetFreeFuncs(kv ptr KVList, freeKey ptr func(item data), freeVal ptr func(item data))
 
-decl func strkvInit(kv ptr KVList, cap uintptr) ptr KVList
-decl func strkvNew(cap uintptr) ptr KVList
+# KVList init/deinit functions
+
+decl func deinit(kv ptr KVList)
+decl func free(kv ptr KVList)
+decl func init(kv ptr KVList, cap uintptr, hf hash:hashfn) ptr KVList
+decl func new(cap uintptr, hf hash:hashfn) ptr KVList
+
+decl func strinit(kv ptr KVList, cap uintptr) ptr KVList
+decl func strnew(cap uintptr) ptr KVList
+
+
+# KVList methods
+
+decl method KVList.clone() ptr KVList
+decl method KVList.contains(key data) bool
+decl method KVList.first() ptr pair:Pair
+decl method KVList.get(key data) data
+decl method KVList.getAt(index uintptr) ptr pair:Pair
+decl method KVList.getPos(key data) intptr
+decl method KVList.len() uintptr
+decl method KVList.print()
+decl method KVList.put(key data, value data)
+decl method KVList.remove(key data) bool
+
+decl method KVList.setFreeFuncs(freeKey,freeVal ptr func(item data))

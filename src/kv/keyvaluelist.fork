@@ -26,123 +26,30 @@ import txt
 import utils
 
 
-func kvClone(kv ptr kv:KVList) ptr kv:KVList
-  mut ret = kv:kvNew(kv'hash'buckets'cap, kv'hash'hf)
+# KVList init/deinit functions
 
-  mut len = kv:kvLen(kv)
-  mut i uintptr = 0
-
-  while i < len
-    mut elem = kv:kvGetAt(kv, i)
-    kv:kvPut(ret, elem'key, elem'value)
-
-    i++
-  /while
-
-  return ret
-/func
-
-
-func kvContains(kv ptr kv:KVList, key data) bool
-  return kv'hash.contains(key)
-/func
-
-
-func kvDeinit(kv ptr kv:KVList)
-  kvFreeContents(kv)
+func deinit(kv ptr kv:KVList)
+  kv.freeContents()
 
   hash:deinit(ptr kv'hash)
   list:deinitAll(ptr kv'list, ptr pair:pairFree)
 /func
 
 
-func kvFirst(kv ptr kv:KVList) ptr pair:Pair
-  return kv'list.len() > 0 => cast<ptr pair:Pair>(val kv'list.get(0)) || null
-/func
-
-
-func kvFixIndices(kv ptr kv:KVList, pos uintptr)
-  mut len = kv'list.len()
-
-  while pos < len
-    mut pair = kv:kvGetAt(kv, pos)
-    mut indexValue = cast<ptr pair:Pair>(kv'hash.get(pair'key))
-
-    indexValue'key = cast<data>(pos)
-
-    pos++
-  /while
-/func
-
-
-func kvFree(kv ptr kv:KVList)
+func free(kv ptr kv:KVList)
   if kv != null
-    kv:kvDeinit(kv)
+    kv:deinit(kv)
     mem:free(kv)
   /if
 /func
 
 
-func kvFreePairContents(kv ptr kv:KVList, pair ptr pair:Pair)
-  if kv'freeKey != null
-    kv'freeKey(pair'key)
-  /if
-
-  if kv'freeVal != null
-    kv'freeVal(pair'value)
-  /if
-/func
-
-
-func kvFreeContents(kv ptr kv:KVList)
-  mut len = kv:kvLen(kv)
-  mut i uintptr = 0
-
-  while i < len
-    kvFreePairContents(kv, kv:kvGetAt(kv, i))
-
-    i++
-  /while
-/func
-
-
-func kvGet(kv ptr kv:KVList, key data, value ptr data) bool
-  mut indexValue = cast<ptr pair:Pair>(kv'hash.get(key))
-
-  val value = indexValue? => indexValue'value || null
-
-  return indexValue?
-/func
-
-
-func kvGetAt(kv ptr kv:KVList, index uintptr) ptr pair:Pair
-  mut ret = kv'list.get(index)
-  return ret != null => cast<ptr pair:Pair>(val ret) || null
-/func
-
-
-func kvGetPos(kv ptr kv:KVList, key data, value ptr data) intptr
-  mut indexValue = cast<ptr pair:Pair>(kv'hash.get(key))
-
-  val value = indexValue? => indexValue'value || null
-
-  return indexValue? => cast<intptr>(indexValue'key) || -1
-/func
-
-
-func kvHashFreePairs(pairV data)
-  mut pair = cast<ptr pair:Pair>(pairV)
-
-  pair:pairFree(pair)
-/func
-
-
-func kvInit(kv ptr kv:KVList, cap uintptr, hf hash:hashfn) ptr kv:KVList
+func init(kv ptr kv:KVList, cap uintptr, hf hash:hashfn) ptr kv:KVList
   mem:set(kv, 0, size(kv:KVList))
 
   hash:init(ptr kv'hash, cap, hf)
 
-  kv'hash.setFreeFuncs(null, ptr kvHashFreePairs)
+  kv'hash.setFreeFuncs(null, ptr hashFreePairs)
 
   list:init(ptr kv'list)
 
@@ -150,104 +57,192 @@ func kvInit(kv ptr kv:KVList, cap uintptr, hf hash:hashfn) ptr kv:KVList
 /func
 
 
-func kvLen(kv ptr kv:KVList) uintptr
-  return kv'list.len()
+func new(cap uintptr, hf hash:hashfn) ptr kv:KVList
+  return kv:init(cast<ptr kv:KVList>(mem:alloc(size(kv:KVList))), cap, hf)
 /func
 
 
-func kvNew(cap uintptr, hf hash:hashfn) ptr kv:KVList
-  return kv:kvInit(cast<ptr kv:KVList>(mem:alloc(size(kv:KVList))), cap, hf)
+func strinit(kv ptr kv:KVList, cap uintptr) ptr kv:KVList
+  return kv:init(kv, cap, ptr txt:strhash)
 /func
 
 
-func kvPrint(kv ptr kv:KVList)
-  if kv == null
-    tty:outln("<null>")
-  else
+func strnew(cap uintptr) ptr kv:KVList
+  return kv:new(cap, ptr txt:strhash)
+/func
 
-    tty:out("[ ")
 
-    mut len = kv:kvLen(kv)
-    mut i uintptr = 0
+# KVList methods
 
-    while i < len
-      if i > 0
-        tty:out(", ")
-      /if
+method kv:KVList.clone() ptr kv:KVList
+  mut ret = kv:new(me'hash'buckets'cap, me'hash'hf)
 
-      mut pair = kv:kvGetAt(kv, i)
+  mut len = me.len()
+  mut i uintptr = 0
 
-      tty:out(cast<ptr uint8>(pair'key))
-      tty:out(": ")
-      tty:out(cast<ptr uint8>(pair'value))
+  while i < len
+    mut elem = me.getAt(i)
+    ret.put(elem'key, elem'value)
 
-      i++
-    /while
+    i++
+  /while
 
-    tty:out(" ]")
+  return ret
+/method
 
+
+method kv:KVList.contains(key data) bool
+  return me'hash.contains(key)
+/method
+
+
+method kv:KVList.first() ptr pair:Pair
+  return me'list.len() > 0 => cast<ptr pair:Pair>(val me'list.get(0)) || null
+/method
+
+
+method kv:KVList.fixIndices(pos uintptr)
+  mut len = me'list.len()
+
+  while pos < len
+    mut pair = me.getAt(pos)
+    mut indexValue = cast<ptr pair:Pair>(me'hash.get(pair'key))
+
+    indexValue'key = cast<data>(pos)
+
+    pos++
+  /while
+/method
+
+
+method kv:KVList.freePairContents(pair ptr pair:Pair)
+  if me'freeKey?
+    me'freeKey(pair'key)
   /if
-/func
+
+  if me'freeVal?
+    me'freeVal(pair'value)
+  /if
+/method
 
 
-func kvPut(kv ptr kv:KVList, key data, value data)
-  mut indexValue = cast<ptr pair:Pair>(kv'hash.get(key))
+method kv:KVList.freeContents()
+  mut len = me.len()
+  mut i uintptr = 0
+
+  while i < len
+    me.freePairContents(me.getAt(i))
+
+    i++
+  /while
+/method
+
+
+method kv:KVList.get(key data) data
+  mut indexValue = cast<ptr pair:Pair>(me'hash.get(key))
+
+  return indexValue? => indexValue'value || null
+/method
+
+
+method kv:KVList.getAt(index uintptr) ptr pair:Pair
+  mut ret = me'list.get(index)
+  return ret? => cast<ptr pair:Pair>(val ret) || null
+/method
+
+
+method kv:KVList.getPos(key data) intptr
+  mut indexValue = cast<ptr pair:Pair>(me'hash.get(key))
+
+  return indexValue? => cast<intptr>(indexValue'key) || -1
+/method
+
+
+method kv:KVList.len() uintptr
+  return me'list.len()
+/method
+
+
+method kv:KVList.print()
+
+  tty:out("[ ")
+
+  mut len = me.len()
+  mut i uintptr = 0
+
+  while i < len
+    if i > 0
+      tty:out(", ")
+    /if
+
+    mut pair = me.getAt(i)
+
+    tty:out(cast<ptr uint8>(pair'key))
+    tty:out(": ")
+    tty:out(cast<ptr uint8>(pair'value))
+
+    i++
+  /while
+
+  tty:out(" ]")
+
+/method
+
+
+method kv:KVList.put(key data, value data)
+  mut indexValue = cast<ptr pair:Pair>(me'hash.get(key))
 
   # if no key matches, then create a new element in list and hash
   # The index of this element will be the current length of the list (obviously).
   if not indexValue?
-    indexValue = pair:pairNew(cast<data>(kv'list.len()), value)
+    indexValue = pair:pairNew(cast<data>(me'list.len()), value)
 
-    kv'hash.put(key, indexValue)
-    kv'list.append(pair:pairNew(key, value))
+    me'hash.put(key, indexValue)
+    me'list.append(pair:pairNew(key, value))
   else
     mut index = cast<uintptr>(indexValue'key)
-    mut pair = cast<ptr pair:Pair>(val kv'list.get(index))
+    mut pair = cast<ptr pair:Pair>(val me'list.get(index))
 
-    kvFreePairContents(kv, pair)
+    me.freePairContents(pair)
     # bug: check for double frees. Won't fix because it's better to improve the
     # language with destructors and methods, then making hacks.
     pair'key = key
     pair'value = indexValue'value = value
   /if
-/func
+/method
 
 
-func kvRemove(kv ptr kv:KVList, key data) bool
-  mut pair ptr pair:Pair
+method kv:KVList.remove(key data) bool
 
   # pair value will be discarded.
-  mut pos = kv:kvGetPos(kv, key, ptr pair)
+  mut pos = me.getPos(key)
 
   if pos >= 0
-    pair = cast<ptr pair:Pair>(val kv'list.get(pos))
+    mut pair = cast<ptr pair:Pair>(val me'list.get(pos))
 
-    kvFreePairContents(kv, pair)
+    me.freePairContents(pair)
 
-    kv'list.remove(pos, ptr pair:pairFree)
+    me'list.remove(pos, ptr pair:pairFree)
 
-    kv'hash.remove(key)
+    me'hash.remove(key)
 
-    kvFixIndices(kv, pos)
+    me.fixIndices(pos)
 
     return true
   /if
 
   return false
-/func
+/method
 
 
-func kvSetFreeFuncs(kv ptr kv:KVList, freeKey ptr func(item data), freeVal ptr func(item data))
-  kv'freeKey = freeKey
-  kv'freeVal = freeVal
-/func
+method kv:KVList.setFreeFuncs(freeKey,freeVal ptr func(item data))
+  me'freeKey = freeKey
+  me'freeVal = freeVal
+/method
 
 
-func strkvInit(kv ptr kv:KVList, cap uintptr) ptr kv:KVList
-  return kv:kvInit(kv, cap, ptr txt:strhash)
-/func
+func hashFreePairs(pairV data)
+  mut pair = cast<ptr pair:Pair>(pairV)
 
-
-func strkvNew(cap uintptr) ptr kv:KVList
-  return kv:kvNew(cap, ptr txt:strhash)
+  pair:pairFree(pair)
 /func

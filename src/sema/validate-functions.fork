@@ -25,11 +25,11 @@ import utils
 
 
 func addAllSymbolsToStab(stab ptr ast:Symtable, syms ptr kv:KVList)
-  mut len = kv:kvLen(syms)
+  mut len = syms.len()
   mut i uintptr = 0
 
   while i < len
-    mut pair = kv:kvGetAt(syms, i)
+    mut pair = syms.getAt(i)
 
     mut name = cast<ptr uint8>(pair'key)
     mut type = cast<ptr ast:Type>(pair'value)
