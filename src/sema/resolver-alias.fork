@@ -124,7 +124,7 @@ func convertSymbolList(rsv sema:Resolver,
       type = resolveTypeReal(rsv, ptype, recList, errors, false)
     /if
 
-    if type != null
+    if type?
       # if this is not the retType of a ptr, then it's an error having a function
       if type'type == ast:TYPE_FUNC
         errors.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
@@ -155,7 +155,7 @@ func convertStructType(rsv sema:Resolver,
 
   mut members = convertSymbolList(rsv, ptdes'arguments, errors, recList, false)
 
-  return members != null => astfn:typeNewStruct(rsv'root'typePool, null, null, members) || null
+  return members? => astfn:typeNewStruct(rsv'root'typePool, null, null, members) || null
 /func
 
 
@@ -166,15 +166,15 @@ func convertFuncType(rsv sema:Resolver,
   mut ptdes = ptype'descr
 
   mut retVal ptr ast:Type = null
-  if ptdes'retType != null
+  if ptdes'retType?
     retVal = convertRetType(rsv, ptdes'retType, errors, recList, false, false)
-    if retVal == null
+    if not retVal?
       return null
     /if
   /if
 
   mut members = convertSymbolList(rsv, ptdes'arguments, errors, recList, true)
-  if members == null
+  if not members?
     return null
   /if
 
@@ -184,7 +184,7 @@ func convertFuncType(rsv sema:Resolver,
 
 func findAliasImport(ctx ptr parser:Context, moduleName,name ptr uint8) ptr ast:Type
   mut imp = parser:ctxGetImport(ctx, moduleName)
-  if imp == null
+  if not imp?
     return null
   /if
 
@@ -193,7 +193,7 @@ func findAliasImport(ctx ptr parser:Context, moduleName,name ptr uint8) ptr ast:
 
 
 func findAliasLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
-  if node == null
+  if not node?
     return null
   /if
 
@@ -221,7 +221,7 @@ func resolveModuleAlias(rsv sema:Resolver,
   /if
 
   mut type = sema:findAliasImport(rsv'ctx, ptype'moduleName, ptype'name)
-  if type != null
+  if type?
     return astfn:typeClone(rsv'root'typePool, type)
   /if
 
@@ -247,7 +247,7 @@ func resolveIdType(rsv sema:Resolver,
                     ignoreSize bool) ptr ast:Type
 
   mut builtin = parser:ctxMatchBuiltin(rsv'ctx, ptype'name)
-  if builtin != null
+  if builtin?
     return astfn:typeClone(rsv'root'typePool, builtin)
   /if
 
@@ -272,7 +272,7 @@ func resolveIdType(rsv sema:Resolver,
 
   # it's not builtin, so it must be a local alias.
   mut type = sema:findAliasLocal(cast<ptr ast:PNode>(rsv'root), ptype'name)
-  if type != null
+  if type?
     return astfn:typeClone(rsv'root'typePool, type)
   /if
 
