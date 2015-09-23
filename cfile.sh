@@ -19,4 +19,4 @@ done
 echo "Preprocessing..."
 cpp -I$ROOTDIR/build/include/ $ROOTDIR/libfork.c > $ROOTDIR/libfork.i
 
-rm libfork.c
+rm $ROOTDIR/libfork.c
