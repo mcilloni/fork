@@ -20,10 +20,9 @@ alias SObj struct(
 )
 
 
-decl func sobjDeinit(sobj ptr SObj)
-decl func sobjFree(sobj ptr SObj)
-decl func sobjGetSym(sobj ptr SObj, name ptr uint8, err ptr ptr err:Error) data
-decl func sobjInit(sobj ptr SObj, name ptr uint8, err ptr ptr err:Error) bool
-decl func sobjNew(name ptr uint8, err ptr ptr err:Error) ptr SObj
+decl func close(sobj ptr SObj)
+decl func open(name ptr uint8, err ptr ptr err:Error) ptr SObj
 
-decl mut soSuffix ptr uint8
+decl method SObj.sym(name ptr uint8, err ptr ptr err:Error) data
+
+decl mut SO_SUFFIX ptr uint8

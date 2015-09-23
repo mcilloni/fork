@@ -22,30 +22,24 @@ decl func load_sym(handl data, name ptr uint8, err ptr uint8, len uintptr) data
 decl func free_lib(handl data, err ptr uint8, len uintptr) bool
 
 
-func sobjDeinit(sobj ptr dyn:SObj)
+func close(sobj ptr dyn:SObj)
   mut buf [1024] uint8 # ignore the error, though, I don't care about it right now
 
   free_lib(sobj'handl, ptr buf[0], 1024)
-/func
-
-
-func sobjFree(sobj ptr dyn:SObj)
-  dyn:sobjDeinit(sobj)
   mem:free(sobj)
 /func
 
 
-func sobjGetSym(sobj ptr dyn:SObj, name ptr uint8, err ptr ptr err:Error) data
-  mut buf [1024] uint8
+func open(name ptr uint8, err ptr ptr err:Error) ptr dyn:SObj
+  mut ret = cast<ptr dyn:SObj>(mem:alloc(size(dyn:SObj)))
 
-  mut sym = load_sym(sobj'handl, name, ptr buf[0], 1024)
-  if sym == null
-    val err = err:errorNew(ptr buf[0])
+  if not sobjInit(ret, name, err)
+    mem:free(ret)
 
     return null
   /if
 
-  return sym
+  return ret
 /func
 
 
@@ -65,19 +59,20 @@ func sobjInit(sobj ptr dyn:SObj, name ptr uint8, err ptr ptr err:Error) bool
 /func
 
 
-func sobjNew(name ptr uint8, err ptr ptr err:Error) ptr dyn:SObj
-  mut ret = cast<ptr dyn:SObj>(mem:alloc(size(dyn:SObj)))
+method dyn:SObj.sym(name ptr uint8, err ptr ptr err:Error) data
+  mut buf [1024] uint8
 
-  if not dyn:sobjInit(ret, name, err)
-    mem:free(ret)
+  mut sym = load_sym(me'handl, name, ptr buf[0], 1024)
+  if sym == null
+    val err = err:errorNew(ptr buf[0])
 
     return null
   /if
 
-  return ret
-/func
+  return sym
+/method
 
 
-#mut soSuffix = ".dylib"
-#mut soSuffix = ".dll"
-mut soSuffix = ".so"
+#mut SO_SUFFIX = ".dylib"
+#mut SO_SUFFIX = ".dll"
+mut SO_SUFFIX = ".so"

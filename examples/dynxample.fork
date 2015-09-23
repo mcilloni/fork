@@ -18,7 +18,7 @@ import utils
 entry
 
   mut error ptr err:Error
-  mut libc = dyn:sobjNew("/lib/libc.so.6", ptr error)
+  mut libc = dyn:open("/lib/libc.so.6", ptr error)
 
   if libc == null
     tty:err("error: ")
@@ -27,7 +27,7 @@ entry
     proc:exit(1)
   /if
 
-  mut puts = cast<ptr func(str ptr uint8)>(dyn:sobjGetSym(libc, "puts", ptr error))
+  mut puts = cast<ptr func(str ptr uint8)>(libc.sym("puts", ptr error))
 
   if libc == null
     tty:err("error: ")
@@ -38,6 +38,6 @@ entry
 
   puts("test")
 
-  dyn:sobjFree(libc)
+  dyn:close(libc)
 
 /entry
