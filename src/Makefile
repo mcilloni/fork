@@ -60,7 +60,9 @@ all:
 	@ $(AR) rc ../build/$(ARNAME) ../build/*/*.o
 	@ $(RANLIB) ../build/$(ARNAME)
 
-	cp -r ford ../build/ford
+	mkdir -p ../build/ford/internal
+	cp -r ford/*.ford ../build/ford/
+	cp -r ford/internal/*.ford ../build/ford/internal/
 
 clean:
 	$(MAKE) -C c clean
