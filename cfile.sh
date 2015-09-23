@@ -16,5 +16,7 @@ do
 
 done
 
+find $ROOTDIR/src/ -name '*.c' -exec cat {} \; >> $ROOTDIR/libfork.c
+
 echo "Preprocessing..."
 cpp -I$ROOTDIR/build/include/ $ROOTDIR/libfork.c > $ROOTDIR/libfork.i
