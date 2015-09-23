@@ -18,5 +18,3 @@ done
 
 echo "Preprocessing..."
 cpp -I$ROOTDIR/build/include/ $ROOTDIR/libfork.c > $ROOTDIR/libfork.i
-
-rm $ROOTDIR/libfork.c
