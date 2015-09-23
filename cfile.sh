@@ -3,6 +3,7 @@
 
 ROOTDIR="$(cd $(dirname $0); pwd)"
 
+rm -f $ROOTDIR/libfork.{c,i}
 
 for FILE in $(find $ROOTDIR/src/ -name '*.fork')
 do
