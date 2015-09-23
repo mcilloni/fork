@@ -87,10 +87,10 @@ func ctransGenTypedefs(tr ptr ctrans:Transl,
   mut als = root'aliases'syms
 
   mut i uintptr = 0
-  mut len = kv:kvLen(als)
+  mut len = als.len()
 
   while i < len
-    mut pair = kv:kvGetAt(als, i)
+    mut pair = als.getAt(i)
     mut name = cast<ptr uint8>(pair'key)
     mut type = cast<ptr ast:DeclInfo>(pair'value)'type
 

@@ -185,7 +185,7 @@ func csymFuncType(lr LRStr, methTarget ptr uint8, type ptr ast:Type)
   mut paramsCs = txt:csNew(30)
 
   mut i uintptr = 0
-  mut len = kv:kvLen(type'members)
+  mut len = type'members.len()
 
   txt:csAppendStr(paramsCs, "(")
 
@@ -203,7 +203,7 @@ func csymFuncType(lr LRStr, methTarget ptr uint8, type ptr ast:Type)
       txt:csAppendWord(paramsCs, ",")
     /if
 
-    mut pair = kv:kvGetAt(type'members, i)
+    mut pair = type'members.getAt(i)
     csym(paramsCs, null, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value), false)
     i++
   /while
@@ -253,10 +253,10 @@ func csymStructType(cs ptr txt:Charstash, type ptr ast:Type)
   txt:csAppendLine(cs, " {")
 
   mut i uintptr = 0
-  mut len = kv:kvLen(type'members)
+  mut len = type'members.len()
 
   while i < len
-    mut pair = kv:kvGetAt(type'members, i)
+    mut pair = type'members.getAt(i)
 
     txt:csAppendStr(cs, "  ")
     csym(cs, null, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value), false)
