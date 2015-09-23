@@ -367,7 +367,9 @@ func typeNew(pool ptr mem:FreePool,
              retType ptr ast:Type,
              members ptr kv:KVList) ptr ast:Type
 
-  mut location = pool != null => mem:fpAlloc(pool, size(ast:Type)) || mem:alloc(size(ast:Type))
+  mut location = pool != null => mem:fpZAlloc(pool, size(ast:Type)) || \
+                                    mem:zalloc(size(ast:Type))
+                                    
   mut ret = cast<ptr ast:Type>(location)
 
   ret'type = type

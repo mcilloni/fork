@@ -950,7 +950,7 @@ func parserParseMethodHead(ctx ptr synt:ParserContext, typeModule,typeName,name 
 
     val typeModule = firstId
   else
-    val typeModule = ctx'moduleName
+    val typeModule = txt:strclone(ctx'moduleName)
     val typeName = firstId
   /if
 

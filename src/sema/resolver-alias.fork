@@ -132,7 +132,7 @@ func convertSymbolList(rsv sema:Resolver,
         return null
       /if
 
-      members.put(member'name, type)
+      members.put(txt:strclone(member'name), type)
     /if
 
     i++

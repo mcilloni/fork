@@ -59,14 +59,14 @@ func typeEqualsList(list1, list2 ptr kv:KVList) bool
 
 
 func typeEquals(type1, type2 ptr ast:Type) bool
-  if type1 == null or type2 == null
+  if not type1? or not type2?
     return false
   /if
 
-  if type1'name != null and type2'name != null
+  if type1'name? and type2'name?
     mut res = txt:strequals(type1'name, type2'name)
 
-    if res and type1'moduleName != null and type2'moduleName != null
+    if res and type1'moduleName? and type2'moduleName?
       res = txt:strequals(type1'moduleName, type2'moduleName)
     /if
 
@@ -115,11 +115,11 @@ func typeEquals(type1, type2 ptr ast:Type) bool
 
 
 func typeFree(type ptr ast:Type)
-  if type != null
+  if type?
     mem:free(type'moduleName)
     mem:free(type'name)
 
-    if type'members != null
+    if type'members?
       kv:free(type'members)
     /if
 
@@ -129,42 +129,42 @@ func typeFree(type ptr ast:Type)
 
 
 func typeIsBool(type ptr ast:Type) bool
-  return type != null and type'type == ast:TYPE_BOOL
+  return type? and type'type == ast:TYPE_BOOL
 /func
 
 
 func typeIsData(type ptr ast:Type) bool
-  return type != null and type'type == ast:TYPE_DATA
+  return type? and type'type == ast:TYPE_DATA
 /func
 
 
 func typeIsFunc(type ptr ast:Type) bool
-  return type != null and type'type == ast:TYPE_FUNC
+  return type? and type'type == ast:TYPE_FUNC
 /func
 
 
 func typeIsInt(type ptr ast:Type) bool
-  return type != null and type'type == ast:TYPE_INT
+  return type? and type'type == ast:TYPE_INT
 /func
 
 
 func typeIsLoc(type ptr ast:Type) bool
-  return type != null and type'type == ast:TYPE_LOC
+  return type? and type'type == ast:TYPE_LOC
 /func
 
 
 func typeIsNull(type ptr ast:Type) bool
-  return type != null and type'type == ast:TYPE_NULL
+  return type? and type'type == ast:TYPE_NULL
 /func
 
 
 func typeIsPtr(type ptr ast:Type) bool
-  return type != null and (type'type == ast:TYPE_PTR or type'type == ast:TYPE_DATA)
+  return type? and (type'type == ast:TYPE_PTR or type'type == ast:TYPE_DATA)
 /func
 
 
 func typeIsStruct(type ptr ast:Type) bool
-  return type != null and type'type == ast:TYPE_STRUCT
+  return type? and type'type == ast:TYPE_STRUCT
 /func
 
 
@@ -192,7 +192,7 @@ func stabGet(stab ptr ast:Symtable, name ptr uint8) ptr ast:DeclInfo
 func stabTypeof(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
   mut di = ast:stabGet(stab, name)
 
-  return di != null => di'type || null
+  return di? => di'type || null
 /func
 
 
