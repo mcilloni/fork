@@ -52,7 +52,7 @@ dir:
 
 $(BUILDPATH)/%.c.o: %.c dir
 	@printf "CC\t\t%s\n" $<
-	@$(CC) -c -g -o $@ $< $(FPIC) -std=c11 -D_POSIX_C_SOURCE=200112L
+	@$(CC) -c -g -o $@ $< $(FPIC) -std=c99 -D_POSIX_C_SOURCE=200112L
 
 $(BUILDPATH)/%.fork.o: %.fork dir
 	@printf "FORKC\t\t%s\n" $<
