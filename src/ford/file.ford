@@ -16,9 +16,37 @@ import io
 import list
 
 
+alias File struct(
+  path ptr uint8,
+  isDir bool,
+  length uint64
+)
+
+
+decl func fileFree(file ptr File)
+
+decl method File.isDir() bool
+decl method File.len() uint64
+decl method File.open() ptr io:Stream
+decl method File.openDir() ptr Dir
+decl method File.path() ptr uint8
+
+
+alias Dir struct(
+  name ptr uint8,
+  internal data
+)
+
+decl func dirOpen(name ptr uint8, error ptr ptr err:Error) ptr Dir
+decl func dirClose(dir ptr Dir)
+
+decl method Dir.next()
+
+
 # File stream functions
 decl func fileOpen(name ptr uint8, error ptr ptr err:Error) ptr io:Stream
 decl func fileCreate(name ptr uint8, error ptr ptr err:Error) ptr io:Stream
+decl func fileGetInfo(path ptr uint8) ptr File
 
 # path functions
 decl func pathBasename(path ptr uint8) ptr uint8

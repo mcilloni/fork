@@ -19,14 +19,14 @@ import utils
 
 
 alias Resolver struct (
-  ctx ptr parser:Context,
+  ctx ptr parser:Parser,
   root ptr ast:PRoot,
   aliases,decls ptr kv:KVList
 )
 
 
 decl func resolverCollect(rsv ptr Resolver,
-                          ctx ptr parser:Context,
+                          ctx ptr parser:Parser,
                           root ptr ast:PRoot,
                           errors ptr list:List) ptr kv:KVList
 
@@ -76,27 +76,27 @@ decl func validateFunc(rsv Resolver,
                        errors ptr list:List) bool
 
 
-decl func semaValidateAstRoot(ctx ptr parser:Context,
+decl func semaValidateAstRoot(ctx ptr parser:Parser,
                               root ptr ast:PRoot,
                               errors ptr list:List) bool
 
 # validates the AST, and returns a list of the issues found.
-decl func semaValidateAst(context ptr parser:Context,
+decl func semaValidateAst(context ptr parser:Parser,
                           root ptr ast:PNode) ptr list:List
 
 # ast sema operations
 
-decl func findAliasImport(ctx ptr parser:Context, moduleName,name ptr uint8) ptr ast:Type
+decl func findAliasImport(ctx ptr parser:Parser, moduleName,name ptr uint8) ptr ast:Type
 decl func findAliasLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 
 decl func findMethod(rsv Resolver,
                      node ptr ast:PNode,
                      typeModule,typeName,methodName ptr uint8) ptr ast:Type
 
-decl func findRecAlias(ctx ptr parser:Context, scope ptr ast:PNode, ralias ptr ast:Type) ptr ast:Type
+decl func findRecAlias(ctx ptr parser:Parser, scope ptr ast:PNode, ralias ptr ast:Type) ptr ast:Type
 
-decl func findSymModule(ctx ptr parser:Context, moduleName, name ptr uint8) ptr ast:Type
+decl func findSymModule(ctx ptr parser:Parser, moduleName, name ptr uint8) ptr ast:Type
 
-decl func typeIsAssignable(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
-decl func typeIsCastable(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
-decl func typeChooseLarger(ctx ptr parser:Context, scope ptr ast:PNode, dest,src ptr ast:Type) bool
+decl func typeIsAssignable(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr ast:Type) bool
+decl func typeIsCastable(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr ast:Type) bool
+decl func typeChooseLarger(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr ast:Type) bool

@@ -12,7 +12,9 @@ module file
 
 
 import err
+import file
 import io
+import mem
 
 
 func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err:Error, eof ptr bool) uintptr
@@ -66,6 +68,46 @@ func filecloseInternal(camoFd data, err ptr ptr err:Error) bool
 
   return false
 /func
+
+
+func fileFree(fi ptr file:File)
+  if fi?
+    mem:free(fi'path)
+    mem:free(fi)
+  /if
+/func
+
+
+func fileGetInfo(filename ptr uint8) ptr file:File
+  decl func file_populate(filename ptr uint8) ptr file:File
+
+  return file_populate(filename)
+/func
+
+
+method file:File.isDir() bool
+  return me'isDir
+/method
+
+
+method file:File.len() uint64
+  return me'length
+/method
+
+
+method file:File.open() ptr io:Stream
+  # TODO: finish this after implementing pairs
+/method
+
+
+method file:File.openDir() ptr file:Dir
+  # TODO: finish this after implementing pairs
+/method
+
+
+method file:File.path() ptr uint8
+  return me'path
+/method
 
 
 func fileOpen(filename ptr uint8, err ptr ptr err:Error) ptr io:Stream

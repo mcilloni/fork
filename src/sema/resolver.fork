@@ -85,7 +85,7 @@ func resolverCollectDecls(rsv ptr sema:Resolver,
 
 
 func resolverCollect(rsv ptr sema:Resolver,
-                     ctx ptr parser:Context,
+                     ctx ptr parser:Parser,
                      root ptr ast:PRoot,
                      errors ptr list:List) ptr kv:KVList
 

@@ -27,18 +27,18 @@ func intHash(n data) uintptr
 /func
 
 
-func semaValidateAst(ctx ptr parser:Context, root ptr ast:PNode) ptr list:List
+func semaValidateAst(ctx ptr parser:Parser, root ptr ast:PNode) ptr list:List
   if root'type != ast:PROOT
     return null
   /if
 
   mut proot = cast<ptr ast:PRoot>(root)
 
-  parser:ctxSetCurrentFile(ctx, proot'fileName)
+  ctx.setCurrentFile(proot'fileName)
 
-  mut errors = parser:ctxImportAll(ctx, proot'imports)
+  mut errors = ctx.importAll(proot'imports)
 
-  parser:ctxSetCurrentFile(ctx, proot'fileName)
+  ctx.setCurrentFile(proot'fileName)
 
   if errors.len() != 0
     return errors

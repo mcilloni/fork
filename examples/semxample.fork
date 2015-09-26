@@ -30,9 +30,9 @@ entry
     proc:exit(1)
   /if
 
-  mut ctx = parser:ctxNew()
+  mut ctx = parser:new()
   mut ast ptr ast:PNode
-  mut errors = parser:ctxParseFile(ctx, argv'args[0], ptr ast)
+  mut errors = ctx.parseFile(argv'args[0], ptr ast)
 
   mut errLen = errors.len()
 
@@ -140,7 +140,7 @@ entry
 
   tty:outln(root'entryNode != null => "yes" || "no")
 
-  parser:ctxFree(ctx)
+  parser:free(ctx)
 
   ast:pnodeFree(ast)
 /entry

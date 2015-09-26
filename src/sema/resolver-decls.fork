@@ -22,18 +22,18 @@ import txt
 import utils
 
 
-func findRecAlias(ctx ptr parser:Context, scope ptr ast:PNode, ralias ptr ast:Type) ptr ast:Type
+func findRecAlias(ctx ptr parser:Parser, scope ptr ast:PNode, ralias ptr ast:Type) ptr ast:Type
   if ralias'type != ast:TYPE_RECALIAS
     return ralias
   /if
 
-  return ralias'moduleName != null => sema:findAliasImport(ctx, ralias'moduleName, ralias'name) || sema:findAliasLocal(scope, ralias'name)
+  return ralias'moduleName? => sema:findAliasImport(ctx, ralias'moduleName, ralias'name) || sema:findAliasLocal(scope, ralias'name)
 /func
 
 
-func findSymModule(ctx ptr parser:Context, moduleName, name ptr uint8) ptr ast:Type
-  mut imp = parser:ctxGetImport(ctx, moduleName)
-  if imp == null
+func findSymModule(ctx ptr parser:Parser, moduleName, name ptr uint8) ptr ast:Type
+  mut imp = ctx.getImport(moduleName)
+  if not imp?
     return null
   /if
 
@@ -52,7 +52,7 @@ func findMethod(rsv sema:Resolver,
   mut name = ast:methodKey(typeModule, typeName,methodName)
 
   mut ret = ast:findSym(node, name)
-  if ret != null
+  if ret?
     mem:free(name)
     return ret
   /if
@@ -60,9 +60,9 @@ func findMethod(rsv sema:Resolver,
   mut root = ast:findPRoot(node)
 
   # fetch this from the current ford.
-  if root'moduleName != null
+  if root'moduleName?
     ret = sema:findSymModule(rsv'ctx, root'moduleName'name, name)
-    if ret != null
+    if ret?
       mem:free(name)
       return ret
     /if
@@ -113,7 +113,7 @@ func registerDeclReal(rsv sema:Resolver,
     return realType
   /if
 
-  if ptype != null and not typeResolved
+  if ptype? and not typeResolved
     typeResolved = (realType = sema:resolveType(rsv, ptype, errors)) != null
 
     if not typeResolved
@@ -154,7 +154,7 @@ func registerDeclReal(rsv sema:Resolver,
         # expression associated with this mut (we are also sure we have a mut)
         if not recursive
           mut valType = sema:validateExprRecl(rsv, pexpr, recList, errors)
-          if valType == null
+          if not valType?
             return null
           /if
 
@@ -192,7 +192,7 @@ func registerDeclReal(rsv sema:Resolver,
   /if
 
   # functions are already registered
-  if not inMap and realType != null and pdecl'node'type != ast:PENTRY
+  if not inMap and realType? and pdecl'node'type != ast:PENTRY
     rootDeclsRegister(rsv, name, pdecl'isDecl, realType, pdecl'node'type)
   /if
 
@@ -240,7 +240,7 @@ func resolveDeclType(rsv sema:Resolver,
 
   mut dtype = ast:findSym(node, name)
 
-  if dtype != null
+  if dtype?
     return dtype
   /if
 
@@ -274,7 +274,7 @@ func registerDecl(rsv sema:Resolver,
   mut declNode = cast<ptr ast:PNode>(pdecl)
 
   mut stab = ast:findStab(declNode)
-  if ast:stabTypeof(stab, name) != null
+  if ast:stabTypeof(stab, name)?
     mut cs = txt:csNew(20)
     txt:csAppendStr(cs, "symbol '")
     txt:csAppendStr(cs, name)

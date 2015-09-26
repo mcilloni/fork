@@ -17,25 +17,32 @@ import list
 import map
 
 
-alias Context struct (
+alias Parser struct (
   fordPaths ptr list:List,
   imports ptr map:Map,
   currentFile ptr uint8,
   builtins ptr map:Map
 )
 
-decl func ctxGetImport(ctx ptr Context, name ptr uint8) ptr ast:PRoot
-decl func ctxFree(ctx ptr Context)
-decl func ctxImport(ctx ptr Context, importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr list:List
-decl func ctxImportAll(ctx ptr Context, imports ptr list:List) ptr list:List
-decl func ctxMatchBuiltin(ctx ptr Context, name ptr uint8) ptr ast:Type
-decl func ctxNew() ptr Context
 
-decl func ctxParseFile(context ptr Context,
-                       fileName ptr uint8,
-                       newRoot ptr ptr ast:PNode) ptr list:List
+# Parser init/deinit functions
 
-decl func ctxSetCurrentFile(ctx ptr Context, filename ptr uint8)
+decl func free(ctx ptr Parser)
+decl func new() ptr Parser
+
+
+# Parser methods
+
+decl method Parser.getImport(name ptr uint8) ptr ast:PRoot
+decl method Parser.importMod(importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr list:List
+decl method Parser.importAll(imports ptr list:List) ptr list:List
+decl method Parser.matchBuiltin(name ptr uint8) ptr ast:Type
+decl method Parser.parseDirectory(dirName ptr uint8,
+                                  newModule ptr ptr ast:PNode) ptr list:List
+decl method Parser.parseFile(fileName ptr uint8,
+                             newRoot ptr ptr ast:PNode) ptr list:List
+
+decl method Parser.setCurrentFile(filename ptr uint8)
 
 
 alias Issue struct (

@@ -11,8 +11,15 @@
  */
 
 #undef _GNU_SOURCE
+#define _XOPEN_SOURCE
+#define _XOPEN_SOURCE_EXTENDED
+
+
+#include <ford$$mem.h>
+#include <ford$$txt.h>
 
 #include <errno.h>
+#include <libgen.h>
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -22,6 +29,7 @@
 #include <dirent.h>
 
 #include <sys/stat.h>
+
 
 
 int64_t open_readfile(char* filename, char* error, uintptr_t len) {
@@ -89,6 +97,30 @@ int8_t stream_closeFileInternal(int64_t fd) {
 }
 
 
+struct File {
+  uint8_t* path;
+  bool isDir;
+  uint64_t length;
+};
+
+
+struct File* file_populate(char* path) {
+  struct stat st;
+
+  if (stat(path, &st)) {
+    return NULL;
+  }
+
+
+  struct File* fi = mem$zalloc(sizeof(struct File*));
+  fi->path = realpath(path, NULL);
+  fi->isDir = S_ISDIR(st.st_mode) != 0;
+  fi->length = (uint64_t) st.st_size;
+
+  return fi;
+}
+
+
 uintptr_t path_exists(char* filename) {
   struct stat st;
 
@@ -111,8 +143,6 @@ bool path_listAll(char* path, void* appendTo, void (*appender)(void* to, char* e
     return false;
   }
 
-  extern char* txt$strclone(char*);
-  extern bool txt$strequals(const char*,const char*);
   struct dirent *ep;
 
   while ((ep = readdir(dp))) {
