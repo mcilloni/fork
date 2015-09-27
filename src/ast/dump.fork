@@ -12,13 +12,13 @@ module ast
 
 
 import ast
+import cs
 import kv
 import lex
 import list
 import mem
 import tokens
 import tty
-import txt
 import utils
 
 
@@ -369,20 +369,20 @@ func pnodeDump(pnode ptr ast:PNode)
 /func
 
 
-func symbolDump(cs ptr txt:Charstash, sym ptr ast:Symbol)
+func symbolDump(cs ptr cs:Charstash, sym ptr ast:Symbol)
   if sym == null
     return
   /if
 
-  txt:csAppendStr(cs, sym'name)
-  txt:csAppend(cs, 32)
+  cs.add(sym'name)
+  cs.addChar(32)
   ast:typeDump(cs, sym'type)
 /func
 
 
-func symlistDump(cs ptr txt:Charstash, symlist ptr kv:KVList)
+func symlistDump(cs ptr cs:Charstash, symlist ptr kv:KVList)
 
-  txt:csAppendStr(cs, "(")
+  cs.add("(")
 
   if symlist?
     mut len = symlist.len()
@@ -398,33 +398,33 @@ func symlistDump(cs ptr txt:Charstash, symlist ptr kv:KVList)
       ast:symbolDump(cs, ptr sym)
 
       if i + 1 < len
-        txt:csAppendStr(cs, ", ")
+        cs.add(", ")
       /if
 
       i++
     /while
   /if
 
-  txt:csAppendStr(cs, ")")
+  cs.add(")")
 /func
 
 
-func typeDumpName(cs ptr txt:Charstash, type ptr ast:Type)
+func typeDumpName(cs ptr cs:Charstash, type ptr ast:Type)
   if type'name != null
-    txt:csAppendStr(cs, "{ ")
+    cs.add("{ ")
 
     if type'moduleName != null
-      txt:csAppendStr(cs, type'moduleName)
-      txt:csAppendStr(cs, ":")
+      cs.add(type'moduleName)
+      cs.add(":")
     /if
-    txt:csAppendStr(cs, type'name)
+    cs.add(type'name)
 
-    txt:csAppendStr(cs, " } ")
+    cs.add(" } ")
   /if
 /func
 
 
-func typeDump(cs ptr txt:Charstash, type ptr ast:Type)
+func typeDump(cs ptr cs:Charstash, type ptr ast:Type)
 
   if type == null
     return
@@ -433,60 +433,60 @@ func typeDump(cs ptr txt:Charstash, type ptr ast:Type)
   if type'type == ast:TYPE_FUNC
     typeDumpName(cs, type)
 
-    txt:csAppendStr(cs, "func")
+    cs.add("func")
 
     symlistDump(cs, type'members)
 
     if type'retType != null
-      txt:csAppend(cs, 32)
+      cs.addChar(32)
 
       typeDump(cs, type'retType)
     /if
   else
     if type'type == ast:TYPE_PTR
-      txt:csAppendStr(cs, "ptr ")
+      cs.add("ptr ")
 
       typeDump(cs, type'retType)
     else
       if type'type == ast:TYPE_STRUCT
         typeDumpName(cs, type)
 
-        txt:csAppendStr(cs, "struct")
+        cs.add("struct")
 
         symlistDump(cs, type'members)
       else
         if type'type == ast:TYPE_LOC
-          txt:csAppendStr(cs, "[")
-          txt:csAppendInt(cs, type'itemCount)
-          txt:csAppendStr(cs, "] ")
+          cs.add("[")
+          cs.addInt(type'itemCount)
+          cs.add("] ")
 
           typeDump(cs, type'retType)
         else
           if type'type == ast:TYPE_BOOL
-            txt:csAppendStr(cs, "bool")
+            cs.add("bool")
           else
             if type'type == ast:TYPE_INT
               if not type'isSigned
-                txt:csAppendStr(cs, "u")
+                cs.add("u")
               /if
 
-              txt:csAppendStr(cs, "int")
-              txt:csAppendInt(cs, type'typeSize * 8)
+              cs.add("int")
+              cs.addInt(type'typeSize * 8)
 
             else
               if type'type == ast:TYPE_DATA
-                txt:csAppendStr(cs, "data")
+                cs.add("data")
               else
                 if type'type == ast:TYPE_RECALIAS
-                  txt:csAppendStr(cs, "<< alias to ")
-                  txt:csAppendStr(cs, type'name)
-                  txt:csAppendStr(cs, " >>")
+                  cs.add("<< alias to ")
+                  cs.add(type'name)
+                  cs.add(" >>")
                 else
                   if type'type == ast:TYPE_NULL
-                    txt:csAppendStr(cs, "null")
+                    cs.add("null")
                   else
                     if type'type == ast:TYPE_EMPTY
-                      txt:csAppendStr(cs, "<<empty type>>")
+                      cs.add("<<empty type>>")
                     /if
                   /if
                 /if
@@ -501,20 +501,20 @@ func typeDump(cs ptr txt:Charstash, type ptr ast:Type)
 /func
 
 
-func symbolSummarize(cs ptr txt:Charstash, sym ptr ast:Symbol)
+func symbolSummarize(cs ptr cs:Charstash, sym ptr ast:Symbol)
   if not sym?
     return
   /if
 
-  txt:csAppendStr(cs, sym'name)
-  txt:csAppend(cs, 32)
+  cs.add(sym'name)
+  cs.addChar(32)
   ast:typeSummarize(cs, sym'type)
 /func
 
 
-func symlistSummarize(cs ptr txt:Charstash, symlist ptr kv:KVList)
+func symlistSummarize(cs ptr cs:Charstash, symlist ptr kv:KVList)
 
-  txt:csAppendStr(cs, "(")
+  cs.add("(")
 
   if symlist?
     mut len = symlist.len()
@@ -530,54 +530,54 @@ func symlistSummarize(cs ptr txt:Charstash, symlist ptr kv:KVList)
       ast:symbolSummarize(cs, ptr sym)
 
       if i + 1 < len
-        txt:csAppendStr(cs, ", ")
+        cs.add(", ")
       /if
 
       i++
     /while
   /if
 
-  txt:csAppendStr(cs, ")")
+  cs.add(")")
 /func
 
 
-func typeSummarize(cs ptr txt:Charstash, type ptr ast:Type)
+func typeSummarize(cs ptr cs:Charstash, type ptr ast:Type)
   if not type?
-    txt:csAppendStr(cs, "<<null type please report>>")
+    cs.add("<<null type please report>>")
     return
   /if
 
   if type'name?
     if type'moduleName?
-      txt:csAppendStr(cs, type'moduleName)
-      txt:csAppendStr(cs, ":")
+      cs.add(type'moduleName)
+      cs.add(":")
     /if
 
-    txt:csAppendStr(cs, type'name)
+    cs.add(type'name)
     return
   /if
 
   if type'type == ast:TYPE_PTR
-    txt:csAppendStr(cs, "ptr ")
+    cs.add("ptr ")
     typeSummarize(cs, type'retType)
     return
   /if
 
   if type'type == ast:TYPE_LOC
-    txt:csAppendStr(cs, "loc[")
-    txt:csAppendInt(cs, type'itemCount)
-    txt:csAppendStr(cs, "] ")
+    cs.add("loc[")
+    cs.addInt(type'itemCount)
+    cs.add("] ")
     typeSummarize(cs, type'retType)
     return
   /if
 
   if type'type == ast:TYPE_FUNC
-    txt:csAppendStr(cs, "func")
+    cs.add("func")
 
     symlistSummarize(cs, type'members)
 
     if type'retType != null
-      txt:csAppend(cs, 32)
+      cs.addChar(32)
 
       typeSummarize(cs, type'retType)
     /if
@@ -597,9 +597,9 @@ func declDump(prefix,name ptr uint8, type ptr ast:Type)
   tty:out(name)
   tty:outch(32)
 
-  mut cs = txt:csNew(40)
+  mut cs = cs:new(40)
   ast:typeDump(cs, type)
-  mut str = txt:csUnwrap(cs)
+  mut str = cs:unwrap(cs)
 
   tty:out(str)
 

@@ -13,6 +13,7 @@ module sema
 
 import ast
 import astfn
+import cs
 import kv
 import lex
 import list
@@ -114,30 +115,30 @@ func ttypeCanBeAssignTarget(tt uint16, type ptr ast:Type) bool
 /func
 
 
-func assignLhsDump(cs ptr txt:Charstash, pexpr ptr ast:PExpr)
+func assignLhsDump(cs ptr cs:Charstash, pexpr ptr ast:PExpr)
   mut op = pexpr'opType
 
   if op == tokens:ID
-    txt:csAppendStr(cs, cast<ptr uint8>(pexpr'node'value))
+    cs.add(cast<ptr uint8>(pexpr'node'value))
     return
   /if
 
   mut left = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
   if op == tokens:VAL
-    txt:csAppendStr(cs, "'val ")
+    cs.add("'val ")
 
     assignLhsDump(cs, left)
 
-    txt:csAppendStr(cs, "' ")
+    cs.add("' ")
 
     return
   /if
 
   if op == tokens:OBRAC
-    txt:csAppendStr(cs, " member of '")
+    cs.add(" member of '")
     assignLhsDump(cs, left)
-    txt:csAppendStr(cs, "' ")
+    cs.add("' ")
 
     return
   /if
@@ -145,20 +146,20 @@ func assignLhsDump(cs ptr txt:Charstash, pexpr ptr ast:PExpr)
   mut right = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
   if op == tokens:APOS or op == tokens:COMMA
-    txt:csAppendStr(cs, "'")
+    cs.add("'")
 
     assignLhsDump(cs, left)
 
-    txt:csAppendStr(cs, op == tokens:APOS => "'" || ":")
+    cs.add(op == tokens:APOS => "'" || ":")
 
     assignLhsDump(cs, right)
 
-    txt:csAppendStr(cs, "' ")
+    cs.add("' ")
 
     return
   /if
 
-  txt:csAppendStr(cs, "expr ")
+  cs.add("expr ")
 /func
 
 
@@ -341,14 +342,14 @@ func validateExprCast(rsv sema:Resolver,
   mut chType = sema:validateExprRecl(rsv, childExpr, recList, errors)
 
   if chType == null or not sema:typeIsCastable(rsv'ctx, cast<ptr ast:PNode>(pexpr), chType, pexpr'type)
-    mut cs = txt:csNew(20)
+    mut cs = cs:new(20)
 
-    txt:csAppendStr(cs, "can't cast ")
+    cs.add("can't cast ")
     ast:typeSummarize(cs, chType)
-    txt:csAppendStr(cs, " to ")
+    cs.add(" to ")
     ast:typeSummarize(cs, pexpr'type)
 
-    mut str = txt:csUnwrap(cs)
+    mut str = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
@@ -391,14 +392,14 @@ func validateExprId(rsv sema:Resolver,
   mut type = ast:findSym(cast<ptr ast:PNode>(pexpr), name)
 
   if recList? and utils:listContains(recList, name)
-    mut cs = txt:csNew(20)
+    mut cs = cs:new(20)
 
-    txt:csAppendStr(cs, "type ")
-    txt:csAppendStr(cs, name)
-    txt:csAppendStr(cs, " causes an init loop ")
+    cs.add("type ")
+    cs.add(name)
+    cs.add(" causes an init loop ")
     utils:listDumpHierarchyIntoCS(recList, cs)
 
-    mut str = txt:csUnwrap(cs)
+    mut str = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
@@ -424,16 +425,16 @@ func validateBoolExpr(rsv sema:Resolver,
   mut op = pexpr'opType
 
   if not ast:typeIsBool(ltype) or not ast:typeIsBool(rtype)
-    mut cs = txt:csNew(20)
+    mut cs = cs:new(20)
 
-    txt:csAppendStr(cs, "cannot apply ")
-    txt:csAppendStr(cs, lex:ttypeStr(op))
-    txt:csAppendStr(cs, " to types ")
+    cs.add("cannot apply ")
+    cs.add(lex:ttypeStr(op))
+    cs.add(" to types ")
     ast:typeSummarize(cs, ltype)
-    txt:csAppendStr(cs, " and ")
+    cs.add(" and ")
     ast:typeSummarize(cs, rtype)
 
-    mut str = txt:csUnwrap(cs)
+    mut str = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
@@ -452,13 +453,13 @@ func validateArithPtrExpr(rsv sema:Resolver,
                           recList,errors ptr list:List) ptr ast:Type
 
   if not ttypeOpCanDoPtrArith(pexpr'opType)
-    mut cs = txt:csNew(20)
+    mut cs = cs:new(20)
 
-    txt:csAppendStr(cs, "operator ")
-    txt:csAppendStr(cs, lex:ttypeStr(pexpr'opType))
-    txt:csAppendStr(cs, " is not appliable to pointers")
+    cs.add("operator ")
+    cs.add(lex:ttypeStr(pexpr'opType))
+    cs.add(" is not appliable to pointers")
 
-    mut str = txt:csUnwrap(cs)
+    mut str = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
@@ -470,15 +471,15 @@ func validateArithPtrExpr(rsv sema:Resolver,
   if ast:typeIsPtr(ltype) and ast:typeIsPtr(rtype)
     if pexpr'opType == tokens:MINUS
       if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
-        mut cs = txt:csNew(20)
+        mut cs = cs:new(20)
 
-        txt:csAppendStr(cs, "types ")
+        cs.add("types ")
         ast:typeSummarize(cs, ltype)
-        txt:csAppendStr(cs, " and ")
+        cs.add(" and ")
         ast:typeSummarize(cs, rtype)
-        txt:csAppendStr(cs, " are not compatible")
+        cs.add(" are not compatible")
 
-        mut str = txt:csUnwrap(cs)
+        mut str = cs:unwrap(cs)
 
         errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
@@ -569,14 +570,14 @@ func validateModuleAccessExpr(rsv sema:Resolver,
   mut type = sema:findSymModule(rsv'ctx, modName, symName)
 
   if type == null
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "'")
-    txt:csAppendStr(cs, symName)
-    txt:csAppendStr(cs, "' is not defined in module '")
-    txt:csAppendStr(cs, modName)
-    txt:csAppendStr(cs, "'")
+    mut cs = cs:new(20)
+    cs.add("'")
+    cs.add(symName)
+    cs.add("' is not defined in module '")
+    cs.add(modName)
+    cs.add("'")
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -616,12 +617,12 @@ func validateStructureAccessExpr(rsv sema:Resolver,
   /if
 
   if not ast:typeIsStruct(accType)
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "'")
+    mut cs = cs:new(20)
+    cs.add("'")
     ast:typeSummarize(cs, accType)
-    txt:csAppendStr(cs, "' is neither a structure nor a pointer to a structure")
+    cs.add("' is neither a structure nor a pointer to a structure")
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -635,13 +636,13 @@ func validateStructureAccessExpr(rsv sema:Resolver,
   mut type = cast<ptr ast:Type>(accType'members.get(field))
 
   if not type?
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "no field called '")
-    txt:csAppendStr(cs, field)
-    txt:csAppendStr(cs, "' in type ")
+    mut cs = cs:new(20)
+    cs.add("no field called '")
+    cs.add(field)
+    cs.add("' in type ")
     ast:typeSummarize(cs, accType)
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -699,29 +700,29 @@ func validateFunctionCallExpr(rsv sema:Resolver,
   mut argsLen = pexpr'node'leaves.len()
 
   if argsLen != expLen + 1
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "can't call function ")
+    mut cs = cs:new(20)
+    cs.add("can't call function ")
 
     if ltype'name != null
-      txt:csAppendStr(cs, "'")
+      cs.add("'")
 
       if ltype'moduleName != null
-        txt:csAppendStr(cs, accType'moduleName)
-        txt:csAppendStr(cs, ":")
+        cs.add(accType'moduleName)
+        cs.add(":")
       /if
 
-      txt:csAppendStr(cs, accType'name)
-      txt:csAppendStr(cs, "' ")
+      cs.add(accType'name)
+      cs.add("' ")
     else
       ast:typeSummarize(cs, accType)
     /if
 
-    txt:csAppendStr(cs, ": expected ")
-    txt:csAppendInt(cs, expLen)
-    txt:csAppendStr(cs, " parameters, got ")
-    txt:csAppendInt(cs, argsLen - 1)
+    cs.add(": expected ")
+    cs.addInt(expLen)
+    cs.add(" parameters, got ")
+    cs.addInt(argsLen - 1)
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
                                               rsv'root'fileName, msg))
@@ -746,20 +747,20 @@ func validateFunctionCallExpr(rsv sema:Resolver,
     /if
 
     if not sema:typeIsAssignable(rsv'ctx, scope, expType, gotType)
-      mut cs = txt:csNew(20)
-      txt:csAppendStr(cs, "passing '")
+      mut cs = cs:new(20)
+      cs.add("passing '")
 
       ast:typeSummarize(cs, gotType)
 
-      txt:csAppendStr(cs, "' to parameter '")
-      txt:csAppendStr(cs, cast<ptr uint8>(expPair'key))
-      txt:csAppendStr(cs, "' of type '")
+      cs.add("' to parameter '")
+      cs.add(cast<ptr uint8>(expPair'key))
+      cs.add("' of type '")
 
       ast:typeSummarize(cs, expType)
 
-      txt:csAppendStr(cs, "'")
+      cs.add("'")
 
-      mut msg = txt:csUnwrap(cs)
+      mut msg = cs:unwrap(cs)
 
       errors.append(parser:issueNew(parser:ISSUE_ERR, \
                             pexpr'node'begin, rsv'root'fileName, msg))
@@ -794,15 +795,15 @@ func validateAssignExpr(rsv sema:Resolver,
   /if
 
   if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
-    mut cs = txt:csNew(20)
+    mut cs = cs:new(20)
 
-    txt:csAppendStr(cs, "cannot assign expression of type '")
+    cs.add("cannot assign expression of type '")
     ast:typeSummarize(cs, rtype)
-    txt:csAppendStr(cs, "' to a lvalue of type '")
+    cs.add("' to a lvalue of type '")
     ast:typeSummarize(cs, ltype)
-    txt:csAppendStr(cs, "'")
+    cs.add("'")
 
-    mut str = txt:csUnwrap(cs)
+    mut str = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
                                               rsv'root'fileName, str))
@@ -822,13 +823,13 @@ func validateNullCoalescingExpr(rsv sema:Resolver,
                                 errors ptr list:List) ptr ast:Type
 
   if not ast:typeIsPtr(ltype)
-    mut cs = txt:csNew(20)
+    mut cs = cs:new(20)
 
-    txt:csAppendStr(cs, "cannot coalesce non pointer type '")
+    cs.add("cannot coalesce non pointer type '")
     ast:typeSummarize(cs, ltype)
-    txt:csAppendStr(cs, "'")
+    cs.add("'")
 
-    mut str = txt:csUnwrap(cs)
+    mut str = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
@@ -838,15 +839,15 @@ func validateNullCoalescingExpr(rsv sema:Resolver,
   /if
 
   if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
-    mut cs = txt:csNew(20)
+    mut cs = cs:new(20)
 
-    txt:csAppendStr(cs, "cannot coalesce type '")
+    cs.add("cannot coalesce type '")
     ast:typeSummarize(cs, ltype)
-    txt:csAppendStr(cs, "' with type '")
+    cs.add("' with type '")
     ast:typeSummarize(cs, rtype)
-    txt:csAppendStr(cs, "'")
+    cs.add("'")
 
-    mut str = txt:csUnwrap(cs)
+    mut str = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
 
@@ -907,12 +908,12 @@ func validateMethodExpr(rsv sema:Resolver,
   /if
 
   if accType'name == null
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "'")
+    mut cs = cs:new(20)
+    cs.add("'")
     ast:typeSummarize(cs, accType)
-    txt:csAppendStr(cs, "' is not a named type. Raw struct, pointer or function types can't have methods")
+    cs.add("' is not a named type. Raw struct, pointer or function types can't have methods")
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -1016,12 +1017,12 @@ func validateValExpr(rsv sema:Resolver,
                      errors ptr list:List) ptr ast:Type
 
   if atype'type != ast:TYPE_PTR
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "type '")
+    mut cs = cs:new(20)
+    cs.add("type '")
     ast:typeSummarize(cs, atype)
-    txt:csAppendStr(cs, "' is not dereferenceable")
+    cs.add("' is not dereferenceable")
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -1055,12 +1056,12 @@ func validateUMinusExpr(rsv sema:Resolver,
                         errors ptr list:List) ptr ast:Type
 
   if not ast:typeIsInt(atype)
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "cannot apply unary '-' to type '")
+    mut cs = cs:new(20)
+    cs.add("cannot apply unary '-' to type '")
     ast:typeSummarize(cs, atype)
-    txt:csAppendStr(cs, "'")
+    cs.add("'")
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -1070,12 +1071,12 @@ func validateUMinusExpr(rsv sema:Resolver,
   /if
 
   if not atype'isSigned
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "cannot apply unary '-' to unsigned type '")
+    mut cs = cs:new(20)
+    cs.add("cannot apply unary '-' to unsigned type '")
     ast:typeSummarize(cs, atype)
-    txt:csAppendStr(cs, "'")
+    cs.add("'")
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -1094,12 +1095,12 @@ func validateIncDecExpr(rsv sema:Resolver,
                         errors ptr list:List) ptr ast:Type
 
   if not ast:typeIsInt(atype) and not ast:typeIsPtr(atype)
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "type '")
+    mut cs = cs:new(20)
+    cs.add("type '")
     ast:typeSummarize(cs, atype)
-    txt:csAppendStr(cs, "' is not an integer or pointer type")
+    cs.add("' is not an integer or pointer type")
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -1124,12 +1125,12 @@ func validateQuestExpr(rsv sema:Resolver,
                        errors ptr list:List) ptr ast:Type
 
   if not ast:typeIsPtr(atype)
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "cannot apply '?' to type '")
+    mut cs = cs:new(20)
+    cs.add("cannot apply '?' to type '")
     ast:typeSummarize(cs, atype)
-    txt:csAppendStr(cs, "'")
+    cs.add("'")
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -1210,14 +1211,14 @@ func validateTernaryExpr(rsv sema:Resolver,
   # for sake of type determination, so we must run it twice with reversed
   # arguments
   if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), leftType, rightType) and not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), rightType, leftType)
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "ternary expression arguments have incompatible types '")
+    mut cs = cs:new(20)
+    cs.add("ternary expression arguments have incompatible types '")
     ast:typeSummarize(cs, leftType)
-    txt:csAppendStr(cs, "' and '")
+    cs.add("' and '")
     ast:typeSummarize(cs, rightType)
-    txt:csAppendStr(cs, "'")
+    cs.add("'")
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 

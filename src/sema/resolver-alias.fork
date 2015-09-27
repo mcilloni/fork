@@ -13,6 +13,7 @@ module sema
 
 import ast
 import astfn
+import cs
 import kv
 import list
 import mem
@@ -227,13 +228,13 @@ func resolveModuleAlias(rsv sema:Resolver,
 
   # we could not find the type anywhere in the module.
   # Signal the error to the caller.
-  mut cs = txt:csNew(20)
-  txt:csAppendStr(cs, "no alias called ")
-  txt:csAppendStr(cs, ptype'name)
-  txt:csAppendStr(cs, " in module ")
-  txt:csAppendStr(cs, ptype'moduleName)
+  mut cs = cs:new(20)
+  cs.add("no alias called ")
+  cs.add(ptype'name)
+  cs.add(" in module ")
+  cs.add(ptype'moduleName)
 
-  mut msg = txt:csUnwrap(cs)
+  mut msg = cs:unwrap(cs)
   errors.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
   mem:free(msg)
 
@@ -256,14 +257,14 @@ func resolveIdType(rsv sema:Resolver,
       return astfn:typeNewRecursiveAlias(rsv'root'typePool, rsv'root'moduleName != null => rsv'root'moduleName'name || null, ptype'name)
     /if
 
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "alias declaration makes type ")
-    txt:csAppendStr(cs, ptype'name)
-    txt:csAppendStr(cs, " recursive")
-    txt:csAppend(cs, 32)
+    mut cs = cs:new(20)
+    cs.add("alias declaration makes type ")
+    cs.add(ptype'name)
+    cs.add(" recursive")
+    cs.addChar(32)
     utils:listDumpHierarchyIntoCS(recList, cs)
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
     errors.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
     mem:free(msg)
 
@@ -292,12 +293,12 @@ func resolveIdType(rsv sema:Resolver,
   /if
 
   # no match found, error
-  mut cs = txt:csNew(20)
-  txt:csAppendStr(cs, "no type called ")
-  txt:csAppendStr(cs, ptype'name)
-  txt:csAppendStr(cs, " in current scope")
+  mut cs = cs:new(20)
+  cs.add("no type called ")
+  cs.add(ptype'name)
+  cs.add(" in current scope")
 
-  mut msg = txt:csUnwrap(cs)
+  mut msg = cs:unwrap(cs)
   errors.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
   mem:free(msg)
 

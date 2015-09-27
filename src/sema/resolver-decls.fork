@@ -12,6 +12,7 @@ module sema
 
 
 import ast
+import cs
 import hash
 import kv
 import list
@@ -167,14 +168,14 @@ func registerDeclReal(rsv sema:Resolver,
 
           if typeResolved
             if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pdecl), realType, valType)
-              mut cs = txt:csNew(20)
-              txt:csAppendStr(cs, "cannot assign an expression of type '")
+              mut cs = cs:new(20)
+              cs.add("cannot assign an expression of type '")
               ast:typeSummarize(cs, valType)
-              txt:csAppendStr(cs, "' to a variable declared as '")
+              cs.add("' to a variable declared as '")
               ast:typeSummarize(cs, realType)
-              txt:csAppendStr(cs, "'")
+              cs.add("'")
 
-              mut msg = txt:csUnwrap(cs)
+              mut msg = cs:unwrap(cs)
 
               errors.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
 
@@ -282,12 +283,12 @@ func registerDecl(rsv sema:Resolver,
 
   mut stab = ast:findStab(declNode)
   if ast:stabTypeof(stab, name)?
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "symbol '")
-    txt:csAppendStr(cs, name)
-    txt:csAppendStr(cs, "' is already defined")
+    mut cs = cs:new(20)
+    cs.add("symbol '")
+    cs.add(name)
+    cs.add("' is already defined")
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, declNode'begin, rsv'root'fileName, msg))
 

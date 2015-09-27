@@ -11,12 +11,12 @@
 module ast
 
 
+import cs
 import hash
 import kv
 import list
 import map
 import mem
-import txt
 
 
 alias Line struct(
@@ -104,11 +104,11 @@ alias Symbol struct(
 )
 
 
-decl func symbolDump(cs ptr txt:Charstash, sym ptr Symbol)
+decl func symbolDump(cs ptr cs:Charstash, sym ptr Symbol)
 decl func symbolEquals(sym1,sym2 ptr Symbol) bool
-decl func symbolSummarize(cs ptr txt:Charstash, sym ptr Symbol)
+decl func symbolSummarize(cs ptr cs:Charstash, sym ptr Symbol)
 
-decl func typeDump(cs ptr txt:Charstash, type ptr Type)
+decl func typeDump(cs ptr cs:Charstash, type ptr Type)
 decl func typeEquals(type1, type2 ptr Type) bool
 decl func typeFree(type ptr Type)
 decl func typeIsBool(type ptr Type) bool
@@ -119,7 +119,7 @@ decl func typeIsLoc(type ptr Type) bool
 decl func typeIsNull(type ptr Type) bool
 decl func typeIsPtr(type ptr Type) bool
 decl func typeIsStruct(type ptr Type) bool
-decl func typeSummarize(cs ptr txt:Charstash, type ptr Type)
+decl func typeSummarize(cs ptr cs:Charstash, type ptr Type)
 
 
 alias DeclInfo struct(

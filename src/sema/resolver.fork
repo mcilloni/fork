@@ -12,6 +12,7 @@ module sema
 
 
 import ast
+import cs
 import kv
 import list
 import mem
@@ -19,7 +20,6 @@ import parser
 import proc
 import sema
 import tty
-import txt
 import utils
 
 
@@ -38,12 +38,12 @@ func resolverCollectAlias(rsv ptr sema:Resolver,
 
   if rsv'aliases.contains(name)
 
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "alias ")
-    txt:csAppendStr(cs, name)
-    txt:csAppendStr(cs, " is already defined")
+    mut cs = cs:new(20)
+    cs.add("alias ")
+    cs.add(name)
+    cs.add(" is already defined")
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, txt:csUnwrap(cs)))
+    errors.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, cs:unwrap(cs)))
 
     return false
   /if
@@ -63,12 +63,12 @@ func resolverCollectDecls(rsv ptr sema:Resolver,
   mut existent = cast<ptr ast:PDecl>(rsv'decls.get(name))
 
   if existent?
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "symbol ")
-    txt:csAppendStr(cs, name)
-    txt:csAppendStr(cs, " defined twice")
+    mut cs = cs:new(20)
+    cs.add("symbol ")
+    cs.add(name)
+    cs.add(" defined twice")
 
-    mut str = txt:csUnwrap(cs)
+    mut str = cs:unwrap(cs)
     errors.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
 
     mem:free(str)

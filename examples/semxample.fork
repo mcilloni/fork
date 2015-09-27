@@ -9,6 +9,7 @@
 
 
 import ast
+import cs
 import kv
 import list
 import map
@@ -19,7 +20,6 @@ import proc
 import sema
 import synt
 import tty
-import txt
 import utils
 
 
@@ -124,10 +124,10 @@ entry
 
     tty:out(" :: ")
 
-    mut cs = txt:csNew(10)
+    mut cs = cs:new(10)
     ast:typeSummarize(cs, dinfo'type)
 
-    mut des = txt:csUnwrap(cs)
+    mut des = cs:unwrap(cs)
 
     tty:outln(des)
 

@@ -12,6 +12,7 @@ module lex
 
 
 import ast
+import cs
 import err
 import file
 import io
@@ -137,35 +138,35 @@ func lexExtractString(lex ptr lex:Lexer) ptr lex:StringTok
   mut ch = nextChar(lex) #discard the `"`
   mut begin = ch'pos
 
-  mut cs = txt:csNew(10) #just a magic number here
+  mut cs = cs:new(10) #just a magic number here
   #an STX is added at the beginning, indicating that the content is not a token but a whole string.
-  txt:csAppend(cs, STX)
+  cs.addChar(STX)
 
   mut escape = false
 
   while not lex:lexerEof(lex) and utils:charCanBeInString(lex'peek, escape)
     ch = nextChar(lex)
     if ch'ch == 0
-      txt:csFree(cs)
+      cs:free(cs)
       return null
     /if
 
     if not escape and ch'ch == 92 # `\\`
       escape = true
     else
-      txt:csAppend(cs, applyEscape(ch'ch, escape))
+      cs.addChar(applyEscape(ch'ch, escape))
       escape = false
     /if
   /while
 
   if lex:lexerEof(lex)
-    txt:csFree(cs)
+    cs:free(cs)
     lex'error = lex:errorLex(lex, "unexpected EOF in string body")
     return null
   /if
 
   if (ch = nextChar(lex))'ch != 34 # `"`
-    txt:csFree(cs)
+    cs:free(cs)
     mut got [2] uint8
     got[0] = ch'ch
     got[1] = 0 # `\0` c string terminator
@@ -174,12 +175,12 @@ func lexExtractString(lex ptr lex:Lexer) ptr lex:StringTok
     return null
   /if
 
-  return strtokNew(txt:csUnwrap(cs), lex'lineno'lineno, begin, ch'pos)
+  return strtokNew(cs:unwrap(cs), lex'lineno'lineno, begin, ch'pos)
 /func
 
 
 func lexExtractSym(lex ptr lex:Lexer) ptr lex:StringTok
-  mut cs = txt:csNew(10) #magic number
+  mut cs = cs:new(10) #magic number
   mut i uintptr = 0
   mut ch Char
   mut first = true
@@ -188,7 +189,7 @@ func lexExtractSym(lex ptr lex:Lexer) ptr lex:StringTok
   while not lex:lexerEof(lex) and utils:charIsSym(lex'peek) and i < 2
     ch = nextChar(lex)
     if ch'ch == 0
-      txt:csFree(cs)
+      cs:free(cs)
       return null
     /if
 
@@ -197,15 +198,15 @@ func lexExtractSym(lex ptr lex:Lexer) ptr lex:StringTok
       first = false
     /if
 
-    txt:csAppend(cs, ch'ch)
+    cs.addChar(ch'ch)
   /while
 
-  return strtokNew(txt:csUnwrap(cs), lex'lineno'lineno, begin, ch'pos)
+  return strtokNew(cs:unwrap(cs), lex'lineno'lineno, begin, ch'pos)
 /func
 
 
 func lexHandleId(lex ptr lex:Lexer) ptr lex:StringTok
-  mut cs = txt:csNew(10) #magic number
+  mut cs = cs:new(10) #magic number
   mut ch Char
   mut begin uintptr
   mut first = true
@@ -213,7 +214,7 @@ func lexHandleId(lex ptr lex:Lexer) ptr lex:StringTok
   while utils:charIsIdVal(lex'peek)
     ch = nextChar(lex)
     if ch'ch == 0
-      txt:csFree(cs)
+      cs:free(cs)
       return null
     /if
 
@@ -222,10 +223,10 @@ func lexHandleId(lex ptr lex:Lexer) ptr lex:StringTok
       first = false
     /if
 
-    txt:csAppend(cs, ch'ch)
+    cs.addChar(ch'ch)
   /while
 
-  return strtokNew(txt:csUnwrap(cs), lex'lineno'lineno, begin, ch'pos)
+  return strtokNew(cs:unwrap(cs), lex'lineno'lineno, begin, ch'pos)
 /func
 
 

@@ -14,13 +14,6 @@ module txt
 import err
 
 
-# charstash structure
-alias Charstash struct (
-  base, work ptr uint8,
-  len, cap uintptr
-)
-
-
 alias Tokenizer struct (
   str ptr uint8,
   strlen uintptr,
@@ -42,24 +35,6 @@ decl func strlen(str ptr uint8) uintptr
 decl func strncpy(dest ptr uint8, source ptr uint8, cap uintptr) ptr uint8
 decl func strreverse(str ptr uint8, len uintptr)
 decl func strtonum(str ptr uint8) intptr
-
-
-# charstash functions
-decl func csAppend(cs ptr Charstash, ch uint8) ptr Charstash
-decl func csAppendInt(cs ptr Charstash, num uintptr) ptr Charstash
-decl func csAppendLine(cs ptr Charstash, str ptr uint8) ptr Charstash
-decl func csAppendStr(cs ptr Charstash, str ptr uint8) ptr Charstash
-decl func csAppendWord(cs ptr Charstash, str ptr uint8) ptr Charstash
-decl func csPrepend(cs ptr Charstash, ch uint8) ptr Charstash
-decl func csPrependInt(cs ptr Charstash, num uintptr) ptr Charstash
-decl func csPrependLine(cs ptr Charstash, str ptr uint8) ptr Charstash
-decl func csPrependStr(cs ptr Charstash, str ptr uint8) ptr Charstash
-decl func csPrependWord(cs ptr Charstash, str ptr uint8) ptr Charstash
-
-decl func csFree(cs ptr Charstash)
-decl func csLen(cs ptr Charstash) uintptr
-decl func csNew(cap uintptr) ptr Charstash
-decl func csUnwrap(cs ptr Charstash) ptr uint8
 
 
 #tokenizer functions

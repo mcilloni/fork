@@ -12,6 +12,7 @@ module utils
 
 
 import ast
+import cs
 import err
 import lex
 import list
@@ -115,10 +116,10 @@ func listContains(list ptr list:List, value ptr uint8) bool
 /func
 
 
-func listDumpHierarchyIntoCS(list ptr list:List, cs ptr txt:Charstash)
+func listDumpHierarchyIntoCS(list ptr list:List, cs ptr cs:Charstash)
   mut len = list.len()
 
-  txt:csAppendStr(cs, "(")
+  cs.add("(")
 
   if len > 1
 
@@ -127,15 +128,15 @@ func listDumpHierarchyIntoCS(list ptr list:List, cs ptr txt:Charstash)
     while i > 0
       i--
 
-      txt:csAppendStr(cs, cast<ptr uint8>(val list.get(i)))
+      cs.add(cast<ptr uint8>(val list.get(i)))
 
-      txt:csAppendStr(cs, " => ")
+      cs.add(" => ")
     /while
 
-    txt:csAppendStr(cs, cast<ptr uint8>(val list.get(len - 1)))
+    cs.add(cast<ptr uint8>(val list.get(len - 1)))
   else
-    txt:csAppendStr(cs, "alias of itself")
+    cs.add("alias of itself")
   /if
 
-  txt:csAppendStr(cs, ")")
+  cs.add(")")
 /func

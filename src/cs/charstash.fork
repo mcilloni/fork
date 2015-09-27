@@ -1,0 +1,169 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module cs
+
+
+import cs
+import mem
+import txt
+
+
+# charstash init/deinit functions
+
+func free(cs ptr cs:Charstash)
+  if cs?
+    mem:free(cs'base)
+    mem:free(cs)
+  /if
+/func
+
+
+func new(cap uintptr) ptr cs:Charstash
+  mut cs = cast<ptr cs:Charstash>(mem:zalloc(size(cs:Charstash)))
+
+  cs'work = cs'base = cast<ptr uint8>(mem:alloc(cap))
+  cs'cap = cap
+
+  return cs
+/func
+
+
+func unwrap(cs ptr cs:Charstash) ptr uint8
+  cs.addChar(0)
+
+  mut ret = cs'base
+  mem:free(cs)
+
+  return ret
+/func
+
+
+# charstash methods
+
+method cs:Charstash.add(str ptr uint8) ptr cs:Charstash
+  while val str != 0
+    me.addChar(val str)
+    str++
+  /while
+
+  return me
+/method
+
+
+method cs:Charstash.addChar(ch uint8) ptr cs:Charstash
+  if me.len() == me'cap
+    me.enlarge(0, 10)
+  /if
+
+  val me'work = ch
+  me'len++
+  me'work++
+
+  return me
+/method
+
+
+method cs:Charstash.addInt(num uintptr) ptr cs:Charstash
+  mut buf [20] int8
+
+  txt:numtostr(num, ptr buf[0], 20)
+
+  me.add(ptr buf[0])
+
+  return me
+/method
+
+
+method cs:Charstash.addLine(str ptr uint8) ptr cs:Charstash
+  me.add(str)
+  me.add("\n")
+
+  return me
+/method
+
+
+method cs:Charstash.addWord(str ptr uint8) ptr cs:Charstash
+  me.add(str)
+  me.addChar(32)
+
+  return me
+/method
+
+
+method cs:Charstash.enlarge(offset,inc uintptr)
+  me'cap = me'cap + inc
+  mut new = cast<ptr uint8>(mem:alloc(me'cap))
+  mem:move(new + offset, me'base, me'len)
+  mem:free(me'base)
+  me'base = new
+  me'work = me'base + me'len + offset
+/method
+
+
+method cs:Charstash.len() uintptr
+  return me'len
+/method
+
+
+method cs:Charstash.prepend(str ptr uint8) ptr cs:Charstash
+  mut slen = txt:strlen(str)
+
+  if me'len + slen >= me'cap
+    me.enlarge(slen, slen > 10 => slen || 10)
+    me'len = me'len + slen
+  else
+    mem:move(me'base + slen, me'base, me'len)
+    me'len = me'len + slen
+    me'work = me'base + me'len
+  /if
+
+  mem:copy(me'base, str, slen)
+
+  return me
+/method
+
+
+method cs:Charstash.prependChar(ch uint8) ptr cs:Charstash
+  mut buf [2] uint8
+  buf[0] = ch
+  buf[1] = 0
+
+  me.prepend(ptr buf[0])
+
+  return me
+/method
+
+
+method cs:Charstash.prependInt(num uintptr) ptr cs:Charstash
+  mut buf [20] int8
+
+  txt:numtostr(num, ptr buf[0], 20)
+
+  me.prepend(ptr buf[0])
+
+  return me
+/method
+
+
+method cs:Charstash.prependLine(str ptr uint8) ptr cs:Charstash
+  me.prepend(str)
+  me.prepend("\n")
+
+  return me
+/method
+
+
+method cs:Charstash.prependWord(str ptr uint8) ptr cs:Charstash
+  me.prepend(str)
+  me.prependChar(32)
+
+  return me
+/method

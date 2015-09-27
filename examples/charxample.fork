@@ -8,27 +8,28 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
+import cs
 import mem
 import tty
 import txt
 
 
 entry
-  mut cs = txt:csNew(10)
+  mut cs = cs:new(10)
   mut i uint16 = 0
 
   while i < 10000
-    txt:csAppend(cs, 90)
+    cs.addChar(90)
     i++
   /while
 
-  txt:csAppend(cs, 32)
-  txt:csAppendInt(cs, 150)
-  txt:csAppend(cs, 32)
-  txt:csAppendInt(cs, 10000)
+  cs.addChar(32)
+  cs.addInt(150)
+  cs.addChar(32)
+  cs.addInt(10000)
 
-  mut len = txt:csLen(cs)
-  mut str = txt:csUnwrap(cs)
+  mut len = cs.len()
+  mut str = cs:unwrap(cs)
 
   tty:outln(str)
   tty:out("strlen == ")

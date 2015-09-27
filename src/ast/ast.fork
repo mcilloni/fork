@@ -13,6 +13,7 @@ module ast
 
 import ast
 import astfn
+import cs
 import hash
 import lex
 import list
@@ -22,20 +23,20 @@ import utils
 
 
 func methodKey(typeModule,typeName,methodName ptr uint8) ptr uint8
-  mut cs = txt:csNew(10)
+  mut cs = cs:new(10)
 
   if typeModule != null
-    txt:csAppendStr(cs, typeModule)
-    txt:csAppendStr(cs, ":")
+    cs.add(typeModule)
+    cs.add(":")
   /if
 
-  txt:csAppendStr(cs, typeName)
+  cs.add(typeName)
 
-  txt:csAppendStr(cs, ".")
+  cs.add(".")
 
-  txt:csAppendStr(cs, methodName)
+  cs.add(methodName)
 
-  return txt:csUnwrap(cs)
+  return cs:unwrap(cs)
 /func
 
 

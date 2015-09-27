@@ -41,6 +41,7 @@ all:
 	$(MAKE) -C file
 	$(MAKE) -C txt
 	$(MAKE) -C tty
+	$(MAKE) -C cs
 	$(MAKE) -C pair
 	$(MAKE) -C vect
 	$(MAKE) -C list

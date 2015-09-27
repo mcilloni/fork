@@ -11,6 +11,7 @@
 module txt
 
 
+import cs
 import mem
 import txt
 
@@ -97,13 +98,13 @@ func numtostr(num uintptr, buf ptr uint8, len uintptr) ptr uint8
 
 
 func strglue(strs ptr ptr uint8) ptr uint8
-  mut cs = txt:csNew(10)
+  mut cs = cs:new(10)
   while val strs != null
-    txt:csAppendStr(cs, val strs)
+    cs.add(val strs)
     strs++
   /while
 
-  return txt:csUnwrap(cs)
+  return cs:unwrap(cs)
 /func
 
 

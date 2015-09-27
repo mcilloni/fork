@@ -8,20 +8,21 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
+import cs
 import mem
 import tty
 import txt
 
 
 entry
-  mut cs = txt:csNew(20)
-  txt:csPrependStr(cs, "worksnot ")
+  mut cs = cs:new(20)
+  cs.prepend("works! ")
   tty:outln(cs'base)
-  txt:csPrependStr(cs, "actually ")
+  cs.prepend("actually ")
   tty:outln(cs'base)
-  txt:csPrependStr(cs, "This ")
+  cs.prepend("This ")
 
-  mut str = txt:csUnwrap(cs)
+  mut str = cs:unwrap(cs)
   tty:outln(str)
   mem:free(str)
 /entry

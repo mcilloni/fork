@@ -13,6 +13,7 @@ module sema
 
 import ast
 import astfn
+import cs
 import kv
 import list
 import mem
@@ -61,19 +62,19 @@ func ensureMethodCorrectness(rsv sema:Resolver,
     /if
 
     if type == null
-      mut cs = txt:csNew(20)
+      mut cs = cs:new(20)
 
-      txt:csAppendStr(cs, "type ")
+      cs.add("type ")
 
       if pdecl'methodTypeModule != null
-        txt:csAppendStr(cs, pdecl'methodTypeModule)
-        txt:csAppendStr(cs, ":")
+        cs.add(pdecl'methodTypeModule)
+        cs.add(":")
       /if
 
-      txt:csAppendStr(cs, pdecl'methodType)
-      txt:csAppendStr(cs, " is undefined")
+      cs.add(pdecl'methodType)
+      cs.add(" is undefined")
 
-      mut msg = txt:csUnwrap(cs)
+      mut msg = cs:unwrap(cs)
 
       errors.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, rsv'root'fileName, msg))
 
@@ -147,14 +148,14 @@ func validateDecl(rsv sema:Resolver,
 
     if type != null
       if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pdecl), type, exprType)
-        mut cs = txt:csNew(20)
-        txt:csAppendStr(cs, "cannot assign an expression of type '")
+        mut cs = cs:new(20)
+        cs.add("cannot assign an expression of type '")
         ast:typeSummarize(cs, exprType)
-        txt:csAppendStr(cs, "' to a variable declared as '")
+        cs.add("' to a variable declared as '")
         ast:typeSummarize(cs, type)
-        txt:csAppendStr(cs, "'")
+        cs.add("'")
 
-        mut msg = txt:csUnwrap(cs)
+        mut msg = cs:unwrap(cs)
 
         errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
 
@@ -222,12 +223,12 @@ func validateIf(rsv sema:Resolver,
   /if
 
   if not ast:typeIsBool(condType)
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "expected a boolean expression, got type '")
+    mut cs = cs:new(20)
+    cs.add("expected a boolean expression, got type '")
     ast:typeSummarize(cs, condType)
-    txt:csAppendStr(cs, "' instead")
+    cs.add("' instead")
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
 
@@ -288,12 +289,12 @@ func validateReturn(rsv sema:Resolver,
   mut funcRetTypeEmpty = funcInfo'type'retType == null or funcInfo'type'retType'type == ast:TYPE_EMPTY
 
   if not hasRetExpr and not funcRetTypeEmpty
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "function '")
-    txt:csAppendStr(cs, funcInfo'name)
-    txt:csAppendStr(cs, "' has a return value, but no expression is given to return")
+    mut cs = cs:new(20)
+    cs.add("function '")
+    cs.add(funcInfo'name)
+    cs.add("' has a return value, but no expression is given to return")
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, stmt'begin, rsv'root'fileName, msg))
 
@@ -303,12 +304,12 @@ func validateReturn(rsv sema:Resolver,
   /if
 
   if hasRetExpr and funcRetTypeEmpty
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "function '")
-    txt:csAppendStr(cs, funcInfo'name)
-    txt:csAppendStr(cs, "' has no return value, but an expression is given to return")
+    mut cs = cs:new(20)
+    cs.add("function '")
+    cs.add(funcInfo'name)
+    cs.add("' has no return value, but an expression is given to return")
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, stmt'begin, rsv'root'fileName, msg))
 
@@ -327,16 +328,16 @@ func validateReturn(rsv sema:Resolver,
     /if
 
     if not sema:typeIsAssignable(rsv'ctx, stmt, retType, exprType)
-      mut cs = txt:csNew(20)
-      txt:csAppendStr(cs, "cannot return type '")
+      mut cs = cs:new(20)
+      cs.add("cannot return type '")
       ast:typeSummarize(cs, exprType)
-      txt:csAppendStr(cs, "' from function ")
-      txt:csAppendStr(cs, funcInfo'name)
-      txt:csAppendStr(cs, "(), returning '")
+      cs.add("' from function ")
+      cs.add(funcInfo'name)
+      cs.add("(), returning '")
       ast:typeSummarize(cs, retType)
-      txt:csAppendStr(cs, "'")
+      cs.add("'")
 
-      mut msg = txt:csUnwrap(cs)
+      mut msg = cs:unwrap(cs)
 
       errors.append(parser:issueNew(parser:ISSUE_ERR, stmt'begin, rsv'root'fileName, msg))
 
@@ -401,12 +402,12 @@ func validateWhile(rsv sema:Resolver,
   /if
 
   if not ast:typeIsBool(condType)
-    mut cs = txt:csNew(20)
-    txt:csAppendStr(cs, "expected a boolean expression, got type '")
+    mut cs = cs:new(20)
+    cs.add("expected a boolean expression, got type '")
     ast:typeSummarize(cs, condType)
-    txt:csAppendStr(cs, "' instead")
+    cs.add("' instead")
 
-    mut msg = txt:csUnwrap(cs)
+    mut msg = cs:unwrap(cs)
 
     errors.append(parser:issueNew(parser:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
 
