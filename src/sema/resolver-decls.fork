@@ -149,6 +149,13 @@ func registerDeclReal(rsv sema:Resolver,
 
         mut pexpr = cast<ptr ast:PExpr>(val pdecl'node'leaves.get(0))
 
+        if not sema:exprIsCompileConst(pexpr)
+          mut msg = "expression is not a compile time constant"
+
+          errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                                          rsv'root'fileName, msg))
+        /if
+
         # if we're are validating the declaration directly and not because of
         # recursive resolution, or if we still have no type, resolve the
         # expression associated with this mut (we are also sure we have a mut)

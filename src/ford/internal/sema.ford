@@ -100,3 +100,6 @@ decl func findSymModule(ctx ptr parser:Parser, moduleName, name ptr uint8) ptr a
 decl func typeIsAssignable(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr ast:Type) bool
 decl func typeIsCastable(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr ast:Type) bool
 decl func typeChooseLarger(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr ast:Type) bool
+
+
+decl func exprIsCompileConst(pexpr ptr ast:PExpr) bool

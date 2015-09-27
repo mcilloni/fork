@@ -26,6 +26,40 @@ import txt
 import utils
 
 
+func exprIsCompileConst(expr ptr ast:PExpr) bool
+  if   expr'opType == tokens:NUMBER \
+    or expr'opType == tokens:STRING \
+    or expr'opType == tokens:TRUE \
+    or expr'opType == tokens:FALSE \
+    or expr'opType == tokens:NULL \
+    or expr'opType == tokens:SIZE
+
+    return true
+  /if
+
+  if expr'opType == tokens:PTR
+    mut elem = cast<ptr ast:PExpr>(val expr'node'leaves.get(0))
+
+    return elem'opType == tokens:ID or elem'opType == tokens:COLON
+  /if
+
+  if ttypeIsUnary(expr'opType)
+    mut elem = cast<ptr ast:PExpr>(val expr'node'leaves.get(0))
+
+    return exprIsCompileConst(elem)
+  /if
+
+  if ttypeIsBinary(expr'opType)
+    mut left = cast<ptr ast:PExpr>(val expr'node'leaves.get(0))
+    mut right = cast<ptr ast:PExpr>(val expr'node'leaves.get(1))
+
+    return exprIsCompileConst(left) and exprIsCompileConst(right)
+  /if
+
+  return false
+/func
+
+
 func ttypeOpCanDoPtrArith(tt uint16) bool
   return tt == tokens:PLUS or tt == tokens:MINUS or tt == tokens:INC or tt == tokens:DEC
 /func
