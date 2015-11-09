@@ -20,12 +20,11 @@ import pair
 import txt
 
 
-func ctransGenDecls(tr ptr ctrans:Transl,
-                    root ptr ast:PRoot)
+method ctrans:Transl.genDecls(root ptr ast:PRoot)
 
   mut len = root'node'node'leaves.len()
   mut i uintptr = 0
-  mut moduleName ptr uint8 = (root'moduleName != null) => root'moduleName'name || null
+  mut moduleName ptr uint8 = root'moduleName? => root'moduleName'name || null
 
   while i < len
     mut child = cast<ptr ast:PDecl>(val root'node'node'leaves.get(i))
@@ -38,20 +37,20 @@ func ctransGenDecls(tr ptr ctrans:Transl,
 
       mem:free(key)
 
-      mut wantsModName = tr'header or not child'isDecl
+      mut wantsModName = me'header or not child'isDecl
 
-      mut sym = ctrans:translGenSym(wantsModName => moduleName || null, child, dinfo)
+      mut sym = ctrans:translSym(wantsModName => moduleName || null, child, dinfo)
 
-      ctrans:translExtern(tr, sym)
+      me.extern(sym)
 
       if not child'isDecl
         if child'node'type == ast:PMUT
           mut expr = child'node'leaves.get(0)
 
-          ctrans:translGlobVar(tr, sym, root, expr != null => cast<ptr ast:PExpr>(val expr) || null)
+          me.globVar(sym, root, expr? => cast<ptr ast:PExpr>(val expr) || null)
         else
           if child'node'type == ast:PFUNCTION or child'node'type == ast:PMETHOD
-            ctrans:translFunc(tr, root, root'fileName, sym, child)
+            me.function(root, root'fileName, sym, child)
           /if
         /if
       /if
@@ -62,11 +61,10 @@ func ctransGenDecls(tr ptr ctrans:Transl,
 
     i++
   /while
-/func
+/method
 
 
-func ctransGenImports(tr ptr ctrans:Transl,
-                      root ptr ast:PRoot)
+method ctrans:Transl.genImports(root ptr ast:PRoot)
 
   mut i uintptr = 0
   mut len = root'imports.len()
@@ -74,15 +72,14 @@ func ctransGenImports(tr ptr ctrans:Transl,
   while i < len
     mut impdef = cast<ptr ast:StringDef>(val root'imports.get(i))
 
-    ctrans:translFordInc(tr, impdef'name)
+    me.includeFord(impdef'name)
 
     i++
   /while
-/func
+/method
 
 
-func ctransGenTypedefs(tr ptr ctrans:Transl,
-                       root ptr ast:PRoot)
+method ctrans:Transl.genTypedefs(root ptr ast:PRoot)
 
   mut als = root'aliases'syms
 
@@ -94,22 +91,21 @@ func ctransGenTypedefs(tr ptr ctrans:Transl,
     mut name = cast<ptr uint8>(pair'key)
     mut type = cast<ptr ast:DeclInfo>(pair'value)'type
 
-    ctrans:translTypedef(tr, name, type)
+    me.typedef(name, type)
 
     i++
   /while
-/func
+/method
 
 
 # if ford is true, than emit include guards.
-func ctransTranslate(tr ptr ctrans:Transl,
-                     root ptr ast:PRoot)
+method ctrans:Transl.translate(root ptr ast:PRoot)
 
-  ctransGenImports(tr, root)
-  ctransGenTypedefs(tr, root)
-  ctransGenDecls(tr, root)
+  me.genImports(root)
+  me.genTypedefs(root)
+  me.genDecls(root)
 
-  if root'entryNode != null
-    ctrans:ctransGenEntry(tr, root)
+  if root'entryNode?
+    me.forkmain(root)
   /if
-/func
+/method

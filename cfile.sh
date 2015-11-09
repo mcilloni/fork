@@ -2,27 +2,28 @@
 
 
 ROOTDIR="$(cd $(dirname $0); pwd)"
+cd $ROOTDIR
 
-echo "Removing existent files (ctrans)"
-rm -f $ROOTDIR/forkc1.{c,i}
-rm -f $ROOTDIR/libfork-c.c
-rm -f $ROOTDIR/cbuild-*.txz
+echo "Cleaning up..."
+rm -f cbuild-*.txz
+rm -rf cbuild/
 
 echo "Compiling libfork..."
-if ! sh $ROOTDIR/libfork/cfile.sh
+if ! sh libfork/cfile.sh
 then
   exit 1
 fi
 
-cp libfork/libfork.c forkc1.c
-cp libfork/libfork-c.c .
+mkdir cbuild
+cp libfork/libfork.c cbuild/forkc1.c
+cp libfork/libfork-c.c cbuild
 
-for FILE in $(find $ROOTDIR/src/ -name '*.fork')
+for FILE in $(find src/ -name '*.fork')
 do
 
   echo "Adding $FILE..."
 
-  if ! env FORDPATHS="$ROOTDIR/libfork/build/ford/":"$ROOTDIR/build/ford/" forkc1 "$FILE" >> forkc1.c
+  if ! env FORDPATHS="$ROOTDIR/libfork/build/ford/":"$ROOTDIR/build/ford/" forkc1 "$FILE" >> cbuild/forkc1.c
   then
     exit $?
   fi
@@ -30,7 +31,14 @@ do
 done
 
 echo "Preprocessing..."
-cpp -I$ROOTDIR/build/include/ -I$ROOTDIR/libfork/build/include/ forkc1.c >> forkc1.i
+cpp -I$ROOTDIR/build/include/ -I$ROOTDIR/libfork/build/include/ cbuild/forkc1.c >> cbuild/forkc1.i
+
+cp build/{forkc,fordc,forkl} cbuild
+pushd cbuild
 
 echo "Tarballing..."
-tar cf - $ROOTDIR/forkc1.i $ROOTDIR/libfork-c.c $ROOTDIR/build/{forkc,fordc,forkl} | xz -9e > $ROOTDIR/cbuild-$(date +%s).txz
+tar cf - * | xz -9e > $ROOTDIR/cbuild-$(date +%s).txz
+
+popd
+
+rm -r cbuild

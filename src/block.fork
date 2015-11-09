@@ -1,0 +1,299 @@
+#  ctrans, Fork to C transpiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ctrans
+
+
+import ast
+import cs
+import ctrans
+import list
+import mem
+import txt
+
+
+
+# LineStr functions
+func lsFree(ls ptr ctrans:LineStr)
+  mem:free(ls'str)
+  mem:free(ls)
+/func
+
+
+func lsNew(line ast:Line, str ptr uint8) ptr ctrans:LineStr
+  mut ls = cast<ptr ctrans:LineStr>(mem:alloc(size(ctrans:LineStr)))
+
+  ls'line = line
+  ls'str = str
+
+  return ls
+/func
+
+
+# Block functions
+func blNew(cnt ptr uintptr) ctrans:Block
+  mut ret ctrans:Block
+
+  ret'decls = list:new()
+  ret'vars = list:new()
+  ret'stmts = list:new()
+  ret'cnt = cnt
+
+  return ret
+/func
+
+
+method ctrans:Block.declaration(root ptr ast:PRoot,
+                                block ptr ast:PBlock,
+                                stmt ptr ast:PNode)
+
+  mut isMut = stmt'type == ast:PMUT
+  mut pdecl = cast<ptr ast:PDecl>(stmt)
+  mut sym = cs:new(20)
+  mut type = ast:stabTypeof(block'syms, pdecl'sym'name)
+  mut methodType ptr uint8 = null
+
+  if stmt'type == ast:PMETHOD
+    methodType = ctrans:symMod(pdecl'methodTypeModule, pdecl'methodType)
+  /if
+
+  sym.genCsym(methodType, null, pdecl'sym'name, type, false)
+
+  mut ls = lsNew(stmt'begin,cs:unwrap(sym))
+
+  (isMut => me'vars || me'decls).append(ls)
+
+  if isMut and stmt'leaves.len() > 0
+    mut expr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
+    mut cs = cs:new(30)
+
+    cs.add(pdecl'sym'name)
+    cs.add(" = ")
+
+    ctrans:translExpr(cs, root, expr)
+
+    me'stmts.append(lsNew(expr'node'begin, cs:unwrap(cs)))
+  /if
+/method
+
+
+# Deinits the block.
+method ctrans:Block.dumpInCs(cs ptr cs:Charstash, fname ptr uint8, p uintptr)
+  mut i uintptr = 0
+  mut dLen = me'decls.len()
+
+  while i < dLen
+    mut dcl = cast<ptr ctrans:LineStr>(val me'decls.get(i))
+
+    cs.addDebugLine(fname, dcl'line'line, p)
+
+    cs.addPad(p)
+
+    cs.addWord("extern")
+    cs.add(dcl'str)
+    cs.addLine(";")
+
+    ctrans:lsFree(dcl)
+
+    i++
+  /while
+
+  mut vLen = me'vars.len()
+
+  i = 0
+
+  while i < vLen
+    mut var = cast<ptr ctrans:LineStr>(val me'vars.get(i))
+
+    cs.addDebugLine(fname, var'line'line, p)
+
+    cs.addPad(p)
+
+    cs.add(var'str)
+    cs.addLine(";")
+
+    lsFree(var)
+
+    i++
+  /while
+
+  if dLen + vLen > 0
+    cs.addLine("\n")
+  /if
+
+  mut sLen = me'stmts.len()
+
+  i = 0
+
+  while i < sLen
+    mut stmt = cast<ptr ctrans:LineStr>(val me'stmts.get(i))
+
+    cs.addDebugLine(fname, stmt'line'line, p)
+
+    cs.addPad(p)
+
+    cs.add(stmt'str)
+    cs.addLine(";")
+
+    lsFree(stmt)
+
+    i++
+  /while
+
+  list:free(me'decls)
+  list:free(me'vars)
+  list:free(me'stmts)
+/method
+
+
+method ctrans:Block.ifblock(stmt ptr ast:PNode,
+                            root ptr ast:PRoot,
+                            fname ptr uint8,
+                            p uintptr)
+
+  mut cs = cs:new(100)
+
+  cs.add("if (")
+
+  mut pexpr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
+
+  ctrans:translExpr(cs, root, pexpr)
+
+  cs.addWord(")")
+
+  mut block = cast<ptr ast:PBlock>(val stmt'leaves.get(1))
+
+  translBlock(cs, me'cnt, root, block, fname, p + 2)
+
+  if stmt'type == ast:PIFELSE
+    cs.add(" else ")
+
+    block = cast<ptr ast:PBlock>(val stmt'leaves.get(2))
+
+    translBlock(cs, me'cnt, root, block, fname, p + 2)
+  /if
+
+  me'stmts.append(lsNew(stmt'begin, cs:unwrap(cs)))
+/method
+
+
+method ctrans:Block.returnstmt(stmt ptr ast:PNode, root ptr ast:PRoot)
+  mut cs = cs:new(30)
+
+  cs.add("return")
+
+  mut expr = stmt'leaves.get(0)
+
+  if expr != null
+    cs.addChar(32)
+    ctrans:translExpr(cs, root, cast<ptr ast:PExpr>(val expr))
+  /if
+
+  me'stmts.append(lsNew(stmt'begin, cs:unwrap(cs)))
+/method
+
+
+method ctrans:Block.statement(root ptr ast:PRoot,
+                              block ptr ast:PBlock,
+                              stmt ptr ast:PNode,
+                              fname ptr uint8,
+                              p uintptr)
+
+  if stmt'type == ast:PIF or stmt'type == ast:PIFELSE
+    me.ifblock(stmt, root, fname, p)
+  else
+
+    if    stmt'type == ast:PMUT \
+       or stmt'type == ast:PFUNCTION \
+       or stmt'type == ast:PMETHOD
+
+      me.declaration(root, block, stmt)
+    else
+      if stmt'type == ast:PWHILE
+        me.whileblock(stmt, root, fname, p)
+      else
+        if stmt'type == ast:PCONTINUE
+          me'stmts.append(lsNew(stmt'begin, txt:strclone("continue")))
+        else
+          if stmt'type == ast:PBREAK
+            me'stmts.append(lsNew(stmt'begin, txt:strclone("break")))
+          else
+            if stmt'type == ast:PRETURN
+              me.returnstmt(stmt, root)
+            else
+              if stmt'type == ast:PEXPR
+                mut cs = cs:new(30)
+
+                ctrans:translExpr(cs, root, cast<ptr ast:PExpr>(stmt))
+
+                me'stmts.append(lsNew(stmt'begin, cs:unwrap(cs)))
+              /if
+            /if
+          /if
+        /if
+      /if
+    /if
+  /if
+/method
+
+
+method ctrans:Block.whileblock(stmt ptr ast:PNode,
+                               root ptr ast:PRoot,
+                               fname ptr uint8,
+                               p uintptr)
+
+  mut cs = cs:new(100)
+
+  cs.add("while (")
+
+  mut pexpr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
+
+  ctrans:translExpr(cs, root, pexpr)
+
+  cs.addWord(")")
+
+  mut block = cast<ptr ast:PBlock>(val stmt'leaves.get(1))
+
+  translBlock(cs, me'cnt, root, block, fname, p + 2)
+
+  me'stmts.append(lsNew(stmt'begin, cs:unwrap(cs)))
+/method
+
+
+func translBlock(cs ptr cs:Charstash,
+                 cnt ptr uintptr,
+                 root ptr ast:PRoot,
+                 block ptr ast:PBlock,
+                 fname ptr uint8,
+                 p uintptr)
+
+  mut origp uintptr = p == 0 => 0 || p - 2
+
+  cs.addLine("{")
+
+  mut bl = blNew(cnt)
+
+  mut bLen = block'node'leaves.len()
+  mut i uintptr = 0
+
+  while i < bLen
+    mut stmt = cast<ptr ast:PNode>(val block'node'leaves.get(i))
+
+    bl.statement(root, block, stmt, fname, p)
+
+    i++
+  /while
+
+  bl.dumpInCs(cs, fname, p)
+
+  cs.addDebugLine(fname, block'node'end'line + 1, origp)
+  cs.addPad(origp)
+  cs.add("}")
+/func

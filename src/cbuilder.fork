@@ -12,32 +12,127 @@ module ctrans
 
 
 import ast
+import cs
 import ctrans
 import err
 import io
-import kv
 import libfork
-import list
 import mem
-import parser
 import proc
 import tokens
 import txt
 import tty
 
 
-func translDump(tr ptr ctrans:Transl, stream ptr io:Stream) ptr err:Error
+func init(tr ptr ctrans:Transl, header bool, name ptr uint8)
+  tr'includes = cs:new(40)
+  tr'typedefs = cs:new(300)
+  tr'externs = cs:new(300)
+  tr'vars = cs:new(300)
+  tr'funcs = cs:new(300)
+
+  tr'header = header
+  tr'modName = name
+/func
+
+
+func nullSafestreq(str1,str2 ptr uint8) bool
+  return (str1? and str2?) => txt:strequals(str1, str2) || str1 == str2
+/func
+
+
+method ctrans:Transl.extern(sym ptr uint8)
+  me'externs.addWord("extern")
+  me'externs.add(sym)
+  me'externs.addLine(";")
+/method
+
+
+func translSym(moduleName ptr uint8, pdecl ptr ast:PDecl, dinfo ptr ast:DeclInfo) ptr uint8
+  mut cs = cs:new(30)
+  mut name = pdecl'sym'name
+
+  # big hack for int main(int argc, char *argv[])
+  if not moduleName? and txt:strequals(name, "main") and dinfo'declType == ast:PFUNCTION
+    cs.add("int main(int argc, char *argv[])")
+  else
+    mut typeName ptr uint8 = null
+
+    if dinfo'declType == ast:PMETHOD
+      typeName = ctrans:symMod(pdecl'methodTypeModule, pdecl'methodType)
+    /if
+
+    cs.genCsym(typeName, moduleName, name, dinfo'type, false)
+
+    mem:free(typeName)
+  /if
+
+  return cs:unwrap(cs)
+/func
+
+
+method ctrans:Transl.function(root ptr ast:PRoot,
+                              fname,sym ptr uint8,
+                              fn ptr ast:PDecl)
+
+  me'funcs.addDebugLine(fname, fn'node'begin'line, 0)
+  me'funcs.addWord(sym)
+
+  mut block = cast<ptr ast:PBlock>(val fn'node'leaves.get(0))
+
+  ctrans:translBlock(me'funcs, ptr me'cnt, root, block, fname, 2)
+
+  me'funcs.addLine("\n")
+/method
+
+
+method ctrans:Transl.forkmain(root ptr ast:PRoot)
+  mut entryN = root'entryNode
+
+  me'funcs.addDebugLine(root'fileName, entryN'node'begin'line, 0)
+  me'funcs.add("void __fork_entry() ")
+
+  mut block = cast<ptr ast:PBlock>(val entryN'node'leaves.get(0))
+
+  ctrans:translBlock(me'funcs, ptr me'cnt, root, block, root'fileName, 2)
+
+  me'funcs.addLine("\n")
+/method
+
+
+method ctrans:Transl.globVar(sym ptr uint8, root ptr ast:PRoot, expr ptr ast:PExpr)
+  me'vars.add(sym)
+
+  if expr?
+    me'vars.add(" = ")
+    ctrans:translExpr(me'vars, root, expr)
+  /if
+
+  me'vars.addLine(";")
+/method
+
+
+method ctrans:Transl.typedef(name ptr uint8, type ptr ast:Type)
+  me'typedefs.addWord("typedef")
+
+  me'typedefs.genCsym(null, me'modName, name, type, true)
+
+  me'typedefs.addLine(";\n")
+/method
+
+
+method ctrans:Transl.dump(stream ptr io:Stream) ptr err:Error
   io:streamWrite(stream, "// generated with ctrans+libfork v")
   io:streamWrite(stream, libfork:VERSION)
   io:streamWrite(stream, "\n\n\n")
 
-  if tr'header
+  if me'header
     io:streamWrite(stream, "#ifndef ford$$")
-    io:streamWrite(stream, tr'modName )
+    io:streamWrite(stream, me'modName )
     io:streamWrite(stream, "_h\n")
 
     io:streamWrite(stream, "#define ford$$")
-    io:streamWrite(stream, tr'modName)
+    io:streamWrite(stream, me'modName)
     io:streamWrite(stream, "_h\n\n\n")
   /if
 
@@ -46,1130 +141,48 @@ func translDump(tr ptr ctrans:Transl, stream ptr io:Stream) ptr err:Error
   #just in case, you know.
   io:streamWrite(stream, "#undef NULL\n\n")
 
-  mut includes = txt:csUnwrap(tr'includes)
+  mut includes = cs:unwrap(me'includes)
   io:streamWrite(stream, includes)
   mem:free(includes)
 
   io:streamWrite(stream, "\n\n")
 
-  mut typedefs = txt:csUnwrap(tr'typedefs)
+  mut typedefs = cs:unwrap(me'typedefs)
   io:streamWrite(stream, typedefs)
   mem:free(typedefs)
 
   io:streamWrite(stream, "\n\n")
 
-  mut externs = txt:csUnwrap(tr'externs)
+  mut externs = cs:unwrap(me'externs)
   io:streamWrite(stream, externs)
   mem:free(externs)
 
   io:streamWrite(stream, "\n\n")
 
-  mut vars = txt:csUnwrap(tr'vars)
+  mut vars = cs:unwrap(me'vars)
   io:streamWrite(stream, vars)
   mem:free(vars)
 
   io:streamWrite(stream, "\n\n")
 
-  mut funcs = txt:csUnwrap(tr'funcs)
+  mut funcs = cs:unwrap(me'funcs)
   io:streamWrite(stream, funcs)
   mem:free(funcs)
 
   io:streamWrite(stream, "\n\n")
 
-  if tr'header
+  if me'header
     io:streamWrite(stream, "\n\n#endif //ford$$")
-    io:streamWrite(stream, tr'modName)
+    io:streamWrite(stream, me'modName)
     io:streamWrite(stream, "_h\n\n")
   /if
 
   return io:streamError(stream)
-/func
+/method
 
 
-func translFordInc(tr ptr ctrans:Transl, fordName ptr uint8)
-  txt:csAppendStr(tr'includes, "#include <ford$$")
-  txt:csAppendStr(tr'includes, fordName)
-  txt:csAppendLine(tr'includes, ".h>")
-/func
-
-
-func translInit(tr ptr ctrans:Transl, header bool, name ptr uint8)
-  tr'includes = txt:csNew(40)
-  tr'typedefs = txt:csNew(300)
-  tr'externs = txt:csNew(300)
-  tr'vars = txt:csNew(300)
-  tr'funcs = txt:csNew(300)
-
-  tr'header = header
-  tr'modName = name
-/func
-
-
-func nullSafestreq(str1,str2 ptr uint8) bool
-  return (str1 != null and str2 != null) => txt:strequals(str1, str2) || str1 == str2
-/func
-
-
-func symMod(cs ptr txt:Charstash, modName,name ptr uint8)
-  if modName != null
-    txt:csAppendStr(cs, modName)
-    txt:csAppendStr(cs, "$")
-  /if
-
-  txt:csAppendStr(cs, name)
-/func
-
-
-func symModRet(modName,name ptr uint8) ptr uint8
-  mut cs = txt:csNew(10)
-
-  symMod(cs, modName, name)
-
-  return txt:csUnwrap(cs)
-/func
-
-
-func methSym(cs ptr txt:Charstash, typeName,name ptr uint8)
-  txt:csAppendStr(cs, typeName)
-  txt:csAppendStr(cs, "$$")
-  txt:csAppendStr(cs, name)
-/func
-
-
-func genSym(cs ptr txt:Charstash, typeName,modName,name ptr uint8)
-  if typeName != null
-    methSym(cs, typeName, name)
-  else
-    symMod(cs, modName, name)
-  /if
-/func
-
-
-
-alias LRStr struct(
-  left,right ptr txt:Charstash
-)
-
-
-func lrNew() LRStr
-  mut ret LRStr
-
-  ret'left  = txt:csNew(20)
-  ret'right = txt:csNew(20)
-
-  return ret
-/func
-
-
-func lrDump(lr LRStr, cs ptr txt:Charstash)
-  mut left = txt:csUnwrap(lr'left)
-  txt:csAppendStr(cs, left)
-  mem:free(left)
-
-  mut right = txt:csUnwrap(lr'right)
-  txt:csAppendStr(cs, right)
-  mem:free(right)
-/func
-
-
-func csymTypeWrap(cs ptr txt:Charstash, type ptr ast:Type)
-  mut lr = lrNew()
-  csymType(lr, null, type, false)
-  lrDump(lr, cs)
-/func
-
-
-func csymFuncType(lr LRStr, methTarget ptr uint8, type ptr ast:Type)
-  csymType(lr, null, type'retType, false)
-
-  mut paramsCs = txt:csNew(30)
-
-  mut i uintptr = 0
-  mut len = type'members.len()
-
-  txt:csAppendStr(paramsCs, "(")
-
-  if methTarget != null
-    txt:csAppendStr(paramsCs, methTarget)
-    txt:csAppendStr(paramsCs, "* me")
-
-    if len > 0
-      txt:csAppendStr(paramsCs, ", ")
-    /if
-  /if
-
-  while i < len
-    if i != 0
-      txt:csAppendWord(paramsCs, ",")
-    /if
-
-    mut pair = type'members.getAt(i)
-    csym(paramsCs, null, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value), false)
-    i++
-  /while
-
-  txt:csAppendStr(paramsCs, ")")
-
-  mut params = txt:csUnwrap(paramsCs)
-
-  txt:csPrependStr(lr'right, params)
-
-  mem:free(params)
-/func
-
-
-func csymPtrArrType(lr LRStr, type ptr ast:Type)
-  mut tofn = type'retType'type == ast:TYPE_FUNC
-
-  csymType(lr, null, type'retType, false)
-
-  if tofn
-    txt:csAppendStr(lr'left, "(")
-  /if
-
-  if type'type == ast:TYPE_PTR
-    txt:csAppendStr(lr'left, "*")
-  /if
-
-  if tofn
-    txt:csPrependStr(lr'right, ")")
-  /if
-
-  if type'type == ast:TYPE_LOC
-    txt:csPrependStr(lr'right, "]")
-    txt:csPrependInt(lr'right, type'itemCount)
-    txt:csPrependStr(lr'right, "[")
-  /if
-/func
-
-
-func csymStructType(cs ptr txt:Charstash, type ptr ast:Type)
-  txt:csAppendWord(cs, "struct")
-
-  if type'name != null
-    symMod(cs, type'moduleName, type'name)
-  /if
-
-  txt:csAppendLine(cs, " {")
-
-  mut i uintptr = 0
-  mut len = type'members.len()
-
-  while i < len
-    mut pair = type'members.getAt(i)
-
-    txt:csAppendStr(cs, "  ")
-    csym(cs, null, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value), false)
-    txt:csAppendLine(cs, ";")
-
-    i++
-  /while
-
-  txt:csAppendStr(cs, "} ")
-/func
-
-
-func csymType(lr LRStr, methTarget ptr uint8, type ptr ast:Type, full bool)
-
-  if type == null or type'type == ast:TYPE_EMPTY
-    txt:csAppendStr(lr'left, "void ")
-    return
-  /if
-
-  if not full and type'name != null and (type'type == ast:TYPE_STRUCT or type'type == ast:TYPE_FUNC)
-    symMod(lr'left, type'moduleName, type'name)
-    txt:csAppendStr(lr'left, " ")
-    return
-  /if
-
-  if type'type == ast:TYPE_BOOL
-    txt:csAppendStr(lr'left, "_Bool ")
-  else
-    if type'type == ast:TYPE_DATA
-      txt:csAppendStr(lr'left, "void *")
-    else
-      if type'type == ast:TYPE_FUNC
-        csymFuncType(lr, methTarget, type)
-      else
-        if type'type == ast:TYPE_INT
-          if not type'isSigned
-            txt:csAppendStr(lr'left, "u")
-          /if
-
-          txt:csAppendStr(lr'left, "int")
-          txt:csAppendInt(lr'left, type'typeSize * 8)
-          txt:csAppendStr(lr'left, "_t ")
-        else
-          if type'type == ast:TYPE_LOC or type'type == ast:TYPE_PTR
-            csymPtrArrType(lr, type)
-          else
-            if type'type == ast:TYPE_NULL
-              tty:errln("UNREACHABLE - TYPE NULL CAN'T BE VALID")
-              proc:abort()
-            else
-              if type'type == ast:TYPE_RECALIAS
-                txt:csAppendStr(lr'left, "struct ")
-                symMod(lr'left, type'moduleName, type'name)
-                txt:csAppendStr(lr'left, " ")
-              else
-                csymStructType(lr'left, type)
-              /if
-            /if
-          /if
-        /if
-      /if
-    /if
-  /if
-/func
-
-
-func csymGen(lr LRStr,
-             typeName,moduleName,name ptr uint8,
-             type ptr ast:Type,
-             tdf bool)
-
-  csymType(lr, typeName, type, tdf)
-
-  genSym(lr'left, typeName, moduleName, name)
-/func
-
-
-func csym(cs ptr txt:Charstash,
-          typeName,moduleName,name ptr uint8,
-          type ptr ast:Type,
-          tdf bool)
-
-  mut lr = lrNew()
-  csymGen(lr, typeName, moduleName, name, type, tdf)
-  lrDump(lr, cs)
-
-/func
-
-
-func translExtern(tr ptr ctrans:Transl, sym ptr uint8)
-  txt:csAppendWord(tr'externs, "extern")
-  txt:csAppendStr(tr'externs, sym)
-  txt:csAppendLine(tr'externs, ";")
-/func
-
-
-func pad(cs ptr txt:Charstash, p uintptr)
-  mut i uintptr = 0
-
-  while i < p
-    txt:csAppend(cs, 32)
-
-    i++
-  /while
-/func
-
-
-func dbgLine(cs ptr txt:Charstash, fname ptr uint8, line,p uintptr)
-  txt:csAppendStr(cs, "\n")
-
-  pad(cs, p)
-
-  txt:csAppendStr(cs, "#line ")
-  txt:csAppendInt(cs, line)
-  txt:csAppendStr(cs, " \"")
-
-  if fname[0] != 47
-    mut pwd = proc:getenv("PWD")
-
-    txt:csAppendStr(cs, pwd)
-    txt:csAppendStr(cs, "/")
-  /if
-
-  txt:csAppendStr(cs, fname)
-  txt:csAppendLine(cs, "\"")
-/func
-
-
-alias BlTrans struct(
-  decls,vars,stmts ptr list:List
-)
-
-
-alias LineStr struct(
-  line ast:Line,
-  str ptr uint8
-)
-
-
-func lsFree(ls ptr LineStr)
-  mem:free(ls'str)
-  mem:free(ls)
-/func
-
-
-func lsNew(line ast:Line, str ptr uint8) ptr LineStr
-  mut ls = cast<ptr LineStr>(mem:alloc(size(LineStr)))
-
-  ls'line = line
-  ls'str = str
-
-  return ls
-/func
-
-
-func blDump(blt BlTrans, cs ptr txt:Charstash, fname ptr uint8, p uintptr)
-  mut i uintptr = 0
-  mut dLen = blt'decls.len()
-
-  while i < dLen
-    mut dcl = cast<ptr LineStr>(val blt'decls.get(i))
-
-    dbgLine(cs, fname, dcl'line'line, p)
-
-    pad(cs, p)
-
-    txt:csAppendWord(cs, "extern")
-    txt:csAppendStr(cs, dcl'str)
-    txt:csAppendLine(cs, ";")
-
-    lsFree(dcl)
-
-    i++
-  /while
-
-  mut vLen = blt'vars.len()
-
-  i = 0
-
-  while i < vLen
-    mut var = cast<ptr LineStr>(val blt'vars.get(i))
-
-    dbgLine(cs, fname, var'line'line, p)
-
-    pad(cs, p)
-
-    txt:csAppendStr(cs, var'str)
-    txt:csAppendLine(cs, ";")
-
-    lsFree(var)
-
-    i++
-  /while
-
-  if dLen + vLen > 0
-    txt:csAppendLine(cs, "\n")
-  /if
-
-  mut sLen = blt'stmts.len()
-
-  i = 0
-
-  while i < sLen
-    mut stmt = cast<ptr LineStr>(val blt'stmts.get(i))
-
-    dbgLine(cs, fname, stmt'line'line, p)
-
-    pad(cs, p)
-
-    txt:csAppendStr(cs, stmt'str)
-    txt:csAppendLine(cs, ";")
-
-    lsFree(stmt)
-
-    i++
-  /while
-
-  list:free(blt'decls)
-  list:free(blt'vars)
-  list:free(blt'stmts)
-/func
-
-
-func blNew() BlTrans
-  mut ret BlTrans
-
-  ret'decls = list:new()
-  ret'vars = list:new()
-  ret'stmts = list:new()
-
-  return ret
-/func
-
-
-func isBinOp(tok uint16) bool
-  return (tok mod 10) < 2
-/func
-
-
-func opConv(tok uint16) ptr uint8
-  if tok == tokens:AMPER or tok == tokens:PTR
-    return "&"
-  /if
-
-  if tok == tokens:AND
-    return "&&"
-  /if
-
-  if tok == tokens:ASSIGN
-    return "="
-  /if
-
-  if tok == tokens:DIFFERENT
-    return "!="
-  /if
-
-  if tok == tokens:DIV
-    return "/"
-  /if
-
-  if tok == tokens:EQUAL
-    return "=="
-  /if
-
-  if tok == tokens:MAJEQ
-    return ">="
-  /if
-
-  if tok == tokens:MAJOR
-    return ">"
-  /if
-
-  if tok == tokens:MINEQ
-    return "<="
-  /if
-
-  if tok == tokens:MINOR
-    return "<"
-  /if
-
-  if tok == tokens:MINUS or tok == tokens:UMINUS
-    return "-"
-  /if
-
-  if tok == tokens:MOD
-    return "%"
-  /if
-
-  if tok == tokens:NOT
-    return "!"
-  /if
-
-  if tok == tokens:OR
-    return "||"
-  /if
-
-  if tok == tokens:PIPE
-    return "|"
-  /if
-
-  if tok == tokens:PLUS
-    return "+"
-  /if
-
-  if tok == tokens:TIMES or tok == tokens:VAL
-    return "*"
-  /if
-
-  if tok == tokens:XOR
-    return "^"
-  /if
-
-  tty:errln("UNREACHABLE")
-  tty:outint(tok)
-  proc:abort()
-
-  return null
-/func
-
-
-func translStringEscape(cs ptr txt:Charstash, str ptr uint8)
-  mut ch uint8 = 0
-
-  while (ch = val str) != 0
-
-    if ch == 7
-      txt:csAppendStr(cs, "\\a")
-    else
-      if ch == 8
-        txt:csAppendStr(cs, "\\b")
-      else
-        if ch == 12
-          txt:csAppendStr(cs, "\\f")
-        else
-          if ch == 10
-            txt:csAppendStr(cs, "\\n")
-          else
-            if ch == 13
-              txt:csAppendStr(cs, "\\r")
-            else
-              if ch == 9
-                txt:csAppendStr(cs, "\\t")
-              else
-                if ch == 11
-                  txt:csAppendStr(cs, "\\v")
-                else
-                  if ch == 92
-                    txt:csAppendStr(cs, "\\\\")
-                  else
-                    if ch == 39
-                      txt:csAppendStr(cs, "\\'")
-                    else
-                      if ch == 34
-                        txt:csAppendStr(cs, "\\\"")
-                      else
-                        if ch == 63
-                          txt:csAppendStr(cs, "\\?")
-                        else
-                          txt:csAppend(cs, ch)
-                        /if
-                      /if
-                    /if
-                  /if
-                /if
-              /if
-            /if
-          /if
-        /if
-      /if
-    /if
-
-    str++
-  /while
-/func
-
-
-func translDotExpr(cs ptr txt:Charstash, pexpr ptr ast:PExpr)
-  mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-  mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
-
-  mut targetType = e1'type
-
-  if ast:typeIsPtr(targetType)
-    targetType = targetType'retType
-  /if
-
-  mut typeName = symModRet(targetType'moduleName, targetType'name)
-  mut methName = cast<ptr uint8>(e2'node'value)
-
-  methSym(cs, typeName, methName)
-
-  mem:free(typeName)
-/func
-
-
-func translExpr(cs ptr txt:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
-
-  mut value = pexpr'node'value
-
-  if pexpr'opType == tokens:NUMBER
-    txt:csAppendInt(cs, value)
-
-    return
-  /if
-
-  if pexpr'opType == tokens:STRING
-    txt:csAppendStr(cs, "\"")
-    translStringEscape(cs, cast<ptr uint8>(value))
-    txt:csAppendStr(cs, "\"")
-
-    return
-  /if
-
-  if pexpr'opType == tokens:ID
-
-    mut name = cast<ptr uint8>(value)
-    mut modName ptr uint8 = root'moduleName != null => root'moduleName'name || null
-    mut fDecl = ast:stabGet(root'node'syms, name)
-
-    if fDecl != null and not fDecl'declOnly and ast:findSym(cast<ptr ast:PNode>(pexpr), name) == fDecl'type
-      symMod(cs, modName, name)
-    else
-      txt:csAppendStr(cs, name)
-    /if
-
-    return
-  /if
-
-  if pexpr'opType == tokens:ME
-    txt:csAppendStr(cs, "me")
-
-    return
-  /if
-
-  if pexpr'opType == tokens:NULL
-    txt:csAppendStr(cs, "(void*) 0")
-
-    return
-  /if
-
-  if pexpr'opType == tokens:TRUE
-    txt:csAppendStr(cs, "1")
-
-    return
-  /if
-
-  if pexpr'opType == tokens:FALSE
-    txt:csAppendStr(cs, "0")
-
-    return
-  /if
-
-  if pexpr'opType == tokens:COLON
-    mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
-    mut name = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
-
-    symMod(cs, modName, name)
-
-    return
-  /if
-
-  if pexpr'opType == tokens:APOS
-    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
-
-    translExpr(cs, root, e1)
-
-    txt:csAppendStr(cs, (e1'type != null and e1'type'type == ast:TYPE_PTR) => "->" || ".")
-
-    txt:csAppendStr(cs, cast<ptr uint8>(e2'node'value))
-
-    return
-  /if
-
-  if pexpr'opType == tokens:SIZE
-      txt:csAppendStr(cs, "sizeof(")
-      csymTypeWrap(cs, pexpr'sizeType)
-      txt:csAppendStr(cs, ")")
-
-      return
-  /if
-
-  if pexpr'opType == tokens:CAST
-    mut expr = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-
-    txt:csAppendStr(cs, "((")
-    csymTypeWrap(cs, pexpr'type)
-    txt:csAppendStr(cs, ") ")
-
-    translExpr(cs, root, expr)
-
-    txt:csAppendStr(cs, ")")
-
-    return
-  /if
-
-  if pexpr'opType == tokens:OPAR
-    mut toCall = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    mut methCall = toCall'opType == tokens:DOT
-
-    if methCall
-      translDotExpr(cs, toCall)
-    else
-      translExpr(cs, root, toCall)
-    /if
-
-    txt:csAppendStr(cs, "(")
-
-    mut len = pexpr'node'leaves.len()
-
-    # add me parameter
-    if methCall
-      mut target = cast<ptr ast:PExpr>(val toCall'node'leaves.get(0))
-      mut notPtr = not ast:typeIsPtr(target'type)
-
-      if notPtr
-        txt:csAppendStr(cs, "&(")
-      /if
-
-      translExpr(cs, root, target)
-
-      if notPtr
-        txt:csAppendStr(cs, ")")
-      /if
-
-      if len > 1
-        txt:csAppendWord(cs, ",")
-      /if
-    /if
-
-    mut i uintptr = 1
-
-    while i < len
-      mut param = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(i))
-
-      if i > 1
-        txt:csAppendWord(cs, ",")
-      /if
-
-      translExpr(cs, root, param)
-      i++
-    /while
-
-    txt:csAppendStr(cs, ")")
-
-    return
-  /if
-
-  if pexpr'opType == tokens:OBRAC
-    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
-
-    txt:csAppendStr(cs, "(")
-
-    translExpr(cs, root, e1)
-
-    txt:csAppendStr(cs, ")[")
-
-    translExpr(cs, root, e2)
-
-    txt:csAppendStr(cs, "]")
-
-    return
-  /if
-
-  if pexpr'opType == tokens:DQUEST
-    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
-
-    # warn: due to constraints, every expression will be evaluated twice.
-    # Please don't use "??" with complex expressions on the left.
-    if e1'opType != tokens:APOS and e1'opType != tokens:ID and e1'opType != tokens:COLON
-      mut msg = "ctrans: unsupported operation - lhs would be evaluated twice"
-      mut issue = parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, root'fileName, msg)
-
-      parser:issueWriteOut(issue, ptr tty:err)
-
-      proc:exit(1)
-    /if
-
-    txt:csAppendStr(cs, "(")
-
-    translExpr(cs, root, e1)
-
-    txt:csAppendStr(cs, " != (void*)0) ? (")
-
-    translExpr(cs, root, e1)
-
-    txt:csAppendStr(cs, ") : (")
-
-    translExpr(cs, root, e2)
-
-    txt:csAppendStr(cs, ")")
-
-    return
-  /if
-
-  if pexpr'opType == tokens:FATARROW
-    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
-    mut e3 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(2))
-
-    txt:csAppendStr(cs, "(")
-
-    translExpr(cs, root, e1)
-
-    txt:csAppendStr(cs, ") ? (")
-
-    translExpr(cs, root, e2)
-
-    txt:csAppendStr(cs, ") : (")
-
-    translExpr(cs, root, e3)
-
-    txt:csAppendStr(cs, ")")
-
-    return
-  /if
-
-  if pexpr'opType == tokens:DEC
-    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    translExpr(cs, root, e)
-
-    txt:csAppendStr(cs, "--")
-
-    return
-  /if
-
-  if pexpr'opType == tokens:INC
-    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    translExpr(cs, root, e)
-
-    txt:csAppendStr(cs, "++")
-
-    return
-  /if
-
-  if pexpr'opType == tokens:QUEST
-    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-
-    txt:csAppendStr(cs, "(")
-    translExpr(cs, root, e)
-
-    txt:csAppendStr(cs, " != (void*) 0)")
-
-    return
-  /if
-
-  if isBinOp(pexpr'opType) or pexpr'opType == tokens:MINUS
-    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
-
-    if pexpr'opType == tokens:POW
-      txt:csAppendStr(cs, "math$__forkpow(")
-      translExpr(cs, root, e1)
-      txt:csAppendStr(cs, ", ")
-      translExpr(cs, root, e2)
-      txt:csAppendStr(cs, ")")
-
-      return
-    /if
-
-    txt:csAppendStr(cs, "(")
-    translExpr(cs, root, e1)
-    txt:csAppend(cs, 32)
-    txt:csAppendStr(cs, opConv(pexpr'opType))
-    txt:csAppend(cs, 32)
-    translExpr(cs, root, e2)
-    txt:csAppendStr(cs, ")")
-
-    return
-  /if
-
-  #assume prefix unary now
-
-  mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-  txt:csAppendStr(cs, opConv(pexpr'opType))
-  txt:csAppendStr(cs, "(")
-  translExpr(cs, root, e)
-  txt:csAppendStr(cs, ")")
-
-/func
-
-
-func translIf(stmt ptr ast:PNode, root ptr ast:PRoot, fname ptr uint8, p uintptr) ptr uint8
-  mut cs = txt:csNew(100)
-
-  txt:csAppendStr(cs, "if (")
-
-  mut pexpr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
-
-  translExpr(cs, root, pexpr)
-
-  txt:csAppendWord(cs, ")")
-
-  mut block = cast<ptr ast:PBlock>(val stmt'leaves.get(1))
-
-  translBlock(cs, root, block, fname, p + 2)
-
-  if stmt'type == ast:PIFELSE
-    txt:csAppendStr(cs, " else ")
-
-    block = cast<ptr ast:PBlock>(val stmt'leaves.get(2))
-
-    translBlock(cs, root, block, fname, p + 2)
-  /if
-
-  return txt:csUnwrap(cs)
-/func
-
-
-func translWhile(stmt ptr ast:PNode, root ptr ast:PRoot, fname ptr uint8, p uintptr) ptr uint8
-  mut cs = txt:csNew(100)
-
-  txt:csAppendStr(cs, "while (")
-
-  mut pexpr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
-
-  translExpr(cs, root, pexpr)
-
-  txt:csAppendWord(cs, ")")
-
-  mut block = cast<ptr ast:PBlock>(val stmt'leaves.get(1))
-
-  translBlock(cs, root, block, fname, p + 2)
-
-  return txt:csUnwrap(cs)
-/func
-
-
-func translDecl(bl BlTrans, root ptr ast:PRoot, block ptr ast:PBlock, stmt ptr ast:PNode)
-  mut isMut = stmt'type == ast:PMUT
-  mut pdecl = cast<ptr ast:PDecl>(stmt)
-  mut sym = txt:csNew(20)
-  mut type = ast:stabTypeof(block'syms, pdecl'sym'name)
-  mut methodType ptr uint8 = null
-
-  if stmt'type == ast:PMETHOD
-    methodType = symModRet(pdecl'methodTypeModule, pdecl'methodType)
-  /if
-
-  csym(sym, methodType, null, pdecl'sym'name, type, false)
-
-  mut ls = lsNew(stmt'begin,txt:csUnwrap(sym))
-
-  (isMut => bl'vars || bl'decls).append(ls)
-
-  if isMut and stmt'leaves.len() > 0
-    mut expr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
-    mut cs = txt:csNew(30)
-
-    txt:csAppendStr(cs, pdecl'sym'name)
-    txt:csAppendStr(cs, " = ")
-
-    translExpr(cs, root, expr)
-
-    bl'stmts.append(lsNew(expr'node'begin, txt:csUnwrap(cs)))
-  /if
-/func
-
-
-func translReturn(stmt ptr ast:PNode, root ptr ast:PRoot) ptr uint8
-  mut cs = txt:csNew(30)
-
-  txt:csAppendStr(cs, "return")
-
-  mut expr = stmt'leaves.get(0)
-
-  if expr != null
-    txt:csAppend(cs, 32)
-    translExpr(cs, root, cast<ptr ast:PExpr>(val expr))
-  /if
-
-  return txt:csUnwrap(cs)
-/func
-
-
-func translStmt(bl BlTrans, root ptr ast:PRoot, block ptr ast:PBlock, stmt ptr ast:PNode, fname ptr uint8, p uintptr)
-
-  if stmt'type == ast:PIF or stmt'type == ast:PIFELSE
-    bl'stmts.append(lsNew(stmt'begin, translIf(stmt, root, fname, p)))
-  else
-    if stmt'type == ast:PMUT or stmt'type == ast:PFUNCTION or stmt'type == ast:PMETHOD
-      translDecl(bl, root, block, stmt)
-    else
-      if stmt'type == ast:PWHILE
-        bl'stmts.append(lsNew(stmt'begin, translWhile(stmt, root, fname, p)))
-      else
-        if stmt'type == ast:PCONTINUE
-          bl'stmts.append(lsNew(stmt'begin, txt:strclone("continue")))
-        else
-          if stmt'type == ast:PBREAK
-            bl'stmts.append(lsNew(stmt'begin, txt:strclone("break")))
-          else
-            if stmt'type == ast:PRETURN
-              bl'stmts.append(lsNew(stmt'begin, translReturn(stmt, root)))
-            else
-              if stmt'type == ast:PEXPR
-                mut cs = txt:csNew(30)
-
-                translExpr(cs, root, cast<ptr ast:PExpr>(stmt))
-
-                bl'stmts.append(lsNew(stmt'begin, txt:csUnwrap(cs)))
-              /if
-            /if
-          /if
-        /if
-      /if
-    /if
-  /if
-/func
-
-
-func translBlock(cs ptr txt:Charstash,
-                 root ptr ast:PRoot,
-                 block ptr ast:PBlock,
-                 fname ptr uint8,
-                 p uintptr)
-
-  mut origp uintptr = p == 0 => 0 || p - 2
-
-  txt:csAppendLine(cs, "{")
-
-  mut bl = blNew()
-
-  mut bLen = block'node'leaves.len()
-  mut i uintptr = 0
-
-  while i < bLen
-    mut stmt = cast<ptr ast:PNode>(val block'node'leaves.get(i))
-
-    translStmt(bl, root, block, stmt, fname, p)
-
-    i++
-  /while
-
-  blDump(bl, cs, fname, p)
-
-  dbgLine(cs, fname, block'node'end'line + 1, origp)
-  pad(cs, origp)
-  txt:csAppendStr(cs, "}")
-/func
-
-
-func translFunc(tr ptr ctrans:Transl,
-                root ptr ast:PRoot,
-                fname,sym ptr uint8,
-                fn ptr ast:PDecl)
-
-  dbgLine(tr'funcs, fname, fn'node'begin'line, 0)
-  txt:csAppendWord(tr'funcs, sym)
-
-  mut block = cast<ptr ast:PBlock>(val fn'node'leaves.get(0))
-
-  translBlock(tr'funcs, root, block, fname, 2)
-
-  txt:csAppendLine(tr'funcs, "\n")
-/func
-
-
-func ctransGenEntry(tr ptr ctrans:Transl, root ptr ast:PRoot)
-  mut entryN = root'entryNode
-
-  dbgLine(tr'funcs, root'fileName, entryN'node'begin'line, 0)
-  txt:csAppendStr(tr'funcs, "void __fork_entry() ")
-
-  mut block = cast<ptr ast:PBlock>(val entryN'node'leaves.get(0))
-
-  translBlock(tr'funcs, root, block, root'fileName, 2)
-
-  txt:csAppendLine(tr'funcs, "\n")
-/func
-
-
-func translGenSym(moduleName ptr uint8, pdecl ptr ast:PDecl, dinfo ptr ast:DeclInfo) ptr uint8
-  mut cs = txt:csNew(30)
-  mut name = pdecl'sym'name
-
-  # big hack for int main(int argc, char *argv[])
-  if moduleName == null and txt:strequals(name, "main") and dinfo'declType == ast:PFUNCTION
-    txt:csAppendStr(cs, "int main(int argc, char *argv[])")
-  else
-    mut typeName ptr uint8 = null
-
-    if dinfo'declType == ast:PMETHOD
-      typeName = symModRet(pdecl'methodTypeModule, pdecl'methodType)
-    /if
-
-    csym(cs, typeName, moduleName, name, dinfo'type, false)
-
-    mem:free(typeName)
-  /if
-
-  return txt:csUnwrap(cs)
-/func
-
-
-func translGlobVar(tr ptr ctrans:Transl, sym ptr uint8, root ptr ast:PRoot, expr ptr ast:PExpr)
-  txt:csAppendStr(tr'vars, sym)
-
-  if expr != null
-    txt:csAppendStr(tr'vars, " = ")
-    translExpr(tr'vars, root, expr)
-  /if
-
-  txt:csAppendLine(tr'vars, ";")
-/func
-
-
-func translTypedef(tr ptr ctrans:Transl, name ptr uint8, type ptr ast:Type)
-  txt:csAppendWord(tr'typedefs, "typedef")
-
-  csym(tr'typedefs, null, tr'modName, name, type, true)
-
-  txt:csAppendLine(tr'typedefs, ";\n")
-/func
+method ctrans:Transl.includeFord(fordName ptr uint8)
+  me'includes.add("#include <ford$$")
+  me'includes.add(fordName)
+  me'includes.addLine(".h>")
+/method

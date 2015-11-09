@@ -1,0 +1,420 @@
+#  ctrans, Fork to C transpiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ctrans
+
+
+import ast
+import ctrans
+import cs
+import mem
+import parser
+import proc
+import tokens
+import tty
+
+
+method ctrans:Block.expression()
+/method
+
+
+func isBinOp(tok uint16) bool
+  return (tok mod 10) < 2
+/func
+
+
+func opConv(tok uint16) ptr uint8
+  if tok == tokens:AMPER or tok == tokens:PTR
+    return "&"
+  /if
+
+  if tok == tokens:AND
+    return "&&"
+  /if
+
+  if tok == tokens:ASSIGN
+    return "="
+  /if
+
+  if tok == tokens:DIFFERENT
+    return "!="
+  /if
+
+  if tok == tokens:DIV
+    return "/"
+  /if
+
+  if tok == tokens:EQUAL
+    return "=="
+  /if
+
+  if tok == tokens:MAJEQ
+    return ">="
+  /if
+
+  if tok == tokens:MAJOR
+    return ">"
+  /if
+
+  if tok == tokens:MINEQ
+    return "<="
+  /if
+
+  if tok == tokens:MINOR
+    return "<"
+  /if
+
+  if tok == tokens:MINUS or tok == tokens:UMINUS
+    return "-"
+  /if
+
+  if tok == tokens:MOD
+    return "%"
+  /if
+
+  if tok == tokens:NOT
+    return "!"
+  /if
+
+  if tok == tokens:OR
+    return "||"
+  /if
+
+  if tok == tokens:PIPE
+    return "|"
+  /if
+
+  if tok == tokens:PLUS
+    return "+"
+  /if
+
+  if tok == tokens:TIMES or tok == tokens:VAL
+    return "*"
+  /if
+
+  if tok == tokens:XOR
+    return "^"
+  /if
+
+  tty:errln("UNREACHABLE")
+  tty:outint(tok)
+  proc:abort()
+
+  return null
+/func
+
+
+func translDotExpr(cs ptr cs:Charstash, pexpr ptr ast:PExpr)
+
+  mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+  mut targetType = e1'type
+
+  if ast:typeIsPtr(targetType)
+    targetType = targetType'retType
+  /if
+
+  mut typeName = ctrans:symMod(targetType'moduleName, targetType'name)
+  mut methName = cast<ptr uint8>(e2'node'value)
+
+  cs.addMethSym(typeName, methName)
+
+  mem:free(typeName)
+/func
+
+
+
+func translExpr(cs ptr cs:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
+
+  mut value = pexpr'node'value
+
+  if pexpr'opType == tokens:NUMBER
+    cs.addInt(value)
+
+    return
+  /if
+
+  if pexpr'opType == tokens:STRING
+    cs.add("\"")
+    cs.addCStr(cast<ptr uint8>(value))
+    cs.add("\"")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:ID
+
+    mut name = cast<ptr uint8>(value)
+    mut modName ptr uint8 = root'moduleName != null => root'moduleName'name || null
+    mut fDecl = ast:stabGet(root'node'syms, name)
+
+    if fDecl != null and not fDecl'declOnly and ast:findSym(cast<ptr ast:PNode>(pexpr), name) == fDecl'type
+      cs.addSymName(modName, name)
+    else
+      cs.add(name)
+    /if
+
+    return
+  /if
+
+  if pexpr'opType == tokens:ME
+    cs.add("me")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:NULL
+    cs.add("(void*) 0")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:TRUE
+    cs.add("1")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:FALSE
+    cs.add("0")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:COLON
+    mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
+    mut name = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
+
+    cs.addSymName(modName, name)
+
+    return
+  /if
+
+  if pexpr'opType == tokens:APOS
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    translExpr(cs, root, e1)
+
+    cs.add((e1'type != null and e1'type'type == ast:TYPE_PTR) => "->" || ".")
+
+    cs.add(cast<ptr uint8>(e2'node'value))
+
+    return
+  /if
+
+  if pexpr'opType == tokens:SIZE
+      cs.add("sizeof(")
+      cs.wrapType(pexpr'sizeType)
+      cs.add(")")
+
+      return
+  /if
+
+  if pexpr'opType == tokens:CAST
+    mut expr = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    cs.add("((")
+    cs.wrapType(pexpr'type)
+    cs.add(") ")
+
+    translExpr(cs, root, expr)
+
+    cs.add(")")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:OPAR
+    mut toCall = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut methCall = toCall'opType == tokens:DOT
+
+    if methCall
+      translDotExpr(cs, toCall)
+    else
+      translExpr(cs, root, toCall)
+    /if
+
+    cs.add("(")
+
+    mut len = pexpr'node'leaves.len()
+
+    # add me parameter
+    if methCall
+      mut target = cast<ptr ast:PExpr>(val toCall'node'leaves.get(0))
+      mut notPtr = not ast:typeIsPtr(target'type)
+
+      if notPtr
+        cs.add("&(")
+      /if
+
+      translExpr(cs, root, target)
+
+      if notPtr
+        cs.add(")")
+      /if
+
+      if len > 1
+        cs.addWord(",")
+      /if
+    /if
+
+    mut i uintptr = 1
+
+    while i < len
+      mut param = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(i))
+
+      if i > 1
+        cs.addWord(",")
+      /if
+
+      translExpr(cs, root, param)
+      i++
+    /while
+
+    cs.add(")")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:OBRAC
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    cs.add("(")
+
+    translExpr(cs, root, e1)
+
+    cs.add(")[")
+
+    translExpr(cs, root, e2)
+
+    cs.add("]")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:DQUEST
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    # warn: due to constraints, every expression will be evaluated twice.
+    # Please don't use "??" with complex expressions on the left.
+    if e1'opType != tokens:APOS and e1'opType != tokens:ID and e1'opType != tokens:COLON
+      mut msg = "ctrans: unsupported operation - lhs would be evaluated twice"
+      mut issue = parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, root'fileName, msg)
+
+      parser:issueWriteOut(issue, ptr tty:err)
+
+      proc:exit(1)
+    /if
+
+    cs.add("(")
+
+    translExpr(cs, root, e1)
+
+    cs.add(" != (void*)0) ? (")
+
+    translExpr(cs, root, e1)
+
+    cs.add(") : (")
+
+    translExpr(cs, root, e2)
+
+    cs.add(")")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:FATARROW
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+    mut e3 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(2))
+
+    cs.add("(")
+
+    translExpr(cs, root, e1)
+
+    cs.add(") ? (")
+
+    translExpr(cs, root, e2)
+
+    cs.add(") : (")
+
+    translExpr(cs, root, e3)
+
+    cs.add(")")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:DEC
+    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    cs.add("--")
+
+    translExpr(cs, root, e)
+    return
+  /if
+
+  if pexpr'opType == tokens:INC
+    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    cs.add("++")
+
+    translExpr(cs, root, e)
+    return
+  /if
+
+  if pexpr'opType == tokens:QUEST
+    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    cs.add("(")
+    translExpr(cs, root, e)
+
+    cs.add(" != (void*) 0)")
+
+    return
+  /if
+
+  if isBinOp(pexpr'opType) or pexpr'opType == tokens:MINUS
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    if pexpr'opType == tokens:POW
+      cs.add("math$__forkpow(")
+      translExpr(cs, root, e1)
+      cs.add(", ")
+      translExpr(cs, root, e2)
+      cs.add(")")
+
+      return
+    /if
+
+    cs.add("(")
+    translExpr(cs, root, e1)
+    cs.addChar(32)
+    cs.add(opConv(pexpr'opType))
+    cs.addChar(32)
+    translExpr(cs, root, e2)
+    cs.add(")")
+
+    return
+  /if
+
+  #assume prefix unary now
+
+  mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  cs.add(opConv(pexpr'opType))
+  cs.add("(")
+  translExpr(cs, root, e)
+  cs.add(")")
+
+/func

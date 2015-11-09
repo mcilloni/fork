@@ -1,0 +1,104 @@
+#  ctrans, Fork to C transpiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ctrans
+
+
+import cs
+import ctrans
+import proc
+
+
+method cs:Charstash.addCStr(str ptr uint8)
+  mut ch uint8 = 0
+
+  while (ch = val str) != 0
+
+    if ch == 7
+      me.add("\\a")
+    else
+      if ch == 8
+        me.add("\\b")
+      else
+        if ch == 12
+          me.add("\\f")
+        else
+          if ch == 10
+            me.add("\\n")
+          else
+            if ch == 13
+              me.add("\\r")
+            else
+              if ch == 9
+                me.add("\\t")
+              else
+                if ch == 11
+                  me.add("\\v")
+                else
+                  if ch == 92
+                    me.add("\\\\")
+                  else
+                    if ch == 39
+                      me.add("\\'")
+                    else
+                      if ch == 34
+                        me.add("\\\"")
+                      else
+                        if ch == 63
+                          me.add("\\?")
+                        else
+                          me.addChar(ch)
+                        /if
+                      /if
+                    /if
+                  /if
+                /if
+              /if
+            /if
+          /if
+        /if
+      /if
+    /if
+
+    str++
+  /while
+/method
+
+
+method cs:Charstash.addDebugLine(fname ptr uint8, line,p uintptr)
+  me.add("\n")
+
+  me.addPad(p)
+
+  me.add("#line ")
+  me.addInt(line)
+  me.add(" \"")
+
+  if fname[0] != 47
+    mut pwd = proc:getenv("PWD")
+
+    me.add(pwd)
+    me.add("/")
+  /if
+
+  me.add(fname)
+  me.addLine("\"")
+/method
+
+
+method cs:Charstash.addPad(p uintptr)
+  mut i uintptr = 0
+
+  while i < p
+    me.addChar(32)
+
+    i++
+  /while
+/method

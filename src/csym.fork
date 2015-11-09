@@ -1,0 +1,261 @@
+#  ctrans, Fork to C transpiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ctrans
+
+
+import ast
+import cs
+import ctrans
+import mem
+import proc
+import tty
+
+
+# LRStr: represents a string, but with left and right separated.
+alias LRStr struct(
+  left,right ptr cs:Charstash
+)
+
+
+# LRStr functions
+
+func lrNew() LRStr
+  mut ret LRStr
+
+  ret'left  = cs:new(20)
+  ret'right = cs:new(20)
+
+  return ret
+/func
+
+
+# LRStr methods
+
+method LRStr.addFuncType(type ptr ast:Type, methTarget ptr uint8)
+  me.addType(type'retType, null, false)
+
+  mut paramsCs = cs:new(30)
+
+  mut i uintptr = 0
+  mut len = type'members.len()
+
+  paramsCs.add("(")
+
+  if methTarget?
+    paramsCs.add(methTarget)
+    paramsCs.add("* me")
+
+    if len > 0
+      paramsCs.add(", ")
+    /if
+  /if
+
+  while i < len
+    if i != 0
+      paramsCs.addWord(",")
+    /if
+
+    mut pair = type'members.getAt(i)
+    paramsCs.genCsym(null, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value), false)
+    i++
+  /while
+
+  paramsCs.add(")")
+
+  mut params = cs:unwrap(paramsCs)
+
+  me'right.prepend(params)
+
+  mem:free(params)
+/method
+
+
+method LRStr.addPtrType(type ptr ast:Type)
+  mut tofn = type'retType'type == ast:TYPE_FUNC
+
+  me.addType(type'retType, null, false)
+
+  if tofn
+    me'left.add("(")
+  /if
+
+  if type'type == ast:TYPE_PTR
+    me'left.add("*")
+  /if
+
+  if tofn
+    me'right.prepend(")")
+  /if
+
+  if type'type == ast:TYPE_LOC
+    me'right.prepend("]")
+    me'right.prependInt(type'itemCount)
+    me'right.prepend("[")
+  /if
+/method
+
+
+method LRStr.addStructType(type ptr ast:Type)
+  mut cs = me'left
+
+  cs.addWord("struct")
+
+  if type'name?
+    cs.addSymName(type'moduleName, type'name)
+  /if
+
+  cs.addLine(" {")
+
+  mut i uintptr = 0
+  mut len = type'members.len()
+
+  while i < len
+    mut pair = type'members.getAt(i)
+
+    cs.add("  ")
+    cs.genCsym(null, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value), false)
+    cs.addLine(";")
+
+    i++
+  /while
+
+  cs.add("} ")
+/method
+
+
+method LRStr.addType(type ptr ast:Type, methTarget ptr uint8, full bool)
+
+  if not type? or type'type == ast:TYPE_EMPTY
+    me'left.add("void ")
+    return
+  /if
+
+  if     not full \
+     and type'name? \
+     and (type'type == ast:TYPE_STRUCT or type'type == ast:TYPE_FUNC)
+
+    me'left.addSymName(type'moduleName, type'name)
+    me'left.add(" ")
+    return
+  /if
+
+  if type'type == ast:TYPE_BOOL
+    me'left.add("_Bool ")
+  else
+    if type'type == ast:TYPE_DATA
+      me'left.add("void *")
+    else
+      if type'type == ast:TYPE_FUNC
+        me.addFuncType(type, methTarget)
+      else
+        if type'type == ast:TYPE_INT
+          if not type'isSigned
+            me'left.add("u")
+          /if
+
+          me'left.add("int")
+          me'left.addInt(type'typeSize * 8)
+          me'left.add("_t ")
+        else
+          if type'type == ast:TYPE_LOC or type'type == ast:TYPE_PTR
+            me.addPtrType(type)
+          else
+            if type'type == ast:TYPE_NULL
+              tty:errln("UNREACHABLE - TYPE NULL CAN'T BE VALID")
+              proc:abort()
+            else
+              if type'type == ast:TYPE_RECALIAS
+                me'left.add("struct ")
+                me'left.addSymName(type'moduleName, type'name)
+                me'left.add(" ")
+              else
+                me.addStructType(type)
+              /if
+            /if
+          /if
+        /if
+      /if
+    /if
+  /if
+/method
+
+
+method LRStr.addSymName(typeName,moduleName,name ptr uint8,
+                    type ptr ast:Type,
+                    tdf bool)
+
+  me.addType(type, typeName, tdf)
+
+  if typeName?
+    me'left.addMethSym(typeName, name)
+  else
+    me'left.addSymName(moduleName, name)
+  /if
+/method
+
+
+# Charstash support methods.
+
+method cs:Charstash.addMethSym(typeName,name ptr uint8)
+  me.add(typeName)
+  me.add("$$")
+  me.add(name)
+/method
+
+
+method cs:Charstash.addSymName(modName,name ptr uint8)
+  if modName?
+    me.add(modName)
+    me.add("$")
+  /if
+
+  me.add(name)
+/method
+
+
+# Remember: dumpLr also frees the LRStr.
+method cs:Charstash.dumpLr(lr LRStr)
+  mut left = cs:unwrap(lr'left)
+  me.add(left)
+  mem:free(left)
+
+  mut right = cs:unwrap(lr'right)
+  me.add(right)
+  mem:free(right)
+/method
+
+
+method cs:Charstash.genCsym(typeName,moduleName,name ptr uint8,
+                            type ptr ast:Type,
+                            tdf bool)
+
+  mut lr = lrNew()
+  lr.addSymName(typeName, moduleName, name, type, tdf)
+
+  me.dumpLr(lr)
+/method
+
+
+method cs:Charstash.wrapType(type ptr ast:Type)
+  mut lr = lrNew()
+  lr.addType(type, null, false)
+  me.dumpLr(lr)
+/method
+
+
+# support functions
+func symMod(modName,name ptr uint8) ptr uint8
+  mut cs = cs:new(10)
+
+  cs.addSymName(modName, name)
+
+  return cs:unwrap(cs)
+/func

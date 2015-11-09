@@ -25,10 +25,10 @@ entry
     proc:exit(1)
   /if
 
-  mut ctx = parser:ctxNew()
+  mut ctx = parser:new()
   mut ast ptr ast:PNode
   mut fname = txt:strequals(argv'args[0], "-") => "/dev/stdin" || argv'args[0]
-  mut errors = parser:ctxParseFile(ctx, fname, ptr ast)
+  mut errors = ctx.parseFile(fname, ptr ast)
 
   mut isFord = txt:strEndsWith(fname, ".ford")
 
@@ -53,15 +53,15 @@ entry
 
   mut tr ctrans:Transl
 
-  ctrans:translInit(ptr tr, isFord, root'moduleName != null => root'moduleName'name || null)
+  ctrans:init(ptr tr, isFord, root'moduleName != null => root'moduleName'name || null)
 
-  ctrans:ctransTranslate(ptr tr, root)
+  tr.translate(root)
 
   mut ttys = tty:ttyStream()
 
-  ctrans:translDump(ptr tr, ptr ttys)
+  tr.dump(ptr ttys)
 
-  parser:ctxFree(ctx)
+  parser:free(ctx)
 
   ast:pnodeFree(ast)
 /entry
