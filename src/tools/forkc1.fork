@@ -53,7 +53,7 @@ entry
 
   mut tr ctrans:Transl
 
-  ctrans:init(ptr tr, isFord, root'moduleName != null => root'moduleName'name || null)
+  ctrans:init(ptr tr, isFord, root'moduleName? => root'moduleName'name || null)
 
   tr.translate(root)
 

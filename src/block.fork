@@ -191,7 +191,7 @@ method ctrans:Block.returnstmt(stmt ptr ast:PNode, root ptr ast:PRoot)
 
   mut expr = stmt'leaves.get(0)
 
-  if expr != null
+  if expr?
     cs.addChar(32)
     ctrans:translExpr(cs, root, cast<ptr ast:PExpr>(val expr))
   /if

@@ -25,92 +25,6 @@ method ctrans:Block.expression()
 /method
 
 
-func isBinOp(tok uint16) bool
-  return (tok mod 10) < 2
-/func
-
-
-func opConv(tok uint16) ptr uint8
-  if tok == tokens:AMPER or tok == tokens:PTR
-    return "&"
-  /if
-
-  if tok == tokens:AND
-    return "&&"
-  /if
-
-  if tok == tokens:ASSIGN
-    return "="
-  /if
-
-  if tok == tokens:DIFFERENT
-    return "!="
-  /if
-
-  if tok == tokens:DIV
-    return "/"
-  /if
-
-  if tok == tokens:EQUAL
-    return "=="
-  /if
-
-  if tok == tokens:MAJEQ
-    return ">="
-  /if
-
-  if tok == tokens:MAJOR
-    return ">"
-  /if
-
-  if tok == tokens:MINEQ
-    return "<="
-  /if
-
-  if tok == tokens:MINOR
-    return "<"
-  /if
-
-  if tok == tokens:MINUS or tok == tokens:UMINUS
-    return "-"
-  /if
-
-  if tok == tokens:MOD
-    return "%"
-  /if
-
-  if tok == tokens:NOT
-    return "!"
-  /if
-
-  if tok == tokens:OR
-    return "||"
-  /if
-
-  if tok == tokens:PIPE
-    return "|"
-  /if
-
-  if tok == tokens:PLUS
-    return "+"
-  /if
-
-  if tok == tokens:TIMES or tok == tokens:VAL
-    return "*"
-  /if
-
-  if tok == tokens:XOR
-    return "^"
-  /if
-
-  tty:errln("UNREACHABLE")
-  tty:outint(tok)
-  proc:abort()
-
-  return null
-/func
-
-
 func translDotExpr(cs ptr cs:Charstash, pexpr ptr ast:PExpr)
 
   mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
@@ -153,10 +67,10 @@ func translExpr(cs ptr cs:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   if pexpr'opType == tokens:ID
 
     mut name = cast<ptr uint8>(value)
-    mut modName ptr uint8 = root'moduleName != null => root'moduleName'name || null
+    mut modName ptr uint8 = root'moduleName? => root'moduleName'name || null
     mut fDecl = ast:stabGet(root'node'syms, name)
 
-    if fDecl != null and not fDecl'declOnly and ast:findSym(cast<ptr ast:PNode>(pexpr), name) == fDecl'type
+    if fDecl? and not fDecl'declOnly and ast:findSym(cast<ptr ast:PNode>(pexpr), name) == fDecl'type
       cs.addSymName(modName, name)
     else
       cs.add(name)
@@ -204,7 +118,7 @@ func translExpr(cs ptr cs:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
 
     translExpr(cs, root, e1)
 
-    cs.add((e1'type != null and e1'type'type == ast:TYPE_PTR) => "->" || ".")
+    cs.add((e1'type? and e1'type'type == ast:TYPE_PTR) => "->" || ".")
 
     cs.add(cast<ptr uint8>(e2'node'value))
 
@@ -384,7 +298,7 @@ func translExpr(cs ptr cs:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
     return
   /if
 
-  if isBinOp(pexpr'opType) or pexpr'opType == tokens:MINUS
+  if ctrans:isBinOp(pexpr'opType) or pexpr'opType == tokens:MINUS
     mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
@@ -401,7 +315,7 @@ func translExpr(cs ptr cs:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
     cs.add("(")
     translExpr(cs, root, e1)
     cs.addChar(32)
-    cs.add(opConv(pexpr'opType))
+    cs.add(ctrans:opConv(pexpr'opType))
     cs.addChar(32)
     translExpr(cs, root, e2)
     cs.add(")")
@@ -412,7 +326,7 @@ func translExpr(cs ptr cs:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
   #assume prefix unary now
 
   mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-  cs.add(opConv(pexpr'opType))
+  cs.add(ctrans:opConv(pexpr'opType))
   cs.add("(")
   translExpr(cs, root, e)
   cs.add(")")

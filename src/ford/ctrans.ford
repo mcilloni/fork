@@ -96,3 +96,8 @@ alias LineStr struct(
 
 decl func lsFree(ls ptr LineStr)
 decl func lsNew(line ast:Line, str ptr uint8) ptr LineStr
+
+
+# operator functions
+decl func isBinOp(tok uint16) bool
+decl func opConv(tok uint16) ptr uint8

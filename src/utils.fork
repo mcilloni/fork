@@ -14,6 +14,8 @@ module ctrans
 import cs
 import ctrans
 import proc
+import tokens
+import tty
 
 
 method cs:Charstash.addCStr(str ptr uint8)
@@ -102,3 +104,91 @@ method cs:Charstash.addPad(p uintptr)
     i++
   /while
 /method
+
+
+# Operators functions
+
+func isBinOp(tok uint16) bool
+  return (tok mod 10) < 2
+/func
+
+
+func opConv(tok uint16) ptr uint8
+  if tok == tokens:AMPER or tok == tokens:PTR
+    return "&"
+  /if
+
+  if tok == tokens:AND
+    return "&&"
+  /if
+
+  if tok == tokens:ASSIGN
+    return "="
+  /if
+
+  if tok == tokens:DIFFERENT
+    return "!="
+  /if
+
+  if tok == tokens:DIV
+    return "/"
+  /if
+
+  if tok == tokens:EQUAL
+    return "=="
+  /if
+
+  if tok == tokens:MAJEQ
+    return ">="
+  /if
+
+  if tok == tokens:MAJOR
+    return ">"
+  /if
+
+  if tok == tokens:MINEQ
+    return "<="
+  /if
+
+  if tok == tokens:MINOR
+    return "<"
+  /if
+
+  if tok == tokens:MINUS or tok == tokens:UMINUS
+    return "-"
+  /if
+
+  if tok == tokens:MOD
+    return "%"
+  /if
+
+  if tok == tokens:NOT
+    return "!"
+  /if
+
+  if tok == tokens:OR
+    return "||"
+  /if
+
+  if tok == tokens:PIPE
+    return "|"
+  /if
+
+  if tok == tokens:PLUS
+    return "+"
+  /if
+
+  if tok == tokens:TIMES or tok == tokens:VAL
+    return "*"
+  /if
+
+  if tok == tokens:XOR
+    return "^"
+  /if
+
+  tty:errln("UNREACHABLE")
+  tty:outint(tok)
+  proc:abort()
+
+  return null
+/func
