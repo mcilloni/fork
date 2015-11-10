@@ -33,6 +33,7 @@ decl method Transl.dump(stream ptr io:Stream) ptr err:Error
 decl method Transl.extern(sym ptr uint8)
 decl method Transl.forkmain(root ptr ast:PRoot)
 decl method Transl.function(root ptr ast:PRoot, fname,sym ptr uint8, fn ptr ast:PDecl)
+decl method Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
 decl method Transl.globVar(sym ptr uint8, root ptr ast:PRoot, expr ptr ast:PExpr)
 decl method Transl.includeFord(fordName ptr uint8)
 decl method Transl.translate(root ptr ast:PRoot)
@@ -50,7 +51,7 @@ decl method Block.declaration(root ptr ast:PRoot,
                               block ptr ast:PBlock,
                               stmt ptr ast:PNode)
 
-decl method ctrans:Block.dumpInCs(cs ptr cs:Charstash,
+decl method Block.dumpInCs(cs ptr cs:Charstash,
                                   fname ptr uint8,
                                   p uintptr)
 

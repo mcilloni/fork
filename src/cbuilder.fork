@@ -105,7 +105,7 @@ method ctrans:Transl.globVar(sym ptr uint8, root ptr ast:PRoot, expr ptr ast:PEx
 
   if expr?
     me'vars.add(" = ")
-    ctrans:translExpr(me'vars, root, expr)
+    me.globExpr(root, expr)
   /if
 
   me'vars.addLine(";")

@@ -1,0 +1,325 @@
+#  ctrans, Fork to C transpiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ctrans
+
+
+import ast
+import ctrans
+import cs
+import mem
+import parser
+import proc
+import tokens
+import tty
+
+
+method ctrans:Transl.globDotExpr(pexpr ptr ast:PExpr)
+
+  mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+  mut targetType = e1'type
+
+  if ast:typeIsPtr(targetType)
+    targetType = targetType'retType
+  /if
+
+  mut typeName = ctrans:symMod(targetType'moduleName, targetType'name)
+  mut methName = cast<ptr uint8>(e2'node'value)
+
+  me'vars.addMethSym(typeName, methName)
+
+  mem:free(typeName)
+/method
+
+
+
+method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
+
+  mut value = pexpr'node'value
+
+  if pexpr'opType == tokens:NUMBER
+    me'vars.addInt(value)
+
+    return
+  /if
+
+  if pexpr'opType == tokens:STRING
+    me'vars.add("\"")
+    me'vars.addCStr(cast<ptr uint8>(value))
+    me'vars.add("\"")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:ID
+
+    mut name = cast<ptr uint8>(value)
+    mut modName ptr uint8 = root'moduleName? => root'moduleName'name || null
+    mut fDecl = ast:stabGet(root'node'syms, name)
+
+    if fDecl? and not fDecl'declOnly and ast:findSym(cast<ptr ast:PNode>(pexpr), name) == fDecl'type
+      me'vars.addSymName(modName, name)
+    else
+      me'vars.add(name)
+    /if
+
+    return
+  /if
+
+
+  if pexpr'opType == tokens:NULL
+    me'vars.add("(void*) 0")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:TRUE
+    me'vars.add("1")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:FALSE
+    me'vars.add("0")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:COLON
+    mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
+    mut name = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
+
+    me'vars.addSymName(modName, name)
+
+    return
+  /if
+
+  if pexpr'opType == tokens:APOS
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    me.globExpr(root, e1)
+
+    me'vars.add((e1'type? and e1'type'type == ast:TYPE_PTR) => "->" || ".")
+
+    me'vars.add(cast<ptr uint8>(e2'node'value))
+
+    return
+  /if
+
+  if pexpr'opType == tokens:SIZE
+      me'vars.add("sizeof(")
+      me'vars.wrapType(pexpr'sizeType)
+      me'vars.add(")")
+
+      return
+  /if
+
+  if pexpr'opType == tokens:CAST
+    mut expr = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    me'vars.add("((")
+    me'vars.wrapType(pexpr'type)
+    me'vars.add(") ")
+
+    me.globExpr(root, expr)
+
+    me'vars.add(")")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:OPAR
+    mut toCall = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut methCall = toCall'opType == tokens:DOT
+
+    if methCall
+      me.globDotExpr(toCall)
+    else
+      me.globExpr(root, toCall)
+    /if
+
+    me'vars.add("(")
+
+    mut len = pexpr'node'leaves.len()
+
+    # add me parameter
+    if methCall
+      mut target = cast<ptr ast:PExpr>(val toCall'node'leaves.get(0))
+      mut notPtr = not ast:typeIsPtr(target'type)
+
+      if notPtr
+        me'vars.add("&(")
+      /if
+
+      me.globExpr(root, target)
+
+      if notPtr
+        me'vars.add(")")
+      /if
+
+      if len > 1
+        me'vars.addWord(",")
+      /if
+    /if
+
+    mut i uintptr = 1
+
+    while i < len
+      mut param = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(i))
+
+      if i > 1
+        me'vars.addWord(",")
+      /if
+
+      me.globExpr(root, param)
+      i++
+    /while
+
+    me'vars.add(")")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:OBRAC
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    me'vars.add("(")
+
+    me.globExpr(root, e1)
+
+    me'vars.add(")[")
+
+    me.globExpr(root, e2)
+
+    me'vars.add("]")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:DQUEST
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    # warn: due to constraints, every expression will be evaluated twice.
+    # Please don't use "??" with complex expressions on the left.
+    if e1'opType != tokens:APOS and e1'opType != tokens:ID and e1'opType != tokens:COLON
+      mut msg = "ctrans: unsupported operation - lhs would be evaluated twice"
+      mut issue = parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, root'fileName, msg)
+
+      parser:issueWriteOut(issue, ptr tty:err)
+
+      proc:exit(1)
+    /if
+
+    me'vars.add("(")
+
+    me.globExpr(root, e1)
+
+    me'vars.add(" != (void*)0) ? (")
+
+    me.globExpr(root, e1)
+
+    me'vars.add(") : (")
+
+    me.globExpr(root, e2)
+
+    me'vars.add(")")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:FATARROW
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+    mut e3 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(2))
+
+    me'vars.add("(")
+
+    me.globExpr(root, e1)
+
+    me'vars.add(") ? (")
+
+    me.globExpr(root, e2)
+
+    me'vars.add(") : (")
+
+    me.globExpr(root, e3)
+
+    me'vars.add(")")
+
+    return
+  /if
+
+  if pexpr'opType == tokens:DEC
+    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    me'vars.add("--")
+
+    me.globExpr(root, e)
+    return
+  /if
+
+  if pexpr'opType == tokens:INC
+    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    me'vars.add("++")
+
+    me.globExpr(root, e)
+    return
+  /if
+
+  if pexpr'opType == tokens:QUEST
+    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    me'vars.add("(")
+    me.globExpr(root, e)
+
+    me'vars.add(" != (void*) 0)")
+
+    return
+  /if
+
+  if ctrans:isBinOp(pexpr'opType) or pexpr'opType == tokens:MINUS
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    if pexpr'opType == tokens:POW
+      me'vars.add("math$__forkpow(")
+      me.globExpr(root, e1)
+      me'vars.add(", ")
+      me.globExpr(root, e2)
+      me'vars.add(")")
+
+      return
+    /if
+
+    me'vars.add("(")
+    me.globExpr(root, e1)
+    me'vars.addChar(32)
+    me'vars.add(ctrans:opConv(pexpr'opType))
+    me'vars.addChar(32)
+    me.globExpr(root, e2)
+    me'vars.add(")")
+
+    return
+  /if
+
+  #assume prefix unary now
+
+  mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  me'vars.add(ctrans:opConv(pexpr'opType))
+  me'vars.add("(")
+  me.globExpr(root, e)
+  me'vars.add(")")
+
+/method
