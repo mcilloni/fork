@@ -76,7 +76,7 @@ def cc(ccCommand, cfile, ofile=None, libfork=True, includes=[]):
         fpic = ['-fPIC']
 
     cfiledir = os.path.dirname(os.path.abspath(cfile))
-    params = [cfile, '-w', '-g', '-c', '-std=c99', '-I' + cfiledir, '-o', ofile]
+    params = [cfile, '-w', '-g3', '-c', '-std=c99', '-I' + cfiledir, '-o', ofile]
 
     for include in includes:
         params += ['-I' + include[0]]

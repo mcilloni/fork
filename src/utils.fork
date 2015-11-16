@@ -11,14 +11,19 @@
 module ctrans
 
 
+import ast
 import cs
 import ctrans
+import mem
 import proc
 import tokens
 import tty
+import txt
 
 
 method cs:Charstash.addCStr(str ptr uint8)
+  me.add("\"")
+
   mut ch uint8 = 0
 
   while (ch = val str) != 0
@@ -71,14 +76,12 @@ method cs:Charstash.addCStr(str ptr uint8)
 
     str++
   /while
+
+  me.add("\"")
 /method
 
 
-method cs:Charstash.addDebugLine(fname ptr uint8, line,p uintptr)
-  me.add("\n")
-
-  me.addPad(p)
-
+method cs:Charstash.addDebugLine(fname ptr uint8, line uintptr)
   me.add("#line ")
   me.addInt(line)
   me.add(" \"")
@@ -126,6 +129,10 @@ func opConv(tok uint16) ptr uint8
     return "="
   /if
 
+  if tok == tokens:DEC
+    return "--"
+  /if
+
   if tok == tokens:DIFFERENT
     return "!="
   /if
@@ -136,6 +143,10 @@ func opConv(tok uint16) ptr uint8
 
   if tok == tokens:EQUAL
     return "=="
+  /if
+
+  if tok == tokens:INC
+    return "++"
   /if
 
   if tok == tokens:MAJEQ
@@ -191,4 +202,33 @@ func opConv(tok uint16) ptr uint8
   proc:abort()
 
   return null
+/func
+
+
+func translSym(moduleName ptr uint8,
+               pdecl ptr ast:PDecl,
+               dinfo ptr ast:DeclInfo) ptr uint8
+
+  mut cs = cs:new(30)
+  mut name = pdecl'sym'name
+
+  # big hack for int main(int argc, char *argv[])
+  if     not moduleName? \
+     and txt:strequals(name, "main") \
+     and dinfo'declType == ast:PFUNCTION
+
+    cs.add("int main(int argc, char *argv[])")
+  else
+    mut typeName ptr uint8 = null
+
+    if dinfo'declType == ast:PMETHOD
+      typeName = ctrans:symMod(pdecl'methodTypeModule, pdecl'methodType)
+    /if
+
+    cs.genCsym(typeName, moduleName, name, dinfo'type, false)
+
+    mem:free(typeName)
+  /if
+
+  return cs:unwrap(cs)
 /func

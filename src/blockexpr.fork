@@ -19,49 +19,926 @@ import parser
 import proc
 import tokens
 import tty
+import txt
+import vect
 
 
-method ctrans:Block.expression()
-/method
-
-
-func translDotExpr(cs ptr cs:Charstash, pexpr ptr ast:PExpr)
-
-  mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-  mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
-
-  mut targetType = e1'type
-
-  if ast:typeIsPtr(targetType)
-    targetType = targetType'retType
-  /if
-
-  mut typeName = ctrans:symMod(targetType'moduleName, targetType'name)
-  mut methName = cast<ptr uint8>(e2'node'value)
-
-  cs.addMethSym(typeName, methName)
-
-  mem:free(typeName)
+func isShortcircuitOp(op uint16) bool
+  return op == tokens:AND or op == tokens:OR
 /func
 
 
+func freeElem(elem ptr ctrans:Elem)
+  if elem?
+    elem.wipe()
+    mem:free(elem)
+  /if
+/func
 
-func translExpr(cs ptr cs:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
+
+method ctrans:Elem.copy() ptr ctrans:Elem
+  mut ret = cast<ptr ctrans:Elem>(mem:alloc(size(ctrans:Elem)))
+
+  mem:copy(ret, me, size(ctrans:Elem))
+
+  return ret
+/method
+
+
+method ctrans:Elem.value() ptr uint8
+  return me'str
+/method
+
+
+method ctrans:Elem.type() ptr ast:Type
+  return me'type
+/method
+
+
+method ctrans:Elem.wipe()
+  mem:free(me'str)
+  me'str = null
+/method
+
+
+func boolelem(v bool, type ptr ast:Type) ctrans:Elem
+  return elem(v => "1" || "0", type)
+/func
+
+
+func deref(elem ctrans:Elem, ptrType ptr ast:Type) ctrans:Elem
+  mut ret ctrans:Elem
+
+  ret'str = txt:strappend("*", elem.value())
+  ret'type = ptrType'retType
+
+  return ret
+/func
+
+
+func elem(name ptr uint8, type ptr ast:Type) ctrans:Elem
+  mut ret ctrans:Elem
+
+  ret'str = txt:strclone(name)
+  ret'type = type
+
+  return ret
+/func
+
+
+func intelem(n uintptr, type ptr ast:Type) ctrans:Elem
+  mut ret ctrans:Elem
+
+  ret'str = cast<ptr uint8>(mem:zalloc(21))
+  txt:numtostr(n, ret'str, 20)
+  ret'type = type
+
+  return ret
+/func
+
+
+func methelem(name ptr uint8, type ptr ast:Type) ctrans:Elem
+
+  if ast:typeIsPtr(type)
+    type = type'retType
+  /if
+
+  mut cs = cs:new(20)
+
+  if ast:typeIsPtr(type)
+    type = type'retType
+  /if
+
+  mut typeName = ctrans:symMod(type'moduleName, type'name)
+
+  cs.addMethSym(typeName, name)
+
+  mem:free(typeName)
+
+  mut ret ctrans:Elem
+
+  ret'str = cs:unwrap(cs)
+  ret'type = type
+
+  return ret
+/func
+
+
+func modelem(modName,name ptr uint8, type ptr ast:Type) ctrans:Elem
+  mut ret ctrans:Elem
+  mut modLen = txt:strlen(modName)
+  mut nameLen = txt:strlen(name)
+
+  ret'str = cast<ptr uint8>(mem:zalloc(modLen + nameLen + 2))
+
+  mem:copy(ret'str, modName, modLen)
+  ret'str[modLen] = val "$"
+  mem:copy(ret'str + modLen + 1, name, nameLen)
+
+  ret'type = type
+
+  return ret
+/func
+
+
+func refhack(el ctrans:Elem, origType ptr ast:Type) ptr uint8
+  mut isToFn = ast:typeIsFunc(origType)
+
+  mut cs = cs:new(20)
+
+  if isToFn
+    cs.add("(")
+  /if
+
+  cs.add("*")
+  cs.add(el.value())
+
+  if isToFn
+    cs.add(")")
+  /if
+
+  return cs:unwrap(cs)
+/func
+
+
+func sizeelem(opType,aType ptr ast:Type) ctrans:Elem
+  mut cs = cs:new(20)
+
+  cs.add("sizeof(")
+  cs.wrapType(opType)
+  cs.add(")")
+
+  mut ret ctrans:Elem
+
+  ret'str = cs:unwrap(cs)
+  ret'type = aType
+
+  return ret
+/func
+
+
+func structelem(left,field ptr uint8, leftType,fieldType ptr ast:Type) ctrans:Elem
+  mut ret ctrans:Elem
+  mut accOp = (leftType? and leftType'type == ast:TYPE_PTR) => "->" || "."
+  mut leftLen = txt:strlen(left)
+  mut accLen = txt:strlen(accOp)
+  mut fieldLen = txt:strlen(field)
+
+  ret'str = cast<ptr uint8>(mem:zalloc(leftLen + fieldLen + accLen + 1))
+
+  mem:copy(ret'str, left, leftLen)
+  mem:copy(ret'str + leftLen, accOp, accLen)
+  mem:copy(ret'str + leftLen + accLen, field, fieldLen)
+
+  ret'type = fieldType
+
+  return ret
+/func
+
+
+method ctrans:Block.access(from,index ctrans:Elem,
+                           fromType ptr ast:Type,
+                           fname ptr uint8,
+                           line uintptr) ctrans:Elem
+
+  mut rightPtr = me.binop(tokens:PLUS, fromType, from, index, fname, line)
+
+  mut ret = deref(rightPtr, fromType)
+
+  rightPtr.wipe()
+
+  return ret
+/method
+
+
+method ctrans:Block.assign(to,from ctrans:Elem, fname ptr uint8, line uintptr)
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(to.value())
+  me'stmts.addWord("=")
+  me'stmts.add(from.value())
+  me'stmts.addLine(";")
+/method
+
+
+method ctrans:Block.binop(op uint16,
+                          destType ptr ast:Type,
+                          op1,op2 ctrans:Elem,
+                          fname ptr uint8,
+                          line uintptr) ctrans:Elem
+
+  if op == tokens:POW
+    return me.pow(op1, op2, destType, fname, line)
+  /if
+
+  mut ret = me.nextvar(destType, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+  me'stmts.addWord(op1.value())
+  me'stmts.addWord(ctrans:opConv(op))
+  me'stmts.add(op2.value())
+  me'stmts.addLine(";")
+
+  return ret
+/method
+
+
+method ctrans:Block.castexpr(expr ctrans:Elem,
+                             castType ptr ast:Type,
+                             fname ptr uint8,
+                             line uintptr) ctrans:Elem
+
+  mut ret = me.nextvar(castType, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+
+  me'stmts.add("(")
+  me'stmts.wrapType(castType)
+  me'stmts.add(") ")
+
+  me'stmts.add(expr.value())
+  me'stmts.addLine(";")
+
+  return ret
+/method
+
+
+method ctrans:Block.dec(op ctrans:Elem,
+                        fname ptr uint8,
+                        line uintptr)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("--")
+  me'stmts.add(op.value())
+  me'stmts.addLine(";")
+/method
+
+
+method ctrans:Block.fncall(name ptr uint8,
+                           retval ptr ctrans:Elem,
+                           rettype ptr ast:Type,
+                           params ptr vect:Vect,
+                           fname ptr uint8,
+                           line uintptr )
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+
+  if retval?
+    me'stmts.addWord(retval.value())
+    me'stmts.addWord("=")
+  /if
+
+  me'stmts.add(name)
+  me'stmts.add("(")
+
+  mut i uintptr = 0
+  mut len = params.len()
+
+  while i < len
+    if i > 0
+      me'stmts.addWord(",")
+    /if
+
+    mut param = cast<ptr ctrans:Elem>(val params.get(i))
+
+    me'stmts.add(param.value())
+
+    freeElem(param)
+
+    i++
+  /while
+
+  me'stmts.addLine(");")
+
+/method
+
+
+method ctrans:Block.inc(op ctrans:Elem,
+                        fname ptr uint8,
+                        line uintptr)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("++")
+  me'stmts.add(op.value())
+  me'stmts.addLine(";")
+/method
+
+
+method ctrans:Block.label(lb ctrans:Elem, empty bool)
+  me'stmts.add(lb.value())
+  me'stmts.add(":")
+
+  me'stmts.addLine(empty => " ;" || "")
+/method
+
+
+method ctrans:Block.nextlabel() ctrans:Elem
+  mut ret ctrans:Elem
+
+  ret'str = cast<ptr uint8>(mem:zalloc(21))
+  ret'str[0] = "_"[0]
+
+  txt:numtostr(val me'cnt, ptr ret'str[1], 255)
+
+  val me'cnt = val me'cnt + 1
+
+  ret'type = null
+
+  return ret
+/method
+
+
+method ctrans:Block.nextvar(type ptr ast:Type,
+                            fname ptr uint8,
+                            line uintptr) ctrans:Elem
+
+  mut ret = me.ssavar(type)
+
+  if ast:typeIsLoc(type)
+    mut hackStr = refhack(ret, type'retType)
+
+    me.newDecl(false, null, hackStr, fname, type'retType, line)
+
+    mem:free(hackStr)
+  else
+    me.newDecl(false, null, ret.value(), fname, type, line)
+  /if
+
+  return ret
+/method
+
+
+method ctrans:Block.pow(base,exp ctrans:Elem,
+                        type ptr ast:Type,
+                        fname ptr uint8,
+                        line uintptr) ctrans:Elem
+
+  mut ret = me.nextvar(type, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+  me'stmts.add("math$__forkpow(")
+  me'stmts.add(base.value())
+  me'stmts.add(", ")
+  me'stmts.add(exp.value())
+  me'stmts.add(")")
+  me'stmts.addLine(";")
+
+  return ret
+/method
+
+
+method ctrans:Block.quest(elem ctrans:Elem,
+                          type ptr ast:Type,
+                          fname ptr uint8,
+                          line uintptr) ctrans:Elem
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  mut ret = me.nextvar(type, fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+  me'stmts.add(elem.value())
+  me'stmts.addLine(" != (void*) 0;")
+
+  return ret
+/method
+
+
+method ctrans:Block.ref(elem ctrans:Elem,
+                        origType ptr ast:Type,
+                        fname ptr uint8,
+                        line uintptr) ctrans:Elem
+
+  mut ret = me.ssavar(null)
+  mut hackStr = refhack(ret, origType)
+
+  me.newDecl(false, null, hackStr, fname, origType, line)
+
+  mem:free(hackStr)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.add("= &")
+  me'stmts.add(elem.value())
+  me'stmts.addLine(";")
+
+  return ret
+/method
+
+
+method ctrans:Block.ssavar(type ptr ast:Type) ctrans:Elem
+  mut ret ctrans:Elem
+
+  ret'str = cast<ptr uint8>(mem:zalloc(21))
+  ret'str[0] = "_"[0]
+
+  txt:numtostr(val me'cnt, ptr ret'str[1], 255)
+
+  val me'cnt = val me'cnt + 1
+
+  ret'type = type
+
+  return ret
+/method
+
+
+method ctrans:Block.str(value ptr uint8,
+                        destType ptr ast:Type,
+                        fname ptr uint8,
+                        line uintptr) ctrans:Elem
+
+  mut ret = me.nextvar(destType, fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+  me'stmts.addCStr(value)
+  me'stmts.addLine(";")
+
+  return ret
+/method
+
+
+method ctrans:Block.structaccess(root ptr ast:PRoot,
+                                 e1,e2 ptr ast:PExpr,
+                                 fname ptr uint8,
+                                 line uintptr) ctrans:Elem
+
+  mut s = me.expr(root, e1, fname, line)
+
+
+  mut ret = structelem(s.value(), cast<ptr uint8>(e2'node'value), e1'type, e2'type)
+
+  s.wipe()
+
+  return ret
+/method
+
+
+method ctrans:Block.unop(op uint16,
+                         destType ptr ast:Type,
+                         op1 ctrans:Elem,
+                         fname ptr uint8,
+                         line uintptr) ctrans:Elem
+
+  mut ret = me.nextvar(destType, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+  me'stmts.add(ctrans:opConv(op))
+  me'stmts.addWord(op1.value())
+  me'stmts.addLine(";")
+
+  return ret
+/method
+
+
+method ctrans:Block.varcopy(to,from ctrans:Elem,
+                            deref bool,
+                            fname ptr uint8,
+                            line uintptr)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+
+  if deref
+    me'stmts.add("*")
+  /if
+
+  me'stmts.addWord(to.value())
+  me'stmts.addWord("=")
+  me'stmts.addWord(from.value())
+  me'stmts.addLine(";")
+/method
+
+
+method ctrans:Block.newDecl(ext bool,
+                            methodType,name,fname ptr uint8,
+                            type ptr ast:Type,
+                            line uintptr)
+
+  mut cs = ext => me'decls || me'vars
+
+  cs.addPad(me'pad)
+  cs.addDebugLine(fname, line)
+
+  cs.addPad(me'pad)
+  cs.genCsym(methodType, null, name, type, false)
+  cs.addLine(";")
+/method
+
+
+method ctrans:Block.declaration(root ptr ast:PRoot,
+                                fname ptr uint8,
+                                block ptr ast:PBlock,
+                                stmt ptr ast:PNode)
+
+  mut pdecl = cast<ptr ast:PDecl>(stmt)
+  mut ext = pdecl'isDecl
+  mut type = ast:stabTypeof(block'syms, pdecl'sym'name)
+  mut methodType ptr uint8 = null
+
+  if stmt'type == ast:PMETHOD
+    methodType = ctrans:symMod(pdecl'methodTypeModule, pdecl'methodType)
+  /if
+
+  mut destCs = ext => me'decls || me'vars
+
+  me.newDecl(ext, methodType, pdecl'sym'name, fname, type, stmt'begin'line)
+
+  if not ext and stmt'leaves.len() > 0
+    mut expr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
+    mut elem = me.expr(root, expr, fname, stmt'begin'line)
+
+    me.padStmts()
+    me'stmts.addDebugLine(fname, stmt'begin'line)
+
+    me.padStmts()
+    me'stmts.add(pdecl'sym'name)
+    me'stmts.add(" = ")
+    me'stmts.add(elem.value())
+    me'stmts.addLine(";")
+
+    elem.wipe()
+  /if
+/method
+
+
+method ctrans:Block.handleAnd(root ptr ast:PRoot,
+                              type ptr ast:Type,
+                              e1,e2 ptr ast:PExpr,
+                              fname ptr uint8,
+                              line uintptr) ctrans:Elem
+
+  mut ret = me.nextvar(type, fname, line)
+
+  mut el1 = me.expr(root, e1, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("if (!")
+  me'stmts.add(el1.value())
+  me'stmts.add(") goto ")
+
+  mut fail = me.nextlabel()
+
+  me'stmts.add(fail.value())
+  me'stmts.addLine(";")
+
+  mut el2 = me.expr(root, e2, fname, line)
+
+  me.assign(ret, el2, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord("goto")
+
+  mut goOut = me.nextlabel()
+  me'stmts.add(goOut.value())
+  me'stmts.addLine(";")
+
+  me.label(fail, false)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+  me'stmts.addLine("0;")
+
+  me.label(goOut, true)
+
+  fail.wipe()
+  goOut.wipe()
+
+  return ret
+/method
+
+
+method ctrans:Block.handleDQuest(root ptr ast:PRoot,
+                                 c1,c2 ptr ast:PExpr,
+                                 type ptr ast:Type,
+                                 fname ptr uint8,
+                                 line uintptr) ctrans:Elem
+
+  mut el1 = me.expr(root, c1, fname, line)
+  mut ret = me.nextvar(type, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("if (")
+  me'stmts.add(el1.value())
+  me'stmts.addLine(" != (void*) 0) {")
+
+  # increase - temporarely - padding
+  me'pad = me'pad + 2
+
+  me.assign(ret, el1, fname, line)
+
+  el1.wipe()
+
+  me'pad = me'pad - 2
+
+  me.padStmts()
+  me'stmts.addLine("} else {")
+
+  # increase - temporarely - padding
+  me'pad = me'pad + 2
+
+  mut el2 = me.expr(root, c2, fname, line)
+
+  me.assign(ret, el2, fname, line)
+
+  el2.wipe()
+
+  me'pad = me'pad - 2
+
+  me.padStmts()
+  me'stmts.addLine("}\n")
+
+  return ret
+/method
+
+
+method ctrans:Block.handleFn(root ptr ast:PRoot,
+                             pexpr ptr ast:PExpr,
+                             fname ptr uint8,
+                             line uintptr) ctrans:Elem
+
+
+  mut toCall = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut methCall = toCall'opType == tokens:DOT
+
+  mut len = pexpr'node'leaves.len()
+
+  # n params + me + rvo (eventally)
+  mut params = vect:new(len + 1)
+
+  mut callElem ctrans:Elem
+
+  if methCall
+    mut target = cast<ptr ast:PExpr>(val toCall'node'leaves.get(0))
+    mut meth = cast<ptr ast:PExpr>(val toCall'node'leaves.get(1))
+    mut targetType = target'type
+
+    callElem = methelem(cast<ptr uint8>(meth'node'value), targetType)
+
+    # add me parameter
+
+    mut notPtr = not ast:typeIsPtr(targetType)
+    mut meElem = me.expr(root, target, fname, line)
+
+    if notPtr
+      mut ptrElem = me.ref(meElem, target'type, fname, line)
+      meElem.wipe()
+
+      meElem = ptrElem
+    /if
+
+    params.append(meElem.copy())
+  else
+    callElem = me.expr(root, toCall, fname, line)
+  /if
+
+
+  mut rvo = ast:typeIsStruct(pexpr'type) or pexpr'type'type == ast:TYPE_RECALIAS
+  mut ret ctrans:Elem
+
+  mem:set(ptr ret, 0, size(ctrans:Elem))
+
+  # RVO
+  if rvo
+    ret = me.nextvar(pexpr'type, fname, line)
+    mut rvoRet = me.ref(ret, pexpr'type, fname, line)
+    params.append(rvoRet.copy())
+  /if
+
+  mut i uintptr = 1
+
+  while i < len
+    mut param = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(i))
+
+    mut paramExpr = me.expr(root, param, fname, line)
+    params.append(paramExpr.copy())
+
+    i++
+  /while
+
+  mut wantsRet = not rvo and (pexpr'type? and pexpr'type'type != ast:TYPE_EMPTY)
+
+  if wantsRet
+    ret = me.nextvar(pexpr'type, fname, line)
+  /if
+
+  me.fncall(callElem.value(), wantsRet => ptr ret || null, pexpr'type, params, fname, line)
+
+  callElem.wipe()
+
+  return ret
+/method
+
+
+method ctrans:Block.handleOr(root ptr ast:PRoot,
+                             type ptr ast:Type,
+                             e1,e2 ptr ast:PExpr,
+                             fname ptr uint8,
+                             line uintptr) ctrans:Elem
+
+  mut ret = me.nextvar(type, fname, line)
+
+  mut el1 = me.expr(root, e1, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("if (")
+  me'stmts.add(el1.value())
+  me'stmts.add(") goto ")
+
+  mut succ = me.nextlabel()
+
+  me'stmts.add(succ.value())
+  me'stmts.addLine(";")
+
+  mut el2 = me.expr(root, e2, fname, line)
+
+  me.assign(ret, el2, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord("goto")
+
+  mut goOut = me.nextlabel()
+  me'stmts.add(goOut.value())
+  me'stmts.addLine(";")
+
+  me.label(succ, false)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+  me'stmts.addLine("1;")
+
+  me.label(goOut, true)
+
+  succ.wipe()
+  goOut.wipe()
+
+  return ret
+/method
+
+
+method ctrans:Block.handleShortcircuit(root ptr ast:PRoot,
+                                       op uint16,
+                                       type ptr ast:Type,
+                                       e1,e2 ptr ast:PExpr,
+                                       fname ptr uint8,
+                                       line uintptr) ctrans:Elem
+
+  if op == tokens:AND
+    return me.handleAnd(root, type, e1, e2, fname, line)
+  /if
+
+  return me.handleOr(root, type, e1, e2, fname, line)
+/method
+
+
+method ctrans:Block.handleTern(root ptr ast:PRoot,
+                               condEx,c1,c2 ptr ast:PExpr,
+                               type ptr ast:Type,
+                               fname ptr uint8,
+                               line uintptr) ctrans:Elem
+
+  mut cond = me.expr(root, condEx, fname, line)
+  mut ret = me.nextvar(type, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("if (")
+  me'stmts.add(cond.value())
+  me'stmts.addLine(") {")
+
+  cond.wipe()
+
+  # increase - temporarely - padding
+  me.incPad()
+
+  mut el1 = me.expr(root, c1, fname, line)
+
+  me.assign(ret, el1, fname, line)
+
+  el1.wipe()
+
+  me.decPad()
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addLine("} else {")
+
+  # increase - temporarely - padding
+  me.incPad()
+
+  mut el2 = me.expr(root, c2, fname, line)
+
+  me.assign(ret, el2, fname, line)
+
+  el2.wipe()
+
+  me.decPad()
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addLine("}\n")
+
+  return ret
+/method
+
+
+method ctrans:Block.expr(root ptr ast:PRoot,
+                         pexpr ptr ast:PExpr,
+                         fname ptr uint8,
+                         line uintptr) ctrans:Elem
 
   mut value = pexpr'node'value
 
-  if pexpr'opType == tokens:NUMBER
-    cs.addInt(value)
+  if pexpr'opType == tokens:ASSIGN
+    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
-    return
+    mut to = me.expr(root, e1, fname, line)
+    mut from = me.expr(root, e2, fname, line)
+
+    me.assign(to, from, fname, line)
+
+    from.wipe()
+
+    return to
+  /if
+
+  if pexpr'opType == tokens:NUMBER
+    return intelem(value, pexpr'type)
   /if
 
   if pexpr'opType == tokens:STRING
-    cs.add("\"")
-    cs.addCStr(cast<ptr uint8>(value))
-    cs.add("\"")
-
-    return
+    return me.str(cast<ptr uint8>(value), pexpr'type, fname, line)
   /if
 
   if pexpr'opType == tokens:ID
@@ -70,182 +947,82 @@ func translExpr(cs ptr cs:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
     mut modName ptr uint8 = root'moduleName? => root'moduleName'name || null
     mut fDecl = ast:stabGet(root'node'syms, name)
 
-    if fDecl? and not fDecl'declOnly and ast:findSym(cast<ptr ast:PNode>(pexpr), name) == fDecl'type
-      cs.addSymName(modName, name)
-    else
-      cs.add(name)
-    /if
+    if     fDecl? \
+       and modName? \
+       and not fDecl'declOnly \
+       and ast:findSym(cast<ptr ast:PNode>(pexpr), name) == fDecl'type
 
-    return
+      return modelem(modName, name, pexpr'type)
+    else
+      return elem(name, pexpr'type)
+    /if
   /if
 
   if pexpr'opType == tokens:ME
-    cs.add("me")
-
-    return
+    return elem("me", pexpr'type)
   /if
 
   if pexpr'opType == tokens:NULL
-    cs.add("(void*) 0")
-
-    return
+    return elem("(void*) 0", pexpr'type)
   /if
 
-  if pexpr'opType == tokens:TRUE
-    cs.add("1")
-
-    return
-  /if
-
-  if pexpr'opType == tokens:FALSE
-    cs.add("0")
-
-    return
+  if pexpr'opType == tokens:TRUE or pexpr'opType == tokens:FALSE
+    return boolelem(pexpr'opType == tokens:TRUE, pexpr'type)
   /if
 
   if pexpr'opType == tokens:COLON
     mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
     mut name = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
 
-    cs.addSymName(modName, name)
-
-    return
+    return modelem(modName, name, pexpr'type)
   /if
 
   if pexpr'opType == tokens:APOS
     mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
-    translExpr(cs, root, e1)
-
-    cs.add((e1'type? and e1'type'type == ast:TYPE_PTR) => "->" || ".")
-
-    cs.add(cast<ptr uint8>(e2'node'value))
-
-    return
+    return me.structaccess(root, e1, e2, fname, line)
   /if
 
   if pexpr'opType == tokens:SIZE
-      cs.add("sizeof(")
-      cs.wrapType(pexpr'sizeType)
-      cs.add(")")
-
-      return
+    return sizeelem(pexpr'sizeType, pexpr'type)
   /if
 
   if pexpr'opType == tokens:CAST
-    mut expr = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut tocast = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut expr = me.expr(root, tocast, fname, line)
 
-    cs.add("((")
-    cs.wrapType(pexpr'type)
-    cs.add(") ")
+    mut ret = me.castexpr(expr, pexpr'type, fname, line)
 
-    translExpr(cs, root, expr)
+    expr.wipe()
 
-    cs.add(")")
-
-    return
+    return ret
   /if
 
   if pexpr'opType == tokens:OPAR
-    mut toCall = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    mut methCall = toCall'opType == tokens:DOT
-
-    if methCall
-      translDotExpr(cs, toCall)
-    else
-      translExpr(cs, root, toCall)
-    /if
-
-    cs.add("(")
-
-    mut len = pexpr'node'leaves.len()
-
-    # add me parameter
-    if methCall
-      mut target = cast<ptr ast:PExpr>(val toCall'node'leaves.get(0))
-      mut notPtr = not ast:typeIsPtr(target'type)
-
-      if notPtr
-        cs.add("&(")
-      /if
-
-      translExpr(cs, root, target)
-
-      if notPtr
-        cs.add(")")
-      /if
-
-      if len > 1
-        cs.addWord(",")
-      /if
-    /if
-
-    mut i uintptr = 1
-
-    while i < len
-      mut param = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(i))
-
-      if i > 1
-        cs.addWord(",")
-      /if
-
-      translExpr(cs, root, param)
-      i++
-    /while
-
-    cs.add(")")
-
-    return
+    return me.handleFn(root, pexpr, fname, line)
   /if
 
   if pexpr'opType == tokens:OBRAC
     mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
-    cs.add("(")
+    mut from = me.expr(root, e1, fname, line)
+    mut index = me.expr(root, e2, fname, line)
 
-    translExpr(cs, root, e1)
+    mut ret = me.access(from, index, e1'type, fname, line)
 
-    cs.add(")[")
+    from.wipe()
+    index.wipe()
 
-    translExpr(cs, root, e2)
-
-    cs.add("]")
-
-    return
+    return ret
   /if
 
   if pexpr'opType == tokens:DQUEST
     mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
-    # warn: due to constraints, every expression will be evaluated twice.
-    # Please don't use "??" with complex expressions on the left.
-    if e1'opType != tokens:APOS and e1'opType != tokens:ID and e1'opType != tokens:COLON
-      mut msg = "ctrans: unsupported operation - lhs would be evaluated twice"
-      mut issue = parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, root'fileName, msg)
-
-      parser:issueWriteOut(issue, ptr tty:err)
-
-      proc:exit(1)
-    /if
-
-    cs.add("(")
-
-    translExpr(cs, root, e1)
-
-    cs.add(" != (void*)0) ? (")
-
-    translExpr(cs, root, e1)
-
-    cs.add(") : (")
-
-    translExpr(cs, root, e2)
-
-    cs.add(")")
-
-    return
+    return me.handleDQuest(root, e1, e2, pexpr'type, fname, line)
   /if
 
   if pexpr'opType == tokens:FATARROW
@@ -253,82 +1030,92 @@ func translExpr(cs ptr cs:Charstash, root ptr ast:PRoot, pexpr ptr ast:PExpr)
     mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
     mut e3 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(2))
 
-    cs.add("(")
-
-    translExpr(cs, root, e1)
-
-    cs.add(") ? (")
-
-    translExpr(cs, root, e2)
-
-    cs.add(") : (")
-
-    translExpr(cs, root, e3)
-
-    cs.add(")")
-
-    return
+    return me.handleTern(root, e1, e2, e3, pexpr'type, fname, line)
   /if
 
   if pexpr'opType == tokens:DEC
     mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    cs.add("--")
 
-    translExpr(cs, root, e)
-    return
+    mut el = me.expr(root, e, fname, line)
+
+    me.dec(el, fname, line)
+
+    return el
   /if
 
   if pexpr'opType == tokens:INC
     mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
-    cs.add("++")
+    mut el = me.expr(root, e, fname, line)
 
-    translExpr(cs, root, e)
-    return
+    me.inc(el, fname, line)
+
+    return el
   /if
 
   if pexpr'opType == tokens:QUEST
     mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
-    cs.add("(")
-    translExpr(cs, root, e)
+    mut el = me.expr(root, e, fname, line)
 
-    cs.add(" != (void*) 0)")
+    mut ret = me.quest(el, pexpr'type, fname, line)
 
-    return
+    el.wipe()
+
+    return ret
+  /if
+
+  if pexpr'opType == tokens:PTR
+    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    mut el = me.expr(root, e, fname, line)
+
+    mut ret = me.ref(el, e'type, fname, line)
+
+    el.wipe()
+
+    return ret
+  /if
+
+  if pexpr'opType == tokens:VAL
+    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    mut el = me.expr(root, e, fname, line)
+
+    mut ret = deref(el, pexpr'type)
+
+    el.wipe()
+
+    return ret
   /if
 
   if ctrans:isBinOp(pexpr'opType) or pexpr'opType == tokens:MINUS
     mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
-    if pexpr'opType == tokens:POW
-      cs.add("math$__forkpow(")
-      translExpr(cs, root, e1)
-      cs.add(", ")
-      translExpr(cs, root, e2)
-      cs.add(")")
-
-      return
+    if isShortcircuitOp(pexpr'opType)
+      return me.handleShortcircuit(root, pexpr'opType, pexpr'type, e1, e2, fname, line)
     /if
 
-    cs.add("(")
-    translExpr(cs, root, e1)
-    cs.addChar(32)
-    cs.add(ctrans:opConv(pexpr'opType))
-    cs.addChar(32)
-    translExpr(cs, root, e2)
-    cs.add(")")
+    mut el1 = me.expr(root, e1, fname, line)
+    mut el2 = me.expr(root, e2, fname, line)
 
-    return
+    mut ret = me.binop(pexpr'opType, pexpr'type, el1, el2, fname, line)
+
+    el1.wipe()
+    el2.wipe()
+
+    return ret
   /if
 
   #assume prefix unary now
 
   mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-  cs.add(ctrans:opConv(pexpr'opType))
-  cs.add("(")
-  translExpr(cs, root, e)
-  cs.add(")")
+  mut el = me.expr(root, e, fname, line)
 
-/func
+  mut ret = me.unop(pexpr'opType, pexpr'type, el, fname, line)
+
+  el.wipe()
+
+  return ret
+/method

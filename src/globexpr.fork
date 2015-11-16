@@ -53,10 +53,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:STRING
-    me'vars.add("\"")
     me'vars.addCStr(cast<ptr uint8>(value))
-    me'vars.add("\"")
-
     return
   /if
 

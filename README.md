@@ -1,7 +1,7 @@
 # ctrans
 
 
-*Ctrans* is a transpiler that compiles Fork code to C89, and provides an integrated and easy way to then build the generated C code into object code using a C compiler.
+*Ctrans* is a transpiler that compiles Fork code to C99, and provides an integrated and easy way to then build the generated C code into object code using a C compiler.
 
 This is largely a WIP project, and it's pretty far away from release, so expect lots of bugs.
 

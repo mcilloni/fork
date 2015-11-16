@@ -40,26 +40,42 @@ func lrNew() LRStr
 # LRStr methods
 
 method LRStr.addFuncType(type ptr ast:Type, methTarget ptr uint8)
-  me.addType(type'retType, null, false)
+  mut rvo = ast:typeIsStruct(type'retType)
+
+  if rvo
+    me.addType(null, null, false)
+  else
+    me.addType(type'retType, null, false)
+  /if
 
   mut paramsCs = cs:new(30)
 
   mut i uintptr = 0
   mut len = type'members.len()
+  mut empty = len == 0
 
   paramsCs.add("(")
 
   if methTarget?
+    empty = false
+
     paramsCs.add(methTarget)
     paramsCs.add("* me")
 
-    if len > 0
+    if len > 0 or rvo
       paramsCs.add(", ")
     /if
   /if
 
+  # RVO
+  if rvo
+    empty = false
+
+    paramsCs.genCsym(null, null, "*_rvoOut", type'retType, false)
+  /if
+
   while i < len
-    if i != 0
+    if i != 0 or rvo
       paramsCs.addWord(",")
     /if
 
@@ -67,6 +83,10 @@ method LRStr.addFuncType(type ptr ast:Type, methTarget ptr uint8)
     paramsCs.genCsym(null, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value), false)
     i++
   /while
+
+  if empty
+    paramsCs.add("void")
+  /if
 
   paramsCs.add(")")
 

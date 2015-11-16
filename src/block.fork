@@ -38,202 +38,178 @@ func lsNew(line ast:Line, str ptr uint8) ptr ctrans:LineStr
 
 
 # Block functions
-func blNew(cnt ptr uintptr) ctrans:Block
+func blNew(cnt ptr uintptr, pad uintptr, rvo bool) ctrans:Block
   mut ret ctrans:Block
 
-  ret'decls = list:new()
-  ret'vars = list:new()
-  ret'stmts = list:new()
+  ret'decls = cs:new(20)
+  ret'vars = cs:new(20)
+  ret'stmts = cs:new(20)
   ret'cnt = cnt
+  ret'pad = pad
+  ret'rvo = rvo
 
   return ret
 /func
 
 
-method ctrans:Block.declaration(root ptr ast:PRoot,
-                                block ptr ast:PBlock,
-                                stmt ptr ast:PNode)
+method ctrans:Block.padDecls()
+  me'decls.addPad(me'pad)
+/method
 
-  mut isMut = stmt'type == ast:PMUT
-  mut pdecl = cast<ptr ast:PDecl>(stmt)
-  mut sym = cs:new(20)
-  mut type = ast:stabTypeof(block'syms, pdecl'sym'name)
-  mut methodType ptr uint8 = null
 
-  if stmt'type == ast:PMETHOD
-    methodType = ctrans:symMod(pdecl'methodTypeModule, pdecl'methodType)
-  /if
+method ctrans:Block.padStmts()
+  me'stmts.addPad(me'pad)
+/method
 
-  sym.genCsym(methodType, null, pdecl'sym'name, type, false)
 
-  mut ls = lsNew(stmt'begin,cs:unwrap(sym))
-
-  (isMut => me'vars || me'decls).append(ls)
-
-  if isMut and stmt'leaves.len() > 0
-    mut expr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
-    mut cs = cs:new(30)
-
-    cs.add(pdecl'sym'name)
-    cs.add(" = ")
-
-    ctrans:translExpr(cs, root, expr)
-
-    me'stmts.append(lsNew(expr'node'begin, cs:unwrap(cs)))
-  /if
+method ctrans:Block.padVars()
+  me'vars.addPad(me'pad)
 /method
 
 
 # Deinits the block.
-method ctrans:Block.dumpInCs(cs ptr cs:Charstash, fname ptr uint8, p uintptr)
-  mut i uintptr = 0
-  mut dLen = me'decls.len()
+method ctrans:Block.dumpInCs(cs ptr cs:Charstash)
+  mut decls = cs:unwrap(me'decls)
+  cs.addLine(decls)
+  mem:free(decls)
 
-  while i < dLen
-    mut dcl = cast<ptr ctrans:LineStr>(val me'decls.get(i))
+  cs.add("\n\n")
 
-    cs.addDebugLine(fname, dcl'line'line, p)
+  mut vars = cs:unwrap(me'vars)
+  cs.addLine(vars)
+  mem:free(vars)
 
-    cs.addPad(p)
+  cs.add("\n\n")
 
-    cs.addWord("extern")
-    cs.add(dcl'str)
-    cs.addLine(";")
+  mut stmts = cs:unwrap(me'stmts)
+  cs.addLine(stmts)
+  mem:free(stmts)
+/method
 
-    ctrans:lsFree(dcl)
 
-    i++
-  /while
-
-  mut vLen = me'vars.len()
-
-  i = 0
-
-  while i < vLen
-    mut var = cast<ptr ctrans:LineStr>(val me'vars.get(i))
-
-    cs.addDebugLine(fname, var'line'line, p)
-
-    cs.addPad(p)
-
-    cs.add(var'str)
-    cs.addLine(";")
-
-    lsFree(var)
-
-    i++
-  /while
-
-  if dLen + vLen > 0
-    cs.addLine("\n")
+method ctrans:Block.decPad()
+  if me'pad > 0
+    me'pad = me'pad - 2
   /if
-
-  mut sLen = me'stmts.len()
-
-  i = 0
-
-  while i < sLen
-    mut stmt = cast<ptr ctrans:LineStr>(val me'stmts.get(i))
-
-    cs.addDebugLine(fname, stmt'line'line, p)
-
-    cs.addPad(p)
-
-    cs.add(stmt'str)
-    cs.addLine(";")
-
-    lsFree(stmt)
-
-    i++
-  /while
-
-  list:free(me'decls)
-  list:free(me'vars)
-  list:free(me'stmts)
 /method
 
 
 method ctrans:Block.ifblock(stmt ptr ast:PNode,
                             root ptr ast:PRoot,
-                            fname ptr uint8,
-                            p uintptr)
-
-  mut cs = cs:new(100)
-
-  cs.add("if (")
+                            fname ptr uint8)
 
   mut pexpr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
 
-  ctrans:translExpr(cs, root, pexpr)
+  mut cond = me.expr(root, pexpr, fname, stmt'begin'line)
 
-  cs.addWord(")")
+  me.padStmts()
+  me'stmts.addDebugLine(fname, stmt'begin'line)
+
+  me.padStmts()
+  me'stmts.add("if (")
+  me'stmts.add(cond.value())
+  me'stmts.addWord(")")
 
   mut block = cast<ptr ast:PBlock>(val stmt'leaves.get(1))
 
-  translBlock(cs, me'cnt, root, block, fname, p + 2)
+  me.subblock(root, block, fname)
 
   if stmt'type == ast:PIFELSE
-    cs.add(" else ")
+    me'stmts.add(" else ")
 
     block = cast<ptr ast:PBlock>(val stmt'leaves.get(2))
 
-    translBlock(cs, me'cnt, root, block, fname, p + 2)
+    me.subblock(root, block, fname)
   /if
 
-  me'stmts.append(lsNew(stmt'begin, cs:unwrap(cs)))
+  cond.wipe()
 /method
 
 
-method ctrans:Block.returnstmt(stmt ptr ast:PNode, root ptr ast:PRoot)
-  mut cs = cs:new(30)
+method ctrans:Block.incPad()
+  me'pad = me'pad + 2
+/method
 
-  cs.add("return")
+
+method ctrans:Block.returnstmt(stmt ptr ast:PNode,
+                               root ptr ast:PRoot,
+                               fname ptr uint8)
+
+  mut line = stmt'begin'line
 
   mut expr = stmt'leaves.get(0)
 
+  mut elem ctrans:Elem
+
   if expr?
-    cs.addChar(32)
-    ctrans:translExpr(cs, root, cast<ptr ast:PExpr>(val expr))
+    me'stmts.addChar(32)
+
+    elem = me.expr(root, cast<ptr ast:PExpr>(val expr), fname, line)
+
+    if me'rvo
+      me.padStmts()
+      me'stmts.addDebugLine(fname, line)
+
+      me.padStmts()
+      me'stmts.add("*_rvoOut = ")
+      me'stmts.add(elem.value())
+      me'stmts.addLine(";")
+
+      elem.wipe()
+    /if
   /if
 
-  me'stmts.append(lsNew(stmt'begin, cs:unwrap(cs)))
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("return")
+
+  if expr? and not me'rvo
+    me'stmts.add(" ")
+    me'stmts.add(elem.value())
+
+    elem.wipe()
+  /if
 /method
 
 
 method ctrans:Block.statement(root ptr ast:PRoot,
                               block ptr ast:PBlock,
                               stmt ptr ast:PNode,
-                              fname ptr uint8,
-                              p uintptr)
+                              fname ptr uint8)
+
+  mut semicolon = false
 
   if stmt'type == ast:PIF or stmt'type == ast:PIFELSE
-    me.ifblock(stmt, root, fname, p)
+    me.ifblock(stmt, root, fname)
   else
 
     if    stmt'type == ast:PMUT \
        or stmt'type == ast:PFUNCTION \
        or stmt'type == ast:PMETHOD
 
-      me.declaration(root, block, stmt)
+      me.declaration(root, fname, block, stmt)
     else
       if stmt'type == ast:PWHILE
-        me.whileblock(stmt, root, fname, p)
+        me.whileblock(stmt, root, fname)
+        semicolon = false
       else
         if stmt'type == ast:PCONTINUE
-          me'stmts.append(lsNew(stmt'begin, txt:strclone("continue")))
+          me'stmts.add("continue")
+          semicolon = true
         else
           if stmt'type == ast:PBREAK
-            me'stmts.append(lsNew(stmt'begin, txt:strclone("break")))
+            me'stmts.add("break")
+            semicolon = true
           else
             if stmt'type == ast:PRETURN
-              me.returnstmt(stmt, root)
+              me.returnstmt(stmt, root, fname)
+              semicolon = true
             else
               if stmt'type == ast:PEXPR
-                mut cs = cs:new(30)
-
-                ctrans:translExpr(cs, root, cast<ptr ast:PExpr>(stmt))
-
-                me'stmts.append(lsNew(stmt'begin, cs:unwrap(cs)))
+                mut ign = me.expr(root, cast<ptr ast:PExpr>(stmt), fname, stmt'begin'line)
+                ign.wipe()
               /if
             /if
           /if
@@ -241,29 +217,79 @@ method ctrans:Block.statement(root ptr ast:PRoot,
       /if
     /if
   /if
+
+
+  me'stmts.addLine(semicolon => ";" || "")
+/method
+
+
+method ctrans:Block.subblock(root ptr ast:PRoot,
+                             block ptr ast:PBlock,
+                             fname ptr uint8)
+
+  ctrans:translBlock(me'stmts, me'cnt, root, block, me'rvo, fname, me'pad + 2)
 /method
 
 
 method ctrans:Block.whileblock(stmt ptr ast:PNode,
                                root ptr ast:PRoot,
-                               fname ptr uint8,
-                               p uintptr)
+                               fname ptr uint8)
 
-  mut cs = cs:new(100)
+  mut line = stmt'begin'line
 
-  cs.add("while (")
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addLine("for (;;) {")
+
+  me.incPad()
 
   mut pexpr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
 
-  ctrans:translExpr(cs, root, pexpr)
+  mut cond = me.expr(root, pexpr, fname, line)
 
-  cs.addWord(")")
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("if(")
+  me'stmts.add(cond.value())
+  me'stmts.addWord(")")
 
   mut block = cast<ptr ast:PBlock>(val stmt'leaves.get(1))
 
-  translBlock(cs, me'cnt, root, block, fname, p + 2)
+  me.subblock(root, block, fname)
 
-  me'stmts.append(lsNew(stmt'begin, cs:unwrap(cs)))
+  me'stmts.addLine(" else {")
+
+  me.incPad()
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addLine("break;")
+
+  me.decPad()
+
+  mut endLine = block'node'end'line
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, endLine)
+
+  me.padStmts()
+  me'stmts.addLine("}")
+
+  me.decPad()
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, endLine)
+
+  me.padStmts()
+  me'stmts.addLine("}\n")
+
+  cond.wipe()
 /method
 
 
@@ -271,6 +297,7 @@ func translBlock(cs ptr cs:Charstash,
                  cnt ptr uintptr,
                  root ptr ast:PRoot,
                  block ptr ast:PBlock,
+                 rvo bool,
                  fname ptr uint8,
                  p uintptr)
 
@@ -278,7 +305,7 @@ func translBlock(cs ptr cs:Charstash,
 
   cs.addLine("{")
 
-  mut bl = blNew(cnt)
+  mut bl = blNew(cnt, p, rvo)
 
   mut bLen = block'node'leaves.len()
   mut i uintptr = 0
@@ -286,14 +313,16 @@ func translBlock(cs ptr cs:Charstash,
   while i < bLen
     mut stmt = cast<ptr ast:PNode>(val block'node'leaves.get(i))
 
-    bl.statement(root, block, stmt, fname, p)
+    bl.statement(root, block, stmt, fname)
 
     i++
   /while
 
-  bl.dumpInCs(cs, fname, p)
+  bl.dumpInCs(cs)
 
-  cs.addDebugLine(fname, block'node'end'line + 1, origp)
+  cs.addPad(origp)
+  cs.addDebugLine(fname, block'node'end'line + 1)
+
   cs.addPad(origp)
   cs.add("}")
 /func

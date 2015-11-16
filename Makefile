@@ -9,6 +9,7 @@ clean:
 	$(MAKE) -C libfork clean
 	rm -rf build
 	rm -rf build.1
+	rm -rf build.2
 	rm -rf ctrans-release
 	rm -rf ctrans-devrel
 	rm -f ctrans-release.txz
@@ -24,15 +25,25 @@ build:
 stage1:
 	$(MAKE) build
 
-bootstrap:
+stage2:
 	$(MAKE) stage1
+	rm -rf build.1
 	mv build build.1
 
 	$(MAKE) -C libfork clean
-	rm -rf build
 
 	FORDC="$(shell pwd)/build.1/fordc" FORKC="$(shell pwd)/build.1/forkc" FORKL="$(shell pwd)/build.1/forkl" $(MAKE) build
 
+stage3:
+	$(MAKE) stage2
+	rm -rf build.2
+	mv build build.2
+
+	$(MAKE) -C libfork clean
+
+	FORDC="$(shell pwd)/build.2/fordc" FORKC="$(shell pwd)/build.2/forkc" FORKL="$(shell pwd)/build.2/forkl" $(MAKE) build
+
+bootstrap: stage3
 
 copy-libs:
 	mkdir -p build/libfork/ford
