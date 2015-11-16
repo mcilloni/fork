@@ -10,8 +10,10 @@ ifndef FORKL
 	FORKL = forkl
 endif
 
+ifndef NODL
 ifeq ($(shell uname), Linux)
 	LDFLAGS=-ldl
+endif
 endif
 
 SRCS = $(wildcard *.fork)
