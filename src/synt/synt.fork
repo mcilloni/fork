@@ -379,8 +379,23 @@ func parserParseType(ctx ptr synt:ParserContext) ptr ast:PType
     return null
   /if
 
-  mut tok = nextTok(ctx)
   mut ret ptr ast:PType = null
+
+  # if we have an open parenthesis, then this is a struct type (shortened).
+  # This comparison should be made BEFORE getting the token, because
+  # parserParseStructType() expects a `(` at the beginning.
+  if ctx'next'type == tokens:OPAR
+    mut begin = lex:tokExtractBegin(ctx'next)
+    ret = parserParseStructType(ctx)
+
+    if ret?
+      ret'begin = begin
+    /if
+
+    return ret
+  /if
+
+  mut tok = nextTok(ctx)
 
   if tok'type == tokens:FUNC
     ret = parserParseFunctionType(ctx)
