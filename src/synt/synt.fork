@@ -288,7 +288,8 @@ func parserParseStructBody(ctx ptr synt:ParserContext,
 
   mut strBody = list:new()
 
-  # each iteration parses a sequence of 'a,b,c,d type' or a full list (if this is a function header)
+  # each iteration parses a sequence of 'a,b,c,d type' or a full list
+  # (if this is a function header)
   while parserParseStructBodyVars(ctx, strBody)
 
     parserDiscardNewLine(ctx)
@@ -314,6 +315,7 @@ func parserParseStructBody(ctx ptr synt:ParserContext,
     return null
   /if
 
+  # discards `)` or `}`.
   val end = lex:tokDiscardEnd(endTok)
 
   return strBody
