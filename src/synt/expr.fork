@@ -79,15 +79,33 @@ func isValidInExpr(tok ptr lex:Token) bool
 
 func parserParseCastTag(ctx ptr synt:ParserContext) ptr ast:PExpr
 
-  mut castTok = synt:nextTok(ctx)
+  mut castTok ptr lex:Token = null
 
-  if not synt:expectDiscard(ctx, tokens:MINOR)
+  # If we have the "cast" operator, than we should read it, and use it to mark
+  # the expression's beginning.
+  # Otherwise it's a `<` and we must create a "fake" cast token - to create a
+  # cast PExpr.
+  if ctx'next'type == tokens:CAST
+    castTok = synt:nextTok(ctx)
+  /if
+
+  mut minor = synt:expect(ctx, tokens:MINOR)
+
+  if not minor?
+    # tokenFree SHOULD check for nulls - like every free function should - and
+    # be noop for them.
     lex:tokenFree(castTok)
     return null
   /if
 
+  if not castTok?
+    castTok = lex:tokenNew(tokens:CAST, 0, lex:linenoClone(minor'lineno), minor'endPos)
+  /if
+
+  lex:tokenFree(minor)
+
   mut type = synt:parserParseType(ctx)
-  if type == null
+  if not type?
     lex:tokenFree(castTok)
     return null
   /if
@@ -99,13 +117,13 @@ func parserParseCastTag(ctx ptr synt:ParserContext) ptr ast:PExpr
   /if
 
   mut expr = synt:parserParseExpr(ctx)
-  if expr == null
+  if not expr?
     lex:tokenFree(castTok)
     mem:decRef(type)
   /if
 
   mut cpar = synt:expect(ctx, tokens:CPAR)
-  if cpar == null
+  if not cpar?
     lex:tokenFree(castTok)
     mem:decRef(type)
     return null
@@ -206,7 +224,7 @@ func parserParseParens(ctx ptr synt:ParserContext) ptr ast:PExpr
 
 func parserParsePrimaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
 
-  if ctx'next == null
+  if not ctx'next?
     ctx'prs'err = lex:error(ctx'last, "expected a primary expression, got an EOF")
     return null
   /if
@@ -219,7 +237,7 @@ func parserParsePrimaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
     return parserParseId(ctx)
   /if
 
-  if ctx'next'type == tokens:CAST
+  if ctx'next'type == tokens:CAST or ctx'next'type == tokens:MINOR
     return parserParseCastTag(ctx)
   /if
 
@@ -228,7 +246,7 @@ func parserParsePrimaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
   /if
 
   if ctx'next'type != tokens:OPAR
-    ctx'prs'err = lex:errorMism(ctx'next'lineno, "an identifier, a costant or an expression between ()", lex:tokenStr(ctx'next))
+    ctx'prs'err = lex:errorMism(ctx'next'lineno, "an identifier, a costant, a struct literal or an expression between ()", lex:tokenStr(ctx'next))
     return null
   /if
 
@@ -242,7 +260,7 @@ func parserParseAccessExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr as
   mut obrac = synt:nextTok(ctx)
   mut expression = parserParseGenParens(ctx, tokens:CBRAC)
 
-  if expression == null
+  if not expression?
       return null
   /if
 
@@ -255,7 +273,7 @@ func parserParseCallExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:
 
   mut opar = synt:nextTok(ctx)
 
-  if opar == null
+  if not opar?
     return null
   /if
 

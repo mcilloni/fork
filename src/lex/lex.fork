@@ -342,7 +342,7 @@ func tokenNew(type uint16, value uintptr, lineno ptr lex:Lineno, end uintptr) pt
 /func
 
 func tokenFree(tok ptr lex:Token)
-  if tok != null
+  if tok?
     if (tok'type == tokens:ID or tok'type == tokens:STRING) and tok'value != 0
       mem:free(cast<data>(tok'value))
     /if
@@ -1003,7 +1003,7 @@ func linenoClone(lineno ptr lex:Lineno) ptr lex:Lineno
 
 
 func linenoFree(lineno ptr lex:Lineno)
-  if lineno != null
+  if lineno?
     mem:free(lineno'filename)
     mem:free(lineno)
   /if
