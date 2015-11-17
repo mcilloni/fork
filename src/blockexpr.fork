@@ -483,6 +483,9 @@ method ctrans:Block.str(value ptr uint8,
   mut ret = me.nextvar(destType, fname, line)
 
   me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
   me'stmts.addWord(ret.value())
   me'stmts.addWord("=")
   me'stmts.addCStr(value)
