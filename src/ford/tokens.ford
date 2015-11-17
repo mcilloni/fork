@@ -21,6 +21,7 @@ decl mut ASSIGN uint16
 decl mut BREAK uint16
 decl mut CAST uint16
 decl mut CBRAC uint16
+decl mut CCURLY uint16
 decl mut COLON uint16
 decl mut COMMA uint16
 decl mut CONTINUE uint16
@@ -60,6 +61,7 @@ decl mut NOT uint16
 decl mut NULL uint16
 decl mut NUMBER uint16
 decl mut OBRAC uint16
+decl mut OCURLY uint16
 decl mut OPAR uint16
 decl mut OR uint16
 decl mut PIPE uint16

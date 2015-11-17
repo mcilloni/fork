@@ -273,8 +273,16 @@ func parserParseStructBodyVars(ctx ptr synt:ParserContext, syms ptr list:List) b
 /func
 
 
-func parserParseStructBody(ctx ptr synt:ParserContext, end ptr ast:Line) ptr list:List
-  if not expectDiscard(ctx, tokens:OPAR)
+func parserParseStructBody(ctx ptr synt:ParserContext,
+                           end ptr ast:Line,
+                           newStruct bool) ptr list:List
+
+  mut openTok = newStruct => tokens:OCURLY || tokens:OPAR
+  mut closeTok = newStruct => tokens:CCURLY || tokens:CPAR
+
+  # If newStruct is on, this just discards the `{`.
+  # Otherwise, it checks for a `(`.
+  if not expectDiscard(ctx, openTok)
     return null
   /if
 
@@ -285,7 +293,7 @@ func parserParseStructBody(ctx ptr synt:ParserContext, end ptr ast:Line) ptr lis
 
     parserDiscardNewLine(ctx)
 
-    if ctx'next? and ctx'next'type == tokens:CPAR
+    if ctx'next? and ctx'next'type == closeTok
       break
     /if
 
@@ -300,7 +308,7 @@ func parserParseStructBody(ctx ptr synt:ParserContext, end ptr ast:Line) ptr lis
     return null
   /if
 
-  mut endTok = synt:expect(ctx, tokens:CPAR)
+  mut endTok = synt:expect(ctx, closeTok)
   if not endTok?
     list:freeAll(strBody, cast<ptr func(item data)>(ptr mem:decRef))
     return null
@@ -314,7 +322,7 @@ func parserParseStructBody(ctx ptr synt:ParserContext, end ptr ast:Line) ptr lis
 
 func parserParseFunctionType(ctx ptr synt:ParserContext) ptr ast:PType
   mut end ast:Line
-  mut args = parserParseStructBody(ctx, ptr end)
+  mut args = parserParseStructBody(ctx, ptr end, false)
   if not args?
     return null
   /if
@@ -358,10 +366,10 @@ func parserParseLocType(ctx ptr synt:ParserContext) ptr ast:PType
 /func
 
 
-func parserParseStructType(ctx ptr synt:ParserContext) ptr ast:PType
+func parserParseStructType(ctx ptr synt:ParserContext, newStruct bool) ptr ast:PType
   mut end ast:Line
 
-  mut args = parserParseStructBody(ctx, ptr end)
+  mut args = parserParseStructBody(ctx, ptr end, newStruct)
   if not args?
     return null
   /if
@@ -383,10 +391,10 @@ func parserParseType(ctx ptr synt:ParserContext) ptr ast:PType
 
   # if we have an open parenthesis, then this is a struct type (shortened).
   # This comparison should be made BEFORE getting the token, because
-  # parserParseStructType() expects a `(` at the beginning.
-  if ctx'next'type == tokens:OPAR
+  # parserParseStructType() expects a `{` at the beginning.
+  if ctx'next'type == tokens:OCURLY
     mut begin = lex:tokExtractBegin(ctx'next)
-    ret = parserParseStructType(ctx)
+    ret = parserParseStructType(ctx, true)
 
     if ret?
       ret'begin = begin
@@ -418,7 +426,7 @@ func parserParseType(ctx ptr synt:ParserContext) ptr ast:PType
   /if
 
   if tok'type == tokens:STRUCT
-    ret = parserParseStructType(ctx)
+    ret = parserParseStructType(ctx, false)
   /if
 
   if tok'type == tokens:VAL

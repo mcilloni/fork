@@ -451,6 +451,10 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     type = tokens:CBRAC
   /if
 
+  if txt:strequals(strToken, "}")
+    type = tokens:CCURLY
+  /if
+
   if txt:strequals(strToken, ":")
     type = tokens:COLON
   /if
@@ -616,6 +620,10 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     type = tokens:OBRAC
   /if
 
+  if txt:strequals(strToken, "{")
+    type = tokens:OCURLY
+  /if
+
   if txt:strequals(strToken, "(")
     type = tokens:OPAR
   /if
@@ -754,6 +762,11 @@ func ttypeStr(tt uint16) ptr uint8
   if tt == tokens:CONTINUE
     return "continue"
   /if
+
+  if tt == tokens:CCURLY
+    return "}"
+  /if
+
 
   if tt == tokens:CPAR
     return ")"
@@ -897,6 +910,10 @@ func ttypeStr(tt uint16) ptr uint8
 
   if tt == tokens:OBRAC
     return "["
+  /if
+
+  if tt == tokens:OCURLY
+    return "{"
   /if
 
   if tt == tokens:OPAR
