@@ -24,6 +24,7 @@ alias Tokenizer struct (
 
 # string functions
 decl func numtostr(num uintptr, str ptr uint8, strLen uintptr) ptr uint8
+decl func representNum(n int32) ptr uint8
 decl func strappend(str1 ptr uint8, str2 ptr uint8) ptr uint8
 decl func strclone(str ptr uint8) ptr uint8
 decl func strcompare(s1 data, s2 data) int8

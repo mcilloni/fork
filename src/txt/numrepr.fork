@@ -1,0 +1,203 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module txt
+
+import cs
+import mem
+import tty
+
+
+func low(n uint32) ptr uint8
+  if n == 0
+    return "zero"
+  /if
+
+  if n == 1
+    return "one"
+  /if
+
+  if n == 2
+    return "two"
+  /if
+
+  if n == 3
+    return "three"
+  /if
+
+  if n == 4
+    return "four"
+  /if
+
+  if n == 5
+    return "five"
+  /if
+
+  if n == 6
+    return "six"
+  /if
+
+  if n == 7
+    return "seven"
+  /if
+
+  if n == 8
+    return "eight"
+  /if
+
+  if n == 9
+    return "nine"
+  /if
+
+  if n == 10
+    return "ten"
+  /if
+
+  if n == 11
+    return "eleven"
+  /if
+
+  if n == 12
+    return "twelve"
+  /if
+
+  if n == 13
+    return "thirteen"
+  /if
+
+  if n == 14
+    return "fourteen"
+  /if
+
+  if n == 15
+    return "fifteen"
+  /if
+
+  if n == 16
+    return "sixteen"
+  /if
+
+  if n == 17
+    return "seventeen"
+  /if
+
+  if n == 18
+    return "eighteen"
+  /if
+
+  if n == 19
+    return "nineteen"
+  /if
+
+  return null
+/func
+
+
+func tens(n uint32) ptr uint8
+  mut t = n / 10
+
+  if t == 2
+    return "twenty"
+  /if
+
+  if t == 3
+    return "thirty"
+  /if
+
+  if t == 4
+    return "fourty"
+  /if
+
+  if t == 5
+    return "fifty"
+  /if
+
+  if t == 6
+    return "sixty"
+  /if
+
+  if t == 7
+    return "seventy"
+  /if
+
+  if t == 8
+    return "eighty"
+  /if
+
+  if t == 9
+    return "ninety"
+  /if
+/func
+
+
+func twociphers(cs ptr cs:Charstash, n uint32)
+  cs.add(tens(n))
+
+  mut units = n mod 10
+
+  if units > 0
+    cs.add(low(units))
+  /if
+/func
+
+
+func repr(cs ptr cs:Charstash, n uint32)
+  if n < 20
+    cs.add(low(n))
+    return
+  /if
+
+  if n < 100
+    twociphers(cs, n)
+    return
+  /if
+
+  if n < 1000
+    cs.add(low(n / 100))
+    cs.add("hundred")
+    repr(cs, n mod 100)
+    return
+  /if
+
+  if n < 1000000
+    repr(cs, n / 1000)
+    cs.add("thousand")
+    repr(cs, n mod 1000)
+    return
+  /if
+
+  if n < 1000000000
+    repr(cs, n / 1000000)
+    cs.add("million")
+    repr(cs, n mod 1000000)
+    return
+  /if
+
+  # otherwise it's from 1 billion to 2**32 - 1. Lucky you.
+
+  cs.add(low(n / 1000000000))
+  cs.add("billion")
+  repr(cs, n mod 1000000000)
+/func
+
+
+func representNum(n int32) ptr uint8
+  mut cs = cs:new(20)
+
+  if n < 0
+    cs.add("minus")
+
+    n = -n
+  /if
+
+  repr(cs, cast<uint32>(n))
+
+  return cs:unwrap(cs)
+/func
