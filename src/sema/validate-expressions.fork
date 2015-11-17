@@ -519,6 +519,10 @@ func validateArithExpr(rsv sema:Resolver,
     return validateArithPtrExpr(rsv, pexpr, ltype, rtype, recList, errors)
   /if
 
+  if op == tokens:POW
+    return rsv'ctx.matchBuiltin("uintptr")
+  /if
+
   # In this case, we only have integers, so we just need to evaluate the larger
   # type or resolve to boolean in case of a major/minor comparison.
 
