@@ -174,7 +174,7 @@ func parserParseId(ctx ptr synt:ParserContext) ptr ast:PExpr
   mut first = synt:nextTok(ctx)
   mut ret = astfn:pexprNewSingle(first)
 
-  if ctx'next != null and ctx'next'type == tokens:COLON
+  if ctx'next? and ctx'next'type == tokens:COLON
     mut colon = synt:nextTok(ctx)
 
     mut id = synt:expect(ctx, tokens:ID)
@@ -222,6 +222,59 @@ func parserParseParens(ctx ptr synt:ParserContext) ptr ast:PExpr
 /func
 
 
+func parserParseExprList(ctx ptr synt:ParserContext,
+                         parent ptr ast:PExpr,
+                         endToken uint16) ptr ast:PExpr
+
+  mut parentNode = cast<ptr ast:PNode>(parent)
+
+  while ctx'next? and ctx'next'type != endToken
+    mut expr = parserParseAssignExpr(ctx)
+
+    if not expr?
+      ast:pnodeFree(parentNode)
+
+      return null
+    /if
+
+    astfn:pnodeAppendChild(parentNode, cast<ptr ast:PNode>(expr))
+
+    if not ctx'next? or not (ctx'next'type == tokens:COMMA or ctx'next'type == endToken)
+      ctx'prs'err = lex:errorMism(ctx'last, "a comma ','", lex:tokenStr(ctx'next))
+      ast:pnodeFree(parentNode)
+
+      return null
+    /if
+
+    if ctx'next'type == endToken
+      break
+    /if
+
+    synt:discardTok(ctx) # discard the comma
+  /while
+
+  mut end = synt:expect(ctx, endToken)
+  if not end?
+    ast:pnodeFree(parentNode)
+
+    return null
+  /if
+
+  parent'node'end = lex:tokDiscardEnd(end)
+
+  return parent
+/func
+
+
+func parserParseCurly(ctx ptr synt:ParserContext) ptr ast:PExpr
+  mut ocurly = synt:nextTok(ctx)
+
+  mut ret = parserParseExprList(ctx, astfn:pexprNewSingle(ocurly), tokens:CCURLY)
+
+  return ret
+/func
+
+
 func parserParsePrimaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
 
   if not ctx'next?
@@ -252,7 +305,7 @@ func parserParsePrimaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
   /if
 
   if ctx'next'type == tokens:OCURLY
-    
+    return parserParseCurly(ctx)
   /if
 
   if ctx'next'type != tokens:OPAR
@@ -288,52 +341,8 @@ func parserParseCallExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:
   /if
 
   mut begin = lex:tokExtractBegin(opar)
-  mut callExpr = astfn:pexprNew(opar, lhs, null, begin, begin)
-  mut callPNode = cast<ptr ast:PNode>(callExpr)
 
-  mut next = ctx'next
-  mut first = true
-
-
-  while ctx'next != null and ctx'next'type != tokens:CPAR
-
-    if ctx'next'type != tokens:COMMA and not first
-
-      ctx'prs'err = lex:errorMism(ctx'last, "a comma ','", lex:tokenStr(ctx'next))
-      ast:pnodeFree(callPNode)
-      return null
-
-    else
-
-    #if it's not the first argument than it is COMMA
-      if not first
-        synt:discardTok(ctx)
-      else
-        first = false
-      /if
-
-    /if
-
-    mut arg = parserParseAssignExpr(ctx)
-    if arg == null
-      ast:pnodeFree(callPNode)
-      return null
-    /if
-
-    astfn:pnodeAppendChild(callPNode, cast<ptr ast:PNode>(arg))
-
-  /while
-
-  mut cpar = synt:expect(ctx, tokens:CPAR)
-  if cpar == null
-    ast:pnodeFree(callPNode)
-    return null
-  /if
-
-  callExpr'node'end = lex:tokDiscardEnd(cpar)
-
-  return callExpr
-
+  return parserParseExprList(ctx, astfn:pexprNew(opar, lhs, null, begin, begin), tokens:CPAR)
 /func
 
 

@@ -311,12 +311,16 @@ func pexprDumpInfo(pexpr ptr ast:PExpr, depth uintptr)
           if pexpr'opType == tokens:OBRAC
             tty:out("an array access")
           else
-            tty:out(lex:tokenStr(ptr tok))
+            if pexpr'opType == tokens:OCURLY
+              tty:out("a struct literal")
+            else
+              tty:out(lex:tokenStr(ptr tok))
 
-            if pexpr'opType == tokens:CAST or pexpr'opType == tokens:SIZE
-              tty:out(" to ")
+              if pexpr'opType == tokens:CAST or pexpr'opType == tokens:SIZE
+                tty:out(" to ")
 
-              ptypeDump(cast<ptr ast:PType>(pexpr'node'value))
+                ptypeDump(cast<ptr ast:PType>(pexpr'node'value))
+              /if
             /if
           /if
         /if
