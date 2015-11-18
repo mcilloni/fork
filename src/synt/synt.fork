@@ -184,7 +184,13 @@ func parserParseIdType(ctx ptr synt:ParserContext, name ptr uint8) ptr ast:PType
 
 func tokenIsTypeStart(tok ptr lex:Token) bool
   mut ttype = tok'type
-  return ttype == tokens:STRUCT or ttype == tokens:FUNC or ttype == tokens:PTR or ttype == tokens:VAL or ttype == tokens:ID or ttype == tokens:OBRAC
+  return    ttype == tokens:STRUCT \
+         or ttype == tokens:FUNC \
+         or ttype == tokens:PTR \
+         or ttype == tokens:VAL \
+         or ttype == tokens:ID \
+         or ttype == tokens:OBRAC \
+         or ttype == tokens:OCURLY
 /func
 
 

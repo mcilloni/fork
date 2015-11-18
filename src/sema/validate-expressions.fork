@@ -707,10 +707,10 @@ func validateFunctionCallExpr(rsv sema:Resolver,
     mut cs = cs:new(20)
     cs.add("can't call function ")
 
-    if ltype'name != null
+    if ltype'name?
       cs.add("'")
 
-      if ltype'moduleName != null
+      if ltype'moduleName?
         cs.add(accType'moduleName)
         cs.add(":")
       /if
@@ -746,7 +746,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
     mut expType = cast<ptr ast:Type>(expPair'value)
 
     mut gotType = sema:validateExprRecl(rsv, gotParam, recList, errors)
-    if gotType == null
+    if not gotType?
       return null
     /if
 
@@ -1266,6 +1266,37 @@ func validateMeExpr(rsv sema:Resolver,
 /func
 
 
+func validateStructLiteralExpr(rsv sema:Resolver,
+                               pexpr ptr ast:PExpr,
+                               recList,errors ptr list:List) ptr ast:Type
+
+  mut scope = cast<ptr ast:PNode>(pexpr)
+  mut leavesLen = scope'leaves.len()
+  mut i int32 = 0
+
+  mut members = kv:strnew(leavesLen)
+  members.setFreeFuncs(ptr mem:free, null)
+
+  while i < leavesLen
+    mut param = cast<ptr ast:PExpr>(val scope'leaves.get(i))
+    mut type = sema:validateExprRecl(rsv, param, recList, errors)
+
+    if not type?
+      kv:free(members)
+
+      return null
+    /if
+
+    members.put(txt:representNum(i), type)
+
+    i++
+  /while
+
+  return astfn:typeNewStruct(rsv'root'typePool, null, null, members)
+
+/func
+
+
 func validateExprRecl(rsv sema:Resolver,
                       pexpr ptr ast:PExpr,
                       recList,errors ptr list:List) ptr ast:Type
@@ -1293,13 +1324,17 @@ func validateExprRecl(rsv sema:Resolver,
           if op == tokens:SIZE
             pexpr'type = validateSizeExpr(rsv, pexpr, errors)
           else
-            if ttypeIsTernary(op)
-              pexpr'type = validateTernaryExpr(rsv, pexpr, recList, errors)
+            if op == tokens:OCURLY
+              pexpr'type = validateStructLiteralExpr(rsv, pexpr, recList, errors)
             else
-              if ttypeIsBinary(op)
-                pexpr'type = validateBinaryExpr(rsv, pexpr, recList, errors)
+              if ttypeIsTernary(op)
+                pexpr'type = validateTernaryExpr(rsv, pexpr, recList, errors)
               else
-                pexpr'type = validateUnaryExpr(rsv, pexpr, recList, errors)
+                if ttypeIsBinary(op)
+                  pexpr'type = validateBinaryExpr(rsv, pexpr, recList, errors)
+                else
+                  pexpr'type = validateUnaryExpr(rsv, pexpr, recList, errors)
+                /if
               /if
             /if
           /if

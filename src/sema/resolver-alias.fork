@@ -130,6 +130,8 @@ func convertSymbolList(rsv sema:Resolver,
       if type'type == ast:TYPE_FUNC
         errors.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, "function types are abstract - use pointers to them"))
 
+        kv:free(members)
+
         return null
       /if
 
