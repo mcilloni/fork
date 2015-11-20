@@ -36,6 +36,11 @@ func freeElem(elem ptr ctrans:Elem)
 /func
 
 
+func needsStructCopy(to,from ptr ast:Type) bool
+  return ast:typeIsStruct(from) and (not to'name? or not from'name?)
+/func
+
+
 method ctrans:Elem.copy() ptr ctrans:Elem
   mut ret = cast<ptr ctrans:Elem>(mem:alloc(size(ctrans:Elem)))
 
@@ -162,18 +167,7 @@ func refhack(el ctrans:Elem, origType ptr ast:Type) ptr uint8
 
 
 func sizeelem(opType,aType ptr ast:Type) ctrans:Elem
-  mut cs = cs:new(20)
-
-  cs.add("sizeof(")
-  cs.wrapType(opType)
-  cs.add(")")
-
-  mut ret ctrans:Elem
-
-  ret'str = cs:unwrap(cs)
-  ret'type = aType
-
-  return ret
+  return intelem(opType'typeSize, aType)
 /func
 
 
@@ -212,14 +206,52 @@ method ctrans:Block.access(from,index ctrans:Elem,
 
 
 method ctrans:Block.assign(to,from ctrans:Elem, fname ptr uint8, line uintptr)
-  me.padStmts()
-  me'stmts.addDebugLine(fname, line)
 
-  me.padStmts()
-  me'stmts.addWord(to.value())
-  me'stmts.addWord("=")
-  me'stmts.add(from.value())
-  me'stmts.addLine(";")
+  if needsStructCopy(to'type, from'type)
+    me.assignAnonStruct(to, from, fname, line)
+  else
+    me.padStmts()
+    me'stmts.addDebugLine(fname, line)
+
+    me.padStmts()
+    me'stmts.addWord(to.value())
+    me'stmts.addWord("=")
+    me'stmts.add(from.value())
+    me'stmts.addLine(";")
+  /if
+/method
+
+
+method ctrans:Block.assignAnonStruct(to,from ctrans:Elem,
+                                     fname ptr uint8,
+                                     line uintptr)
+
+  mut toMembers = to'type'members
+  mut fromMembers = from'type'members
+
+  mut len = toMembers.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut toPair = toMembers.getAt(i)
+    mut fromPair = fromMembers.getAt(i)
+
+    mut toName = cast<ptr uint8>(toPair'key)
+    mut fromName = cast<ptr uint8>(fromPair'key)
+
+    mut toType = cast<ptr ast:Type>(toPair'value)
+    mut fromType = cast<ptr ast:Type>(fromPair'value)
+
+    mut toMem = structelem(to.value(), toName, to'type, toType)
+    mut fromMem = structelem(from.value(), fromName, from'type, fromType)
+
+    me.assign(toMem, fromMem, fname, line)
+
+    toMem.wipe()
+    fromMem.wipe()
+
+    i++
+  /while
 /method
 
 
@@ -266,7 +298,7 @@ method ctrans:Block.castexpr(expr ctrans:Elem,
   me'stmts.addWord("=")
 
   me'stmts.add("(")
-  me'stmts.wrapType(castType)
+  me'unit.wrapType(me'stmts, castType, -1)
   me'stmts.add(") ")
 
   me'stmts.add(expr.value())
@@ -357,12 +389,12 @@ method ctrans:Block.label(lb ctrans:Elem, empty bool)
 method ctrans:Block.nextlabel() ctrans:Elem
   mut ret ctrans:Elem
 
-  ret'str = cast<ptr uint8>(mem:zalloc(21))
+  ret'str = cast<ptr uint8>(mem:zalloc(22))
   ret'str[0] = "_"[0]
 
-  txt:numtostr(val me'cnt, ptr ret'str[1], 255)
+  txt:numtostr(me'unit'cnt, ptr ret'str[1], 255)
 
-  val me'cnt = val me'cnt + 1
+  me'unit'cnt++
 
   ret'type = null
 
@@ -462,12 +494,12 @@ method ctrans:Block.ref(elem ctrans:Elem,
 method ctrans:Block.ssavar(type ptr ast:Type) ctrans:Elem
   mut ret ctrans:Elem
 
-  ret'str = cast<ptr uint8>(mem:zalloc(21))
+  ret'str = cast<ptr uint8>(mem:zalloc(22))
   ret'str[0] = "_"[0]
 
-  txt:numtostr(val me'cnt, ptr ret'str[1], 255)
+  txt:numtostr(me'unit'cnt, ptr ret'str[1], 21)
 
-  val me'cnt = val me'cnt + 1
+  me'unit'cnt++
 
   ret'type = type
 
@@ -497,13 +529,14 @@ method ctrans:Block.str(value ptr uint8,
 
 method ctrans:Block.structaccess(root ptr ast:PRoot,
                                  e1,e2 ptr ast:PExpr,
+                                 type ptr ast:Type,
                                  fname ptr uint8,
                                  line uintptr) ctrans:Elem
 
   mut s = me.expr(root, e1, fname, line)
 
 
-  mut ret = structelem(s.value(), cast<ptr uint8>(e2'node'value), e1'type, e2'type)
+  mut ret = structelem(s.value(), cast<ptr uint8>(e2'node'value), e1'type, type)
 
   s.wipe()
 
@@ -565,7 +598,7 @@ method ctrans:Block.newDecl(ext bool,
   cs.addDebugLine(fname, line)
 
   cs.addPad(me'pad)
-  cs.genCsym(methodType, null, name, type, false)
+  me'unit.genCsym(cs, methodType, null, name, type, me'pad, false)
   cs.addLine(";")
 /method
 
@@ -589,19 +622,15 @@ method ctrans:Block.declaration(root ptr ast:PRoot,
   me.newDecl(ext, methodType, pdecl'sym'name, fname, type, stmt'begin'line)
 
   if not ext and stmt'leaves.len() > 0
+    mut id = elem(pdecl'sym'name, type)
+
     mut expr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
-    mut elem = me.expr(root, expr, fname, stmt'begin'line)
+    mut exprEl = me.expr(root, expr, fname, stmt'begin'line)
 
-    me.padStmts()
-    me'stmts.addDebugLine(fname, stmt'begin'line)
+    me.assign(id, exprEl, fname, stmt'begin'line)
 
-    me.padStmts()
-    me'stmts.add(pdecl'sym'name)
-    me'stmts.add(" = ")
-    me'stmts.add(elem.value())
-    me'stmts.addLine(";")
-
-    elem.wipe()
+    exprEl.wipe()
+    id.wipe()
   /if
 /method
 
@@ -858,6 +887,37 @@ method ctrans:Block.handleShortcircuit(root ptr ast:PRoot,
 /method
 
 
+method ctrans:Block.handleStructLiteral(root ptr ast:PRoot,
+                                        lit ptr ast:PExpr,
+                                        type ptr ast:Type,
+                                        fname ptr uint8,
+                                        line uintptr) ctrans:Elem
+
+  type = type ?? lit'type
+
+  mut ret = me.nextvar(type, fname, line)
+  mut members = type'members
+
+  mut len = lit'node'leaves.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut param = cast<ptr ast:PExpr>(val lit'node'leaves.get(i))
+    mut paramExpr = me.expr(root, param, fname, line)
+    mut memberName = cast<ptr uint8>(members.getAt(i)'key)
+
+    mut member = structelem(ret.value(), memberName, type, param'type)
+
+    me.assign(member, paramExpr, fname, line)
+
+    member.wipe()
+    i++
+  /while
+
+  return ret
+/method
+
+
 method ctrans:Block.handleTern(root ptr ast:PRoot,
                                condEx,c1,c2 ptr ast:PExpr,
                                type ptr ast:Type,
@@ -915,10 +975,11 @@ method ctrans:Block.handleTern(root ptr ast:PRoot,
 /method
 
 
-method ctrans:Block.expr(root ptr ast:PRoot,
-                         pexpr ptr ast:PExpr,
-                         fname ptr uint8,
-                         line uintptr) ctrans:Elem
+method ctrans:Block.exprWithOptimizedType(root ptr ast:PRoot,
+                                          pexpr ptr ast:PExpr,
+                                          destType ptr ast:Type,
+                                          fname ptr uint8,
+                                          line uintptr) ctrans:Elem
 
   mut value = pexpr'node'value
 
@@ -984,7 +1045,7 @@ method ctrans:Block.expr(root ptr ast:PRoot,
     mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
-    return me.structaccess(root, e1, e2, fname, line)
+    return me.structaccess(root, e1, e2, pexpr'type, fname, line)
   /if
 
   if pexpr'opType == tokens:SIZE
@@ -1019,6 +1080,10 @@ method ctrans:Block.expr(root ptr ast:PRoot,
     index.wipe()
 
     return ret
+  /if
+
+  if pexpr'opType == tokens:OCURLY
+    return me.handleStructLiteral(root, pexpr, destType, fname, line)
   /if
 
   if pexpr'opType == tokens:DQUEST
@@ -1085,7 +1150,7 @@ method ctrans:Block.expr(root ptr ast:PRoot,
 
     mut el = me.expr(root, e, fname, line)
 
-    mut ret = deref(el, pexpr'type)
+    mut ret = deref(el, e'type)
 
     el.wipe()
 
@@ -1121,4 +1186,13 @@ method ctrans:Block.expr(root ptr ast:PRoot,
   el.wipe()
 
   return ret
+/method
+
+
+method ctrans:Block.expr(root ptr ast:PRoot,
+                         pexpr ptr ast:PExpr,
+                         fname ptr uint8,
+                         line uintptr) ctrans:Elem
+
+  return me.exprWithOptimizedType(root, pexpr, null, fname, line)
 /method

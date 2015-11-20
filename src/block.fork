@@ -38,15 +38,15 @@ func lsNew(line ast:Line, str ptr uint8) ptr ctrans:LineStr
 
 
 # Block functions
-func blNew(cnt ptr uintptr, pad uintptr, rvo bool) ctrans:Block
+func blNew(unit ptr ctrans:Transl, pad uintptr, rvoType ptr ast:Type) ctrans:Block
   mut ret ctrans:Block
 
   ret'decls = cs:new(20)
   ret'vars = cs:new(20)
   ret'stmts = cs:new(20)
-  ret'cnt = cnt
+  ret'unit = unit
   ret'pad = pad
-  ret'rvo = rvo
+  ret'rvoType = rvoType
 
   return ret
 /func
@@ -146,14 +146,13 @@ method ctrans:Block.returnstmt(stmt ptr ast:PNode,
 
     elem = me.expr(root, cast<ptr ast:PExpr>(val expr), fname, line)
 
-    if me'rvo
-      me.padStmts()
-      me'stmts.addDebugLine(fname, line)
+    if me'rvoType?
+      mut rvoOut ctrans:Elem
 
-      me.padStmts()
-      me'stmts.add("*_rvoOut = ")
-      me'stmts.add(elem.value())
-      me'stmts.addLine(";")
+      rvoOut'str = "(*_rvoOut)"
+      rvoOut'type = me'rvoType
+
+      me.assign(rvoOut, elem, fname, line)
 
       elem.wipe()
     /if
@@ -165,7 +164,7 @@ method ctrans:Block.returnstmt(stmt ptr ast:PNode,
   me.padStmts()
   me'stmts.add("return")
 
-  if expr? and not me'rvo
+  if expr? and not me'rvoType?
     me'stmts.add(" ")
     me'stmts.add(elem.value())
 
@@ -227,7 +226,7 @@ method ctrans:Block.subblock(root ptr ast:PRoot,
                              block ptr ast:PBlock,
                              fname ptr uint8)
 
-  ctrans:translBlock(me'stmts, me'cnt, root, block, me'rvo, fname, me'pad + 2)
+  ctrans:translBlock(me'stmts, me'unit, root, block, me'rvoType, fname, me'pad + 2)
 /method
 
 
@@ -294,10 +293,10 @@ method ctrans:Block.whileblock(stmt ptr ast:PNode,
 
 
 func translBlock(cs ptr cs:Charstash,
-                 cnt ptr uintptr,
+                 unit ptr ctrans:Transl,
                  root ptr ast:PRoot,
                  block ptr ast:PBlock,
-                 rvo bool,
+                 rvoType ptr ast:Type,
                  fname ptr uint8,
                  p uintptr)
 
@@ -305,7 +304,7 @@ func translBlock(cs ptr cs:Charstash,
 
   cs.addLine("{")
 
-  mut bl = blNew(cnt, p, rvo)
+  mut bl = blNew(unit, p, rvoType)
 
   mut bLen = block'node'leaves.len()
   mut i uintptr = 0

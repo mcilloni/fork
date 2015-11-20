@@ -38,30 +38,44 @@ decl method Transl.function(root ptr ast:PRoot,
                             type ptr ast:Type,
                             fn ptr ast:PDecl)
 
+decl method Transl.genCsym(cs ptr cs:Charstash,
+                           typeName,moduleName,name ptr uint8,
+                           type ptr ast:Type,
+                           pad intptr,
+                           tdf bool)
+
 decl method Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
 decl method Transl.globVar(sym ptr uint8, root ptr ast:PRoot, expr ptr ast:PExpr)
 decl method Transl.includeFord(fordName ptr uint8)
 decl method Transl.translate(root ptr ast:PRoot)
+
+decl method Transl.translSym(moduleName ptr uint8,
+                             pdecl ptr ast:PDecl,
+                             dinfo ptr ast:DeclInfo) ptr uint8
+
 decl method Transl.typedef(name ptr uint8, type ptr ast:Type)
+decl method Transl.wrapType(cs ptr cs:Charstash,
+                            type ptr ast:Type,
+                            pad intptr)
 
 
 alias Block struct(
   decls,vars,stmts ptr cs:Charstash,
-  cnt ptr uintptr,
+  unit ptr Transl,
   pad uintptr,
-  rvo bool
+  rvoType ptr ast:Type
 )
 
 
-decl func blNew(cnt ptr uintptr, pad uintptr, rvo bool) Block
+decl func blNew(unit ptr Transl, pad uintptr, rvoType ptr ast:Type) Block
 
-
+decl method Block.assign(to,from Elem, fname ptr uint8, line uintptr)
 decl method Block.declaration(root ptr ast:PRoot,
                               fname ptr uint8,
                               block ptr ast:PBlock,
                               stmt ptr ast:PNode)
 
-decl method ctrans:Block.decPad()
+decl method Block.decPad()
 decl method Block.dumpInCs(cs ptr cs:Charstash)
 
 decl method Block.expr(root ptr ast:PRoot,
@@ -69,7 +83,7 @@ decl method Block.expr(root ptr ast:PRoot,
                               fname ptr uint8,
                               line uintptr) Elem
 
-decl method ctrans:Block.incPad()
+decl method Block.incPad()
 decl method Block.padDecls()
 decl method Block.padStmts()
 decl method Block.padVars()
@@ -81,14 +95,12 @@ decl method Block.statement(root ptr ast:PRoot,
 
 
 decl func translBlock(cs ptr cs:Charstash,
-                      cnt ptr uintptr,
+                      unit ptr Transl,
                       root ptr ast:PRoot,
                       block ptr ast:PBlock,
-                      rvo bool,
+                      rvoType ptr ast:Type,
                       fname ptr uint8,
                       p uintptr)
-
-decl func translSym(moduleName ptr uint8, pdecl ptr ast:PDecl, dinfo ptr ast:DeclInfo) ptr uint8
 
 
 # symbol functions
@@ -103,10 +115,6 @@ decl method cs:Charstash.addDebugLine(fname ptr uint8, line uintptr)
 decl method cs:Charstash.addMethSym(typeName,name ptr uint8)
 decl method cs:Charstash.addPad(p uintptr)
 decl method cs:Charstash.addSymName(modName,name ptr uint8)
-decl method cs:Charstash.genCsym(typeName,moduleName,name ptr uint8,
-                                 type ptr ast:Type,
-                                 tdf bool)
-decl method cs:Charstash.wrapType(type ptr ast:Type)
 
 alias LineStr struct(
   line ast:Line,
@@ -122,9 +130,13 @@ alias Elem struct(
   type ptr ast:Type
 )
 
+
 decl method Elem.value() ptr uint8
 decl method Elem.type() ptr ast:Type
 decl method Elem.wipe()
+
+
+decl func deref(elem Elem, ptrType ptr ast:Type) Elem
 
 
 # operator functions

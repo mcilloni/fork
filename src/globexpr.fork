@@ -115,7 +115,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
 
   if pexpr'opType == tokens:SIZE
       me'vars.add("sizeof(")
-      me'vars.wrapType(pexpr'sizeType)
+      me.wrapType(me'vars, pexpr'sizeType, -1)
       me'vars.add(")")
 
       return
@@ -125,7 +125,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
     mut expr = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
     me'vars.add("((")
-    me'vars.wrapType(pexpr'type)
+    me.wrapType(me'vars, pexpr'type, -1)
     me'vars.add(") ")
 
     me.globExpr(root, expr)

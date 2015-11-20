@@ -16,22 +16,27 @@ import cs
 import ctrans
 import mem
 import proc
+import txt
 import tty
 
 
 # LRStr: represents a string, but with left and right separated.
 alias LRStr struct(
-  left,right ptr cs:Charstash
+  left,right ptr cs:Charstash,
+  unit ptr ctrans:Transl,
+  pad intptr
 )
 
 
 # LRStr functions
 
-func lrNew() LRStr
+func lrNew(unit ptr ctrans:Transl, pad intptr) LRStr
   mut ret LRStr
 
   ret'left  = cs:new(20)
   ret'right = cs:new(20)
+  ret'unit = unit
+  ret'pad = pad
 
   return ret
 /func
@@ -71,7 +76,7 @@ method LRStr.addFuncType(type ptr ast:Type, methTarget ptr uint8)
   if rvo
     empty = false
 
-    paramsCs.genCsym(null, null, "*_rvoOut", type'retType, false)
+    me'unit.genCsym(paramsCs, null, null, "*_rvoOut", type'retType, -1, false)
   /if
 
   while i < len
@@ -80,7 +85,8 @@ method LRStr.addFuncType(type ptr ast:Type, methTarget ptr uint8)
     /if
 
     mut pair = type'members.getAt(i)
-    paramsCs.genCsym(null, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value), false)
+    me'unit.genCsym(paramsCs, null, null, cast<ptr uint8>(pair'key), \
+                       cast<ptr ast:Type>(pair'value), -1, false)
     i++
   /while
 
@@ -124,6 +130,7 @@ method LRStr.addPtrType(type ptr ast:Type)
 
 
 method LRStr.addStructType(type ptr ast:Type)
+  mut doPad = me'pad > 0
   mut cs = me'left
 
   cs.addWord("struct")
@@ -132,7 +139,11 @@ method LRStr.addStructType(type ptr ast:Type)
     cs.addSymName(type'moduleName, type'name)
   /if
 
-  cs.addLine(" {")
+  cs.add("{")
+
+  if doPad
+    cs.addChar(10)
+  /if
 
   mut i uintptr = 0
   mut len = type'members.len()
@@ -140,14 +151,49 @@ method LRStr.addStructType(type ptr ast:Type)
   while i < len
     mut pair = type'members.getAt(i)
 
-    cs.add("  ")
-    cs.genCsym(null, null, cast<ptr uint8>(pair'key), cast<ptr ast:Type>(pair'value), false)
-    cs.addLine(";")
+    if doPad
+      cs.addPad(me'pad + 2)
+    else
+      cs.add("  ")
+    /if
+
+    me'unit.genCsym(cs, null, null, cast<ptr uint8>(pair'key), \
+                     cast<ptr ast:Type>(pair'value), \
+                     doPad => me'pad + 2 || -1, \
+                     false)
+    cs.add(";")
+
+    if doPad
+      cs.addChar(10)
+    /if
 
     i++
   /while
 
+  if doPad
+    cs.addPad(me'pad)
+  /if
+
   cs.add("} ")
+/method
+
+
+method LRStr.syntetizeStructType(type ptr ast:Type)
+  mut cnt = me'unit'cnt
+
+  me'unit'cnt++
+
+  mut name = cast<ptr uint8>(mem:zalloc(28))
+  mem:copy(name, "_struct", 7)
+
+  txt:numtostr(cnt, name + 7, 21)
+
+  me'unit.typedef(name, type)
+
+  me'left.add(name)
+  me'left.add(" ")
+
+  mem:free(name)
 /method
 
 
@@ -197,7 +243,11 @@ method LRStr.addType(type ptr ast:Type, methTarget ptr uint8, full bool)
                 me'left.addSymName(type'moduleName, type'name)
                 me'left.add(" ")
               else
-                me.addStructType(type)
+                if full
+                  me.addStructType(type)
+                else
+                  me.syntetizeStructType(type)
+                /if
               /if
             /if
           /if
@@ -253,21 +303,55 @@ method cs:Charstash.dumpLr(lr LRStr)
 /method
 
 
-method cs:Charstash.genCsym(typeName,moduleName,name ptr uint8,
-                            type ptr ast:Type,
-                            tdf bool)
+method ctrans:Transl.genCsym(cs ptr cs:Charstash,
+                             typeName,moduleName,name ptr uint8,
+                             type ptr ast:Type,
+                             pad intptr,
+                             tdf bool)
 
-  mut lr = lrNew()
+  mut lr = lrNew(me, pad)
   lr.addSymName(typeName, moduleName, name, type, tdf)
 
-  me.dumpLr(lr)
+  cs.dumpLr(lr)
 /method
 
 
-method cs:Charstash.wrapType(type ptr ast:Type)
-  mut lr = lrNew()
+method ctrans:Transl.translSym(moduleName ptr uint8,
+                               pdecl ptr ast:PDecl,
+                               dinfo ptr ast:DeclInfo) ptr uint8
+
+  mut cs = cs:new(30)
+  mut name = pdecl'sym'name
+
+  # big hack for int main(int argc, char *argv[])
+  if     not moduleName? \
+     and txt:strequals(name, "main") \
+     and dinfo'declType == ast:PFUNCTION
+
+    cs.add("int main(int argc, char *argv[])")
+  else
+    mut typeName ptr uint8 = null
+
+    if dinfo'declType == ast:PMETHOD
+      typeName = ctrans:symMod(pdecl'methodTypeModule, pdecl'methodType)
+    /if
+
+    me.genCsym(cs, typeName, moduleName, name, dinfo'type, -1, false)
+
+    mem:free(typeName)
+  /if
+
+  return cs:unwrap(cs)
+/method
+
+
+method ctrans:Transl.wrapType(cs ptr cs:Charstash,
+                              type ptr ast:Type,
+                              pad intptr)
+
+  mut lr = lrNew(me, pad)
   lr.addType(type, null, false)
-  me.dumpLr(lr)
+  cs.dumpLr(lr)
 /method
 
 

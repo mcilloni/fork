@@ -54,10 +54,10 @@ method ctrans:Transl.extern(sym ptr uint8)
 
 method ctrans:Transl.fnblock(root ptr ast:PRoot,
                              block ptr ast:PBlock,
-                             rvo bool,
+                             rvoType ptr ast:Type,
                              fname ptr uint8)
 
-  ctrans:translBlock(me'funcs, ptr me'cnt, root, block, rvo, fname, 2)
+  ctrans:translBlock(me'funcs, me, root, block, rvoType, fname, 2)
 /method
 
 
@@ -69,11 +69,11 @@ method ctrans:Transl.function(root ptr ast:PRoot,
   me'funcs.addDebugLine(fname, fn'node'begin'line)
   me'funcs.addWord(sym)
 
-  mut rvo = ast:typeIsStruct(type'retType)
+  mut rvoType = ast:typeIsStruct(type'retType) => type'retType || null
 
   mut block = cast<ptr ast:PBlock>(val fn'node'leaves.get(0))
 
-  me.fnblock(root, block, rvo, fname)
+  me.fnblock(root, block, rvoType, fname)
 
   me'funcs.addLine("\n")
 /method
@@ -87,7 +87,7 @@ method ctrans:Transl.forkmain(root ptr ast:PRoot)
 
   mut block = cast<ptr ast:PBlock>(val entryN'node'leaves.get(0))
 
-  me.fnblock(root, block, false, root'fileName)
+  me.fnblock(root, block, null, root'fileName)
 
   me'funcs.addLine("\n")
 /method
@@ -108,7 +108,7 @@ method ctrans:Transl.globVar(sym ptr uint8, root ptr ast:PRoot, expr ptr ast:PEx
 method ctrans:Transl.typedef(name ptr uint8, type ptr ast:Type)
   me'typedefs.addWord("typedef")
 
-  me'typedefs.genCsym(null, me'modName, name, type, true)
+  me.genCsym(me'typedefs, null, me'modName, name, type, -1, true)
 
   me'typedefs.addLine(";\n")
 /method
@@ -200,7 +200,7 @@ method ctrans:Transl.genDecls(root ptr ast:PRoot)
 
       mut wantsModName = me'header or not child'isDecl
 
-      mut sym = ctrans:translSym(wantsModName => moduleName || null, child, dinfo)
+      mut sym = me.translSym(wantsModName => moduleName || null, child, dinfo)
 
       me.extern(sym)
 
