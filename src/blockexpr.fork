@@ -791,12 +791,17 @@ method ctrans:Block.handleFn(root ptr ast:PRoot,
     params.append(rvoRet.copy())
   /if
 
+  mut memTypes = ast:typeIsPtr(toCall'type) \
+                  => toCall'type'retType'members \
+                  || toCall'type'members
+
   mut i uintptr = 1
 
   while i < len
+    mut type = cast<ptr ast:Type>(memTypes.getAt(i - 1)'value)
     mut param = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(i))
 
-    mut paramExpr = me.expr(root, param, fname, line)
+    mut paramExpr = me.exprWithOptimizedType(root, param, type, fname, line)
     params.append(paramExpr.copy())
 
     i++
