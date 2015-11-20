@@ -1,0 +1,20 @@
+#  ctrans, Fork to C transpiler
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ctrans
+
+
+mut RELEASE uint64 = 8
+
+mut VER_MAJ uint8 = 0
+mut VER_MIN uint8 = 4
+mut VER_PATCH uint8 = 1
+
+mut VERSION = "0.4.1"

@@ -53,7 +53,7 @@ decl method Transl.translSym(moduleName ptr uint8,
                              pdecl ptr ast:PDecl,
                              dinfo ptr ast:DeclInfo) ptr uint8
 
-decl method Transl.typedef(name ptr uint8, type ptr ast:Type)
+decl method Transl.typedef(name ptr uint8, type ptr ast:Type, ssa bool)
 decl method Transl.wrapType(cs ptr cs:Charstash,
                             type ptr ast:Type,
                             pad intptr)
@@ -142,3 +142,11 @@ decl func deref(elem Elem, ptrType ptr ast:Type) Elem
 # operator functions
 decl func isBinOp(tok uint16) bool
 decl func opConv(tok uint16) ptr uint8
+
+
+decl mut RELEASE uint64
+
+decl mut VER_MAJ uint8
+decl mut VER_MIN uint8
+decl mut VER_PATCH uint8
+decl mut VERSION ptr uint8

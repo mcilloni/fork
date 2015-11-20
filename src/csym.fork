@@ -188,7 +188,7 @@ method LRStr.syntetizeStructType(type ptr ast:Type)
 
   txt:numtostr(cnt, name + 7, 21)
 
-  me'unit.typedef(name, type)
+  me'unit.typedef(name, type, true)
 
   me'left.add(name)
   me'left.add(" ")
