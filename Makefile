@@ -65,7 +65,17 @@ tarball: bootstrap
 	tar -cf - ctrans-release | xz -9e -c - > ctrans-release.txz
 
 
-tarball-fast: stage1
+tarball-cross: stage1
+	rm -f build/*.o
+	rm -rf build/ford
+	rm -rf build/include
+
+	mv build ctrans-release
+
+	tar -cf - ctrans-release | xz -9e -c - > ctrans-release.txz
+
+
+tarball-devrel: stage1
 	rm -f build/*.o
 	rm -rf build/ford
 	rm -rf build/include
