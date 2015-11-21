@@ -341,7 +341,7 @@ func validateExprCast(rsv sema:Resolver,
   mut childExpr = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
   mut chType = sema:validateExprRecl(rsv, childExpr, recList, errors)
 
-  if chType == null or not sema:typeIsCastable(rsv'ctx, cast<ptr ast:PNode>(pexpr), chType, pexpr'type)
+  if chType == null or not sema:typeIsCastable(rsv'ctx, cast<ptr ast:PNode>(pexpr), pexpr'type, chType)
     mut cs = cs:new(20)
 
     cs.add("can't cast ")
@@ -665,7 +665,9 @@ func validateArrayAccess(rsv sema:Resolver,
                          errors ptr list:List) ptr ast:Type
 
   if ltype'type != ast:TYPE_PTR and not ast:typeIsLoc(ltype)
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "array access is allowed only for pointers and locations"))
+    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                    rsv'root'fileName, \
+                    "array access is allowed only for pointers and locations"))
   /if
 
   if not ast:typeIsInt(rtype)
@@ -693,7 +695,9 @@ func validateFunctionCallExpr(rsv sema:Resolver,
   /if
 
   if not ast:typeIsFunc(accType)
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression is neither a function nor a pointer to a function"))
+    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                    rsv'root'fileName, \
+                    "expression is neither a function nor a pointer to a function"))
 
     return null
   /if

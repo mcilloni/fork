@@ -386,8 +386,6 @@ func symbolDump(cs ptr cs:Charstash, sym ptr ast:Symbol)
 
 func symlistDump(cs ptr cs:Charstash, symlist ptr kv:KVList)
 
-  cs.add("(")
-
   if symlist?
     mut len = symlist.len()
     mut i uintptr = 0
@@ -408,8 +406,6 @@ func symlistDump(cs ptr cs:Charstash, symlist ptr kv:KVList)
       i++
     /while
   /if
-
-  cs.add(")")
 /func
 
 
@@ -437,9 +433,11 @@ func typeDump(cs ptr cs:Charstash, type ptr ast:Type)
   if type'type == ast:TYPE_FUNC
     typeDumpName(cs, type)
 
-    cs.add("func")
+    cs.add("func (")
 
     symlistDump(cs, type'members)
+
+    cs.add(")")
 
     if type'retType != null
       cs.addChar(32)
@@ -455,9 +453,9 @@ func typeDump(cs ptr cs:Charstash, type ptr ast:Type)
       if type'type == ast:TYPE_STRUCT
         typeDumpName(cs, type)
 
-        cs.add("struct")
-
+        cs.add("{")
         symlistDump(cs, type'members)
+        cs.add("}")
       else
         if type'type == ast:TYPE_LOC
           cs.add("[")
@@ -518,8 +516,6 @@ func symbolSummarize(cs ptr cs:Charstash, sym ptr ast:Symbol)
 
 func symlistSummarize(cs ptr cs:Charstash, symlist ptr kv:KVList)
 
-  cs.add("(")
-
   if symlist?
     mut len = symlist.len()
     mut i uintptr = 0
@@ -540,8 +536,6 @@ func symlistSummarize(cs ptr cs:Charstash, symlist ptr kv:KVList)
       i++
     /while
   /if
-
-  cs.add(")")
 /func
 
 
@@ -561,13 +555,13 @@ func typeSummarize(cs ptr cs:Charstash, type ptr ast:Type)
     return
   /if
 
-  if type'type == ast:TYPE_PTR
+  if ast:typeIsPtr(type)
     cs.add("ptr ")
     typeSummarize(cs, type'retType)
     return
   /if
 
-  if type'type == ast:TYPE_LOC
+  if ast:typeIsLoc(type)
     cs.add("loc[")
     cs.addInt(type'itemCount)
     cs.add("] ")
@@ -575,12 +569,12 @@ func typeSummarize(cs ptr cs:Charstash, type ptr ast:Type)
     return
   /if
 
-  if type'type == ast:TYPE_FUNC
-    cs.add("func")
-
+  if ast:typeIsFunc(type)
+    cs.add("func (")
     symlistSummarize(cs, type'members)
+    cs.add(")")
 
-    if type'retType != null
+    if type'retType?
       cs.addChar(32)
 
       typeSummarize(cs, type'retType)
@@ -589,6 +583,13 @@ func typeSummarize(cs ptr cs:Charstash, type ptr ast:Type)
     return
   /if
 
+  if ast:typeIsStruct(type)
+    cs.add("{")
+    symlistSummarize(cs, type'members)
+    cs.add("}")
+
+    return 
+  /if
 
   ast:typeDump(cs, type)
 /func
