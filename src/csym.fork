@@ -76,7 +76,9 @@ method LRStr.addFuncType(type ptr ast:Type, methTarget ptr uint8)
   if rvo
     empty = false
 
-    me'unit.genCsym(paramsCs, null, null, "*_rvoOut", type'retType, -1, false)
+    #me'unit.genCsym(paramsCs, null, null, "*_rvoOut", type'retType, -1, false)
+    # MEGAHACK around C compiler: pass RVO as void.
+    paramsCs.add("void *_rvoHack")
   /if
 
   while i < len
@@ -216,7 +218,7 @@ method LRStr.addType(type ptr ast:Type, methTarget ptr uint8, full bool)
   if type'type == ast:TYPE_BOOL
     me'left.add("_Bool ")
   else
-    if type'type == ast:TYPE_DATA
+    if type'type == ast:TYPE_DATA or type'type == ast:TYPE_NULL
       me'left.add("void *")
     else
       if type'type == ast:TYPE_FUNC
@@ -234,20 +236,15 @@ method LRStr.addType(type ptr ast:Type, methTarget ptr uint8, full bool)
           if type'type == ast:TYPE_LOC or type'type == ast:TYPE_PTR
             me.addPtrType(type)
           else
-            if type'type == ast:TYPE_NULL
-              tty:errln("UNREACHABLE - TYPE NULL CAN'T BE VALID")
-              proc:abort()
+            if type'type == ast:TYPE_RECALIAS
+              me'left.add("struct ")
+              me'left.addSymName(type'moduleName, type'name)
+              me'left.add(" ")
             else
-              if type'type == ast:TYPE_RECALIAS
-                me'left.add("struct ")
-                me'left.addSymName(type'moduleName, type'name)
-                me'left.add(" ")
+              if full
+                me.addStructType(type)
               else
-                if full
-                  me.addStructType(type)
-                else
-                  me.syntetizeStructType(type)
-                /if
+                me.syntetizeStructType(type)
               /if
             /if
           /if

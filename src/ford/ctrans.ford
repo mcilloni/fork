@@ -84,6 +84,12 @@ decl method Block.expr(root ptr ast:PRoot,
                               line uintptr) Elem
 
 decl method Block.incPad()
+
+decl method ctrans:Block.newDecl(ext bool,
+                                 methodType,name,fname ptr uint8,
+                                 type ptr ast:Type,
+                                 line uintptr)
+
 decl method Block.padDecls()
 decl method Block.padStmts()
 decl method Block.padVars()
@@ -100,7 +106,8 @@ decl func translBlock(cs ptr cs:Charstash,
                       block ptr ast:PBlock,
                       rvoType ptr ast:Type,
                       fname ptr uint8,
-                      p uintptr)
+                      p uintptr,
+                      horribleRVOHack bool)
 
 
 # symbol functions

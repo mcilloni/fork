@@ -57,7 +57,7 @@ method ctrans:Transl.fnblock(root ptr ast:PRoot,
                              rvoType ptr ast:Type,
                              fname ptr uint8)
 
-  ctrans:translBlock(me'funcs, me, root, block, rvoType, fname, 2)
+  ctrans:translBlock(me'funcs, me, root, block, rvoType, fname, 2, true)
 /method
 
 

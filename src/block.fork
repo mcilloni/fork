@@ -226,7 +226,8 @@ method ctrans:Block.subblock(root ptr ast:PRoot,
                              block ptr ast:PBlock,
                              fname ptr uint8)
 
-  ctrans:translBlock(me'stmts, me'unit, root, block, me'rvoType, fname, me'pad + 2)
+  ctrans:translBlock(me'stmts, me'unit, root, block, me'rvoType, fname, \
+                      me'pad + 2, false)
 /method
 
 
@@ -298,13 +299,25 @@ func translBlock(cs ptr cs:Charstash,
                  block ptr ast:PBlock,
                  rvoType ptr ast:Type,
                  fname ptr uint8,
-                 p uintptr)
+                 p uintptr,
+                 horribleRVOHack bool)
 
   mut origp uintptr = p == 0 => 0 || p - 2
 
   cs.addLine("{")
 
   mut bl = blNew(unit, p, rvoType)
+
+  if rvoType? and horribleRVOHack
+    bl.newDecl(false, null, "*_rvoOut", fname, rvoType, block'node'begin'line - 1)
+
+    bl.padStmts()
+    bl'stmts.addDebugLine(fname, block'node'begin'line - 1)
+
+    bl.padStmts()
+    bl'stmts.addLine("_rvoOut = _rvoHack;\n")
+  /if
+
 
   mut bLen = block'node'leaves.len()
   mut i uintptr = 0
