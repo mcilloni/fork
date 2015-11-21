@@ -17,12 +17,14 @@ import parser
 import utils
 
 
+decl func parse(filename ptr uint8) {file ptr ast:PNode, err ptr parser:Issue}
+
+
+# private (in theory)
+
 alias Parser struct(
   filename ptr uint8,
-  err ptr parser:Issue
-)
-
-alias ParserContext struct (
+  err ptr parser:Issue,
   prs ptr Parser,
   lex ptr lex:Lexer,
   next ptr lex:Token,
@@ -30,19 +32,12 @@ alias ParserContext struct (
   moduleName ptr uint8
 )
 
-decl func parserParseExpr(ctx ptr ParserContext) ptr ast:PExpr
-
-decl func parserParseType(ctx ptr ParserContext) ptr ast:PType
-
-decl func nextTok(ctx ptr ParserContext) ptr lex:Token
-decl func discardTok(ctx ptr ParserContext)
-
-decl func parserFree(prs ptr Parser)
-decl func parserNew(file ptr uint8) ptr Parser
-decl func parserParse(prs ptr Parser) ptr ast:PNode
-
-decl func expect(ctx ptr ParserContext, tokType uint16) ptr lex:Token
-decl func expectDiscard(ctx ptr ParserContext, tokType uint16) bool
+decl method Parser.discardNext()
+decl method Parser.expect(ttype uint16) ptr lex:Token
+decl method Parser.expectDiscard(ttype uint16) bool
+decl method Parser.next() ptr lex:Token
+decl method Parser.parseExpr() ptr ast:PExpr
+decl method Parser.parseType() ptr ast:PType
 
 decl func isBinary(tok ptr lex:Token) bool
 decl func isUnary(tok ptr lex:Token) bool

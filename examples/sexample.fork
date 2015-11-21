@@ -23,16 +23,13 @@ entry
     proc:exit(1)
   /if
 
-  mut prs = synt:parserNew(argv'args[0])
-  mut root = synt:parserParse(prs)
+  mut res = synt:parse(argv'args[0])
 
-  if prs'err != null
-    parser:issueWriteOut(prs'err, ptr tty:err)
+  if res'err?
+    parser:issueWriteOut(res'err, ptr tty:err)
     proc:exit(1)
   /if
 
-  ast:pnodeDump(root)
-
-  synt:parserFree(prs)
-  ast:pnodeFree(root)
+  ast:pnodeDump(res'file)
+  ast:pnodeFree(res'file)
 /entry

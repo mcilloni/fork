@@ -161,20 +161,16 @@ method parser:Parser.parseDirectory(dirName ptr uint8,
 
 
 method parser:Parser.parseFile(fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr list:List
-  mut parser = synt:parserNew(fileName)
+  mut result = synt:parse(fileName)
 
-  val newRoot = synt:parserParse(parser)
-
-  mut error = parser'err
-
-  synt:parserFree(parser)
-
-  if not (val newRoot)?
+  if result'err?
     mut list = list:new()
-    list.append(error)
+    list.append(result'err)
 
     return list
   /if
+
+  val newRoot = result'file
 
   return sema:semaValidateAst(me, val newRoot)
 /method

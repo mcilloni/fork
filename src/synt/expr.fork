@@ -30,22 +30,22 @@ mut emptyExpr ast:PExpr
 
 
 func isBinary(tok ptr lex:Token) bool
-  return tok != null and (tok'type mod 10) < 2
+  return tok? and (tok'type mod 10) < 2
 /func
 
 
 func isUnary(tok ptr lex:Token) bool
-  return tok != null and not isBinary(tok)
+  return tok? and not isBinary(tok)
 /func
 
 
 func assocRight(tok ptr lex:Token) bool
-  return tok != null and ((tok'type & 1) != 0)
+  return tok? and ((tok'type & 1) != 0)
 /func
 
 
 func assocLeft(tok ptr lex:Token) bool
-  return tok != null and not assocRight(tok)
+  return tok? and not assocRight(tok)
 /func
 
 
@@ -59,7 +59,7 @@ func tokTypePrec(ttype uint16) int16
 
 
 func opPrec(tok ptr lex:Token) int16
-  if tok != null
+  if tok?
     return tokTypePrec(tok'type)
   /if
 
@@ -73,11 +73,11 @@ func isOp(tok ptr lex:Token) bool
 
 
 func isValidInExpr(tok ptr lex:Token) bool
-  return tok != null and (isOp(tok) or tok'type == tokens:ID or tok'type == tokens:NUMBER)
+  return tok? and (isOp(tok) or tok'type == tokens:ID or tok'type == tokens:NUMBER)
 /func
 
 
-func parserParseCastTag(ctx ptr synt:ParserContext) ptr ast:PExpr
+method synt:Parser.parseCastTag() ptr ast:PExpr
 
   mut castTok ptr lex:Token = null
 
@@ -85,11 +85,11 @@ func parserParseCastTag(ctx ptr synt:ParserContext) ptr ast:PExpr
   # the expression's beginning.
   # Otherwise it's a `<` and we must create a "fake" cast token - to create a
   # cast PExpr.
-  if ctx'next'type == tokens:CAST
-    castTok = synt:nextTok(ctx)
+  if me'next'type == tokens:CAST
+    castTok = me.next()
   /if
 
-  mut minor = synt:expect(ctx, tokens:MINOR)
+  mut minor = me.expect(tokens:MINOR)
 
   if not minor?
     # tokenFree SHOULD check for nulls - like every free function should - and
@@ -104,25 +104,25 @@ func parserParseCastTag(ctx ptr synt:ParserContext) ptr ast:PExpr
 
   lex:tokenFree(minor)
 
-  mut type = synt:parserParseType(ctx)
+  mut type = me.parseType()
   if not type?
     lex:tokenFree(castTok)
     return null
   /if
 
-  if not synt:expectDiscard(ctx, tokens:MAJOR) or not synt:expectDiscard(ctx, tokens:OPAR)
+  if not me.expectDiscard(tokens:MAJOR) or not me.expectDiscard(tokens:OPAR)
     lex:tokenFree(castTok)
     mem:decRef(type)
     return null
   /if
 
-  mut expr = synt:parserParseExpr(ctx)
+  mut expr = me.parseExpr()
   if not expr?
     lex:tokenFree(castTok)
     mem:decRef(type)
   /if
 
-  mut cpar = synt:expect(ctx, tokens:CPAR)
+  mut cpar = me.expect(tokens:CPAR)
   if not cpar?
     lex:tokenFree(castTok)
     mem:decRef(type)
@@ -130,57 +130,59 @@ func parserParseCastTag(ctx ptr synt:ParserContext) ptr ast:PExpr
   /if
 
   mut pexpr = astfn:pexprNew(castTok, expr, null, lex:tokExtractBegin(castTok), lex:tokDiscardEnd(cpar))
-  pexpr'node'value = cast<uintptr>(type)
+  pexpr'node'value = <uintptr>(type)
 
   return pexpr
-/func
+/method
 
 
-func parserParseSizeOp(ctx ptr synt:ParserContext) ptr ast:PExpr
+method synt:Parser.parseSizeOp() ptr ast:PExpr
 
-  mut sizeTok = synt:nextTok(ctx)
+  mut sizeTok = me.next()
 
 
-  if not synt:expectDiscard(ctx, tokens:OPAR)
+  if not me.expectDiscard(tokens:OPAR)
     lex:tokenFree(sizeTok)
     return null
   /if
 
-  mut type = synt:parserParseType(ctx)
-  if type == null
+  mut type = me.parseType()
+  if not type?
     lex:tokenFree(sizeTok)
     return null
   /if
 
-  mut cpar = synt:expect(ctx, tokens:CPAR)
-  if cpar == null
+  mut cpar = me.expect(tokens:CPAR)
+  if not cpar?
     lex:tokenFree(sizeTok)
     return null
   /if
 
   mut sizeop = astfn:pexprNew(sizeTok, null, null, lex:tokExtractBegin(sizeTok), lex:tokDiscardEnd(cpar))
-  sizeop'node'value = cast<uintptr>(type)
+  sizeop'node'value = <uintptr>(type)
 
   return sizeop
-/func
+/method
 
 
 func tokIsPostfixExpressionSuffixStart(tok ptr lex:Token) bool
-  return tok != null and (tok'type == tokens:OPAR or tok'type == tokens:OBRAC or tok'type == tokens:INC or tok'type == tokens:DEC or tok'type == tokens:APOS or tok'type == tokens:DOT)
+  return tok? and   (tok'type == tokens:OPAR or tok'type == tokens:OBRAC \
+                  or tok'type == tokens:INC or tok'type == tokens:DEC \
+                  or tok'type == tokens:APOS or tok'type == tokens:DOT)
 /func
 
 
-func parserParseId(ctx ptr synt:ParserContext) ptr ast:PExpr
-  mut first = synt:nextTok(ctx)
+method synt:Parser.parseId() ptr ast:PExpr
+  mut first = me.next()
   mut ret = astfn:pexprNewSingle(first)
 
-  if ctx'next? and ctx'next'type == tokens:COLON
-    mut colon = synt:nextTok(ctx)
+  if me'next? and me'next'type == tokens:COLON
+    mut colon = me.next()
 
-    mut id = synt:expect(ctx, tokens:ID)
-    if id == null
+    mut id = me.expect(tokens:ID)
+    if not id?
       lex:tokenFree(colon)
-      ast:pnodeFree(cast<ptr ast:PNode>(ret))
+      ast:pnodeFree(<ptr ast:PNode>(ret))
       return null
     /if
 
@@ -190,20 +192,20 @@ func parserParseId(ctx ptr synt:ParserContext) ptr ast:PExpr
 
   return ret
 
-/func
+/method
 
 
-func parserParseGenParens(ctx ptr synt:ParserContext, cpar uint16) ptr ast:PExpr
+method synt:Parser.parseGenParens(cpar uint16) ptr ast:PExpr
 
-  mut expression = parserParseAssignExpr(ctx)
+  mut expression = me.parseAssignExpr()
 
-  if expression == null
+  if not expression?
     return null
   /if
 
-  mut cparTok = synt:expect(ctx, cpar)
-  if cparTok == null
-    ast:pnodeFree(cast<ptr ast:PNode>(expression))
+  mut cparTok = me.expect(cpar)
+  if not cparTok?
+    ast:pnodeFree(<ptr ast:PNode>(expression))
     return null
   /if
 
@@ -211,25 +213,24 @@ func parserParseGenParens(ctx ptr synt:ParserContext, cpar uint16) ptr ast:PExpr
 
   return expression
 
-/func
+/method
 
 
-func parserParseParens(ctx ptr synt:ParserContext) ptr ast:PExpr
+method synt:Parser.parseParens() ptr ast:PExpr
 
-  synt:discardTok(ctx)
-  return parserParseGenParens(ctx, tokens:CPAR)
+  me.discardNext()
+  return me.parseGenParens(tokens:CPAR)
 
-/func
+/method
 
 
-func parserParseExprList(ctx ptr synt:ParserContext,
-                         parent ptr ast:PExpr,
+method synt:Parser.parseExprList(parent ptr ast:PExpr,
                          endToken uint16) ptr ast:PExpr
 
-  mut parentNode = cast<ptr ast:PNode>(parent)
+  mut parentNode = <ptr ast:PNode>(parent)
 
-  while ctx'next? and ctx'next'type != endToken
-    mut expr = parserParseAssignExpr(ctx)
+  while me'next? and me'next'type != endToken
+    mut expr = me.parseAssignExpr()
 
     if not expr?
       ast:pnodeFree(parentNode)
@@ -237,23 +238,23 @@ func parserParseExprList(ctx ptr synt:ParserContext,
       return null
     /if
 
-    astfn:pnodeAppendChild(parentNode, cast<ptr ast:PNode>(expr))
+    astfn:pnodeAppendChild(parentNode, <ptr ast:PNode>(expr))
 
-    if not ctx'next? or not (ctx'next'type == tokens:COMMA or ctx'next'type == endToken)
-      ctx'prs'err = lex:errorMism(ctx'last, "a comma ','", lex:tokenStr(ctx'next))
+    if not me'next? or not (me'next'type == tokens:COMMA or me'next'type == endToken)
+      me'err = lex:errorMism(me'last, "a comma ','", lex:tokenStr(me'next))
       ast:pnodeFree(parentNode)
 
       return null
     /if
 
-    if ctx'next'type == endToken
+    if me'next'type == endToken
       break
     /if
 
-    synt:discardTok(ctx) # discard the comma
+    me.discardNext() # discard the comma
   /while
 
-  mut end = synt:expect(ctx, endToken)
+  mut end = me.expect(endToken)
   if not end?
     ast:pnodeFree(parentNode)
 
@@ -263,65 +264,65 @@ func parserParseExprList(ctx ptr synt:ParserContext,
   parent'node'end = lex:tokDiscardEnd(end)
 
   return parent
-/func
+/method
 
 
-func parserParseCurly(ctx ptr synt:ParserContext) ptr ast:PExpr
-  mut ocurly = synt:nextTok(ctx)
+method synt:Parser.parseCurly() ptr ast:PExpr
+  mut ocurly = me.next()
 
-  mut ret = parserParseExprList(ctx, astfn:pexprNewSingle(ocurly), tokens:CCURLY)
+  mut ret = me.parseExprList(astfn:pexprNewSingle(ocurly), tokens:CCURLY)
 
   return ret
-/func
+/method
 
 
-func parserParsePrimaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
+method synt:Parser.parsePrimaryExpr() ptr ast:PExpr
 
-  if not ctx'next?
-    ctx'prs'err = lex:error(ctx'last, "expected a primary expression, got an EOF")
+  if not me'next?
+    me'err = lex:error(me'last, "expected a primary expression, got an EOF")
     return null
   /if
 
-  if    ctx'next'type == tokens:FALSE \
-     or ctx'next'type == tokens:TRUE \
-     or ctx'next'type == tokens:STRING \
-     or ctx'next'type == tokens:NUMBER \
-     or ctx'next'type == tokens:NULL \
-     or ctx'next'type == tokens:ME
+  if    me'next'type == tokens:FALSE \
+     or me'next'type == tokens:TRUE \
+     or me'next'type == tokens:STRING \
+     or me'next'type == tokens:NUMBER \
+     or me'next'type == tokens:NULL \
+     or me'next'type == tokens:ME
 
-    return astfn:pexprNewSingle(synt:nextTok(ctx))
+    return astfn:pexprNewSingle(me.next())
   /if
 
-  if ctx'next'type == tokens:ID
-    return parserParseId(ctx)
+  if me'next'type == tokens:ID
+    return me.parseId()
   /if
 
-  if ctx'next'type == tokens:CAST or ctx'next'type == tokens:MINOR
-    return parserParseCastTag(ctx)
+  if me'next'type == tokens:CAST or me'next'type == tokens:MINOR
+    return me.parseCastTag()
   /if
 
-  if ctx'next'type == tokens:SIZE
-    return parserParseSizeOp(ctx)
+  if me'next'type == tokens:SIZE
+    return me.parseSizeOp()
   /if
 
-  if ctx'next'type == tokens:OCURLY
-    return parserParseCurly(ctx)
+  if me'next'type == tokens:OCURLY
+    return me.parseCurly()
   /if
 
-  if ctx'next'type != tokens:OPAR
-    ctx'prs'err = lex:errorMism(ctx'next'lineno, "an identifier, a costant, a struct literal or an expression between ()", lex:tokenStr(ctx'next))
+  if me'next'type != tokens:OPAR
+    me'err = lex:errorMism(me'next'lineno, "an identifier, a costant, a struct literal or an expression between ()", lex:tokenStr(me'next))
     return null
   /if
 
-  return parserParseParens(ctx)
+  return me.parseParens()
 
-/func
+/method
 
 
-func parserParseAccessExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:PExpr
+method synt:Parser.parseAccessExpr(lhs ptr ast:PExpr) ptr ast:PExpr
 
-  mut obrac = synt:nextTok(ctx)
-  mut expression = parserParseGenParens(ctx, tokens:CBRAC)
+  mut obrac = me.next()
+  mut expression = me.parseGenParens(tokens:CBRAC)
 
   if not expression?
       return null
@@ -329,12 +330,12 @@ func parserParseAccessExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr as
 
   return astfn:pexprNew(obrac, lhs, expression, lhs'node'begin, expression'node'end)
 
-/func
+/method
 
 
-func parserParseCallExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:PExpr
+method synt:Parser.parseCallExpr(lhs ptr ast:PExpr) ptr ast:PExpr
 
-  mut opar = synt:nextTok(ctx)
+  mut opar = me.next()
 
   if not opar?
     return null
@@ -342,17 +343,17 @@ func parserParseCallExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:
 
   mut begin = lex:tokExtractBegin(opar)
 
-  return parserParseExprList(ctx, astfn:pexprNew(opar, lhs, null, begin, begin), tokens:CPAR)
-/func
+  return me.parseExprList(astfn:pexprNew(opar, lhs, null, begin, begin), tokens:CPAR)
+/method
 
 
-func parserParseFieldDotExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr ast:PExpr
+method synt:Parser.parseFieldDotExpr(lhs ptr ast:PExpr) ptr ast:PExpr
 
   # APOS or DOT
-  mut op = synt:nextTok(ctx)
-  mut id = synt:expect(ctx, tokens:ID)
+  mut op = me.next()
+  mut id = me.expect(tokens:ID)
 
-  if id == null
+  if not id?
     lex:tokenFree(op)
     return null
   /if
@@ -360,30 +361,30 @@ func parserParseFieldDotExpr(ctx ptr synt:ParserContext, lhs ptr ast:PExpr) ptr 
   mut idExpr = astfn:pexprNewSingle(id)
 
   return astfn:pexprNew(op, lhs, idExpr, lhs'node'begin, idExpr'node'end)
-/func
+/method
 
 
-func parserParsePostfixSuffix(ctx ptr synt:ParserContext, primaryLhs ptr ast:PExpr) ptr ast:PExpr
+method synt:Parser.parsePostfixSuffix(primaryLhs ptr ast:PExpr) ptr ast:PExpr
 
   mut lhs = primaryLhs
 
   while true
-    if ctx'next == null
+    if not me'next?
       break
     /if
 
-    if ctx'next'type == tokens:OBRAC
-      lhs = parserParseAccessExpr(ctx, lhs)
+    if me'next'type == tokens:OBRAC
+      lhs = me.parseAccessExpr(lhs)
     else
-      if ctx'next'type == tokens:OPAR
-        lhs = parserParseCallExpr(ctx, lhs)
+      if me'next'type == tokens:OPAR
+        lhs = me.parseCallExpr(lhs)
       else
-        if ctx'next'type == tokens:INC or ctx'next'type == tokens:DEC or ctx'next'type == tokens:QUEST
-          mut pfOp = synt:nextTok(ctx)
+        if me'next'type == tokens:INC or me'next'type == tokens:DEC or me'next'type == tokens:QUEST
+          mut pfOp = me.next()
           lhs = astfn:pexprNew(pfOp, lhs, null, lhs'node'begin, lex:tokExtractEnd(pfOp))
         else
-          if ctx'next'type == tokens:APOS or ctx'next'type == tokens:DOT
-            lhs = parserParseFieldDotExpr(ctx, lhs)
+          if me'next'type == tokens:APOS or me'next'type == tokens:DOT
+            lhs = me.parseFieldDotExpr(lhs)
           else
             break
           /if
@@ -391,31 +392,31 @@ func parserParsePostfixSuffix(ctx ptr synt:ParserContext, primaryLhs ptr ast:PEx
       /if
     /if
 
-    if lhs == null
+    if not lhs?
       return null
     /if
   /while
 
   return lhs
-/func
+/method
 
 
-func parserParsePostfixExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
-  mut primary = parserParsePrimaryExpr(ctx)
+method synt:Parser.parsePostfixExpr() ptr ast:PExpr
+  mut primary = me.parsePrimaryExpr()
 
-  if primary == null
+  if not primary?
     return null
   /if
 
-  return parserParsePostfixSuffix(ctx, primary)
-/func
+  return me.parsePostfixSuffix(primary)
+/method
 
 
-func parserParseUnaryExprOp(ctx ptr synt:ParserContext) ptr ast:PExpr
-  mut operator = synt:nextTok(ctx)
+method synt:Parser.parseUnaryExprOp() ptr ast:PExpr
+  mut operator = me.next()
 
-  mut result = parserParseUnaryExpr(ctx)
-  if result == null
+  mut result = me.parseUnaryExpr()
+  if not result?
     lex:tokenFree(operator)
     return null
   /if
@@ -425,61 +426,61 @@ func parserParseUnaryExprOp(ctx ptr synt:ParserContext) ptr ast:PExpr
   /if
 
   return astfn:pexprNew(operator, result, null, lex:tokExtractBegin(operator), result'node'end)
-/func
+/method
 
 
-func parserParseUnaryExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
-  if ctx'next == null
-    ctx'prs'err = lex:error(ctx'last, "unexpected EOF")
+method synt:Parser.parseUnaryExpr() ptr ast:PExpr
+  if not me'next?
+    me'err = lex:error(me'last, "unexpected EOF")
     return null
   /if
 
-  if isUnary(ctx'next)
-    return parserParseUnaryExprOp(ctx)
+  if isUnary(me'next)
+    return me.parseUnaryExprOp()
   /if
 
-  return parserParsePostfixExpr(ctx)
-/func
+  return me.parsePostfixExpr()
+/method
 
 
 func isConditionalOperator(tok ptr lex:Token) bool
-  return tok != null and tok'type == tokens:FATARROW
+  return tok? and tok'type == tokens:FATARROW
 /func
 
 
-func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri uint16) ptr ast:PExpr
+method synt:Parser.parseBinaryRhs(lhs ptr ast:PExpr, minPri uint16) ptr ast:PExpr
   mut curOpPrec uint16
   mut rhs ptr ast:PExpr = null
 
-  while ctx'next != null and ((curOpPrec = opPrec(ctx'next)) >= minPri)
-    mut opTok = synt:nextTok(ctx)
+  while me'next? and ((curOpPrec = opPrec(me'next)) >= minPri)
+    mut opTok = me.next()
     mut opIsRight = assocRight(opTok)
 
     mut ternaryMiddle ptr ast:PExpr = null
 
     if isConditionalOperator(opTok)
-      if (ternaryMiddle = synt:parserParseExpr(ctx)) == null or not synt:expectDiscard(ctx, tokens:SEPARATOR)
+      if (ternaryMiddle = me.parseExpr()) == null or not me.expectDiscard(tokens:SEPARATOR)
         lex:tokenFree(opTok)
         return null
       /if
     /if
 
-    rhs = parserParseUnaryExpr(ctx)
+    rhs = me.parseUnaryExpr()
 
-    if rhs == null
+    if not rhs?
       return null
     /if
 
-    mut nextOpPrec = opPrec(ctx'next)
+    mut nextOpPrec = opPrec(me'next)
 
-    if ctx'next != null and (nextOpPrec > curOpPrec or (opIsRight and nextOpPrec == curOpPrec))
+    if me'next? and (nextOpPrec > curOpPrec or (opIsRight and nextOpPrec == curOpPrec))
       mut rhsMinPrec = curOpPrec
       if not opIsRight
         curOpPrec++
       /if
 
-      rhs = parserParseBinaryRhs(ctx, rhs, curOpPrec)
-      if rhs == null
+      rhs = me.parseBinaryRhs(rhs, curOpPrec)
+      if not rhs?
         return null
       /if
     /if
@@ -488,16 +489,16 @@ func parserParseBinaryRhs(ctx ptr synt:ParserContext, lhs ptr ast:PExpr, minPri 
   /while
 
   return lhs
-/func
+/method
 
 
-func parserParseAssignExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
-  mut lhs = parserParseUnaryExpr(ctx)
+method synt:Parser.parseAssignExpr() ptr ast:PExpr
+  mut lhs = me.parseUnaryExpr()
 
-  return lhs != null => parserParseBinaryRhs(ctx, lhs, tokTypePrec(tokens:ASSIGN)) || null
-/func
+  return lhs? => me.parseBinaryRhs(lhs, tokTypePrec(tokens:ASSIGN)) || null
+/method
 
 
-func parserParseExpr(ctx ptr synt:ParserContext) ptr ast:PExpr
-  return parserParseAssignExpr(ctx)
-/func
+method synt:Parser.parseExpr() ptr ast:PExpr
+  return me.parseAssignExpr()
+/method
