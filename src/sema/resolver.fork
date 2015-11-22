@@ -60,7 +60,7 @@ func resolverCollectDecls(rsv ptr sema:Resolver,
                           errors ptr list:List) bool
 
   mut name = ast:declKey(pdecl)
-  mut existent = cast<ptr ast:PDecl>(rsv'decls.get(name))
+  mut existent = <ptr ast:PDecl>(rsv'decls.get(name))
 
   if existent?
     mut cs = cs:new(20)
@@ -105,7 +105,7 @@ func resolverCollect(rsv ptr sema:Resolver,
   mut failure = false
 
   while i < len
-    mut pdecl = cast<ptr ast:PDecl>(val root'node'node'leaves.get(i))
+    mut pdecl = <ptr ast:PDecl>(val root'node'node'leaves.get(i))
     mut ntype = pdecl'node'type
 
     if ntype == ast:PMUT or ntype == ast:PFUNCTION or ntype == ast:PMETHOD

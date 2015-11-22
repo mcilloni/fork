@@ -18,7 +18,7 @@ import mem
 
 
 func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err:Error, eof ptr bool) uintptr
-  mut fd = cast<int64>(camoFd)
+  mut fd = <int64>(camoFd)
   decl func stream_readfileInternal(fd int64, buf data, len intptr, error ptr uint8, errLen uintptr) intptr
   mut buf [512] uint8
   mut rd = stream_readfileInternal(fd, bytes, len, ptr buf[0], 512)
@@ -37,7 +37,7 @@ func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err:
 
 
 func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err:Error) uintptr
-  mut fd = cast<int64>(camoFd)
+  mut fd = <int64>(camoFd)
   decl func stream_writefileInternal(fd int64, buf data, len intptr, error ptr uint8, errLen uintptr) intptr
   mut buf [512] uint8
   mut wt intptr
@@ -62,7 +62,7 @@ func filecloseInternal(camoFd data, err ptr ptr err:Error) bool
   decl func stream_closefileInternal(fd int64, error ptr uint8, errLen uintptr) uint8
   mut buf [512] uint8
 
-  if stream_closefileInternal(cast<int64>(camoFd), ptr buf[0], 512) != 0
+  if stream_closefileInternal(<int64>(camoFd), ptr buf[0], 512) != 0
     return true
   /if
 
@@ -78,7 +78,7 @@ func fileFree(fi ptr file:File)
 /func
 
 
-func fileGetInfo(filename ptr uint8) ptr file:File
+func stat(filename ptr uint8) ptr file:File
   decl func file_populate(filename ptr uint8) ptr file:File
 
   return file_populate(filename)
@@ -122,7 +122,7 @@ func fileOpen(filename ptr uint8, err ptr ptr err:Error) ptr io:Stream
     return null
   /if
 
-  return io:streamNew(cast<data>(fd), ptr filereadInternal, null, ptr filecloseInternal)
+  return io:streamNew(<data>(fd), ptr filereadInternal, null, ptr filecloseInternal)
 /func
 
 
@@ -136,5 +136,5 @@ func fileCreate(filename ptr uint8, err ptr ptr err:Error) ptr io:Stream
     return null
   /if
 
-  return io:streamNew(cast<data>(fd), null, ptr filewriteInternal, ptr filecloseInternal)
+  return io:streamNew(<data>(fd), null, ptr filewriteInternal, ptr filecloseInternal)
 /func

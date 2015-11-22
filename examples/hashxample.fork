@@ -39,13 +39,13 @@ entry
 
   tty:out("\n\nhash[\"flare\"] == ")
 
-  mut value = cast<ptr uint8>(hash.get("flare"))
+  mut value = <ptr uint8>(hash.get("flare"))
 
   tty:outln(value)
 
   tty:out("hash[\"potato\"] == ")
 
-  value = cast<ptr uint8>(hash.get("potato"))
+  value = <ptr uint8>(hash.get("potato"))
 
   tty:outln(value)
 

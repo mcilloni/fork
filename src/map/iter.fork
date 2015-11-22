@@ -17,7 +17,7 @@ import pair
 
 
 method map:Map.iter() ptr map:Iter
-  mut iter = cast<ptr map:Iter>(mem:alloc(size(map:Iter)))
+  mut iter = <ptr map:Iter>(mem:alloc(size(map:Iter)))
   iter'map = me
   iter'lastKey = null
   iter'begin = true

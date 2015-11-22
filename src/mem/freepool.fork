@@ -31,7 +31,7 @@ func fpFree(fp ptr mem:FreePool)
 /func
 
 func fpNew(freeFunc ptr func(item data)) ptr mem:FreePool
-  mut ret = cast<ptr mem:FreePool>(mem:alloc(size(mem:FreePool)))
+  mut ret = <ptr mem:FreePool>(mem:alloc(size(mem:FreePool)))
   ret'ptrs = list:new()
   ret'freeFunc = freeFunc
 

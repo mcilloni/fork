@@ -73,14 +73,14 @@ func findPRoot(node ptr ast:PNode) ptr ast:PRoot
     return findPRoot(node'parent)
   /if
 
-  return cast<ptr ast:PRoot>(node)
+  return <ptr ast:PRoot>(node)
 /func
 
 
 func findStab(node ptr ast:PNode) ptr ast:Symtable
   mut pblock = ast:findPBlock(node)
 
-  return pblock != null => cast<ptr ast:PBlock>(pblock)'syms || null
+  return pblock != null => <ptr ast:PBlock>(pblock)'syms || null
 /func
 
 
@@ -129,10 +129,10 @@ func pnodeFree(pnode ptr ast:PNode)
   if pnode != null
     if ast:isPRoot(pnode)
 
-      mut proot = cast<ptr ast:PRoot>(pnode)
+      mut proot = <ptr ast:PRoot>(pnode)
       astfn:strdefFree(proot'moduleName)
       mem:free(proot'fileName)
-      list:freeAll(proot'imports, cast<ptr func(inst data)>(ptr astfn:strdefFree))
+      list:freeAll(proot'imports, <ptr func(inst data)>(ptr astfn:strdefFree))
       ast:stabFree(proot'aliases)
 
       mem:fpFree(proot'typePool)
@@ -140,7 +140,7 @@ func pnodeFree(pnode ptr ast:PNode)
 
     if ast:isPDecl(pnode)
 
-      mut pdecl = cast<ptr ast:PDecl>(pnode)
+      mut pdecl = <ptr ast:PDecl>(pnode)
       mem:decRef(pdecl'sym)
 
       mem:free(pdecl'methodTypeModule)
@@ -149,7 +149,7 @@ func pnodeFree(pnode ptr ast:PNode)
     /if
 
     if ast:isPBlock(pnode)
-      ast:stabFree(cast<ptr ast:PBlock>(pnode)'syms)
+      ast:stabFree(<ptr ast:PBlock>(pnode)'syms)
     /if
 
     # remember to fix PBLOCK leaks.
@@ -169,7 +169,7 @@ func pnodeIsBreakContinue(pnode ptr ast:PNode) bool
 
 
 func pnodeIsDecl(pnode ptr ast:PNode) bool
-  return pnode'type == ast:PMUT or (isPDecl(pnode) and cast<ptr ast:PDecl>(pnode)'isDecl)
+  return pnode'type == ast:PMUT or (isPDecl(pnode) and <ptr ast:PDecl>(pnode)'isDecl)
 /func
 
 
@@ -198,7 +198,7 @@ func prootHasImported(root ptr ast:PRoot, name ptr uint8) bool
   mut len = root'imports.len()
 
   while i < len
-    mut elem = cast<ptr ast:StringDef>(val root'imports.get(i))
+    mut elem = <ptr ast:StringDef>(val root'imports.get(i))
 
     if txt:strequals(elem'name, name)
       return true

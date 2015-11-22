@@ -46,10 +46,10 @@ func free(ctx ptr parser:Parser)
 
 
 func new() ptr parser:Parser
-  mut ctx = cast<ptr parser:Parser>(mem:zalloc(size(parser:Parser)))
+  mut ctx = <ptr parser:Parser>(mem:zalloc(size(parser:Parser)))
   ctx'imports = map:strnew()
 
-  ctx'imports.setFreeFuncs(ptr mem:free, cast<ptr func(item data)>(ptr ast:pnodeFree))
+  ctx'imports.setFreeFuncs(ptr mem:free, <ptr func(item data)>(ptr ast:pnodeFree))
 
   ctx'fordPaths = envExtractFordPaths()
   ctx'builtins = astfn:builtinSetNew()
@@ -67,7 +67,7 @@ method parser:Parser.findImport(importName ptr ast:StringDef, importAst ptr ptr 
   mut i uintptr = 0
 
   while i < len
-    mut path = cast<ptr uint8>(val me'fordPaths.get(i))
+    mut path = <ptr uint8>(val me'fordPaths.get(i))
     mut joinedPath = file:pathJoin(path, fordName)
 
     if file:pathExists(joinedPath)
@@ -105,13 +105,13 @@ method parser:Parser.findImport(importName ptr ast:StringDef, importAst ptr ptr 
 
 
 method parser:Parser.getImport(name ptr uint8) ptr ast:PRoot
-  return cast<ptr ast:PRoot>(me'imports.get(name))
+  return <ptr ast:PRoot>(me'imports.get(name))
 /method
 
 
 method parser:Parser.importMod(importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr list:List
 
-  val value = cast<ptr ast:PNode>(me'imports.get(importName))
+  val value = <ptr ast:PNode>(me'imports.get(importName))
 
   if not (val value)?
     mut errors = me.findImport(importName, value)
@@ -133,7 +133,7 @@ method parser:Parser.importAll(imports ptr list:List) ptr list:List
 
   while i < len
     mut value ptr ast:PNode
-    mut importName = cast<ptr ast:StringDef>(val imports.get(i))
+    mut importName = <ptr ast:StringDef>(val imports.get(i))
     mut errs = me.importMod(importName, ptr value)
 
     if errs.len() != 0
@@ -148,7 +148,7 @@ method parser:Parser.importAll(imports ptr list:List) ptr list:List
 
 
 method parser:Parser.matchBuiltin(name ptr uint8) ptr ast:Type
-  return cast<ptr ast:Type>(me'builtins.get(name))
+  return <ptr ast:Type>(me'builtins.get(name))
 /method
 
 

@@ -41,11 +41,11 @@ func typeEqualsList(list1, list2 ptr kv:KVList) bool
     mut pair1 = list1.getAt(i)
     mut pair2 = list2.getAt(i)
 
-    mut name1 = cast<ptr uint8>(pair1'key)
-    mut name2 = cast<ptr uint8>(pair2'key)
+    mut name1 = <ptr uint8>(pair1'key)
+    mut name2 = <ptr uint8>(pair2'key)
 
-    mut type1 = cast<ptr ast:Type>(pair1'value)
-    mut type2 = cast<ptr ast:Type>(pair2'value)
+    mut type1 = <ptr ast:Type>(pair1'value)
+    mut type2 = <ptr ast:Type>(pair2'value)
 
     if not txt:strequals(name1, name2) or not ast:typeEquals(type1, type2)
       return false
@@ -169,7 +169,7 @@ func typeIsStruct(type ptr ast:Type) bool
 
 
 func stabNew() ptr ast:Symtable
-  mut stab = cast<ptr ast:Symtable>(mem:zalloc(size(ast:Symtable)))
+  mut stab = <ptr ast:Symtable>(mem:zalloc(size(ast:Symtable)))
 
   stab'syms = kv:strnew(10)
 
@@ -185,7 +185,7 @@ func stabAdd(stab ptr ast:Symtable, name ptr uint8, isDecl bool, type ptr ast:Ty
 
 
 func stabGet(stab ptr ast:Symtable, name ptr uint8) ptr ast:DeclInfo
-  return cast<ptr ast:DeclInfo>(stab'syms.get(name))
+  return <ptr ast:DeclInfo>(stab'syms.get(name))
 /func
 
 

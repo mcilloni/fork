@@ -39,20 +39,20 @@ func exprIsCompileConst(expr ptr ast:PExpr) bool
   /if
 
   if expr'opType == tokens:PTR
-    mut elem = cast<ptr ast:PExpr>(val expr'node'leaves.get(0))
+    mut elem = <ptr ast:PExpr>(val expr'node'leaves.get(0))
 
     return elem'opType == tokens:ID or elem'opType == tokens:COLON
   /if
 
   if ttypeIsUnary(expr'opType)
-    mut elem = cast<ptr ast:PExpr>(val expr'node'leaves.get(0))
+    mut elem = <ptr ast:PExpr>(val expr'node'leaves.get(0))
 
     return exprIsCompileConst(elem)
   /if
 
   if ttypeIsBinary(expr'opType)
-    mut left = cast<ptr ast:PExpr>(val expr'node'leaves.get(0))
-    mut right = cast<ptr ast:PExpr>(val expr'node'leaves.get(1))
+    mut left = <ptr ast:PExpr>(val expr'node'leaves.get(0))
+    mut right = <ptr ast:PExpr>(val expr'node'leaves.get(1))
 
     return exprIsCompileConst(left) and exprIsCompileConst(right)
   /if
@@ -119,11 +119,11 @@ func assignLhsDump(cs ptr cs:Charstash, pexpr ptr ast:PExpr)
   mut op = pexpr'opType
 
   if op == tokens:ID
-    cs.add(cast<ptr uint8>(pexpr'node'value))
+    cs.add(<ptr uint8>(pexpr'node'value))
     return
   /if
 
-  mut left = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut left = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
   if op == tokens:VAL
     cs.add("'val ")
@@ -143,7 +143,7 @@ func assignLhsDump(cs ptr cs:Charstash, pexpr ptr ast:PExpr)
     return
   /if
 
-  mut right = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+  mut right = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
   if op == tokens:APOS or op == tokens:COMMA
     cs.add("'")
@@ -252,8 +252,8 @@ func typeIsAssignable(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr a
       mut pair1 = src'members.getAt(i)
       mut pair2 = dest'members.getAt(i)
 
-      mut type1 = cast<ptr ast:Type>(pair1'value)
-      mut type2 = cast<ptr ast:Type>(pair2'value)
+      mut type1 = <ptr ast:Type>(pair1'value)
+      mut type2 = <ptr ast:Type>(pair2'value)
 
       if not typeIsAssignable(ctx, scope, type2, type1)
         return false
@@ -312,7 +312,7 @@ func validateExprConst(rsv sema:Resolver,
   /if
 
   if op == tokens:NUMBER
-    return intForVal(rsv'ctx, cast<intptr>(pexpr'node'value))
+    return intForVal(rsv'ctx, <intptr>(pexpr'node'value))
   /if
 
   if op == tokens:TRUE or op == tokens:FALSE
@@ -331,17 +331,17 @@ func validateExprCast(rsv sema:Resolver,
                       pexpr ptr ast:PExpr,
                       recList,errors ptr list:List) ptr ast:Type
 
-  mut ptype = cast<ptr ast:PType>(pexpr'node'value)
+  mut ptype = <ptr ast:PType>(pexpr'node'value)
   pexpr'type = sema:resolveType(rsv, ptype, errors)
 
   if pexpr'type == null
     return null
   /if
 
-  mut childExpr = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut childExpr = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
   mut chType = sema:validateExprRecl(rsv, childExpr, recList, errors)
 
-  if chType == null or not sema:typeIsCastable(rsv'ctx, cast<ptr ast:PNode>(pexpr), pexpr'type, chType)
+  if chType == null or not sema:typeIsCastable(rsv'ctx, <ptr ast:PNode>(pexpr), pexpr'type, chType)
     mut cs = cs:new(20)
 
     cs.add("can't cast ")
@@ -365,7 +365,7 @@ func validateSizeExpr(rsv sema:Resolver,
                       pexpr ptr ast:PExpr,
                       errors ptr list:List) ptr ast:Type
 
-  mut ptype = cast<ptr ast:PType>(pexpr'node'value)
+  mut ptype = <ptr ast:PType>(pexpr'node'value)
 
   mut sizeType = sema:resolveType(rsv, ptype, errors)
   if sizeType == null
@@ -388,8 +388,8 @@ func validateExprId(rsv sema:Resolver,
                     pexpr ptr ast:PExpr,
                     recList,errors ptr list:List) ptr ast:Type
 
-  mut name = cast<ptr uint8>(pexpr'node'value)
-  mut type = ast:findSym(cast<ptr ast:PNode>(pexpr), name)
+  mut name = <ptr uint8>(pexpr'node'value)
+  mut type = ast:findSym(<ptr ast:PNode>(pexpr), name)
 
   if recList? and utils:listContains(recList, name)
     mut cs = cs:new(20)
@@ -410,7 +410,7 @@ func validateExprId(rsv sema:Resolver,
 
   # try searching for a top declaration
   if not type?
-    return sema:resolveDeclType(rsv, name, cast<ptr ast:PNode>(pexpr), recList, errors)
+    return sema:resolveDeclType(rsv, name, <ptr ast:PNode>(pexpr), recList, errors)
   /if
 
   return type
@@ -470,7 +470,7 @@ func validateArithPtrExpr(rsv sema:Resolver,
 
   if ast:typeIsPtr(ltype) and ast:typeIsPtr(rtype)
     if pexpr'opType == tokens:MINUS
-      if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
+      if not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pexpr), ltype, rtype)
         mut cs = cs:new(20)
 
         cs.add("types ")
@@ -561,7 +561,7 @@ func validateModuleAccessExpr(rsv sema:Resolver,
                               pexpr ptr ast:PExpr,
                               errors ptr list:List) ptr ast:Type
 
-  mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
+  mut modName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
   if not ast:prootHasImported(rsv'root, modName)
     mut msg = txt:strappend(modName, " has never been imported")
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
@@ -570,7 +570,7 @@ func validateModuleAccessExpr(rsv sema:Resolver,
     return null
   /if
 
-  mut symName = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
+  mut symName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
   mut type = sema:findSymModule(rsv'ctx, modName, symName)
 
   if type == null
@@ -605,7 +605,7 @@ func resolveRecType(rsv sema:Resolver,
     return sema:findAliasImport(rsv'ctx, type'moduleName, type'name)
   /if
 
-  return sema:findAliasLocal(cast<ptr ast:PNode>(rsv'root), type'name)
+  return sema:findAliasLocal(<ptr ast:PNode>(rsv'root), type'name)
 /func
 
 
@@ -635,9 +635,9 @@ func validateStructureAccessExpr(rsv sema:Resolver,
     return null
   /if
 
-  mut field = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
+  mut field = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
 
-  mut type = cast<ptr ast:Type>(accType'members.get(field))
+  mut type = <ptr ast:Type>(accType'members.get(field))
 
   if not type?
     mut cs = cs:new(20)
@@ -740,14 +740,14 @@ func validateFunctionCallExpr(rsv sema:Resolver,
     return null
   /if
 
-  mut scope = cast<ptr ast:PNode>(pexpr)
+  mut scope = <ptr ast:PNode>(pexpr)
   mut i uintptr = 0
 
   while i < expLen
-    mut gotParam = cast<ptr ast:PExpr>(val scope'leaves.get(i + 1))
+    mut gotParam = <ptr ast:PExpr>(val scope'leaves.get(i + 1))
     mut expPair = expParams.getAt(i)
 
-    mut expType = cast<ptr ast:Type>(expPair'value)
+    mut expType = <ptr ast:Type>(expPair'value)
 
     mut gotType = sema:validateExprRecl(rsv, gotParam, recList, errors)
     if not gotType?
@@ -761,7 +761,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
       ast:typeSummarize(cs, gotType)
 
       cs.add("' to parameter '")
-      cs.add(cast<ptr uint8>(expPair'key))
+      cs.add(<ptr uint8>(expPair'key))
       cs.add("' of type '")
 
       ast:typeSummarize(cs, expType)
@@ -781,7 +781,7 @@ func validateFunctionCallExpr(rsv sema:Resolver,
     i++
   /while
 
-  return normalizeEmptyType(rsv'ctx, cast<ptr ast:Type>(accType'retType))
+  return normalizeEmptyType(rsv'ctx, <ptr ast:Type>(accType'retType))
 /func
 
 
@@ -802,7 +802,7 @@ func validateAssignExpr(rsv sema:Resolver,
     return null
   /if
 
-  if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
+  if not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pexpr), ltype, rtype)
     mut cs = cs:new(20)
 
     cs.add("cannot assign expression of type '")
@@ -846,7 +846,7 @@ func validateNullCoalescingExpr(rsv sema:Resolver,
     return null
   /if
 
-  if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), ltype, rtype)
+  if not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pexpr), ltype, rtype)
     mut cs = cs:new(20)
 
     cs.add("cannot coalesce type '")
@@ -871,7 +871,7 @@ func validateNullCoalescingExpr(rsv sema:Resolver,
 # a.b syntax is allowed ONLY if it's a method call.
 # Otherwise method access is semantically nonsense (until closures, of course).
 func pnodeAllowedToUseDot(node ptr ast:PNode) bool
-  return node'type == ast:PEXPR and cast<ptr ast:PExpr>(node)'opType == tokens:OPAR
+  return node'type == ast:PEXPR and <ptr ast:PExpr>(node)'opType == tokens:OPAR
 /func
 
 
@@ -880,7 +880,7 @@ func resolveMethod(rsv sema:Resolver,
                    typeModule,typeName,methodName ptr uint8,
                    recList,errors ptr list:List) ptr ast:Type
 
-  mut type = sema:findMethod(rsv, cast<ptr ast:PNode>(pexpr), typeModule, typeName, methodName)
+  mut type = sema:findMethod(rsv, <ptr ast:PNode>(pexpr), typeModule, typeName, methodName)
 
   if type != null
     return type
@@ -889,7 +889,7 @@ func resolveMethod(rsv sema:Resolver,
   mut name = ast:methodKey(typeModule, typeName, methodName)
 
   # try searching for a top declaration
-  type = sema:resolveDeclType(rsv, name, cast<ptr ast:PNode>(pexpr), recList, errors)
+  type = sema:resolveDeclType(rsv, name, <ptr ast:PNode>(pexpr), recList, errors)
 
   mem:free(name)
 
@@ -930,7 +930,7 @@ func validateMethodExpr(rsv sema:Resolver,
     return null
   /if
 
-  mut methodName = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
+  mut methodName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
 
   return resolveMethod(rsv, pexpr, accType'moduleName, accType'name, methodName, recList, errors)
 /func
@@ -949,7 +949,7 @@ func validateBinaryExpr(rsv sema:Resolver,
     return validateModuleAccessExpr(rsv, pexpr, errors)
   /if
 
-  mut left = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut left = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
   mut ltype = sema:validateExprRecl(rsv, left, recList, errors)
 
   if ltype == null
@@ -971,7 +971,7 @@ func validateBinaryExpr(rsv sema:Resolver,
     return validateFunctionCallExpr(rsv, pexpr, ltype, recList, errors)
   /if
 
-  mut right = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+  mut right = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
   mut rtype = sema:validateExprRecl(rsv, right, recList, errors)
 
   if rtype == null
@@ -1039,7 +1039,7 @@ func validateValExpr(rsv sema:Resolver,
     return null
   /if
 
-  return cast<ptr ast:Type>(atype'retType)
+  return <ptr ast:Type>(atype'retType)
 /func
 
 
@@ -1157,7 +1157,7 @@ func validateUnaryExpr(rsv sema:Resolver,
 
   mut op = pexpr'opType
 
-  mut arg = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut arg = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
   mut atype = sema:validateExprRecl(rsv, arg, recList, errors)
 
   if atype == null
@@ -1194,13 +1194,13 @@ func validateTernaryExpr(rsv sema:Resolver,
                          pexpr ptr ast:PExpr,
                          recList, errors ptr list:List) ptr ast:Type
 
-  mut condition = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut condition = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
   mut condType = sema:validateExprRecl(rsv, condition, recList, errors)
 
-  mut left = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+  mut left = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
   mut leftType = sema:validateExprRecl(rsv, left, recList, errors)
 
-  mut right = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(2))
+  mut right = <ptr ast:PExpr>(val pexpr'node'leaves.get(2))
   mut rightType = sema:validateExprRecl(rsv, right, recList, errors)
 
   if condType == null or leftType == null or rightType == null
@@ -1218,7 +1218,7 @@ func validateTernaryExpr(rsv sema:Resolver,
   # ternary operator the position of the two conditional choices is irrelevant
   # for sake of type determination, so we must run it twice with reversed
   # arguments
-  if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), leftType, rightType) and not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pexpr), rightType, leftType)
+  if not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pexpr), leftType, rightType) and not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pexpr), rightType, leftType)
     mut cs = cs:new(20)
     cs.add("ternary expression arguments have incompatible types '")
     ast:typeSummarize(cs, leftType)
@@ -1260,7 +1260,7 @@ func validateMeExpr(rsv sema:Resolver,
                     pexpr ptr ast:PExpr,
                     errors ptr list:List) ptr ast:Type
 
-  mut meType = ast:findSym(cast<ptr ast:PNode>(pexpr), "me")
+  mut meType = ast:findSym(<ptr ast:PNode>(pexpr), "me")
   if meType == null
     mut msg = "'me' outside of method body"
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
@@ -1274,7 +1274,7 @@ func validateStructLiteralExpr(rsv sema:Resolver,
                                pexpr ptr ast:PExpr,
                                recList,errors ptr list:List) ptr ast:Type
 
-  mut scope = cast<ptr ast:PNode>(pexpr)
+  mut scope = <ptr ast:PNode>(pexpr)
   mut leavesLen = scope'leaves.len()
   mut i int32 = 0
 
@@ -1282,7 +1282,7 @@ func validateStructLiteralExpr(rsv sema:Resolver,
   members.setFreeFuncs(ptr mem:free, null)
 
   while i < leavesLen
-    mut param = cast<ptr ast:PExpr>(val scope'leaves.get(i))
+    mut param = <ptr ast:PExpr>(val scope'leaves.get(i))
     mut type = sema:validateExprRecl(rsv, param, recList, errors)
 
     if not type?

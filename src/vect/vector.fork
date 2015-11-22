@@ -49,7 +49,7 @@ func init(arr ptr vect:Vect, cap uintptr) ptr vect:Vect
   mem:set(arr, 0, size(vect:Vect))
 
   if cap != 0
-    arr'arr = cast<ptr uintptr>(mem:zalloc(cap * size(uintptr)))
+    arr'arr = <ptr uintptr>(mem:zalloc(cap * size(uintptr)))
   /if
 
   arr'cap = cap
@@ -58,7 +58,7 @@ func init(arr ptr vect:Vect, cap uintptr) ptr vect:Vect
 
 
 func new(cap uintptr) ptr vect:Vect
-  return vect:init(cast<ptr vect:Vect>(mem:alloc(size(vect:Vect))), cap)
+  return vect:init(<ptr vect:Vect>(mem:alloc(size(vect:Vect))), cap)
 /func
 
 
@@ -70,7 +70,7 @@ method vect:Vect.appendInt(value uintptr) bool
 
 
 method vect:Vect.append(item data) bool
-  return me.appendInt(cast<uintptr>(item))
+  return me.appendInt(<uintptr>(item))
 /method
 
 
@@ -106,7 +106,7 @@ method vect:Vect.freeContents(freefunc ptr func(item data))
 
   mut i uintptr = 0
   while i < me.len()
-    freefunc(cast<data>(me'arr[i]))
+    freefunc(<data>(me'arr[i]))
     i++
   /while
 
@@ -124,7 +124,7 @@ method vect:Vect.getInt(index uintptr) ptr uintptr
 
 
 method vect:Vect.get(index uintptr) ptr data
-  return cast<ptr data>(me.getInt(index))
+  return <ptr data>(me.getInt(index))
 /method
 
 
@@ -142,7 +142,7 @@ method vect:Vect.newCap(newcap uintptr)
     lowercap = me.cap()
   /if
 
-  mut newarr = cast<ptr uintptr>(mem:zalloc(newcap * size(uintptr)))
+  mut newarr = <ptr uintptr>(mem:zalloc(newcap * size(uintptr)))
 
   mem:move(newarr, me'arr, lowercap * size(uintptr))
 
@@ -207,7 +207,7 @@ method vect:Vect.putInt(index uintptr, value uintptr) bool
 
 
 method vect:Vect.put(index uintptr, value data) bool
-  return me.putInt(index, cast<uintptr>(value))
+  return me.putInt(index, <uintptr>(value))
 /method
 
 
@@ -219,11 +219,11 @@ method vect:Vect.slice(start uintptr, len intptr) ptr vect:Vect
   mut meLen = me.len()
 
   if len < 0
-    len = cast<intptr>(meLen - start)
+    len = <intptr>(meLen - start)
   /if
 
   if len > (meLen - start)
-    len = cast<intptr>(meLen - start)
+    len = <intptr>(meLen - start)
   /if
 
   ret'cap = len

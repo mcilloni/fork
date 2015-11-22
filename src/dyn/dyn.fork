@@ -31,7 +31,7 @@ func close(sobj ptr dyn:SObj)
 
 
 func open(name ptr uint8, err ptr ptr err:Error) ptr dyn:SObj
-  mut ret = cast<ptr dyn:SObj>(mem:alloc(size(dyn:SObj)))
+  mut ret = <ptr dyn:SObj>(mem:alloc(size(dyn:SObj)))
 
   if not sobjInit(ret, name, err)
     mem:free(ret)

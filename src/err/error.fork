@@ -34,14 +34,14 @@ func errorMsg(err ptr err:Error) ptr uint8
 
 
 func errorNew(str ptr uint8) ptr err:Error
-  mut err = cast<ptr err:Error>(mem:alloc(size(err:Error)))
+  mut err = <ptr err:Error>(mem:alloc(size(err:Error)))
   err'msg = txt:strclone(str)
   return err
 /func
 
 
 func errorGlue(strs ptr ptr uint8) ptr err:Error
-  mut err = cast<ptr err:Error>(mem:alloc(size(err:Error)))
+  mut err = <ptr err:Error>(mem:alloc(size(err:Error)))
   err'msg = txt:strglue(strs)
   return err
 /func

@@ -28,7 +28,7 @@ alias Char struct(ch uint8, pos uintptr)
 
 
 func strtokNew(str ptr uint8, line,begin,end uintptr) ptr lex:StringTok
-  mut strTok = cast<ptr lex:StringTok>(mem:zalloc(size(lex:StringTok)))
+  mut strTok = <ptr lex:StringTok>(mem:zalloc(size(lex:StringTok)))
 
   strTok'str = str
 
@@ -278,7 +278,7 @@ func extractNextToken(lex ptr lex:Lexer) ptr lex:StringTok
   /if
 
   if utils:charIsPar(lex'peek)
-    mut str = cast<ptr uint8>(mem:zalloc(2 * size(uint8)))
+    mut str = <ptr uint8>(mem:zalloc(2 * size(uint8)))
     mut par = nextChar(lex)
     str[0] = par'ch
     return strtokNew(str, lex'lineno'lineno, par'pos, par'pos)
@@ -303,7 +303,7 @@ func lexerError(lexer ptr lex:Lexer) ptr err:Error
 
 
 func lexerFromStream(stream ptr io:Stream, name ptr uint8, err ptr ptr err:Error) ptr lex:Lexer
-  mut ret = cast<ptr lex:Lexer>(mem:zalloc(size(lex:Lexer)))
+  mut ret = <ptr lex:Lexer>(mem:zalloc(size(lex:Lexer)))
 
   ret'file = stream
   ret'lineno = lex:linenoNew(txt:strclone(name),0,0)
@@ -333,7 +333,7 @@ func lexerEof(lexer ptr lex:Lexer) bool
 /func
 
 func tokenNew(type uint16, value uintptr, lineno ptr lex:Lineno, end uintptr) ptr lex:Token
-  mut ret = cast<ptr lex:Token>(mem:alloc(size(lex:Token)))
+  mut ret = <ptr lex:Token>(mem:alloc(size(lex:Token)))
   ret'type = type
   ret'endPos = end
   ret'lineno = lineno
@@ -344,7 +344,7 @@ func tokenNew(type uint16, value uintptr, lineno ptr lex:Lineno, end uintptr) pt
 func tokenFree(tok ptr lex:Token)
   if tok?
     if (tok'type == tokens:ID or tok'type == tokens:STRING) and tok'value != 0
-      mem:free(cast<data>(tok'value))
+      mem:free(<data>(tok'value))
     /if
     lex:linenoFree(tok'lineno)
     mem:free(tok)
@@ -416,7 +416,7 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 
   if val strToken == STX # is a constant string
     type = tokens:STRING
-    value = cast<uintptr>(txt:strclone(strToken + 1))
+    value = <uintptr>(txt:strclone(strToken + 1))
   /if
 
   if txt:strequals(strToken, "alias")
@@ -699,7 +699,7 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 
   if type == 0 # if it's still unmodified, then it's an identifier
     type = tokens:ID
-    value = cast<uintptr>(strToken)
+    value = <uintptr>(strToken)
   else
     mem:free(strToken)
   /if
@@ -1011,7 +1011,7 @@ func linenoFree(lineno ptr lex:Lineno)
 
 
 func linenoNew(filename ptr uint8, lineno, pos uintptr) ptr lex:Lineno
-  mut ret = cast<ptr lex:Lineno>(mem:alloc(size(lex:Lineno)))
+  mut ret = <ptr lex:Lineno>(mem:alloc(size(lex:Lineno)))
 
   ret'filename = filename
   ret'lineno = lineno

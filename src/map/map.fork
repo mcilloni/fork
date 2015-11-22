@@ -50,7 +50,7 @@ func nodeFree(node ptr map:Node, freeKey,freeVal ptr func(item data))
 
 
 func nodeNew(key data, value data, cmp sort:comparator) ptr map:Node
-  mut ret = cast<ptr map:Node>(mem:zalloc(size(map:Node)))
+  mut ret = <ptr map:Node>(mem:zalloc(size(map:Node)))
   ret'key = key
   ret'value = value
   ret'color = RED
@@ -280,7 +280,7 @@ func nodeMkpair(node ptr map:Node) ptr pair:Pair
     return null
   /if
 
-  mut ret = cast<ptr pair:Pair>(mem:alloc(size(pair:Pair)))
+  mut ret = <ptr pair:Pair>(mem:alloc(size(pair:Pair)))
   ret'key = node'key
   ret'value = node'value
   return ret
@@ -329,7 +329,7 @@ func init(map ptr map:Map, cmp sort:comparator) ptr map:Map
 
 
 func new(cmp sort:comparator) ptr map:Map
-  mut map = cast<ptr map:Map>(mem:zalloc(size(map:Map)))
+  mut map = <ptr map:Map>(mem:zalloc(size(map:Map)))
 
   return map:init(map, cmp)
 /func

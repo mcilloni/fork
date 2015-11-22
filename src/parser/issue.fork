@@ -27,7 +27,7 @@ func issueFree(issue ptr parser:Issue)
 
 
 func issueNew(gravity uint8, where ast:Line, filename, message ptr uint8)  ptr parser:Issue
-  mut issue = cast<ptr parser:Issue>(mem:zalloc(size(parser:Issue)))
+  mut issue = <ptr parser:Issue>(mem:zalloc(size(parser:Issue)))
 
   issue'gravity = gravity
   issue'where = where

@@ -27,9 +27,9 @@ func free(cs ptr cs:Charstash)
 
 
 func new(cap uintptr) ptr cs:Charstash
-  mut cs = cast<ptr cs:Charstash>(mem:zalloc(size(cs:Charstash)))
+  mut cs = <ptr cs:Charstash>(mem:zalloc(size(cs:Charstash)))
 
-  cs'work = cs'base = cast<ptr uint8>(mem:alloc(cap))
+  cs'work = cs'base = <ptr uint8>(mem:alloc(cap))
   cs'cap = cap
 
   return cs
@@ -100,7 +100,7 @@ method cs:Charstash.addWord(str ptr uint8) ptr cs:Charstash
 
 method cs:Charstash.enlarge(offset,inc uintptr)
   me'cap = me'cap + inc
-  mut new = cast<ptr uint8>(mem:alloc(me'cap))
+  mut new = <ptr uint8>(mem:alloc(me'cap))
   mem:move(new + offset, me'base, me'len)
   mem:free(me'base)
   me'base = new

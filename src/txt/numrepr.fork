@@ -197,7 +197,7 @@ func representNum(n int32) ptr uint8
     n = -n
   /if
 
-  repr(cs, cast<uint32>(n))
+  repr(cs, <uint32>(n))
 
   return cs:unwrap(cs)
 /func

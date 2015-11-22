@@ -32,8 +32,8 @@ func addAllSymbolsToStab(stab ptr ast:Symtable, syms ptr kv:KVList)
   while i < len
     mut pair = syms.getAt(i)
 
-    mut name = cast<ptr uint8>(pair'key)
-    mut type = cast<ptr ast:Type>(pair'value)
+    mut name = <ptr uint8>(pair'key)
+    mut type = <ptr ast:Type>(pair'value)
 
     ast:stabAdd(stab, name, true, type, 0) #0 ignored
 
@@ -57,7 +57,7 @@ func ensureMethodCorrectness(rsv sema:Resolver,
     # if this file is in the same module of this type.
     if type == null
       if rsv'root'moduleName != null and txt:strequals(rsv'root'moduleName'name, pdecl'methodTypeModule)
-        type = sema:findAliasLocal(cast<ptr ast:PNode>(pdecl), pdecl'methodType)
+        type = sema:findAliasLocal(<ptr ast:PNode>(pdecl), pdecl'methodType)
       /if
     /if
 
@@ -88,7 +88,7 @@ func ensureMethodCorrectness(rsv sema:Resolver,
     return false
   /if
 
-  mut pblock = cast<ptr ast:PBlock>(val pdecl'node'leaves.get(0))
+  mut pblock = <ptr ast:PBlock>(val pdecl'node'leaves.get(0))
   mut meType = astfn:typeNewPtr(rsv'root'typePool, null, null, type)
 
   ast:stabAdd(pblock'syms, "me", true, meType, 0)
@@ -136,7 +136,7 @@ func validateDecl(rsv sema:Resolver,
   mut leavLen = pdecl'node'leaves.len()
 
   if leavLen > 0
-    mut pexpr = cast<ptr ast:PExpr>(val pdecl'node'leaves.get(0))
+    mut pexpr = <ptr ast:PExpr>(val pdecl'node'leaves.get(0))
     if isDecl
       errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "a decl can't have an assignment"))
     /if
@@ -147,7 +147,7 @@ func validateDecl(rsv sema:Resolver,
     /if
 
     if type != null
-      if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pdecl), type, exprType)
+      if not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pdecl), type, exprType)
         mut cs = cs:new(20)
         cs.add("cannot assign an expression of type '")
         ast:typeSummarize(cs, exprType)
@@ -193,7 +193,7 @@ func validateFunc(rsv sema:Resolver,
   sym'type = funcType
   sym'name = pdecl'sym'name
 
-  mut pblock = cast<ptr ast:PBlock>(val pdecl'node'leaves.get(0))
+  mut pblock = <ptr ast:PBlock>(val pdecl'node'leaves.get(0))
 
   pblock'syms = ast:stabNew()
 
@@ -215,7 +215,7 @@ func validateIf(rsv sema:Resolver,
                 inLoop bool,
                 errors ptr list:List) bool
 
-  mut cond = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
+  mut cond = <ptr ast:PExpr>(val stmt'leaves.get(0))
 
   mut condType = sema:validateExpr(rsv, cond, errors)
   if condType == null
@@ -237,13 +237,13 @@ func validateIf(rsv sema:Resolver,
     return false
   /if
 
-  mut firstBlock = cast<ptr ast:PBlock>(val stmt'leaves.get(1))
+  mut firstBlock = <ptr ast:PBlock>(val stmt'leaves.get(1))
   if not validatePBlock(rsv, firstBlock, funcInfo, inLoop, errors)
     return false
   /if
 
   if stmt'type == ast:PIFELSE
-    mut elseBlock = cast<ptr ast:PBlock>(val stmt'leaves.get(2))
+    mut elseBlock = <ptr ast:PBlock>(val stmt'leaves.get(2))
     if not validatePBlock(rsv, elseBlock, funcInfo, inLoop, errors)
       return false
     /if
@@ -267,7 +267,7 @@ func validatePBlock(rsv sema:Resolver,
   mut i uintptr = 0
 
   while i < len
-    mut stmt = cast<ptr ast:PNode>(val pblock'node'leaves.get(i))
+    mut stmt = <ptr ast:PNode>(val pblock'node'leaves.get(i))
 
     if not validateStmt(rsv, stmt, funcInfo, inLoop, errors)
       return false
@@ -320,7 +320,7 @@ func validateReturn(rsv sema:Resolver,
 
   if hasRetExpr
     mut retType = funcInfo'type'retType
-    mut retExpr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
+    mut retExpr = <ptr ast:PExpr>(val stmt'leaves.get(0))
 
     mut exprType = sema:validateExpr(rsv, retExpr, errors)
     if exprType == null
@@ -362,11 +362,11 @@ func validateStmt(rsv sema:Resolver,
   /if
 
   if ast:pnodeIsDecl(stmt)
-    return validateDecl(rsv, cast<ptr ast:PDecl>(stmt), errors)
+    return validateDecl(rsv, <ptr ast:PDecl>(stmt), errors)
   /if
 
   if ast:pnodeIsExpr(stmt)
-    return sema:validateExpr(rsv, cast<ptr ast:PExpr>(stmt), errors) != null
+    return sema:validateExpr(rsv, <ptr ast:PExpr>(stmt), errors) != null
   /if
 
   if ast:pnodeIsIf(stmt)
@@ -394,7 +394,7 @@ func validateWhile(rsv sema:Resolver,
                    inLoop bool,
                    errors ptr list:List) bool
 
-  mut cond = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
+  mut cond = <ptr ast:PExpr>(val stmt'leaves.get(0))
 
   mut condType = sema:validateExpr(rsv, cond, errors)
   if condType == null
@@ -416,7 +416,7 @@ func validateWhile(rsv sema:Resolver,
     return false
   /if
 
-  mut pblock = cast<ptr ast:PBlock>(val stmt'leaves.get(1))
+  mut pblock = <ptr ast:PBlock>(val stmt'leaves.get(1))
 
   return validatePBlock(rsv, pblock, funcInfo, true, errors)
 /func

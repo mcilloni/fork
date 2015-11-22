@@ -103,7 +103,7 @@ func listContains(list ptr list:List, value ptr uint8) bool
 
   while i < len
     mut ptrElem = list.get(i)
-    mut elem = cast<ptr uint8>(val ptrElem)
+    mut elem = <ptr uint8>(val ptrElem)
 
     if txt:strequals(elem, value)
       return true
@@ -123,17 +123,17 @@ func listDumpHierarchyIntoCS(list ptr list:List, cs ptr cs:Charstash)
 
   if len > 1
 
-    mut i = cast<intptr>(len)
+    mut i = <intptr>(len)
 
     while i > 0
       i--
 
-      cs.add(cast<ptr uint8>(val list.get(i)))
+      cs.add(<ptr uint8>(val list.get(i)))
 
       cs.add(" => ")
     /while
 
-    cs.add(cast<ptr uint8>(val list.get(len - 1)))
+    cs.add(<ptr uint8>(val list.get(len - 1)))
   else
     cs.add("alias of itself")
   /if

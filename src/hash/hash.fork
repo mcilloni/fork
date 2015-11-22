@@ -34,7 +34,7 @@ func entryDeinit(ent ptr hash:Entry, hash ptr hash:Hash)
 
 
 func entryNew(hash uintptr, key,value data) ptr hash:Entry
-  mut ent = cast<ptr hash:Entry>(mem:alloc(size(hash:Entry)))
+  mut ent = <ptr hash:Entry>(mem:alloc(size(hash:Entry)))
 
   ent'hash = hash
   ent'key = key
@@ -51,14 +51,14 @@ func deinit(hash ptr hash:Hash)
   mut len = hash'buckets.len()
 
   while i < len
-    mut bucket = cast<ptr list:List>(val hash'buckets.get(i))
+    mut bucket = <ptr list:List>(val hash'buckets.get(i))
 
     if bucket?
       mut j uintptr = 0
       mut bucketLen = bucket.len()
 
       while j < bucketLen
-        mut item = cast<ptr hash:Entry>(val bucket.get(j))
+        mut item = <ptr hash:Entry>(val bucket.get(j))
 
         entryDeinit(item, hash)
         mem:free(item)
@@ -95,7 +95,7 @@ func init(hash ptr hash:Hash, cap uintptr, hf hash:hashfn) ptr hash:Hash
 
 
 func new(cap uintptr, hf hash:hashfn) ptr hash:Hash
-  return hash:init(cast<ptr hash:Hash>(mem:alloc(size(hash:Hash))), cap, hf)
+  return hash:init(<ptr hash:Hash>(mem:alloc(size(hash:Hash))), cap, hf)
 /func
 
 
@@ -148,14 +148,14 @@ method hash:Hash.getInternal(key data, value ptr data) bool
     return false
   /if
 
-  mut bucket = cast<ptr list:List>(val buckAddr)
+  mut bucket = <ptr list:List>(val buckAddr)
 
   if bucket?
     mut entLen = bucket.len()
     mut i uintptr = 0
 
     while i < entLen
-      mut ent = cast<ptr hash:Entry>(val bucket.get(i))
+      mut ent = <ptr hash:Entry>(val bucket.get(i))
 
       if ent'hash == keyHash
         val value = ent'value
@@ -186,7 +186,7 @@ method hash:Hash.loadFactor() uint8
     return 0
   /if
 
-  return cast<uint8>((me.len() * 100) / buckNum)
+  return <uint8>((me.len() * 100) / buckNum)
 /method
 
 
@@ -207,9 +207,9 @@ method hash:Hash.print()
       tty:out(", ")
     /if
 
-    tty:out(cast<ptr uint8>(pair'key))
+    tty:out(<ptr uint8>(pair'key))
     tty:out(": ")
-    tty:out(cast<ptr uint8>(pair'value))
+    tty:out(<ptr uint8>(pair'value))
 
     pair:pairFree(pair)
   /while
@@ -239,7 +239,7 @@ method hash:Hash.put(key data, value data)
     bucket = list:new()
     me'buckets.put(index, bucket)
   else
-    bucket = cast<ptr list:List>(val buckAddr)
+    bucket = <ptr list:List>(val buckAddr)
 
     if not bucket?
       bucket = list:new()
@@ -251,7 +251,7 @@ method hash:Hash.put(key data, value data)
   mut i uintptr = 0
 
   while i < buckLen
-    mut ent = cast<ptr hash:Entry>(val bucket.get(i))
+    mut ent = <ptr hash:Entry>(val bucket.get(i))
 
     if ent'hash == keyHash
       entryDeinit(ent, me)
@@ -280,14 +280,14 @@ method hash:Hash.rehash()
   mut i uintptr = 0
 
   while i < oldLen
-    mut bucket = cast<ptr list:List>(val old.get(i))
+    mut bucket = <ptr list:List>(val old.get(i))
 
     if bucket?
       mut buckLen = bucket.len()
       mut j uintptr = 0
 
       while j < buckLen
-        mut ent = cast<ptr hash:Entry>(val bucket.get(j))
+        mut ent = <ptr hash:Entry>(val bucket.get(j))
 
         me.put(ent'key, ent'value)
 
@@ -315,7 +315,7 @@ method hash:Hash.remove(key data) bool
   mut bucketsNum = me'buckets.cap()
   mut index = keyHash mod bucketsNum
 
-  mut bucket = cast<ptr list:List>(val me'buckets.get(index))
+  mut bucket = <ptr list:List>(val me'buckets.get(index))
 
   if bucket == null
     return false
@@ -325,7 +325,7 @@ method hash:Hash.remove(key data) bool
   mut buckLen = bucket.len()
 
   while i < buckLen
-    mut elem = cast<ptr hash:Entry>(val bucket.get(i))
+    mut elem = <ptr hash:Entry>(val bucket.get(i))
 
     if elem'hash == keyHash
       bucket.remove(i, null)

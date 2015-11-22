@@ -16,7 +16,7 @@ import pair
 
 
 func pairNew(first,second data) ptr pair:Pair
-  mut pair = cast<ptr pair:Pair>(mem:zalloc(size(pair:Pair)))
+  mut pair = <ptr pair:Pair>(mem:zalloc(size(pair:Pair)))
   pair'key = first
   pair'value = second
 

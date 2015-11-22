@@ -28,7 +28,7 @@ func declInfoFree(declInfo ptr ast:DeclInfo)
 
 
 func declInfoNew(declType uint16, declOnly bool, type ptr ast:Type) ptr ast:DeclInfo
-  mut ret = cast<ptr ast:DeclInfo>(mem:alloc(size(ast:DeclInfo)))
+  mut ret = <ptr ast:DeclInfo>(mem:alloc(size(ast:DeclInfo)))
   ret'declType = declType
   ret'declOnly = declOnly
   ret'type = type
@@ -38,8 +38,8 @@ func declInfoNew(declType uint16, declOnly bool, type ptr ast:Type) ptr ast:Decl
 
 
 func pblockNew() ptr ast:PBlock
-  mut pblock = cast<ptr ast:PBlock>(mem:zalloc(size(ast:PBlock)))
-  mut pnode = cast<ptr ast:PNode>(pblock)
+  mut pblock = <ptr ast:PBlock>(mem:zalloc(size(ast:PBlock)))
+  mut pnode = <ptr ast:PNode>(pblock)
 
   pnode'type = ast:PBLOCK
   pnode'leaves = list:new()
@@ -50,7 +50,7 @@ func pblockNew() ptr ast:PBlock
 
 func pdeclNew(nodeType uint16, sym ptr ast:PSymbol, isDecl bool) ptr ast:PDecl
 
-  mut pdecl = cast<ptr ast:PDecl>(mem:zalloc(size(ast:PDecl)))
+  mut pdecl = <ptr ast:PDecl>(mem:zalloc(size(ast:PDecl)))
   pdecl'node'type = nodeType
   pdecl'node'leaves = list:new()
   pdecl'isDecl = isDecl
@@ -74,7 +74,7 @@ func pexprNewSingle(tok ptr lex:Token) ptr ast:PExpr
 
 
 func pexprNewTernary(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end ast:Line) ptr ast:PExpr
-    mut pexpr = cast<ptr ast:PExpr>(mem:zalloc(size(ast:PExpr)))
+    mut pexpr = <ptr ast:PExpr>(mem:zalloc(size(ast:PExpr)))
     pexpr'node'type = ast:PEXPR
     pexpr'node'value = tok'value
     pexpr'node'leaves = list:new()
@@ -85,9 +85,9 @@ func pexprNewTernary(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end ast
     pnode'begin = begin
     pnode'end = end
 
-    astfn:pnodeAppendChild(pnode, cast<ptr ast:PNode>(lhs))
-    astfn:pnodeAppendChild(pnode, cast<ptr ast:PNode>(mid))
-    astfn:pnodeAppendChild(pnode, cast<ptr ast:PNode>(rhs))
+    astfn:pnodeAppendChild(pnode, <ptr ast:PNode>(lhs))
+    astfn:pnodeAppendChild(pnode, <ptr ast:PNode>(mid))
+    astfn:pnodeAppendChild(pnode, <ptr ast:PNode>(rhs))
 
     lex:tokenFree(tok)
 
@@ -109,7 +109,7 @@ func pnodeAppendChild(pnode, child ptr ast:PNode) ptr ast:PNode
 
 func pnodeNew(type uint16, value uintptr) ptr ast:PNode
 
-  mut pnode = cast<ptr ast:PNode>(mem:zalloc(size(ast:PNode)))
+  mut pnode = <ptr ast:PNode>(mem:zalloc(size(ast:PNode)))
   pnode'type = type
   pnode'value = value
   pnode'leaves = list:new()
@@ -120,8 +120,8 @@ func pnodeNew(type uint16, value uintptr) ptr ast:PNode
 
 func prootNew(moduleName ptr ast:StringDef, imports ptr list:List, fileName ptr uint8) ptr ast:PRoot
 
-  mut proot = cast<ptr ast:PRoot>(mem:zalloc(size(ast:PRoot)))
-  mut pnode = cast<ptr ast:PNode>(proot)
+  mut proot = <ptr ast:PRoot>(mem:zalloc(size(ast:PRoot)))
+  mut pnode = <ptr ast:PNode>(proot)
 
   pnode'type = ast:PROOT
   pnode'leaves = list:new()
@@ -146,7 +146,7 @@ func psymbolFree(sym ptr ast:PSymbol)
 
 
 func psymbolNew(name ptr uint8, type ptr ast:PType) ptr ast:PSymbol
-  mut sym = cast<ptr ast:PSymbol>(mem:zalloc(size(ast:PSymbol)))
+  mut sym = <ptr ast:PSymbol>(mem:zalloc(size(ast:PSymbol)))
 
   sym'refc'freeFunc = ptr psymbolFree
 
@@ -172,7 +172,7 @@ func ptypeDescrFree(descr ptr ast:PTypeDescr)
 
 
 func ptypeDescrNew(type uint16, retType ptr ast:PType, params ptr list:List) ptr ast:PTypeDescr
-  mut descr = cast<ptr ast:PTypeDescr>(mem:zalloc(size(ast:PTypeDescr)))
+  mut descr = <ptr ast:PTypeDescr>(mem:zalloc(size(ast:PTypeDescr)))
 
   descr'refc'freeFunc = ptr ptypeDescrFree
 
@@ -214,7 +214,7 @@ func ptypeFree(type ptr ast:PType)
 
 
 func ptypeNew(name, moduleName ptr uint8, descr ptr ast:PTypeDescr) ptr ast:PType
-  mut type = cast<ptr ast:PType>(mem:zalloc(size(ast:PType)))
+  mut type = <ptr ast:PType>(mem:zalloc(size(ast:PType)))
 
   type'refc'freeFunc = ptr ptypeFree
 
@@ -236,7 +236,7 @@ func strdefFree(strdef ptr ast:StringDef)
 
 
 func strdefNew(name ptr uint8, begin,end ast:Line) ptr ast:StringDef
-  mut strdef = cast<ptr ast:StringDef>(mem:zalloc(size(ast:StringDef)))
+  mut strdef = <ptr ast:StringDef>(mem:zalloc(size(ast:StringDef)))
   strdef'name = name
   strdef'begin = begin
   strdef'end = end
@@ -250,7 +250,7 @@ func symbolClone(sym ptr ast:Symbol) ptr ast:Symbol
     return null
   /if
 
-  mut newInst = cast<ptr ast:Symbol>(mem:alloc(size(ast:Symbol)))
+  mut newInst = <ptr ast:Symbol>(mem:alloc(size(ast:Symbol)))
   newInst'name = txt:strclone(sym'name)
   newInst'type = sym'type
 
@@ -278,8 +278,8 @@ func symbolListClone(pool ptr mem:FreePool, symList ptr kv:KVList) ptr kv:KVList
 
   while i < len
     mut elem = symList.getAt(i)
-    mut newStr = txt:strclone(cast<ptr uint8>(elem'key))
-    mut newType = astfn:typeClone(pool, cast<ptr ast:Type>(elem'value))
+    mut newStr = txt:strclone(<ptr uint8>(elem'key))
+    mut newType = astfn:typeClone(pool, <ptr ast:Type>(elem'value))
 
     ret.put(newStr, newType)
 
@@ -291,7 +291,7 @@ func symbolListClone(pool ptr mem:FreePool, symList ptr kv:KVList) ptr kv:KVList
 
 
 func symbolNew(name ptr uint8, type ptr ast:Type) ptr ast:Symbol
-  mut sym = cast<ptr ast:Symbol>(mem:alloc(size(ast:Symbol)))
+  mut sym = <ptr ast:Symbol>(mem:alloc(size(ast:Symbol)))
 
   sym'name = txt:strclone(name)
   sym'type = type
@@ -312,7 +312,7 @@ func typeCalculateAlign(members ptr kv:KVList) AlignResult
   mut len = members.len()
 
   while i < len
-    mut member = cast<ptr ast:Type>(members.getAt(i)'value)
+    mut member = <ptr ast:Type>(members.getAt(i)'value)
 
     # calculate the alignment offset of the member against the current starting address.
     mut offset = ret'typeSize mod member'typeAlign
@@ -348,7 +348,7 @@ func typeClone(pool ptr mem:FreePool, type ptr ast:Type) ptr ast:Type
     return null
   /if
 
-  mut newInst = cast<ptr ast:Type>(mem:copy(mem:fpAlloc(pool, size(ast:Type)), type, size(ast:Type)))
+  mut newInst = <ptr ast:Type>(mem:copy(mem:fpAlloc(pool, size(ast:Type)), type, size(ast:Type)))
   newInst'moduleName = txt:strclone(type'moduleName)
   newInst'name = txt:strclone(type'name)
   newInst'retType = astfn:typeClone(pool, type'retType)
@@ -370,7 +370,7 @@ func typeNew(pool ptr mem:FreePool,
   mut location = pool != null => mem:fpZAlloc(pool, size(ast:Type)) || \
                                     mem:zalloc(size(ast:Type))
 
-  mut ret = cast<ptr ast:Type>(location)
+  mut ret = <ptr ast:Type>(location)
 
   ret'type = type
   ret'moduleName = txt:strclone(moduleName)
@@ -435,7 +435,7 @@ func builtinSetNew() ptr map:Map
 
   mut ret = map:strnew()
 
-  ret.setFreeFuncs(null, cast<ptr func(item data)>(ptr ast:typeFree))
+  ret.setFreeFuncs(null, <ptr func(item data)>(ptr ast:typeFree))
 
   mut uint8t = typeNewBuiltinInt("uint8", 1, false)
 
@@ -465,7 +465,7 @@ func typeNewFunc(pool ptr mem:FreePool, moduleName, name ptr uint8, retVal ptr a
 
 
 func typeNewLoc(pool ptr mem:FreePool, moduleName, name ptr uint8, itemCount uintptr, retVal ptr ast:Type) ptr ast:Type
-  return typeNew(pool, ast:TYPE_LOC, moduleName, name, false, retVal'typeSize * cast<intptr>(itemCount), retVal'typeAlign, itemCount, retVal, null)
+  return typeNew(pool, ast:TYPE_LOC, moduleName, name, false, retVal'typeSize * <intptr>(itemCount), retVal'typeAlign, itemCount, retVal, null)
 /func
 
 

@@ -40,7 +40,7 @@ entry
     mut i uintptr = 0
 
     while i < errLen
-      mut issue = cast<ptr parser:Issue>(val errors.get(i))
+      mut issue = <ptr parser:Issue>(val errors.get(i))
 
       parser:issueWriteOut(issue, ptr tty:out)
 
@@ -51,7 +51,7 @@ entry
     proc:exit(1)
   /if
 
-  mut root = cast<ptr ast:PRoot>(ast)
+  mut root = <ptr ast:PRoot>(ast)
 
   tty:out("== IMPORTS: ")
   tty:outint(ctx'imports.len())
@@ -63,14 +63,14 @@ entry
 
   while (pair = iter.next())?
     tty:out("Imported ")
-    tty:outln(cast<ptr uint8>(pair'key))
+    tty:outln(<ptr uint8>(pair'key))
 
     pair:pairFree(pair)
   /while
 
   map:iterFree(iter)
 
-  mut aliases = cast<ptr ast:PRoot>(ast)'aliases'syms
+  mut aliases = <ptr ast:PRoot>(ast)'aliases'syms
 
   tty:out("\n\n== ALIASES: ")
   tty:outint(aliases.len())
@@ -82,12 +82,12 @@ entry
   while i < len
     pair = aliases.getAt(i)
     tty:out("alias ")
-    tty:outln(cast<ptr uint8>(pair'key))
+    tty:outln(<ptr uint8>(pair'key))
 
     i++
   /while
 
-  mut decls = cast<ptr ast:PRoot>(ast)'node'syms'syms
+  mut decls = <ptr ast:PRoot>(ast)'node'syms'syms
 
   tty:out("\n\n== DECLS: ")
   tty:outint(decls.len())
@@ -98,7 +98,7 @@ entry
 
   while i < len
     pair = decls.getAt(i)
-    mut dinfo = cast<ptr ast:DeclInfo>(pair'value)
+    mut dinfo = <ptr ast:DeclInfo>(pair'value)
     mut typeStr ptr uint8 = null
 
     if dinfo'declOnly
@@ -120,7 +120,7 @@ entry
     /if
 
     tty:out(typeStr)
-    tty:out(cast<ptr uint8>(pair'key))
+    tty:out(<ptr uint8>(pair'key))
 
     tty:out(" :: ")
 

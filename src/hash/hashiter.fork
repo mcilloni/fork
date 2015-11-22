@@ -19,10 +19,10 @@ import vect
 
 
 method hash:Hash.iter() ptr hash:Iter
-  mut iter = cast<ptr hash:Iter>(mem:zalloc(size(hash:Iter)))
+  mut iter = <ptr hash:Iter>(mem:zalloc(size(hash:Iter)))
 
   iter'hash = me
-  iter'curBucket = cast<ptr list:List>(val me'buckets.get(0))
+  iter'curBucket = <ptr list:List>(val me'buckets.get(0))
 
   return iter
 /method
@@ -40,7 +40,7 @@ method hash:Iter.loadNextBucket()
       break
     /if
 
-    me'curBucket = cast<ptr list:List>(val me'hash'buckets.get(me'buckIndex))
+    me'curBucket = <ptr list:List>(val me'hash'buckets.get(me'buckIndex))
     me'pos = 0
   /while
 /method
@@ -56,7 +56,7 @@ method hash:Iter.next() ptr pair:Pair
     return null
   /if
 
-  mut ent = cast<ptr hash:Entry>(val me'curBucket.get(me'pos))
+  mut ent = <ptr hash:Entry>(val me'curBucket.get(me'pos))
   me'pos++
 
   return pair:pairNew(ent'key, ent'value)

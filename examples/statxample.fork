@@ -3,14 +3,14 @@ import tty
 
 entry
 	mut f1 = "sgnigniggigigigi"
-	mut fi = file:fileGetInfo(f1)
+	mut fi = file:stat(f1)
 
 	tty:out(f1)
 	tty:outln(fi? => "exists" || " does not exist")
 
 	file:fileFree(fi)
 
-	fi = file:fileGetInfo("/")
+	fi = file:stat("/")
 
 	tty:out(fi.path())
 	tty:outln(fi.isDir() => " is a dir" || " is not a dir")

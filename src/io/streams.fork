@@ -41,7 +41,7 @@ func streamError(stream ptr io:Stream) ptr err:Error
 
 
 func streamNew(priv8 data, rfn ptr io:readfunc, wfn ptr io:writefunc, cfn ptr io:closefunc) ptr io:Stream
-  mut ret = cast<ptr io:Stream>(mem:zalloc(size(io:Stream)))
+  mut ret = <ptr io:Stream>(mem:zalloc(size(io:Stream)))
   ret'cookie'priv8 = priv8
 
   if wfn != null
@@ -75,5 +75,5 @@ func streamWrite(stream ptr io:Stream, string ptr uint8) uintptr
     return 0
   /if
 
-  return stream'cookie'wfn(stream'cookie'priv8, string, cast<intptr>(txt:strlen(string)), ptr stream'error)
+  return stream'cookie'wfn(stream'cookie'priv8, string, <intptr>(txt:strlen(string)), ptr stream'error)
 /func

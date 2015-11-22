@@ -16,7 +16,7 @@ decl func __fork_entry()
 
 func main(argc intptr, argv ptr ptr uint8) int8
   mut forkArgs = proc:args()
-  forkArgs'len = cast<uintptr>(argc - 1)
+  forkArgs'len = <uintptr>(argc - 1)
   forkArgs'progname = val argv
   forkArgs'args = argv + 1
   __fork_entry()

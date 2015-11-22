@@ -103,7 +103,7 @@ func registerDeclReal(rsv sema:Resolver,
   mut isFunc = pdecl'node'type == ast:PFUNCTION or isEntry or isMethod
 
 
-  mut realType ptr ast:Type = ast:findSym(cast<ptr ast:PNode>(pdecl), name)
+  mut realType ptr ast:Type = ast:findSym(<ptr ast:PNode>(pdecl), name)
   mut typeResolved = realType != null
   mut inMap = typeResolved
 
@@ -148,7 +148,7 @@ func registerDeclReal(rsv sema:Resolver,
 
       if pdecl'node'leaves.len() > 0
 
-        mut pexpr = cast<ptr ast:PExpr>(val pdecl'node'leaves.get(0))
+        mut pexpr = <ptr ast:PExpr>(val pdecl'node'leaves.get(0))
 
         if not sema:exprIsCompileConst(pexpr)
           mut msg = "expression is not a compile time constant"
@@ -167,7 +167,7 @@ func registerDeclReal(rsv sema:Resolver,
           /if
 
           if typeResolved
-            if not sema:typeIsAssignable(rsv'ctx, cast<ptr ast:PNode>(pdecl), realType, valType)
+            if not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pdecl), realType, valType)
               mut cs = cs:new(20)
               cs.add("cannot assign an expression of type '")
               ast:typeSummarize(cs, valType)
@@ -255,7 +255,7 @@ func resolveDeclType(rsv sema:Resolver,
   # in this case we should look if there is a global declaration value left with
   # this name
 
-  mut whichDecl = cast<ptr ast:PDecl>(rsv'decls.get(name))
+  mut whichDecl = <ptr ast:PDecl>(rsv'decls.get(name))
 
   if whichDecl?
     return registerDeclReal(rsv, whichDecl, false, recList, errors)
@@ -279,7 +279,7 @@ func registerDecl(rsv sema:Resolver,
                   declType uint16,
                   errors ptr list:List) ptr ast:Type
 
-  mut declNode = cast<ptr ast:PNode>(pdecl)
+  mut declNode = <ptr ast:PNode>(pdecl)
 
   mut stab = ast:findStab(declNode)
   if ast:stabTypeof(stab, name)?

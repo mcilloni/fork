@@ -27,7 +27,7 @@ entry
     proc:exit(1)
   /if
 
-  mut puts = cast<ptr func(str ptr uint8)>(libc.sym("puts", ptr error))
+  mut puts = <ptr func(str ptr uint8)>(libc.sym("puts", ptr error))
 
   if libc == null
     tty:err("error: ")

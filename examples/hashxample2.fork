@@ -14,7 +14,7 @@ import tty
 
 
 func identHash(item data) uintptr
-  return cast<uintptr>(item)
+  return <uintptr>(item)
 /func
 
 
@@ -32,9 +32,9 @@ func hashIntDump(hash ptr hash:Hash)
       tty:out(", ")
     /if
 
-    tty:outint(cast<uintptr>(pair'key))
+    tty:outint(<uintptr>(pair'key))
     tty:out(": ")
-    tty:outint(cast<uintptr>(pair'value))
+    tty:outint(<uintptr>(pair'value))
 
     pair:pairFree(pair)
   /while
@@ -51,7 +51,7 @@ entry
   mut i uintptr = 0
 
   while i < 30000000
-    hash.put(cast<data>(i), cast<data>(i))
+    hash.put(<data>(i), <data>(i))
 
     i++
   /while

@@ -86,7 +86,7 @@ func ptypeDescrDumpStructuredDataArgs(args ptr list:List)
       tty:out(", ")
     /if
 
-    mut sym = cast<ptr ast:PSymbol>(val args.get(i))
+    mut sym = <ptr ast:PSymbol>(val args.get(i))
     psymbolDump(sym)
 
     i++
@@ -246,7 +246,7 @@ func prootDumpInfo(proot ptr ast:PRoot, depth uintptr)
 
     while i < len
       printPadding(depth + 1)
-      mut imp = cast<ptr ast:StringDef>(val proot'imports.get(i))
+      mut imp = <ptr ast:StringDef>(val proot'imports.get(i))
 
       tty:out(imp'name)
       tty:outch(32)
@@ -294,7 +294,7 @@ func pexprDumpInfo(pexpr ptr ast:PExpr, depth uintptr)
 
   if pexpr'opType == tokens:ID
     tty:out("an id - \"")
-    tty:out(cast<ptr uint8>(pexpr'node'value))
+    tty:out(<ptr uint8>(pexpr'node'value))
     tty:out("\"")
   else
     if pexpr'opType == tokens:NUMBER
@@ -302,7 +302,7 @@ func pexprDumpInfo(pexpr ptr ast:PExpr, depth uintptr)
     else
       if pexpr'opType == tokens:STRING
         tty:out("a string - \"")
-        tty:out(cast<ptr uint8>(pexpr'node'value))
+        tty:out(<ptr uint8>(pexpr'node'value))
         tty:out("\"")
       else
         if pexpr'opType == tokens:OPAR
@@ -319,7 +319,7 @@ func pexprDumpInfo(pexpr ptr ast:PExpr, depth uintptr)
               if pexpr'opType == tokens:CAST or pexpr'opType == tokens:SIZE
                 tty:out(" to ")
 
-                ptypeDump(cast<ptr ast:PType>(pexpr'node'value))
+                ptypeDump(<ptr ast:PType>(pexpr'node'value))
               /if
             /if
           /if
@@ -341,15 +341,15 @@ func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
   linesDump(pnode'begin, pnode'end)
 
   if ast:isPRoot(pnode)
-    prootDumpInfo(cast<ptr ast:PRoot>(pnode), depth)
+    prootDumpInfo(<ptr ast:PRoot>(pnode), depth)
   /if
 
   if ast:isPDecl(pnode)
-    pdeclDumpInfo(cast<ptr ast:PDecl>(pnode), depth)
+    pdeclDumpInfo(<ptr ast:PDecl>(pnode), depth)
   /if
 
   if ast:isPExpr(pnode)
-    pexprDumpInfo(cast<ptr ast:PExpr>(pnode), depth)
+    pexprDumpInfo(<ptr ast:PExpr>(pnode), depth)
   /if
 
   tty:outch(10)
@@ -358,7 +358,7 @@ func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
   mut i uintptr = 0
 
   while i < len
-    mut child = cast<ptr ast:PNode>(val pnode'leaves.get(i))
+    mut child = <ptr ast:PNode>(val pnode'leaves.get(i))
 
     pnodeDumpRec(child, depth + 1)
 
@@ -394,8 +394,8 @@ func symlistDump(cs ptr cs:Charstash, symlist ptr kv:KVList)
       mut pair = symlist.getAt(i)
       mut sym ast:Symbol
 
-      sym'name = cast<ptr uint8>(pair'key)
-      sym'type = cast<ptr ast:Type>(pair'value)
+      sym'name = <ptr uint8>(pair'key)
+      sym'type = <ptr ast:Type>(pair'value)
 
       ast:symbolDump(cs, ptr sym)
 
@@ -524,8 +524,8 @@ func symlistSummarize(cs ptr cs:Charstash, symlist ptr kv:KVList)
       mut pair = symlist.getAt(i)
       mut sym ast:Symbol
 
-      sym'name = cast<ptr uint8>(pair'key)
-      sym'type = cast<ptr ast:Type>(pair'value)
+      sym'name = <ptr uint8>(pair'key)
+      sym'type = <ptr ast:Type>(pair'value)
 
       ast:symbolSummarize(cs, ptr sym)
 

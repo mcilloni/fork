@@ -26,7 +26,7 @@ func strclone(orig ptr uint8) ptr uint8
   /if
 
   mut len = txt:strlen(orig)
-  mut new = cast<ptr uint8>(mem:zalloc(len + 1))
+  mut new = <ptr uint8>(mem:zalloc(len + 1))
   txt:strncpy(new, orig, len)
   return new
 /func
@@ -59,7 +59,7 @@ func strreverse(str ptr uint8, len uintptr)
   mut end = str + len - 1
 
   # workaround, fix sema
-  while cast<uintptr>(str) < cast<uintptr>(end)
+  while <uintptr>(str) < <uintptr>(end)
     val str = val str ^ val end
     val end = val end ^ val str
     val str = val str ^ val end
@@ -86,7 +86,7 @@ func numtostr(num uintptr, buf ptr uint8, len uintptr) ptr uint8
   while i < (len - 1) and num != 0
     digit = num mod 10
     num = num / 10
-    buf[i] = cast<uint8>(digit + 48) #position of 0 in ascii
+    buf[i] = <uint8>(digit + 48) #position of 0 in ascii
     i++
   /while
 
@@ -111,7 +111,7 @@ func strglue(strs ptr ptr uint8) ptr uint8
 func strappend(str1 ptr uint8, str2 ptr uint8) ptr uint8
   mut len1 = txt:strlen(str1)
   mut len2 = txt:strlen(str2)
-  mut ret = cast<ptr uint8>(mem:zalloc(len1 + len2 + 1))
+  mut ret = <ptr uint8>(mem:zalloc(len1 + len2 + 1))
 
   mem:move(ret, str1, len1)
   mem:move(ret + len1, str2, len2)
@@ -143,7 +143,7 @@ func strtonum(str ptr uint8) intptr
     len--
   /while
 
-  return cast<intptr>(ret * sign)
+  return <intptr>(ret * sign)
 /func
 
 

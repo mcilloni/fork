@@ -67,7 +67,7 @@ func pathContains(path,filename ptr uint8) bool
 
 
 func listAppend(to data, elem ptr uint8)
-  cast<ptr list:List>(to).append(elem)
+  <ptr list:List>(to).append(elem)
 /func
 
 

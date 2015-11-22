@@ -42,7 +42,7 @@ entry
     tty:out(lex:tokenStr(tok))
     if tok'type == tokens:ID or tok'type == tokens:STRING
       tty:out(": ")
-      tty:out(cast<ptr uint8>(tok'value))
+      tty:out(<ptr uint8>(tok'value))
     else
       if tok'type == tokens:NUMBER
         tty:out(": ")

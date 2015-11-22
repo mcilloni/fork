@@ -73,7 +73,7 @@ func semaValidateAstRoot(ctx ptr parser:Parser, root ptr ast:PRoot, errors ptr l
 
   while i < len
     # PDecl because root can only have pdecl children
-    mut pdecl = cast<ptr ast:PDecl>(decls.getAt(i)'value)
+    mut pdecl = <ptr ast:PDecl>(decls.getAt(i)'value)
 
     if not pdecl'node'validated
       if not validatePDecl(rsv, pdecl, errors)

@@ -23,7 +23,7 @@ import utils
 
 
 func intHash(n data) uintptr
-  return cast<uintptr>(n)
+  return <uintptr>(n)
 /func
 
 
@@ -32,7 +32,7 @@ func semaValidateAst(ctx ptr parser:Parser, root ptr ast:PNode) ptr list:List
     return null
   /if
 
-  mut proot = cast<ptr ast:PRoot>(root)
+  mut proot = <ptr ast:PRoot>(root)
 
   ctx.setCurrentFile(proot'fileName)
 
@@ -44,7 +44,7 @@ func semaValidateAst(ctx ptr parser:Parser, root ptr ast:PNode) ptr list:List
     return errors
   /if
 
-  proot'typePool = mem:fpNew(cast<ptr func(item data)>(ptr ast:typeFree))
+  proot'typePool = mem:fpNew(<ptr func(item data)>(ptr ast:typeFree))
 
   proot'aliases = ast:stabNew()
 

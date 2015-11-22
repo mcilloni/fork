@@ -14,8 +14,8 @@ import tty
 
 
 func numcmp(a,b data) int8
-  mut x = cast<uintptr>(a)
-  mut y = cast<uintptr>(b)
+  mut x = <uintptr>(a)
+  mut y = <uintptr>(b)
 
   return x > y => 1 || (x < y => -1 || 0)
 /func
@@ -35,9 +35,9 @@ func mapIntDump(map ptr map:Map)
       tty:out(", ")
     /if
 
-    tty:outint(cast<uintptr>(pair'key))
+    tty:outint(<uintptr>(pair'key))
     tty:out(": ")
-    tty:outint(cast<uintptr>(pair'value))
+    tty:outint(<uintptr>(pair'value))
 
     pair:pairFree(pair)
   /while
@@ -54,7 +54,7 @@ entry
   mut i uintptr = 0
 
   while i < 30000000
-    map.put(cast<data>(i), cast<data>(i))
+    map.put(<data>(i), <data>(i))
 
     i++
   /while

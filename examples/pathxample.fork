@@ -33,7 +33,7 @@ entry
   mut len = paths.len()
 
   while i < len
-    mut elem = cast<ptr uint8>(val paths.get(i))
+    mut elem = <ptr uint8>(val paths.get(i))
 
     tty:outln(elem)
 

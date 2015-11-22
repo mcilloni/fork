@@ -30,7 +30,7 @@ func rootAliasRegister(rsv sema:Resolver, name ptr uint8, type ptr ast:Type)
   type'moduleName = rsv'root'moduleName != null => txt:strclone(rsv'root'moduleName'name) || null
   ast:stabAdd(rsv'root'aliases, name, false, type, ast:PALIAS)
 
-  mut pdecl = cast<ptr ast:PDecl>(rsv'aliases.get(name))
+  mut pdecl = <ptr ast:PDecl>(rsv'aliases.get(name))
 
   pdecl'node'validated = true
 
@@ -112,7 +112,7 @@ func convertSymbolList(rsv sema:Resolver,
   members.setFreeFuncs(ptr mem:free, null)
 
   while i < plen
-    mut member = cast<ptr ast:PSymbol>(val pargs.get(i))
+    mut member = <ptr ast:PSymbol>(val pargs.get(i))
     mut ptype = member'type
 
     mut type ptr ast:Type = null
@@ -204,7 +204,7 @@ func findAliasLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
     return findAliasLocal(node'parent, name)
   /if
 
-  mut root = cast<ptr ast:PRoot>(node)
+  mut root = <ptr ast:PRoot>(node)
 
   return ast:stabTypeof(root'aliases, name)
 /func
@@ -274,7 +274,7 @@ func resolveIdType(rsv sema:Resolver,
   /if
 
   # it's not builtin, so it must be a local alias.
-  mut type = sema:findAliasLocal(cast<ptr ast:PNode>(rsv'root), ptype'name)
+  mut type = sema:findAliasLocal(<ptr ast:PNode>(rsv'root), ptype'name)
   if type?
     return astfn:typeClone(rsv'root'typePool, type)
   /if
@@ -283,7 +283,7 @@ func resolveIdType(rsv sema:Resolver,
   # So, we try to find a valid ptype, or otherwise it's an error.
 
   mut missingPType ptr ast:PType
-  mut whichDecl = cast<ptr ast:PDecl>(rsv'aliases.get(ptype'name))
+  mut whichDecl = <ptr ast:PDecl>(rsv'aliases.get(ptype'name))
 
   if whichDecl?
     if whichDecl'node'validated

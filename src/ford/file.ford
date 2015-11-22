@@ -22,6 +22,7 @@ alias File struct(
   length uint64
 )
 
+decl func stat(path ptr uint8) ptr File
 
 decl func fileFree(file ptr File)
 
@@ -37,16 +38,16 @@ alias Dir struct(
   internal data
 )
 
+
 decl func dirOpen(name ptr uint8, error ptr ptr err:Error) ptr Dir
 decl func dirClose(dir ptr Dir)
 
-decl method Dir.next()
+decl method Dir.next() ptr File
 
 
 # File stream functions
 decl func fileOpen(name ptr uint8, error ptr ptr err:Error) ptr io:Stream
 decl func fileCreate(name ptr uint8, error ptr ptr err:Error) ptr io:Stream
-decl func fileGetInfo(path ptr uint8) ptr File
 
 # path functions
 decl func pathBasename(path ptr uint8) ptr uint8
