@@ -562,7 +562,7 @@ func validateModuleAccessExpr(rsv sema:Resolver,
                               errors ptr list:List) ptr ast:Type
 
   mut modName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
-  if not ast:prootHasImported(rsv'root, modName)
+  if not rsv'root.hasImported(modName)
     mut msg = txt:strappend(modName, " has never been imported")
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
     mem:free(msg)

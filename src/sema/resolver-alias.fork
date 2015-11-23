@@ -215,7 +215,7 @@ func resolveModuleAlias(rsv sema:Resolver,
                         errors ptr list:List) ptr ast:Type
 
 
-  if not ast:prootHasImported(rsv'root, ptype'moduleName)
+  if not rsv'root.hasImported(ptype'moduleName)
     mut msg = txt:strappend("no import called ", ptype'moduleName)
     errors.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, msg))
     mem:free(msg)

@@ -58,7 +58,7 @@ func findMethod(rsv sema:Resolver,
     return ret
   /if
 
-  mut root = ast:findPRoot(node)
+  mut root = node.findPRoot()
 
   # fetch this from the current ford.
   if root'moduleName?
@@ -281,7 +281,7 @@ func registerDecl(rsv sema:Resolver,
 
   mut declNode = <ptr ast:PNode>(pdecl)
 
-  mut stab = ast:findStab(declNode)
+  mut stab = declNode.findStab()
   if stab.typeof(name)?
     mut cs = cs:new(20)
     cs.add("symbol '")
