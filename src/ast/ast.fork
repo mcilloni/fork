@@ -91,7 +91,7 @@ method ast:PNode.findSym(name ptr uint8) ptr ast:Type
     mut stab = pblock.findStab()
     mut type = stab.typeof(name)
 
-    return type ?? pblock'parent.findSym(name)
+    return type ?? (pblock'parent? => pblock'parent.findSym(name) || null)
   /if
 
   return null
@@ -186,7 +186,7 @@ func pnodeFree(pnode ptr ast:PNode)
       mem:fpFree(proot'typePool)
     /if
 
-    if pnode.isRoot()
+    if pnode.isDecl()
 
       mut pdecl = <ptr ast:PDecl>(pnode)
       mem:decRef(pdecl'sym)

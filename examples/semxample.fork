@@ -125,7 +125,7 @@ entry
     tty:out(" :: ")
 
     mut cs = cs:new(10)
-    ast:typeSummarize(cs, dinfo'type)
+    dinfo'type.summarize(cs)
 
     mut des = cs:unwrap(cs)
 

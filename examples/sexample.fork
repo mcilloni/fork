@@ -30,6 +30,6 @@ entry
     proc:exit(1)
   /if
 
-  ast:pnodeDump(res'file)
-  ast:pnodeFree(res'file)
+  res'file.dump()
+  res'file.dump()
 /entry
