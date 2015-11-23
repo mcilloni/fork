@@ -51,83 +51,131 @@ func declKey(pdecl ptr ast:PDecl) ptr uint8
 /func
 
 
-func findPBlock(node ptr ast:PNode) ptr ast:PNode
-  if node == null
-    return null
+method ast:PNode.findPBlock() ptr ast:PNode
+  if me.isBlock()
+    return me
   /if
 
-  if not ast:isPBlock(node)
-    return findPBlock(node'parent)
-  /if
-
-  return node
-/func
-
-
-func findPRoot(node ptr ast:PNode) ptr ast:PRoot
-  if node == null
-    return null
-  /if
-
-  if not ast:isPRoot(node)
-    return findPRoot(node'parent)
-  /if
-
-  return <ptr ast:PRoot>(node)
-/func
-
-
-func findStab(node ptr ast:PNode) ptr ast:Symtable
-  mut pblock = ast:findPBlock(node)
-
-  return pblock != null => <ptr ast:PBlock>(pblock)'syms || null
-/func
-
-
-func findSymLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
-  mut stab = findStab(node)
-
-  return ast:stabTypeof(stab, name)
-/func
-
-
-func findSym(node ptr ast:PNode, name ptr uint8) ptr ast:Type
-  mut pblock = ast:findPBlock(node)
-
-  if pblock != null
-    mut stab = findStab(pblock)
-    mut type = ast:stabTypeof(stab, name)
-
-    return type != null => type || findSym(pblock'parent, name)
+  if me'parent?
+    return me'parent.findPBlock()
   /if
 
   return null
-/func
+/method
 
 
-func isPDecl(pnode ptr ast:PNode) bool
-  return pnode != null and pnode'type == ast:PALIAS or pnode'type == ast:PMUT or pnode'type == ast:PENTRY or pnode'type == ast:PFUNCTION or pnode'type == ast:PMETHOD
-/func
+method ast:PNode.findPRoot() ptr ast:PRoot
+  if me.isRoot()
+    return <ptr ast:PRoot>(me)
+  /if
+
+  if me'parent?
+    return me'parent.findPRoot()
+  /if
+
+  return null
+/method
 
 
-func isPBlock(pnode ptr ast:PNode) bool
-  return pnode != null and (pnode'type == ast:PBLOCK or ast:isPRoot(pnode))
-/func
+method ast:PNode.findStab() ptr ast:Symtable
+  mut pblock = me.findPBlock()
+
+  return pblock? => <ptr ast:PBlock>(pblock)'syms || null
+/method
 
 
-func isPExpr(pnode ptr ast:PNode) bool
-  return pnode != null and pnode'type == ast:PEXPR
-/func
+method ast:PNode.findSym(name ptr uint8) ptr ast:Type
+  mut pblock = me.findPBlock()
+
+  if pblock?
+    mut stab = pblock.findStab()
+    mut type = stab.typeof(name)
+
+    return type ?? pblock'parent.findSym(name)
+  /if
+
+  return null
+/method
 
 
-func isPRoot(pnode ptr ast:PNode) bool
-  return pnode != null and pnode'type == ast:PROOT
-/func
+method ast:PNode.findSymLocal(name ptr uint8) ptr ast:Type
+  mut stab = me.findStab()
+
+  return stab.typeof(name)
+/method
+
+
+method ast:PNode.isBlock() bool
+  return me'type == ast:PBLOCK or me.isRoot()
+/method
+
+
+method ast:PNode.isBreakContinue() bool
+  return me'type == ast:PBREAK or me'type == ast:PCONTINUE
+/method
+
+
+method ast:PNode.isDecl() bool
+  return me'type == ast:PALIAS or me'type == ast:PMUT or me'type == ast:PENTRY or me'type == ast:PFUNCTION or me'type == ast:PMETHOD
+/method
+
+
+method ast:PNode.isExpr() bool
+  return me'type == ast:PEXPR
+/method
+
+
+method ast:PNode.isIf() bool
+  return me'type == ast:PIF or me'type == ast:PIFELSE
+/method
+
+
+method ast:PNode.isMulDecl() bool
+  return me'type == ast:PMUTEXP
+/method
+
+
+method ast:PNode.isMutOrDecl() bool
+  return me'type == ast:PMUT or (me.isDecl() and <ptr ast:PDecl>(me)'isDecl)
+/method
+
+
+method ast:PNode.isReturn() bool
+  return me'type == ast:PRETURN
+/method
+
+
+method ast:PNode.isRoot() bool
+  return me'type == ast:PROOT
+/method
+
+
+method ast:PNode.isWhile() bool
+  return me'type == ast:PWHILE
+/method
+
+
+method ast:PRoot.hasImported(name ptr uint8) bool
+  mut i uintptr = 0
+  mut len = me'imports.len()
+
+  while i < len
+    mut elem = <ptr ast:StringDef>(val me'imports.get(i))
+
+    if txt:strequals(elem'name, name)
+      return true
+    /if
+
+    i++
+  /while
+
+  return false
+/method
 
 
 func pnodeFree(pnode ptr ast:PNode)
-  if pnode != null
-    if ast:isPRoot(pnode)
+  if pnode?
+    if pnode.isRoot()
 
       mut proot = <ptr ast:PRoot>(pnode)
       astfn:strdefFree(proot'moduleName)
@@ -138,7 +186,7 @@ func pnodeFree(pnode ptr ast:PNode)
       mem:fpFree(proot'typePool)
     /if
 
-    if ast:isPDecl(pnode)
+    if pnode.isRoot()
 
       mut pdecl = <ptr ast:PDecl>(pnode)
       mem:decRef(pdecl'sym)
@@ -148,7 +196,7 @@ func pnodeFree(pnode ptr ast:PNode)
 
     /if
 
-    if ast:isPBlock(pnode)
+    if pnode.isBlock()
       ast:stabFree(<ptr ast:PBlock>(pnode)'syms)
     /if
 
@@ -163,59 +211,12 @@ func pnodeFree(pnode ptr ast:PNode)
 /func
 
 
-func pnodeIsBreakContinue(pnode ptr ast:PNode) bool
-  return pnode'type == ast:PBREAK or pnode'type == ast:PCONTINUE
-/func
-
-
-func pnodeIsDecl(pnode ptr ast:PNode) bool
-  return pnode'type == ast:PMUT or (isPDecl(pnode) and <ptr ast:PDecl>(pnode)'isDecl)
-/func
-
-
-func pnodeIsExpr(pnode ptr ast:PNode) bool
-  return pnode'type == ast:PEXPR
-/func
-
-
-func pnodeIsIf(pnode ptr ast:PNode) bool
-  return pnode'type == ast:PIF or pnode'type == ast:PIFELSE
-/func
-
-
-func pnodeIsReturn(pnode ptr ast:PNode) bool
-  return pnode'type == ast:PRETURN
-/func
-
-
-func pnodeIsWhile(pnode ptr ast:PNode) bool
-  return pnode'type == ast:PWHILE
-/func
-
-
-func prootHasImported(root ptr ast:PRoot, name ptr uint8) bool
-  mut i uintptr = 0
-  mut len = root'imports.len()
-
-  while i < len
-    mut elem = <ptr ast:StringDef>(val root'imports.get(i))
-
-    if txt:strequals(elem'name, name)
-      return true
-    /if
-
-    i++
-  /while
-
-  return false
-/func
-
-
 mut PROOT      uint16 = 10
 mut PENTRY     uint16 = 20
 mut PFUNCTION  uint16 = 30
 mut PALIAS     uint16 = 40
 mut PMUT       uint16 = 60
+mut PMUTEXP    uint16 = 65
 mut PIF        uint16 = 70
 mut PEXPR      uint16 = 80
 mut PBREAK     uint16 = 90

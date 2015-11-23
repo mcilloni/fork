@@ -23,9 +23,9 @@ import txt
 import utils
 
 
-func symbolEquals(sym1,sym2 ptr ast:Symbol) bool
-  return txt:strequals(sym1'name, sym2'name) and ast:typeEquals(sym1'type, sym2'type)
-/func
+method ast:Symbol.equals(other ptr ast:Symbol) bool
+  return txt:strequals(me'name, other'name) and me'type.equals(other'type)
+/method
 
 
 func typeEqualsList(list1, list2 ptr kv:KVList) bool
@@ -47,7 +47,7 @@ func typeEqualsList(list1, list2 ptr kv:KVList) bool
     mut type1 = <ptr ast:Type>(pair1'value)
     mut type2 = <ptr ast:Type>(pair2'value)
 
-    if not txt:strequals(name1, name2) or not ast:typeEquals(type1, type2)
+    if not txt:strequals(name1, name2) or not type1.equals(type2)
       return false
     /if
 
@@ -55,62 +55,6 @@ func typeEqualsList(list1, list2 ptr kv:KVList) bool
   /while
 
   return true
-/func
-
-
-func typeEquals(type1, type2 ptr ast:Type) bool
-  if not type1? or not type2?
-    return false
-  /if
-
-  if type1'name? and type2'name?
-    mut res = txt:strequals(type1'name, type2'name)
-
-    if res and type1'moduleName? and type2'moduleName?
-      res = txt:strequals(type1'moduleName, type2'moduleName)
-    /if
-
-    return res
-  /if
-
-  if type1'type != type2'type
-    return false
-  /if
-
-  if type1'type == ast:TYPE_FUNC
-    return typeEquals(type1'retType, type2'retType) and typeEqualsList(type1'members, type2'members)
-  else
-    if type1'type == ast:TYPE_PTR
-      return typeEquals(type1'retType, type2'retType)
-    else
-      if type1'type == ast:TYPE_STRUCT
-        return typeEqualsList(type1'members, type2'members)
-      else
-        if type1'type == ast:TYPE_LOC
-          return typeEquals(type1'retType, type2'retType) and type1'itemCount == type2'itemCount
-        else
-          if type1'type == ast:TYPE_BOOL
-            return true
-          else
-            if type1'type == ast:TYPE_INT
-              return type1'isSigned == type2'isSigned and type1'typeSize == type2'typeSize
-            else
-              if type1'type == ast:TYPE_DATA
-                return true
-              else
-                if type1'type == ast:TYPE_NULL
-                  return true
-                else
-                  tty:errln("Unreachable: unknown type comparison")
-                  proc:abort()
-                /if
-              /if
-            /if
-          /if
-        /if
-      /if
-    /if
-  /if
 /func
 
 
@@ -128,44 +72,100 @@ func typeFree(type ptr ast:Type)
 /func
 
 
-func typeIsBool(type ptr ast:Type) bool
-  return type? and type'type == ast:TYPE_BOOL
-/func
+method ast:Type.equals(other ptr ast:Type) bool
+  if not other?
+    return false
+  /if
+
+  if me'name? and other'name?
+    mut res = txt:strequals(me'name, other'name)
+
+    if res and me'moduleName? and other'moduleName?
+      res = txt:strequals(me'moduleName, other'moduleName)
+    /if
+
+    return res
+  /if
+
+  if me'type != other'type
+    return false
+  /if
+
+  if me'type == ast:TYPE_FUNC
+    return me'retType.equals(other'retType) and typeEqualsList(me'members, other'members)
+  else
+    if me'type == ast:TYPE_PTR
+      return me'retType.equals(other'retType)
+    else
+      if me'type == ast:TYPE_STRUCT
+        return typeEqualsList(me'members, other'members)
+      else
+        if me'type == ast:TYPE_LOC
+          return me'retType.equals(other'retType) and me'itemCount == other'itemCount
+        else
+          if me'type == ast:TYPE_BOOL
+            return true
+          else
+            if me'type == ast:TYPE_INT
+              return me'isSigned == other'isSigned and me'typeSize == other'typeSize
+            else
+              if me'type == ast:TYPE_DATA
+                return true
+              else
+                if me'type == ast:TYPE_NULL
+                  return true
+                else
+                  tty:errln("Unreachable: unknown type comparison")
+                  proc:abort()
+                /if
+              /if
+            /if
+          /if
+        /if
+      /if
+    /if
+  /if
+/method
 
 
-func typeIsData(type ptr ast:Type) bool
-  return type? and type'type == ast:TYPE_DATA
-/func
+method ast:Type.isBool() bool
+  return me'type == ast:TYPE_BOOL
+/method
 
 
-func typeIsFunc(type ptr ast:Type) bool
-  return type? and type'type == ast:TYPE_FUNC
-/func
+method ast:Type.isData() bool
+  return me'type == ast:TYPE_DATA
+/method
 
 
-func typeIsInt(type ptr ast:Type) bool
-  return type? and type'type == ast:TYPE_INT
-/func
+method ast:Type.isFunc() bool
+  return me'type == ast:TYPE_FUNC
+/method
 
 
-func typeIsLoc(type ptr ast:Type) bool
-  return type? and type'type == ast:TYPE_LOC
-/func
+method ast:Type.isInt() bool
+  return me'type == ast:TYPE_INT
+/method
 
 
-func typeIsNull(type ptr ast:Type) bool
-  return type? and type'type == ast:TYPE_NULL
-/func
+method ast:Type.isLoc() bool
+  return me'type == ast:TYPE_LOC
+/method
 
 
-func typeIsPtr(type ptr ast:Type) bool
-  return type? and (type'type == ast:TYPE_PTR or type'type == ast:TYPE_DATA)
-/func
+method ast:Type.isNull() bool
+  return me'type == ast:TYPE_NULL
+/method
 
 
-func typeIsStruct(type ptr ast:Type) bool
-  return type? and type'type == ast:TYPE_STRUCT
-/func
+method ast:Type.isPtr() bool
+  return me'type == ast:TYPE_PTR or me'type == ast:TYPE_DATA
+/method
+
+
+method ast:Type.isStruct() bool
+  return me'type == ast:TYPE_STRUCT
+/method
 
 
 func stabNew() ptr ast:Symtable
@@ -179,29 +179,29 @@ func stabNew() ptr ast:Symtable
 /func
 
 
-func stabAdd(stab ptr ast:Symtable, name ptr uint8, isDecl bool, type ptr ast:Type, symType uint16)
-  stab'syms.put(txt:strclone(name), astfn:declInfoNew(symType, isDecl, type))
-/func
-
-
-func stabGet(stab ptr ast:Symtable, name ptr uint8) ptr ast:DeclInfo
-  return <ptr ast:DeclInfo>(stab'syms.get(name))
-/func
-
-
-func stabTypeof(stab ptr ast:Symtable, name ptr uint8) ptr ast:Type
-  mut di = ast:stabGet(stab, name)
-
-  return di? => di'type || null
-/func
-
-
 func stabFree(stab ptr ast:Symtable)
-  if stab != null
+  if stab?
     kv:free(stab'syms)
     mem:free(stab)
   /if
 /func
+
+
+method ast:Symtable.add(name ptr uint8, isDecl bool, type ptr ast:Type, symType uint16)
+  me'syms.put(txt:strclone(name), astfn:declInfoNew(symType, isDecl, type))
+/method
+
+
+method ast:Symtable.get(name ptr uint8) ptr ast:DeclInfo
+  return <ptr ast:DeclInfo>(me'syms.get(name))
+/method
+
+
+method ast:Symtable.typeof(name ptr uint8) ptr ast:Type
+  mut di = me.get(name)
+
+  return di? => di'type || null
+/method
 
 
 mut TYPE_FUNC      uint16 = 10

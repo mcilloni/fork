@@ -15,10 +15,12 @@ return ::= 'return', expr
 if ::= 'if', expr, stmtEnd, body, [elseBlock], '/if'
 while ::= 'while', expr, stmtEnd, breakBody, '/while'
 elseBlock ::= 'else', body
-mut ::= 'mut', singleVar
+mut ::= 'mut', (singleVar | structExpansion)
 decl ::= 'decl', (funcHead | mut | methodHead)
 stmtEnd ::= newLine | ';'
 singleVar ::= assign | declType
+structExpansion ::= '{', {seItem, ','}, seItem, '}', '=', expr
+seItem ::= id, [type]
 declType ::= id, type
 alias ::= 'alias', id, type
 typeModifier ::= 'val' | 'ptr' | ('[', number, ']')

@@ -150,9 +150,9 @@ func validateDecl(rsv sema:Resolver,
       if not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pdecl), type, exprType)
         mut cs = cs:new(20)
         cs.add("cannot assign an expression of type '")
-        ast:typeSummarize(cs, exprType)
+        exprType.summarize(cs)
         cs.add("' to a variable declared as '")
-        ast:typeSummarize(cs, type)
+        type.summarize(cs)
         cs.add("'")
 
         mut msg = cs:unwrap(cs)
@@ -164,7 +164,7 @@ func validateDecl(rsv sema:Resolver,
         return false
       /if
     else
-      if ast:typeIsNull(exprType)
+      if exprType.isNull()
         errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "can't declare a variable with type 'null'"))
         return false
       /if
@@ -222,10 +222,10 @@ func validateIf(rsv sema:Resolver,
     return false
   /if
 
-  if not ast:typeIsBool(condType)
+  if not condType.isBool()
     mut cs = cs:new(20)
     cs.add("expected a boolean expression, got type '")
-    ast:typeSummarize(cs, condType)
+    condType.summarize(cs)
     cs.add("' instead")
 
     mut msg = cs:unwrap(cs)
@@ -330,11 +330,11 @@ func validateReturn(rsv sema:Resolver,
     if not sema:typeIsAssignable(rsv'ctx, stmt, retType, exprType)
       mut cs = cs:new(20)
       cs.add("cannot return type '")
-      ast:typeSummarize(cs, exprType)
+      exprType.summarize(cs)
       cs.add("' from function ")
       cs.add(funcInfo'name)
       cs.add("(), returning '")
-      ast:typeSummarize(cs, retType)
+      retType.summarize(cs)
       cs.add("'")
 
       mut msg = cs:unwrap(cs)
@@ -401,10 +401,10 @@ func validateWhile(rsv sema:Resolver,
     return false
   /if
 
-  if not ast:typeIsBool(condType)
+  if not condType.isBool()
     mut cs = cs:new(20)
     cs.add("expected a boolean expression, got type '")
-    ast:typeSummarize(cs, condType)
+    condType.summarize(cs)
     cs.add("' instead")
 
     mut msg = cs:unwrap(cs)

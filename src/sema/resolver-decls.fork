@@ -170,9 +170,9 @@ func registerDeclReal(rsv sema:Resolver,
             if not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pdecl), realType, valType)
               mut cs = cs:new(20)
               cs.add("cannot assign an expression of type '")
-              ast:typeSummarize(cs, valType)
+              valType.summarize(cs)
               cs.add("' to a variable declared as '")
-              ast:typeSummarize(cs, realType)
+              realType.summarize(cs)
               cs.add("'")
 
               mut msg = cs:unwrap(cs)
@@ -184,7 +184,7 @@ func registerDeclReal(rsv sema:Resolver,
               return null
             /if
           else
-            if ast:typeIsNull(valType)
+            if valType.isNull()
               errors.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, rsv'root'fileName, "can't declare a variable with type 'null'"))
               return null
             /if

@@ -35,6 +35,8 @@ alias PType struct (
   begin, end Line
 )
 
+decl method PType.dump()
+
 
 alias PTypeDescr struct (
   refc mem:Ref,
@@ -49,9 +51,8 @@ alias PTypeDescr struct (
   length uintptr
 )
 
-decl func ptypeDump(ptype ptr PType)
+decl method PTypeDescr.dump()
 
-decl func ptypeDescrDump(ptype ptr PTypeDescr)
 
 alias PSymbol struct(
   refc mem:Ref,
@@ -98,28 +99,33 @@ alias Type struct(
   begin, end Line
 )
 
+
+decl func typeFree(type ptr Type)
+
+
+decl method Type.dump(cs ptr cs:Charstash)
+decl method Type.equals(other ptr Type) bool
+decl method Type.isBool() bool
+decl method Type.isData() bool
+decl method Type.isFunc() bool
+decl method Type.isInt() bool
+decl method Type.isLoc() bool
+decl method Type.isNull() bool
+decl method Type.isPtr() bool
+decl method Type.isStruct() bool
+decl method Type.summarize(cs ptr cs:Charstash)
+
+
 alias Symbol struct(
   name ptr uint8,
   type ptr Type
 )
 
 
-decl func symbolDump(cs ptr cs:Charstash, sym ptr Symbol)
-decl func symbolEquals(sym1,sym2 ptr Symbol) bool
-decl func symbolSummarize(cs ptr cs:Charstash, sym ptr Symbol)
+decl method Symbol.dump(cs ptr cs:Charstash)
+decl method Symbol.equals(other ptr Symbol) bool
+decl method Symbol.summarize(cs ptr cs:Charstash)
 
-decl func typeDump(cs ptr cs:Charstash, type ptr Type)
-decl func typeEquals(type1, type2 ptr Type) bool
-decl func typeFree(type ptr Type)
-decl func typeIsBool(type ptr Type) bool
-decl func typeIsData(type ptr Type) bool
-decl func typeIsFunc(type ptr Type) bool
-decl func typeIsInt(type ptr Type) bool
-decl func typeIsLoc(type ptr Type) bool
-decl func typeIsNull(type ptr Type) bool
-decl func typeIsPtr(type ptr Type) bool
-decl func typeIsStruct(type ptr Type) bool
-decl func typeSummarize(cs ptr cs:Charstash, type ptr Type)
 
 
 alias DeclInfo struct(
@@ -140,11 +146,13 @@ alias Symtable struct(
   syms ptr kv:KVList
 )
 
-decl func stabNew() ptr Symtable
-decl func stabAdd(stab ptr Symtable, name ptr uint8, isDecl bool, type ptr Type, symType uint16)
-decl func stabGet(stab ptr Symtable, name ptr uint8) ptr DeclInfo
-decl func stabTypeof(stab ptr Symtable, name ptr uint8) ptr Type
 decl func stabFree(stab ptr Symtable)
+decl func stabNew() ptr Symtable
+
+
+decl method Symtable.add(name ptr uint8, isDecl bool, type ptr Type, symType uint16)
+decl method Symtable.get(name ptr uint8) ptr DeclInfo
+decl method Symtable.typeof(name ptr uint8) ptr Type
 
 
 decl func declDump(prefix,name ptr uint8, type ptr Type)
@@ -161,26 +169,40 @@ alias PNode struct(
   validated bool
 )
 
-decl func pnodeDump(node ptr PNode)
 decl func pnodeFree(pnode ptr PNode)
-decl func pnodeIsBreakContinue(pnode ptr PNode) bool
-decl func pnodeIsDecl(pnode ptr PNode) bool
-decl func pnodeIsExpr(pnode ptr PNode) bool
-decl func pnodeIsIf(pnode ptr PNode) bool
-decl func pnodeIsReturn(pnode ptr PNode) bool
-decl func pnodeIsWhile(pnode ptr PNode) bool
+
+# pnode methods
+decl method PNode.dump()
+
+decl method PNode.findPBlock() ptr PNode
+decl method PNode.findPRoot() ptr PRoot
+decl method PNode.findStab() ptr Symtable
+decl method PNode.findSym(name ptr uint8) ptr Type
+decl method PNode.findSymLocal(name ptr uint8) ptr Type
+
+decl method PNode.isBlock() bool
+decl method PNode.isBreakContinue() bool
+decl method PNode.isDecl() bool
+decl method PNode.isMulDecl() bool
+decl method PNode.isMutOrDecl() bool
+decl method PNode.isExpr() bool
+decl method PNode.isIf() bool
+decl method PNode.isReturn() bool
+decl method PNode.isRoot() bool
+decl method PNode.isWhile() bool
+
 
 alias PBlock struct(
   node PNode,
   syms ptr Symtable
 )
 
-decl func isPBlock(node ptr PNode) bool
 
 alias StringDef struct(
   name ptr uint8,
   begin,end Line
 )
+
 
 alias PDecl struct(
   node PNode,
@@ -189,7 +211,12 @@ alias PDecl struct(
   methodTypeModule,methodType ptr uint8
 )
 
-decl func isPDecl(node ptr PNode) bool
+
+alias PMulDecl struct(
+  node PNode,
+  syms ptr list:List
+)
+
 
 alias PRoot struct(
   node PBlock,
@@ -201,8 +228,7 @@ alias PRoot struct(
   entryNode ptr PDecl
 )
 
-decl func isPRoot(node ptr PNode) bool
-decl func prootHasImported(root ptr PRoot, name ptr uint8) bool
+decl method PRoot.hasImported(name ptr uint8) bool
 
 alias PExpr struct(
   node PNode,
@@ -211,16 +237,7 @@ alias PExpr struct(
   type,sizeType ptr Type
 )
 
-decl func isPExpr(node ptr PNode) bool
-
 decl mut emptyExpr PExpr
-
-
-decl func findPBlock(node ptr PNode) ptr PNode
-decl func findPRoot(node ptr PNode) ptr PRoot
-decl func findSym(node ptr PNode, name ptr uint8) ptr Type
-decl func findSymLocal(node ptr PNode, name ptr uint8) ptr Type
-decl func findStab(node ptr PNode) ptr Symtable
 
 
 decl func declKey(pdecl ptr PDecl) ptr uint8
@@ -233,6 +250,7 @@ decl mut PEXPR      uint16
 decl mut PFUNCTION  uint16
 decl mut PALIAS     uint16
 decl mut PMUT       uint16
+decl mut PMUTEXP    uint16
 decl mut PBREAK     uint16
 decl mut PCONTINUE  uint16
 decl mut PRETURN    uint16

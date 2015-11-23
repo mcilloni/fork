@@ -74,30 +74,53 @@ func pexprNewSingle(tok ptr lex:Token) ptr ast:PExpr
 
 
 func pexprNewTernary(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end ast:Line) ptr ast:PExpr
-    mut pexpr = <ptr ast:PExpr>(mem:zalloc(size(ast:PExpr)))
-    pexpr'node'type = ast:PEXPR
-    pexpr'node'value = tok'value
-    pexpr'node'leaves = list:new()
-    pexpr'opType = tok'type
-    tok'value = 0 # now the value belongs to this PExpr
+  mut pexpr = <ptr ast:PExpr>(mem:zalloc(size(ast:PExpr)))
+  pexpr'node'type = ast:PEXPR
+  pexpr'node'value = tok'value
+  pexpr'node'leaves = list:new()
+  pexpr'opType = tok'type
+  tok'value = 0 # now the value belongs to this PExpr
 
-    mut pnode = ptr pexpr'node
-    pnode'begin = begin
-    pnode'end = end
+  mut pnode = ptr pexpr'node
+  pnode'begin = begin
+  pnode'end = end
 
-    astfn:pnodeAppendChild(pnode, <ptr ast:PNode>(lhs))
-    astfn:pnodeAppendChild(pnode, <ptr ast:PNode>(mid))
-    astfn:pnodeAppendChild(pnode, <ptr ast:PNode>(rhs))
+  astfn:pnodeAppendChild(pnode, <ptr ast:PNode>(lhs))
+  astfn:pnodeAppendChild(pnode, <ptr ast:PNode>(mid))
+  astfn:pnodeAppendChild(pnode, <ptr ast:PNode>(rhs))
 
-    lex:tokenFree(tok)
+  lex:tokenFree(tok)
 
-    return pexpr
+  return pexpr
+/func
+
+
+func pmuldeclNew(nodeType uint16, syms ptr list:List) ptr ast:PMulDecl
+
+  mut pmuldecl = <ptr ast:PMulDecl>(mem:zalloc(size(ast:PMulDecl)))
+  pmuldecl'node'type = nodeType
+  pmuldecl'node'leaves = list:new()
+
+  mut len = syms.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut sym = <ptr ast:PSymbol>(val syms.get(i))
+
+    mem:incRef(sym)
+
+    i++
+  /while
+
+  pmuldecl'syms = syms
+
+  return pmuldecl
 /func
 
 
 func pnodeAppendChild(pnode, child ptr ast:PNode) ptr ast:PNode
 
-  if pnode != null and child != null
+  if pnode? and child?
     pnode'leaves.append(child)
 
     child'parent = pnode
@@ -137,7 +160,7 @@ func prootNew(moduleName ptr ast:StringDef, imports ptr list:List, fileName ptr 
 
 
 func psymbolFree(sym ptr ast:PSymbol)
-  if sym != null
+  if sym?
     mem:free(sym'name)
     mem:decRef(sym'type)
     mem:free(sym)
@@ -159,12 +182,12 @@ func psymbolNew(name ptr uint8, type ptr ast:PType) ptr ast:PSymbol
 
 
 func ptypeDescrFree(descr ptr ast:PTypeDescr)
-  if descr != null
-    if descr'retType != null
+  if descr?
+    if descr'retType?
       mem:decRef(descr'retType)
     /if
 
-    if descr'arguments != null
+    if descr'arguments?
       list:freeAll(descr'arguments, ptr psymbolFree)
     /if
   /if
@@ -195,16 +218,16 @@ func ptypeDescrNewLoc(innerType ptr ast:PType, length uintptr) ptr ast:PTypeDesc
 
 
 func ptypeFree(type ptr ast:PType)
-  if type != null
-    if type'descr != null
+  if type?
+    if type'descr?
       mem:decRef(type'descr)
     /if
 
-    if type'moduleName != null
+    if type'moduleName?
       mem:free(type'moduleName)
     /if
 
-    if type'name != null
+    if type'name?
       mem:free(type'name)
     /if
 
@@ -228,7 +251,7 @@ func ptypeNew(name, moduleName ptr uint8, descr ptr ast:PTypeDescr) ptr ast:PTyp
 
 
 func strdefFree(strdef ptr ast:StringDef)
-  if strdef != null
+  if strdef?
     mem:free(strdef'name)
     mem:free(strdef)
   /if
@@ -246,7 +269,7 @@ func strdefNew(name ptr uint8, begin,end ast:Line) ptr ast:StringDef
 
 
 func symbolClone(sym ptr ast:Symbol) ptr ast:Symbol
-  if sym == null
+  if not sym?
     return null
   /if
 
@@ -259,7 +282,7 @@ func symbolClone(sym ptr ast:Symbol) ptr ast:Symbol
 
 
 func symbolFree(sym ptr ast:Symbol)
-  if sym != null
+  if sym?
     mem:free(sym'name)
 
     mem:free(sym)
@@ -268,7 +291,7 @@ func symbolFree(sym ptr ast:Symbol)
 
 
 func symbolListClone(pool ptr mem:FreePool, symList ptr kv:KVList) ptr kv:KVList
-  if symList == null
+  if not symList?
     return null
   /if
 
@@ -344,7 +367,7 @@ func typeCalculateAlign(members ptr kv:KVList) AlignResult
 
 
 func typeClone(pool ptr mem:FreePool, type ptr ast:Type) ptr ast:Type
-  if type == null
+  if not type?
     return null
   /if
 
@@ -367,7 +390,7 @@ func typeNew(pool ptr mem:FreePool,
              retType ptr ast:Type,
              members ptr kv:KVList) ptr ast:Type
 
-  mut location = pool != null => mem:fpZAlloc(pool, size(ast:Type)) || \
+  mut location = pool? => mem:fpZAlloc(pool, size(ast:Type)) || \
                                     mem:zalloc(size(ast:Type))
 
   mut ret = <ptr ast:Type>(location)
@@ -487,7 +510,7 @@ func typeNewStruct(pool ptr mem:FreePool, moduleName, name ptr uint8, members pt
 
 
 func typeSetAlias(type ptr ast:Type, moduleName, name ptr uint8)
-  if type != null
+  if type?
     type'moduleName = txt:strclone(moduleName)
     type'name = txt:strclone(name)
   /if
@@ -495,7 +518,7 @@ func typeSetAlias(type ptr ast:Type, moduleName, name ptr uint8)
 
 
 func typeSetBoundaries(type ptr ast:Type, begin,end ast:Line)
-  if type != null
+  if type?
     type'begin = begin
     type'end = end
   /if

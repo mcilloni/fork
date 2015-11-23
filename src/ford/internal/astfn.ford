@@ -57,6 +57,8 @@ decl func pblockNew() ptr ast:PBlock
 
 decl func pdeclNew(ptype uint16, sym ptr ast:PSymbol, isDecl bool) ptr ast:PDecl
 
+decl func pmuldeclNew(ptype uint16, syms ptr list:List) ptr ast:PMulDecl
+
 decl func pexprNew(tok ptr lex:Token, lhs,rhs ptr ast:PExpr, begin,end ast:Line) ptr ast:PExpr
 decl func pexprNewTernary(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end ast:Line) ptr ast:PExpr
 decl func pexprNewSingle(tok ptr lex:Token) ptr ast:PExpr
