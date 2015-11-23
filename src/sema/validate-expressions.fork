@@ -389,7 +389,7 @@ func validateExprId(rsv sema:Resolver,
                     recList,errors ptr list:List) ptr ast:Type
 
   mut name = <ptr uint8>(pexpr'node'value)
-  mut type = ast:findSym(<ptr ast:PNode>(pexpr), name)
+  mut type = <ptr ast:PNode>(pexpr).findSym(name)
 
   if recList? and utils:listContains(recList, name)
     mut cs = cs:new(20)
@@ -1260,7 +1260,7 @@ func validateMeExpr(rsv sema:Resolver,
                     pexpr ptr ast:PExpr,
                     errors ptr list:List) ptr ast:Type
 
-  mut meType = ast:findSym(<ptr ast:PNode>(pexpr), "me")
+  mut meType = <ptr ast:PNode>(pexpr).findSym("me")
   if meType == null
     mut msg = "'me' outside of method body"
     errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))

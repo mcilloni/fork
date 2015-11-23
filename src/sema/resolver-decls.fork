@@ -52,7 +52,7 @@ func findMethod(rsv sema:Resolver,
 
   mut name = ast:methodKey(typeModule, typeName,methodName)
 
-  mut ret = ast:findSym(node, name)
+  mut ret = node.findSym(name)
   if ret?
     mem:free(name)
     return ret
@@ -103,7 +103,7 @@ func registerDeclReal(rsv sema:Resolver,
   mut isFunc = pdecl'node'type == ast:PFUNCTION or isEntry or isMethod
 
 
-  mut realType ptr ast:Type = ast:findSym(<ptr ast:PNode>(pdecl), name)
+  mut realType ptr ast:Type = <ptr ast:PNode>(pdecl).findSym(name)
   mut typeResolved = realType?
   mut inMap = typeResolved
 
@@ -246,7 +246,7 @@ func resolveDeclType(rsv sema:Resolver,
                      node ptr ast:PNode,
                      recList,errors ptr list:List) ptr ast:Type
 
-  mut dtype = ast:findSym(node, name)
+  mut dtype = node.findSym(name)
 
   if dtype?
     return dtype
