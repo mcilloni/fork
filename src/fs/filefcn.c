@@ -15,9 +15,6 @@
 #define _XOPEN_SOURCE_EXTENDED
 
 
-#include <ford$$mem.h>
-#include <ford$$txt.h>
-
 #include <errno.h>
 #include <libgen.h>
 #include <fcntl.h>
@@ -98,26 +95,35 @@ int8_t stream_closeFileInternal(int64_t fd) {
 
 
 struct File {
+  uint8_t* name;
   uint8_t* path;
   bool isDir;
   uint64_t length;
 };
 
 
-struct File* file_populate(char* path) {
+struct File* file_populate(char* path, char* error, uintptr_t errl) {
   struct stat st;
 
   if (stat(path, &st)) {
+    strerror_r(errno, error, errl);
     return NULL;
   }
 
 
-  struct File* fi = mem$zalloc(sizeof(struct File*));
+  struct File* fi = malloc(sizeof(struct File));
+
+  fi->name = strdup(basename(path));
   fi->path = realpath(path, NULL);
   fi->isDir = S_ISDIR(st.st_mode) != 0;
   fi->length = (uint64_t) st.st_size;
 
   return fi;
+}
+
+
+char* path_absolute(char *relPath) {
+  return realpath(relPath, NULL);
 }
 
 
@@ -136,9 +142,49 @@ uintptr_t path_exists(char* filename) {
 }
 
 
+void dir_close(DIR* dir) {
+  closedir(dir);
+}
+
+
+char* dir_next(DIR* dirp, char *openPath, bool* end, char* error, uintptr_t errl) {
+
+  struct dirent entry, *result;
+
+  int failure = readdir_r(dirp, &entry, &result);
+  if (failure) {
+    strerror_r(errno, error, errl);
+    *end = false;
+    return NULL;
+  }
+
+  if ((*end = !result)) {
+    return NULL;
+  }
+
+  if (!strcmp(entry.d_name, ".") || !strcmp(entry.d_name, "..")) {
+    return dir_next(dirp, openPath, end, error, errl);
+  }
+
+  return strdup(entry.d_name);
+}
+
+
+
+void* dir_open(char* path, char* error, uintptr_t errl) {
+  DIR* dp = opendir(path);
+  if (!dp) {
+    strerror_r(errno, error, errl);
+    return NULL;
+  }
+
+  return dp;
+}
+
+
 bool path_listAll(char* path, void* appendTo, void (*appender)(void* to, char* elem), char* error, uintptr_t errl) {
   DIR* dp = opendir(path);
-  if (dp == NULL) {
+  if (!dp) {
     strerror_r(errno, error, errl);
     return false;
   }
@@ -146,9 +192,9 @@ bool path_listAll(char* path, void* appendTo, void (*appender)(void* to, char* e
   struct dirent *ep;
 
   while ((ep = readdir(dp))) {
-    char* name = txt$strclone(ep->d_name);
+    char* name = strdup(ep->d_name);
 
-    if (!txt$strequals(name, ".") && !txt$strequals(name, "..")) {
+    if (strcmp(name, ".") && strcmp(name, "..")) {
       appender(appendTo, name);
     } else {
       free(name);

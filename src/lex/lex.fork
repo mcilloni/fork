@@ -14,7 +14,7 @@ module lex
 import ast
 import cs
 import err
-import file
+import fs
 import io
 import lex
 import mem
@@ -302,7 +302,7 @@ func lexerError(lexer ptr lex:Lexer) ptr err:Error
 /func
 
 
-func lexerFromStream(stream ptr io:Stream, name ptr uint8, err ptr ptr err:Error) ptr lex:Lexer
+func lexerFromStream(stream ptr io:Stream, name ptr uint8) {lex ptr lex:Lexer, err ptr err:Error}
   mut ret = <ptr lex:Lexer>(mem:zalloc(size(lex:Lexer)))
 
   ret'file = stream
@@ -311,26 +311,31 @@ func lexerFromStream(stream ptr io:Stream, name ptr uint8, err ptr ptr err:Error
   ret'firstLineLetter = true
 
   io:streamRead(stream, ptr ret'peek, 1)
-  if (val err = io:streamError(stream)) != null
-    return null
+  mut err = io:streamError(stream)
+
+  if err?
+    return {null, err}
   /if
 
-  return ret
+  return {ret, null}
 /func
 
-func lexerNew(fname ptr uint8, err ptr ptr err:Error) ptr lex:Lexer
-  mut file = file:fileOpen(fname, err)
 
-  if val err != null
-    return null
+func lexerNew(fname ptr uint8) {lex ptr lex:Lexer, err ptr err:Error}
+  mut result = fs:fileOpen(fname)
+
+  if result'err?
+    return {null, result'err}
   /if
 
-  return lexerFromStream(file, fname, err)
+  return lexerFromStream(result'stream, fname)
 /func
+
 
 func lexerEof(lexer ptr lex:Lexer) bool
   return io:streamEnded(lexer'file)
 /func
+
 
 func tokenNew(type uint16, value uintptr, lineno ptr lex:Lineno, end uintptr) ptr lex:Token
   mut ret = <ptr lex:Token>(mem:alloc(size(lex:Token)))
@@ -340,6 +345,7 @@ func tokenNew(type uint16, value uintptr, lineno ptr lex:Lineno, end uintptr) pt
   ret'value = value
   return ret
 /func
+
 
 func tokenFree(tok ptr lex:Token)
   if tok?

@@ -8,7 +8,7 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-module file
+module fs
 
 
 import err
@@ -20,6 +20,9 @@ import txt
 mut dirSep = "/"
 
 
+decl func path_absolute(relPath ptr uint8) ptr uint8
+
+
 decl func path_exists(path ptr uint8) uintptr
 
 decl func path_listAll(path ptr uint8,
@@ -28,7 +31,14 @@ decl func path_listAll(path ptr uint8,
                        error ptr uint8,
                        errl uintptr) bool
 
+
+
 # path functions
+func pathAbsolute(relPath ptr uint8) ptr uint8
+  return path_absolute(relPath)
+/func
+
+
 func pathExists(path ptr uint8) bool
   mut result = path_exists(path)
 
@@ -71,19 +81,17 @@ func listAppend(to data, elem ptr uint8)
 /func
 
 
-func pathListFiles(path ptr uint8, error ptr ptr err:Error) ptr list:List
+func pathListFiles(path ptr uint8) {paths ptr list:List, err ptr err:Error}
   mut ret = list:new()
   mut buf [512] uint8
 
   if not path_listAll(path, ret, ptr listAppend, ptr buf[0], 512)
     list:free(ret)
 
-    val error = err:errorNew(ptr buf[0])
-
-    return null
+    return {null, err:errorNew(ptr buf[0])}
   /if
 
-  return ret
+  return {ret, null}
 /func
 
 

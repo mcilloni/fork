@@ -9,36 +9,93 @@
 
 
 import err
-import file
-import list
-import mem
+import fs
 import proc
 import tty
 
 
+func pad(p uintptr)
+  mut i uintptr = 0
+
+  while i < p
+    tty:out(" ")
+
+    i++
+  /while
+/func
+
+
+func dirDump(dir ptr fs:Dir, p uintptr) ptr err:Error
+  tty:out(dir'name)
+  tty:outln(" {")
+
+  while true
+    mut res = dir.next()
+    if res'err?
+      return res'err
+    /if
+
+    if not res'file?
+      break
+    /if
+
+    pad(p + 2)
+    if res'file.isDir()
+      mut res2 = res'file.openDir()
+
+      fs:fileFree(res'file)
+
+      if res2'err?
+        return res2'err
+      /if
+
+      mut err = dirDump(res2'dir, p + 2)
+      fs:dirClose(res2'dir)
+
+      if err?
+        return err
+      /if
+    else
+      tty:outln(res'file'name)
+      fs:fileFree(res'file)
+    /if
+  /while
+
+  pad(p)
+  tty:outln("}")
+
+  return null
+/func
+
+
 entry
-  mut error ptr err:Error = null
   mut arg = proc:args()
 
   if arg'len < 1
     tty:failln("No arguments given")
   /if
 
-  mut paths = file:pathListFiles(arg'args[0], ptr error)
-  if paths == null
-    tty:failln(error'msg)
+  mut res = fs:stat(arg'args[0])
+  if res'err?
+    tty:failln(res'err'msg)
   /if
 
-  mut i uintptr = 0
-  mut len = paths.len()
+  if not res'file.isDir()
+    tty:failln("Argument is not a directory")
+  /if
 
-  while i < len
-    mut elem = <ptr uint8>(val paths.get(i))
+  mut res2 = res'file.openDir()
+  fs:fileFree(res'file)
 
-    tty:outln(elem)
+  if res2'err?
+    tty:failln(res2'err'msg)
+  /if
 
-    i++
-  /while
+  mut err = dirDump(res2'dir, 0)
 
-  list:freeAll(paths, ptr mem:free)
+  if err?
+    tty:failln(err'msg)
+  /if
+
+  fs:dirClose(res2'dir)
 /entry

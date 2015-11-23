@@ -38,7 +38,7 @@ all:
 	$(MAKE) -C err
 	$(MAKE) -C mem
 	$(MAKE) -C io
-	$(MAKE) -C file
+	$(MAKE) -C fs
 	$(MAKE) -C txt
 	$(MAKE) -C tty
 	$(MAKE) -C cs

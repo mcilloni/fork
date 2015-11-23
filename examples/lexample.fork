@@ -22,19 +22,17 @@ entry
     proc:exit(1)
   /if
 
-  mut err ptr err:Error
-
-  mut lex = lex:lexerNew(val argv'args, ptr err)
-  if err != null
-    tty:errln(err:errorMsg(err))
+  mut result = lex:lexerNew(val argv'args)
+  if result'err?
+    tty:errln(err:errorMsg(result'err))
     proc:exit(1)
   /if
 
   mut tok ptr lex:Token
 
-  while (tok = lex:lexerNext(lex)) != null
-
-    if (err = lex:lexerError(lex)) != null
+  while (tok = lex:lexerNext(result'lex))?
+    mut err = lex:lexerError(result'lex)
+    if err?
       tty:errln(err:errorMsg(err))
       proc:exit(2)
     /if
@@ -55,6 +53,6 @@ entry
     lex:tokenFree(tok)
   /while
 
-  lex:lexerClose(lex)
+  lex:lexerClose(result'lex)
 
 /entry

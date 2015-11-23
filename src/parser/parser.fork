@@ -13,7 +13,7 @@ module parser
 
 import ast
 import astfn
-import file
+import fs
 import list
 import map
 import mem
@@ -68,9 +68,9 @@ method parser:Parser.findImport(importName ptr ast:StringDef, importAst ptr ptr 
 
   while i < len
     mut path = <ptr uint8>(val me'fordPaths.get(i))
-    mut joinedPath = file:pathJoin(path, fordName)
+    mut joinedPath = fs:pathJoin(path, fordName)
 
-    if file:pathExists(joinedPath)
+    if fs:pathExists(joinedPath)
 
       mut ret = me.parseFile(joinedPath, importAst)
 

@@ -1121,15 +1121,16 @@ method synt:Parser.parseProgram() ptr ast:PNode
 
 
 func parse(filename ptr uint8) {file ptr ast:PNode, err ptr parser:Issue}
-  mut lexErr ptr err:Error = null
   mut firstLineno = lex:linenoNew(txt:strclone(filename), 1, 1)
 
-  mut lex = lex:lexerNew(filename, ptr lexErr)
-  if lexErr?
+  mut result = lex:lexerNew(filename)
+  if result'err?
     lex:linenoFree(firstLineno)
 
-    return {null, lex:issueFromLexError(lexErr, firstLineno)}
+    return {null, lex:issueFromLexError(result'err, firstLineno)}
   /if
+
+  mut lex = result'lex
 
   # init synt:Parser
   mut prs synt:Parser
@@ -1140,7 +1141,8 @@ func parse(filename ptr uint8) {file ptr ast:PNode, err ptr parser:Issue}
   prs'moduleName = null
   prs'filename = txt:strclone(filename)
 
-  if (lexErr = lex:lexerError(lex))?
+  mut lexErr = lex:lexerError(lex)
+  if lexErr?
     mut err = lex:issueFromLexError(lexErr, firstLineno)
 
     lex:linenoFree(firstLineno)

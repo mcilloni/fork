@@ -8,11 +8,11 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-module file
+module fs
 
 
 import err
-import file
+import fs
 import io
 import mem
 
@@ -70,7 +70,7 @@ func filecloseInternal(camoFd data, err ptr ptr err:Error) bool
 /func
 
 
-func fileFree(fi ptr file:File)
+func fileFree(fi ptr fs:File)
   if fi?
     mem:free(fi'path)
     mem:free(fi)
@@ -78,63 +78,68 @@ func fileFree(fi ptr file:File)
 /func
 
 
-func stat(filename ptr uint8) ptr file:File
-  decl func file_populate(filename ptr uint8) ptr file:File
+func stat(filename ptr uint8) {file ptr fs:File, err ptr err:Error}
+  decl func file_populate(filename,error ptr uint8, errl uintptr) ptr fs:File
 
-  return file_populate(filename)
+  mut buf [512] uint8
+
+  mut ret = file_populate(filename, ptr buf[0], 512)
+  if not ret?
+    return {null, err:errorNew(ptr buf[0])}
+  /if
+
+  return {ret, null}
 /func
 
 
-method file:File.isDir() bool
+method fs:File.isDir() bool
   return me'isDir
 /method
 
 
-method file:File.len() uint64
+method fs:File.len() uint64
   return me'length
 /method
 
 
-method file:File.open() ptr io:Stream
-  # TODO: finish this after implementing pairs
+method fs:File.open() {stream ptr io:Stream, err ptr err:Error}
+  return fs:fileOpen(me'path)
 /method
 
 
-method file:File.openDir() ptr file:Dir
-  # TODO: finish this after implementing pairs
+method fs:File.openDir() {dir ptr fs:Dir, err ptr err:Error}
+  return fs:dir(me'path)
 /method
 
 
-method file:File.path() ptr uint8
+method fs:File.path() ptr uint8
   return me'path
 /method
 
 
-func fileOpen(filename ptr uint8, err ptr ptr err:Error) ptr io:Stream
+func fileOpen(filename ptr uint8) {stream ptr io:Stream, err ptr err:Error}
   decl func open_readfile(name ptr uint8, error ptr uint8, errlen uintptr) int64
   mut buf [512] uint8
 
-  val err = null
-
   mut fd = open_readfile(filename, ptr buf[0], 512)
   if fd < 0
-    val err = err:errorNew(ptr buf[0])
-    return null
+    return {null, err:errorNew(ptr buf[0])}
   /if
 
-  return io:streamNew(<data>(fd), ptr filereadInternal, null, ptr filecloseInternal)
+  return {io:streamNew(<data>(fd), ptr filereadInternal, \
+                        null, ptr filecloseInternal), null}
 /func
 
 
-func fileCreate(filename ptr uint8, err ptr ptr err:Error) ptr io:Stream
+func fileCreate(filename ptr uint8) {stream ptr io:Stream, err ptr err:Error}
   decl func open_writefile(name ptr uint8, error ptr uint8, errlen uintptr) int64
   mut buf [512] uint8
 
   mut fd = open_writefile(filename, ptr buf[0], 512)
   if fd < 0
-    val err = err:errorNew(ptr buf[0])
-    return null
+    return {null, err:errorNew(ptr buf[0])}
   /if
 
-  return io:streamNew(<data>(fd), null, ptr filewriteInternal, ptr filecloseInternal)
+  return {io:streamNew(<data>(fd), ptr filereadInternal, \
+                        null, ptr filecloseInternal), null}
 /func

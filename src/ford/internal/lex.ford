@@ -56,8 +56,11 @@ alias Token struct (
 decl func lexerClose(lex ptr Lexer)
 decl func lexerEof(lex ptr Lexer) bool
 decl func lexerError(lex ptr Lexer) ptr err:Error
-decl func lexerFromStream(stream ptr io:Stream, name ptr uint8, err ptr ptr err:Error) ptr Lexer
-decl func lexerNew(name ptr uint8, err ptr ptr err:Error) ptr Lexer
+
+decl func lexerFromStream(stream ptr io:Stream,
+                          name ptr uint8) {lex ptr Lexer, err ptr err:Error}
+
+decl func lexerNew(name ptr uint8) {lex ptr Lexer, err ptr err:Error}
 decl func lexerNext(lex ptr Lexer) ptr Token
 
 decl func tokenFree(tok ptr Token)

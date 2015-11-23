@@ -1,0 +1,74 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module fs
+
+
+import err
+import fs
+import mem
+import txt
+
+
+decl func dir_close(dirp data)
+decl func dir_next(dirp data, openPath ptr uint8, end ptr bool,
+                     error ptr uint8, errl uintptr) ptr uint8
+
+decl func dir_open(path,error ptr uint8, errl uintptr) data
+
+
+func dir(name ptr uint8) {dir ptr fs:Dir, err ptr err:Error}
+  mut buf [512] uint8
+
+  mut dirp = dir_open(name, ptr buf[0], 512)
+  if not dirp?
+    return {null, err:errorNew(ptr buf[0])}
+  /if
+
+  mut ret = <ptr fs:Dir>(mem:alloc(size(fs:Dir)))
+
+  ret'name = txt:strclone(fs:pathBasename(name))
+  ret'absPath = fs:pathAbsolute(name)
+  ret'internal = dirp
+
+  return {ret, null}
+/func
+
+
+func dirClose(dirp ptr fs:Dir)
+  dir_close(dirp'internal)
+  mem:free(dirp'name)
+  mem:free(dirp'absPath)
+
+  mem:free(dirp)
+/func
+
+
+method fs:Dir.next() {file ptr fs:File, err ptr err:Error}
+  mut end = false
+  mut buf [512] uint8
+
+  mut name = dir_next(me'internal, me'absPath, ptr end, ptr buf[0], 512)
+  if not name?
+    if end
+      return {null, null}
+    /if
+
+    return {null, err:errorNew(ptr buf[0])}
+  /if
+
+  mut glued = fs:pathJoin(me'absPath, name)
+
+  mut ret = fs:stat(glued)
+
+  mem:free(glued)
+
+  return ret
+/method
