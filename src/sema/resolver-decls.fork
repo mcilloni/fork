@@ -104,7 +104,7 @@ func registerDeclReal(rsv sema:Resolver,
 
 
   mut realType ptr ast:Type = ast:findSym(<ptr ast:PNode>(pdecl), name)
-  mut typeResolved = realType != null
+  mut typeResolved = realType?
   mut inMap = typeResolved
 
   # check: if this symbol is present, it's because it has already been
@@ -115,7 +115,7 @@ func registerDeclReal(rsv sema:Resolver,
   /if
 
   if ptype? and not typeResolved
-    typeResolved = (realType = sema:resolveType(rsv, ptype, errors)) != null
+    typeResolved = (realType = sema:resolveType(rsv, ptype, errors))?
 
     if not typeResolved
       return null
