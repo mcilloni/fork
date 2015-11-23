@@ -35,7 +35,7 @@ func addAllSymbolsToStab(stab ptr ast:Symtable, syms ptr kv:KVList)
     mut name = <ptr uint8>(pair'key)
     mut type = <ptr ast:Type>(pair'value)
 
-    ast:stabAdd(stab, name, true, type, 0) #0 ignored
+    stab.add(name, true, type, 0) #0 ignored
 
     i++
   /while
@@ -91,7 +91,7 @@ func ensureMethodCorrectness(rsv sema:Resolver,
   mut pblock = <ptr ast:PBlock>(val pdecl'node'leaves.get(0))
   mut meType = astfn:typeNewPtr(rsv'root'typePool, null, null, type)
 
-  ast:stabAdd(pblock'syms, "me", true, meType, 0)
+  pblock'syms.add("me", true, meType, 0)
 
   return true
 /func
@@ -357,27 +357,27 @@ func validateStmt(rsv sema:Resolver,
                   inLoop bool,
                   errors ptr list:List) bool
 
-  if ast:pnodeIsBreakContinue(stmt)
+  if stmt.isBreakContinue()
     return validateBreakContinue(rsv, stmt, inLoop, errors)
   /if
 
-  if ast:pnodeIsDecl(stmt)
+  if stmt.isDecl()
     return validateDecl(rsv, <ptr ast:PDecl>(stmt), errors)
   /if
 
-  if ast:pnodeIsExpr(stmt)
+  if stmt.isExpr()
     return sema:validateExpr(rsv, <ptr ast:PExpr>(stmt), errors) != null
   /if
 
-  if ast:pnodeIsIf(stmt)
+  if stmt.isIf()
     return validateIf(rsv, stmt, funcInfo, inLoop, errors)
   /if
 
-  if ast:pnodeIsReturn(stmt)
+  if stmt.isReturn()
     return validateReturn(rsv, stmt, funcInfo, errors)
   /if
 
-  if ast:pnodeIsWhile(stmt)
+  if stmt.isWhile()
     return validateWhile(rsv, stmt, funcInfo, inLoop, errors)
   /if
 

@@ -28,7 +28,7 @@ import utils
 func rootAliasRegister(rsv sema:Resolver, name ptr uint8, type ptr ast:Type)
   type'name = txt:strclone(name)
   type'moduleName = rsv'root'moduleName != null => txt:strclone(rsv'root'moduleName'name) || null
-  ast:stabAdd(rsv'root'aliases, name, false, type, ast:PALIAS)
+  rsv'root'aliases.add(name, false, type, ast:PALIAS)
 
   mut pdecl = <ptr ast:PDecl>(rsv'aliases.get(name))
 
@@ -191,7 +191,7 @@ func findAliasImport(ctx ptr parser:Parser, moduleName,name ptr uint8) ptr ast:T
     return null
   /if
 
-  return ast:stabTypeof(imp'aliases, name)
+  return imp'aliases.typeof(name)
 /func
 
 
@@ -206,7 +206,7 @@ func findAliasLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
 
   mut root = <ptr ast:PRoot>(node)
 
-  return ast:stabTypeof(root'aliases, name)
+  return root'aliases.typeof(name)
 /func
 
 

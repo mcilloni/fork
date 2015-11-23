@@ -38,7 +38,7 @@ func findSymModule(ctx ptr parser:Parser, moduleName, name ptr uint8) ptr ast:Ty
     return null
   /if
 
-  return ast:stabTypeof(imp'node'syms, name)
+  return imp'node'syms.typeof(name)
 /func
 
 
@@ -79,7 +79,7 @@ func findMethod(rsv sema:Resolver,
 
 
 func rootDeclsRegister(rsv sema:Resolver, name ptr uint8, isDecl bool, type ptr ast:Type, declType uint16)
-  ast:stabAdd(rsv'root'node'syms, name, isDecl, type, declType)
+  rsv'root'node'syms.add(name, isDecl, type, declType)
 
   rsv'decls.remove(name)
 /func
@@ -282,7 +282,7 @@ func registerDecl(rsv sema:Resolver,
   mut declNode = <ptr ast:PNode>(pdecl)
 
   mut stab = ast:findStab(declNode)
-  if ast:stabTypeof(stab, name)?
+  if stab.typeof(name)?
     mut cs = cs:new(20)
     cs.add("symbol '")
     cs.add(name)
@@ -297,7 +297,7 @@ func registerDecl(rsv sema:Resolver,
     return null
   /if
 
-  ast:stabAdd(stab, name, pdecl'isDecl, type, declType)
+  stab.add(name, pdecl'isDecl, type, declType)
 
   return type
 /func
