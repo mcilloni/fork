@@ -233,6 +233,7 @@ func validateMulDecl(rsv sema:Resolver,
 
     # if _, skip
     if txt:strequals(sym'name, "_")
+      i++
       continue
     /if
 
