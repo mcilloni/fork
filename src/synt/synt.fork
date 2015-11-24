@@ -440,13 +440,12 @@ method synt:Parser.parseType() ptr ast:PType
 /method
 
 
-method synt:Parser.parseMut(external bool) ptr ast:PNode
-  # discard 'mut'
-  mut begin = lex:tokDiscardBegin(me.next())
+method synt:Parser.parseMutId() {id ptr uint8, ptype ptr ast:PType, end ast:Line}
+  mut end ast:Line
 
   mut idTok = me.expect(tokens:ID)
   if not idTok?
-    return null
+    return {null, null, end}
   /if
 
   mut id = txt:strclone(<ptr uint8>(idTok'value))
@@ -454,26 +453,102 @@ method synt:Parser.parseMut(external bool) ptr ast:PNode
   lex:tokenFree(idTok)
 
   if not me'next?
-    me'err = lex:errorMism(me'last, "a type or an '='", "EOF")
+    me'err = lex:errorMism(me'last, "a type", "EOF")
     mem:free(id)
-    return null
+    return {null, null, end}
   /if
 
   mut type ptr ast:PType = null
-  mut end ast:Line
 
-  if me'next'type != tokens:ASSIGN
+  if tokenIsTypeStart(me'next)
     type = me.parseType()
     if not type?
       mem:free(id)
-      return null
+      return {null, null, end}
     /if
 
     end = type'end
   /if
 
-  mut pdecl = astfn:pdeclNew(ast:PMUT, astfn:psymbolNew(id, type), external)
-  mut pnode = <ptr ast:PNode>(pdecl)
+  return {id, type, end}
+/method
+
+
+method synt:Parser.parseMutExp() ptr ast:PNode
+  me.discardNext() # discard `{`
+
+  # check this here, because otherwise if we just rely on the loop, things like
+  # "mut {} = x" would be valid. But they are not, and they must be discarded.
+  if not me'next? or me'next'type != tokens:ID
+    me'err = lex:errorMism(me'last, "an identifier", "EOF")
+    return null
+  /if
+
+  mut syms = list:new()
+
+  while true
+    mut res = me.parseMutId()
+
+    if not res'id?
+      list:freeAll(syms, <ptr func(item data)>(ptr mem:decRef))
+      return null
+    /if
+
+    syms.append(astfn:psymbolNew(res'id, res'ptype))
+
+    if not me'next? \
+        or (me'next'type != tokens:CCURLY and me'next'type != tokens:COMMA)
+
+      me'err = lex:errorMism(me'last, "`,` or `}`", lex:tokenStr(me'next))
+      list:freeAll(syms, <ptr func(item data)>(ptr mem:decRef))
+      return null
+    /if
+
+    if me'next'type == tokens:CCURLY
+      break
+    /if
+
+    if me'next'type == tokens:COMMA
+      me.discardNext()
+    /if
+  /while
+
+  # discard `}`
+  me.discardNext()
+
+  return <ptr ast:PNode>(astfn:pmuldeclNew(ast:PMUTEXP, syms))
+/method
+
+
+method synt:Parser.parseMut(external bool) ptr ast:PNode
+  mut end ast:Line
+  # discard 'mut'
+  mut begin = lex:tokDiscardBegin(me.next())
+
+  if not me'next?
+    me'err = lex:errorMism(me'last, "an identifier or a bracketed list", "EOF")
+    return null
+  /if
+
+  mut pnode ptr ast:PNode = null
+  if me'next'type == tokens:OCURLY
+    pnode = me.parseMutExp()
+    if not pnode?
+      return null
+    /if
+  else
+
+    mut res = me.parseMutId()
+
+    if not res'id?
+      return null
+    /if
+
+    end = res'end
+
+    pnode = <ptr ast:PNode>(astfn:pdeclNew(ast:PMUT, \
+                                astfn:psymbolNew(res'id, res'ptype), external))
+  /if
 
   if me'next? and me'next'type == tokens:ASSIGN
     if external

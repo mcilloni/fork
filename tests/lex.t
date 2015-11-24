@@ -54,11 +54,11 @@ Checks lex functionality.
   /if
   a newline
   mut
-  an identifier: prs
+  an identifier: res
   =
   an identifier: synt
   :
-  an identifier: parserNew
+  an identifier: parse
   (
   an identifier: argv
   '
@@ -68,28 +68,17 @@ Checks lex functionality.
   ]
   )
   a newline
-  mut
-  an identifier: root
-  =
-  an identifier: synt
-  :
-  an identifier: parserParse
-  (
-  an identifier: prs
-  )
-  a newline
   if
-  an identifier: prs
+  an identifier: res
   '
   an identifier: err
-  !=
-  null
+  ?
   a newline
   an identifier: parser
   :
   an identifier: issueWriteOut
   (
-  an identifier: prs
+  an identifier: res
   '
   an identifier: err
   ,
@@ -108,25 +97,20 @@ Checks lex functionality.
   a newline
   /if
   a newline
-  an identifier: ast
-  :
-  an identifier: pnodeDump
+  an identifier: res
+  '
+  an identifier: file
+  .
+  an identifier: dump
   (
-  an identifier: root
   )
   a newline
-  an identifier: synt
-  :
-  an identifier: parserFree
+  an identifier: res
+  '
+  an identifier: file
+  .
+  an identifier: dump
   (
-  an identifier: prs
-  )
-  a newline
-  an identifier: ast
-  :
-  an identifier: pnodeFree
-  (
-  an identifier: root
   )
   a newline
   /entry

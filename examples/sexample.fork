@@ -31,5 +31,5 @@ entry
   /if
 
   res'file.dump()
-  res'file.dump()
+  ast:pnodeFree(res'file)
 /entry

@@ -3,6 +3,7 @@ Checks sema functionality:
   $ $TESTDIR/../examples/ex semxample $TESTDIR/../examples/sexample.fork
   == IMPORTS: 18
   Imported ast
+  Imported cs
   Imported err
   Imported hash
   Imported io
@@ -17,7 +18,6 @@ Checks sema functionality:
   Imported sort
   Imported synt
   Imported tty
-  Imported txt
   Imported utils
   Imported vect
   

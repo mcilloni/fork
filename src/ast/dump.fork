@@ -222,6 +222,21 @@ func pdeclDumpInfo(pdecl ptr ast:PDecl, depth uintptr)
 /func
 
 
+func pmuldeclDumpInfo(pmuldecl ptr ast:PMulDecl, depth uintptr)
+  mut len = pmuldecl'syms.len()
+  mut i uintptr = 0
+
+  while i < len
+    tty:outch(10)
+    printPadding(depth + 1)
+
+    psymbolDump(<ptr ast:PSymbol>(val pmuldecl'syms.get(i)))
+
+    i++
+  /while
+/func
+
+
 func pexprDumpInfo(pexpr ptr ast:PExpr, depth uintptr)
   mut tok lex:Token
   tok'type = pexpr'opType
@@ -286,6 +301,10 @@ func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
 
   if pnode.isExpr()
     pexprDumpInfo(<ptr ast:PExpr>(pnode), depth)
+  /if
+
+  if pnode.isMulDecl()
+    pmuldeclDumpInfo(<ptr ast:PMulDecl>(pnode), depth)
   /if
 
   tty:outch(10)
