@@ -50,23 +50,23 @@ func ensureMethodCorrectness(rsv sema:Resolver,
   mut type ptr ast:Type = null
 
   # the method's type is either defined in the given module, or not defined at all.
-  if pdecl'methodTypeModule != null
+  if pdecl'methodTypeModule?
     type = sema:findAliasImport(rsv'ctx, pdecl'methodTypeModule, pdecl'methodType)
 
     # if it's not present, then it may be possibile that it belongs to the current scope
     # if this file is in the same module of this type.
-    if type == null
-      if rsv'root'moduleName != null and txt:strequals(rsv'root'moduleName'name, pdecl'methodTypeModule)
+    if not type?
+      if rsv'root'moduleName? and txt:strequals(rsv'root'moduleName'name, pdecl'methodTypeModule)
         type = sema:findAliasLocal(<ptr ast:PNode>(pdecl), pdecl'methodType)
       /if
     /if
 
-    if type == null
+    if not type?
       mut cs = cs:new(20)
 
       cs.add("type ")
 
-      if pdecl'methodTypeModule != null
+      if pdecl'methodTypeModule?
         cs.add(pdecl'methodTypeModule)
         cs.add(":")
       /if
@@ -84,7 +84,7 @@ func ensureMethodCorrectness(rsv sema:Resolver,
     type = sema:resolveTypeName(rsv, pdecl'methodType, errors)
   /if
 
-  if type == null
+  if not type?
     return false
   /if
 
@@ -120,9 +120,9 @@ func validateDecl(rsv sema:Resolver,
 
   mut type ptr ast:Type = null
 
-  if pdecl'sym'type != null
+  if pdecl'sym'type?
     type = sema:resolveType(rsv, pdecl'sym'type, errors)
-    if type == null
+    if not type?
       return false
     /if
   else
@@ -142,11 +142,11 @@ func validateDecl(rsv sema:Resolver,
     /if
 
     mut exprType = sema:validateExpr(rsv, pexpr, errors)
-    if exprType == null
+    if not exprType?
       return false
     /if
 
-    if type != null
+    if type?
       if not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pdecl), type, exprType)
         mut cs = cs:new(20)
         cs.add("cannot assign an expression of type '")
@@ -173,13 +173,149 @@ func validateDecl(rsv sema:Resolver,
     /if
   /if
 
-  if type == null
+  if not type?
     errors.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, rsv'root'fileName, "declaration without an explicit or inferrable type"))
 
     return false
   /if
 
-  return sema:registerDecl(rsv, pdecl, pdecl'sym'name, type, pdecl'node'type, errors) != null
+  return sema:registerDecl(rsv, pdecl, pdecl'sym'name, type, pdecl'node'type, errors)?
+/func
+
+
+func validateMulDecl(rsv sema:Resolver,
+                     pmuldecl ptr ast:PMulDecl,
+                     errors ptr list:List) bool
+
+  mut pnode = <ptr ast:PNode>(pmuldecl)
+  mut exprType ptr ast:Type = null
+  mut leavLen = pnode'leaves.len()
+  mut len = pmuldecl'syms.len()
+
+  if leavLen > 0
+    mut pexpr = <ptr ast:PExpr>(val pnode'leaves.get(0))
+
+    exprType = sema:validateExpr(rsv, pexpr, errors)
+    if not exprType?
+      return false
+    /if
+
+    if not exprType.isStruct()
+      mut cs = cs:new(30)
+      cs.add("trying to expand non-struct type '")
+      exprType.summarize(cs)
+      cs.add("'")
+
+      mut msg = cs:unwrap(cs)
+
+      errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                        rsv'root'fileName, msg))
+      mem:free(msg)
+
+      return false
+    /if
+
+    if exprType'members.len() != len
+      mut msg = "trying to expand a struct with a wrong number of variables (use '_' if you don't need one of the fields)"
+      errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                        rsv'root'fileName, msg))
+
+      return false
+    /if
+  /if
+
+  mut i uintptr = 0
+  mut stab = pnode.findStab()
+  mut newVars = false
+
+  while i < len
+    mut sym = <ptr ast:PSymbol>(val pmuldecl'syms.get(i))
+
+    # if _, skip
+    if txt:strequals(sym'name, "_")
+      continue
+    /if
+
+    mut exists = pnode.findSym(sym'name)
+
+    # Init varType with the (eventual) existing type of the variable (it's null
+    # if it doesn't exist)
+
+    mut varType = exists
+
+    mut initType = exprType? => <ptr ast:Type>(exprType'members.getAt(i)'value) || null
+
+    # If we have a sym'type, then exists != null will make this function fail;
+    # we're safe to assume then that the variable exists and sym'type can't be
+    # both non-null at the same time.
+    if sym'type?
+      if exists?
+        mut msg = txt:strappend(sym'name, " has been redeclared")
+
+        errors.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, rsv'root'fileName, msg))
+
+        mem:free(msg)
+
+        return false
+      /if
+
+      varType = sema:resolveType(rsv, sym'type, errors)
+
+      if not varType?
+        return false
+      /if
+    /if
+
+    # Now, we're check if the variable type is compatible with the expression.
+    # This can be true only in two cases:
+    # 1. the variable does not exist, but there is a type specifier and an expr;
+    # 2. the variable exists, there is no type specifier, but there's an expr.
+
+    if varType? and initType?
+      if not sema:typeIsAssignable(rsv'ctx, pnode, varType, initType)
+        mut cs = cs:new(20)
+        cs.add("cannot assign an expression of type '")
+        initType.summarize(cs)
+        cs.add("' to '")
+        cs.add(sym'name)
+        cs.add("' declared as '")
+        varType.summarize(cs)
+        cs.add("'")
+
+        mut msg = cs:unwrap(cs)
+
+        errors.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, rsv'root'fileName, msg))
+
+        mem:free(msg)
+
+        return false
+      /if
+    /if
+
+    # The following block creates the variable, if not existent.
+    if not exists?
+      # type inference: if there is no varType, then use the expression's type.
+      # we're pretty safe, because synt won't allow the existence of a mulmut
+      # expr with neither full types nor an initialization expression, so they
+      # will never be both null.
+      varType = varType ?? initType
+
+      # each variable is still a mut. So they're added as muts.
+      stab.add(sym'name, false, varType, ast:PMUT)
+      newVars = true
+    /if
+
+    i++
+  /while
+
+  if not newVars
+    mut msg = "no new variables in mut statement"
+    errors.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, rsv'root'fileName, msg))
+
+    return false
+  /if
+
+  return true
 /func
 
 
@@ -218,7 +354,7 @@ func validateIf(rsv sema:Resolver,
   mut cond = <ptr ast:PExpr>(val stmt'leaves.get(0))
 
   mut condType = sema:validateExpr(rsv, cond, errors)
-  if condType == null
+  if not condType?
     return false
   /if
 
@@ -259,7 +395,7 @@ func validatePBlock(rsv sema:Resolver,
                     inLoop bool,
                     errors ptr list:List) bool
 
-  if pblock'syms == null
+  if not pblock'syms?
     pblock'syms = ast:stabNew()
   /if
 
@@ -286,7 +422,7 @@ func validateReturn(rsv sema:Resolver,
                     errors ptr list:List) bool
 
   mut hasRetExpr = (stmt'leaves.len() == 1)
-  mut funcRetTypeEmpty = funcInfo'type'retType == null or funcInfo'type'retType'type == ast:TYPE_EMPTY
+  mut funcRetTypeEmpty = not funcInfo'type'retType? or funcInfo'type'retType'type == ast:TYPE_EMPTY
 
   if not hasRetExpr and not funcRetTypeEmpty
     mut cs = cs:new(20)
@@ -323,7 +459,7 @@ func validateReturn(rsv sema:Resolver,
     mut retExpr = <ptr ast:PExpr>(val stmt'leaves.get(0))
 
     mut exprType = sema:validateExpr(rsv, retExpr, errors)
-    if exprType == null
+    if not exprType?
       return false
     /if
 
@@ -366,11 +502,15 @@ func validateStmt(rsv sema:Resolver,
   /if
 
   if stmt.isExpr()
-    return sema:validateExpr(rsv, <ptr ast:PExpr>(stmt), errors) != null
+    return sema:validateExpr(rsv, <ptr ast:PExpr>(stmt), errors)?
   /if
 
   if stmt.isIf()
     return validateIf(rsv, stmt, funcInfo, inLoop, errors)
+  /if
+
+  if stmt.isMulDecl()
+    return validateMulDecl(rsv, <ptr ast:PMulDecl>(stmt), errors)
   /if
 
   if stmt.isReturn()
@@ -397,7 +537,7 @@ func validateWhile(rsv sema:Resolver,
   mut cond = <ptr ast:PExpr>(val stmt'leaves.get(0))
 
   mut condType = sema:validateExpr(rsv, cond, errors)
-  if condType == null
+  if not condType?
     return false
   /if
 

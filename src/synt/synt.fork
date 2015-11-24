@@ -474,16 +474,17 @@ method synt:Parser.parseMutId() {id ptr uint8, ptype ptr ast:PType, end ast:Line
 /method
 
 
-method synt:Parser.parseMutExp() ptr ast:PNode
+method synt:Parser.parseMutExp() {pnode ptr ast:PNode, needsAssign bool}
   me.discardNext() # discard `{`
 
   # check this here, because otherwise if we just rely on the loop, things like
   # "mut {} = x" would be valid. But they are not, and they must be discarded.
   if not me'next? or me'next'type != tokens:ID
     me'err = lex:errorMism(me'last, "an identifier", "EOF")
-    return null
+    return {null, false}
   /if
 
+  mut needsAssign = false
   mut syms = list:new()
 
   while true
@@ -491,8 +492,10 @@ method synt:Parser.parseMutExp() ptr ast:PNode
 
     if not res'id?
       list:freeAll(syms, <ptr func(item data)>(ptr mem:decRef))
-      return null
+      return {null, false}
     /if
+
+    mut needsAssign = needsAssign or not res'ptype?
 
     syms.append(astfn:psymbolNew(res'id, res'ptype))
 
@@ -501,7 +504,7 @@ method synt:Parser.parseMutExp() ptr ast:PNode
 
       me'err = lex:errorMism(me'last, "`,` or `}`", lex:tokenStr(me'next))
       list:freeAll(syms, <ptr func(item data)>(ptr mem:decRef))
-      return null
+      return {null, false}
     /if
 
     if me'next'type == tokens:CCURLY
@@ -516,7 +519,7 @@ method synt:Parser.parseMutExp() ptr ast:PNode
   # discard `}`
   me.discardNext()
 
-  return <ptr ast:PNode>(astfn:pmuldeclNew(ast:PMUTEXP, syms))
+  return { <ptr ast:PNode>(astfn:pmuldeclNew(ast:PMUTEXP, syms)), needsAssign}
 /method
 
 
@@ -531,11 +534,16 @@ method synt:Parser.parseMut(external bool) ptr ast:PNode
   /if
 
   mut pnode ptr ast:PNode = null
+  mut needsAssign = false
+
   if me'next'type == tokens:OCURLY
-    pnode = me.parseMutExp()
-    if not pnode?
+    mut res = me.parseMutExp()
+    if not res'pnode?
       return null
     /if
+
+    pnode = res'pnode
+    needsAssign = res'needsAssign
   else
 
     mut res = me.parseMutId()
@@ -544,6 +552,7 @@ method synt:Parser.parseMut(external bool) ptr ast:PNode
       return null
     /if
 
+    needsAssign = not res'ptype?
     end = res'end
 
     pnode = <ptr ast:PNode>(astfn:pdeclNew(ast:PMUT, \
@@ -570,6 +579,12 @@ method synt:Parser.parseMut(external bool) ptr ast:PNode
     astfn:pnodeAppendChild(pnode, exprPNode)
 
     end = exprPNode'end
+  else
+    if needsAssign
+      me'err = lex:errorMism(me'last, "an assignment from which infer the a complete type", lex:tokenStr(me'next))
+      ast:pnodeFree(pnode)
+      return null
+    /if
   /if
 
   pnode'begin = begin

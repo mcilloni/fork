@@ -105,12 +105,13 @@ Checks lex functionality.
   (
   )
   a newline
+  an identifier: ast
+  :
+  an identifier: pnodeFree
+  (
   an identifier: res
   '
   an identifier: file
-  .
-  an identifier: dump
-  (
   )
   a newline
   /entry
