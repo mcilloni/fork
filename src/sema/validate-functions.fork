@@ -174,7 +174,9 @@ func validateDecl(rsv sema:Resolver,
   /if
 
   if not type?
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, rsv'root'fileName, "declaration without an explicit or inferrable type"))
+    errors.append(parser:issueNew(parser:ISSUE_ERR, \
+                    pdecl'node'begin, rsv'root'fileName, \
+                    "declaration without an explicit or inferrable type"))
 
     return false
   /if

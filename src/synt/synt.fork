@@ -581,7 +581,7 @@ method synt:Parser.parseMut(external bool) ptr ast:PNode
     end = exprPNode'end
   else
     if needsAssign
-      me'err = lex:errorMism(me'last, "an assignment from which infer the a complete type", lex:tokenStr(me'next))
+      me'err = lex:errorMism(me'last, "an assignment or a type", lex:tokenStr(me'next))
       ast:pnodeFree(pnode)
       return null
     /if
