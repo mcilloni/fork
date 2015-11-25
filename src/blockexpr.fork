@@ -37,7 +37,7 @@ func freeElem(elem ptr ctrans:Elem)
 
 
 func needsStructCopy(to,from ptr ast:Type) bool
-  return ast:typeIsStruct(from) and (not to'name? or not from'name?)
+  return to? and from? and from.isStruct() and (not to'name? or not from'name?)
 /func
 
 
@@ -104,13 +104,13 @@ func intelem(n uintptr, type ptr ast:Type) ctrans:Elem
 
 func methelem(name ptr uint8, type ptr ast:Type) ctrans:Elem
 
-  if ast:typeIsPtr(type)
+  if type.isPtr()
     type = type'retType
   /if
 
   mut cs = cs:new(20)
 
-  if ast:typeIsPtr(type)
+  if type.isPtr()
     type = type'retType
   /if
 
@@ -147,7 +147,7 @@ func modelem(modName,name ptr uint8, type ptr ast:Type) ctrans:Elem
 
 
 func refhack(el ctrans:Elem, origType ptr ast:Type) ptr uint8
-  mut isToFn = ast:typeIsFunc(origType)
+  mut isToFn = origType.isFunc()
 
   mut cs = cs:new(20)
 
@@ -408,7 +408,7 @@ method ctrans:Block.nextvar(type ptr ast:Type,
 
   mut ret = me.ssavar(type)
 
-  if ast:typeIsLoc(type)
+  if type.isLoc()
     mut hackStr = refhack(ret, type'retType)
 
     me.newDecl(false, null, hackStr, fname, type'retType, line)
@@ -610,7 +610,7 @@ method ctrans:Block.declaration(root ptr ast:PRoot,
 
   mut pdecl = cast<ptr ast:PDecl>(stmt)
   mut ext = pdecl'isDecl
-  mut type = ast:stabTypeof(block'syms, pdecl'sym'name)
+  mut type = block'syms.typeof(pdecl'sym'name)
   mut methodType ptr uint8 = null
 
   if stmt'type == ast:PMETHOD
@@ -763,7 +763,7 @@ method ctrans:Block.handleFn(root ptr ast:PRoot,
 
     # add me parameter
 
-    mut notPtr = not ast:typeIsPtr(targetType)
+    mut notPtr = not targetType.isPtr()
     mut meElem = me.expr(root, target, fname, line)
 
     if notPtr
@@ -779,7 +779,7 @@ method ctrans:Block.handleFn(root ptr ast:PRoot,
   /if
 
 
-  mut rvo = ast:typeIsStruct(pexpr'type) or pexpr'type'type == ast:TYPE_RECALIAS
+  mut rvo = pexpr'type.isStruct() or pexpr'type'type == ast:TYPE_RECALIAS
   mut ret ctrans:Elem
 
   mem:set(ptr ret, 0, size(ctrans:Elem))
@@ -791,7 +791,7 @@ method ctrans:Block.handleFn(root ptr ast:PRoot,
     params.append(rvoRet.copy())
   /if
 
-  mut memTypes = ast:typeIsPtr(toCall'type) \
+  mut memTypes = toCall'type.isPtr() \
                   => toCall'type'retType'members \
                   || toCall'type'members
 
@@ -1014,12 +1014,12 @@ method ctrans:Block.exprWithOptimizedType(root ptr ast:PRoot,
 
     mut name = cast<ptr uint8>(value)
     mut modName ptr uint8 = root'moduleName? => root'moduleName'name || null
-    mut fDecl = ast:stabGet(root'node'syms, name)
+    mut fDecl = root'node'syms.get(name)
 
     if     fDecl? \
        and modName? \
        and not fDecl'declOnly \
-       and ast:findSym(cast<ptr ast:PNode>(pexpr), name) == fDecl'type
+       and cast<ptr ast:PNode>(pexpr).findSym(name) == fDecl'type
 
       return modelem(modName, name, pexpr'type)
     else

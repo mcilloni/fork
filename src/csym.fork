@@ -45,7 +45,7 @@ func lrNew(unit ptr ctrans:Transl, pad intptr) LRStr
 # LRStr methods
 
 method LRStr.addFuncType(type ptr ast:Type, methTarget ptr uint8)
-  mut rvo = ast:typeIsStruct(type'retType)
+  mut rvo = type'retType? and type'retType.isStruct()
 
   if rvo
     me.addType(null, null, false)

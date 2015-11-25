@@ -28,7 +28,7 @@ method ctrans:Transl.globDotExpr(pexpr ptr ast:PExpr)
 
   mut targetType = e1'type
 
-  if ast:typeIsPtr(targetType)
+  if targetType.isPtr()
     targetType = targetType'retType
   /if
 
@@ -61,9 +61,9 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
 
     mut name = cast<ptr uint8>(value)
     mut modName ptr uint8 = root'moduleName? => root'moduleName'name || null
-    mut fDecl = ast:stabGet(root'node'syms, name)
+    mut fDecl = root'node'syms.get(name)
 
-    if fDecl? and not fDecl'declOnly and ast:findSym(cast<ptr ast:PNode>(pexpr), name) == fDecl'type
+    if fDecl? and not fDecl'declOnly and cast<ptr ast:PNode>(pexpr).findSym(name) == fDecl'type
       me'vars.addSymName(modName, name)
     else
       me'vars.add(name)
@@ -152,7 +152,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
     # add me parameter
     if methCall
       mut target = cast<ptr ast:PExpr>(val toCall'node'leaves.get(0))
-      mut notPtr = not ast:typeIsPtr(target'type)
+      mut notPtr = not target'type.isPtr()
 
       if notPtr
         me'vars.add("&(")

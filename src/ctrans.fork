@@ -69,7 +69,7 @@ method ctrans:Transl.function(root ptr ast:PRoot,
   me'funcs.addDebugLine(fname, fn'node'begin'line)
   me'funcs.addWord(sym)
 
-  mut rvoType = ast:typeIsStruct(type'retType) => type'retType || null
+  mut rvoType = (type'retType? and type'retType.isStruct()) => type'retType || null
 
   mut block = cast<ptr ast:PBlock>(val fn'node'leaves.get(0))
 
@@ -198,7 +198,7 @@ method ctrans:Transl.genDecls(root ptr ast:PRoot)
 
       mut key = ast:declKey(child)
 
-      mut dinfo = ast:stabGet(root'node'syms, key)
+      mut dinfo = root'node'syms.get(key)
 
       mem:free(key)
 
