@@ -37,7 +37,7 @@ func deinit(kv ptr kv:KVList)
 
 
 func free(kv ptr kv:KVList)
-  if kv != null
+  if kv?
     kv:deinit(kv)
     mem:free(kv)
   /if

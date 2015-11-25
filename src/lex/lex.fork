@@ -41,7 +41,7 @@ func strtokNew(str ptr uint8, line,begin,end uintptr) ptr lex:StringTok
 
 
 func strtokFree(stok ptr lex:StringTok)
-  if stok != null
+  if stok?
     mem:free(stok)
   /if
 /func
@@ -53,7 +53,7 @@ func nextChar(lex ptr lex:Lexer) Char
   ret'pos = 0
 
   io:streamRead(lex'file, ptr lex'peek, 1)
-  if (lex'error = io:streamError(lex'file)) != null
+  if (lex'error = io:streamError(lex'file))?
     ret'ch = 0
     return ret
   /if
@@ -375,7 +375,7 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     return null
   /if
 
-  if lexerError(lex) != null
+  if lexerError(lex)?
     return null
   /if
 
@@ -383,7 +383,7 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 
   if lex'saved == null
     stringToken = extractNextToken(lex)
-    if lexerError(lex) != null
+    if lexerError(lex)?
       return null
     /if
   else
@@ -504,7 +504,7 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
   if txt:strequals(strToken, "/")
     if utils:charIsIdVal(lex'peek)
       lex'saved = extractNextToken(lex)
-      if lexerError(lex) != null
+      if lexerError(lex)?
         return null
       /if
 

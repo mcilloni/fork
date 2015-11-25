@@ -248,7 +248,7 @@ func validateMulDecl(rsv sema:Resolver,
 
     mut initType = exprType? => <ptr ast:Type>(exprType'members.getAt(i)'value) || null
 
-    # If we have a sym'type, then exists != null will make this function fail;
+    # If we have a sym'type, then exists? will make this function fail;
     # we're safe to assume then that the variable exists and sym'type can't be
     # both non-null at the same time.
     if sym'type?

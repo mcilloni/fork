@@ -99,7 +99,7 @@ func numtostr(num uintptr, buf ptr uint8, len uintptr) ptr uint8
 
 func strglue(strs ptr ptr uint8) ptr uint8
   mut cs = cs:new(10)
-  while val strs != null
+  while (val strs)?
     cs.add(val strs)
     strs++
   /while

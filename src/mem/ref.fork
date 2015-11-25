@@ -20,14 +20,14 @@ import utils
 
 
 func incRef(refc data)
-  if refc != null
+  if refc?
     <ptr mem:Ref>(refc)'count++
   /if
 /func
 
 
 func decRef(refc data)
-  if refc != null
+  if refc?
     mut ref = <ptr mem:Ref>(refc)
     ref'count--
     if ref'count < 1

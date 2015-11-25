@@ -25,7 +25,7 @@ import utils
 func methodKey(typeModule,typeName,methodName ptr uint8) ptr uint8
   mut cs = cs:new(10)
 
-  if typeModule != null
+  if typeModule?
     cs.add(typeModule)
     cs.add(":")
   /if

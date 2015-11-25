@@ -19,7 +19,7 @@ import txt
 
 
 func issueFree(issue ptr parser:Issue)
-  if issue != null
+  if issue?
     mem:free(issue'filename)
     mem:free(issue'message)
   /if

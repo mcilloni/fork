@@ -24,7 +24,7 @@ func fpAlloc(fp ptr mem:FreePool, len uintptr) data
 /func
 
 func fpFree(fp ptr mem:FreePool)
-  if fp != null
+  if fp?
     list:freeAll(fp'ptrs, fp'freeFunc)
     mem:free(fp)
   /if

@@ -16,7 +16,7 @@ import txt
 
 
 func tokenizerFree(tkz ptr txt:Tokenizer)
-  if tkz != null
+  if tkz?
     mem:free(tkz'str)
     mem:free(tkz)
   /if

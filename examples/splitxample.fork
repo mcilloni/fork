@@ -19,7 +19,7 @@ entry
 
   mut nxt ptr uint8
 
-  while (nxt = txt:tokenizerNext(tkz)) != null
+  while (nxt = txt:tokenizerNext(tkz))?
     tty:outln(nxt)
     mem:free(nxt)
   /while

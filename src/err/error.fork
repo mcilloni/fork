@@ -17,7 +17,7 @@ import txt
 
 
 func errorFree(err ptr err:Error)
-  if err != null
+  if err?
     mem:free(err'msg)
     mem:free(err)
   /if
@@ -25,7 +25,7 @@ func errorFree(err ptr err:Error)
 
 
 func errorMsg(err ptr err:Error) ptr uint8
-  if err != null
+  if err?
     return err'msg
   /if
 

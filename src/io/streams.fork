@@ -44,11 +44,11 @@ func streamNew(priv8 data, rfn ptr io:readfunc, wfn ptr io:writefunc, cfn ptr io
   mut ret = <ptr io:Stream>(mem:zalloc(size(io:Stream)))
   ret'cookie'priv8 = priv8
 
-  if wfn != null
+  if wfn?
     ret'inout = ret'inout | STREAM_OUT
   /if
 
-  if rfn != null
+  if rfn?
     ret'inout = ret'inout | STREAM_IN
   /if
 

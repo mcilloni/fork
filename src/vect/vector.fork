@@ -28,7 +28,7 @@ func deinit(vect ptr vect:Vect)
 
 func free(vect ptr vect:Vect)
 
-  if vect != null
+  if vect?
     vect:deinit(vect)
 
     mem:free(vect)
@@ -38,7 +38,7 @@ func free(vect ptr vect:Vect)
 
 
 func freeAll(vect ptr vect:Vect,  freefunc ptr func(item data))
-  if vect != null
+  if vect?
     vect.freeContents(freefunc)
     vect:free(vect)
   /if

@@ -25,7 +25,7 @@ func hashIntDump(hash ptr hash:Hash)
   mut pair ptr pair:Pair = null
   mut first = true
 
-  while (pair = iter.next()) != null
+  while (pair = iter.next())?
     if first
       first = false
     else

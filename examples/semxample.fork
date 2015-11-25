@@ -138,7 +138,7 @@ entry
 
   tty:out("\n\n==> Has entry? ")
 
-  tty:outln(root'entryNode != null => "yes" || "no")
+  tty:outln(root'entryNode? => "yes" || "no")
 
   parser:free(ctx)
 
