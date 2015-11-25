@@ -137,7 +137,7 @@ func resolverCollect(rsv ptr sema:Resolver,
       else
 
         if ntype == ast:PENTRY
-          if entryNode == null
+          if not entryNode?
             entryNode = pdecl
           else
             errors.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, "entry declared twice in same file"))

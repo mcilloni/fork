@@ -100,7 +100,7 @@ method vect:Vect.freeContents(freefunc ptr func(item data))
     return
   /if
 
-  if freefunc == null
+  if not freefunc?
     freefunc = ptr mem:free
   /if
 

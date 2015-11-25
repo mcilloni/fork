@@ -51,7 +51,7 @@ func convertRetType(rsv sema:Resolver,
   mut res ptr ast:Type = null
 
   # if this condition evaluates to true, than we're in the case of a recursive alias.
-  if not isLoc and retPType'moduleName == null and retPType'name? and recList? and utils:listContains(recList, retPType'name)
+  if not isLoc and not retPType'moduleName? and retPType'name? and recList? and utils:listContains(recList, retPType'name)
     res = astfn:typeNewRecursiveAlias(rsv'root'typePool, rsv'root'moduleName'name, retPType'name)
   else
     # otherwise, this is a normal type. Validate it with validateAlias.
@@ -80,7 +80,7 @@ func convertPtrLocType(rsv sema:Resolver,
   # validate ptdes'retType
   mut res = convertRetType(rsv, ptdes'retType, errors, recList, isLoc, not isLoc)
 
-  if res == null
+  if not res?
     return null
   /if
 
@@ -100,7 +100,7 @@ func convertSymbolList(rsv sema:Resolver,
 
 
 
-  if pargs == null
+  if not pargs?
     return kv:strnew(0)
   /if
 
@@ -119,7 +119,7 @@ func convertSymbolList(rsv sema:Resolver,
 
     # functions can refer to recursive types, because their arguments and their
     # return types do not affect the size of the function (a function is always sizeless)
-    if funcArgs and ptype'moduleName == null and ptype'name? and recList? and utils:listContains(recList, ptype'name)
+    if funcArgs and not ptype'moduleName? and ptype'name? and recList? and utils:listContains(recList, ptype'name)
       type = astfn:typeNewRecursiveAlias(rsv'root'typePool, rsv'root'moduleName'name, ptype'name)
     else
       type = resolveTypeReal(rsv, ptype, recList, errors, false)
@@ -355,7 +355,7 @@ func registerAliasReal(rsv sema:Resolver,
                       recList,errors ptr list:List,
                       ignSize bool) ptr ast:Type
 
-  mut needsList = recList == null
+  mut needsList = not recList?
 
   if needsList
     recList = list:new()

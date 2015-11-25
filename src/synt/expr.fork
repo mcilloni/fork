@@ -459,7 +459,8 @@ method synt:Parser.parseBinaryRhs(lhs ptr ast:PExpr, minPri uint16) ptr ast:PExp
     mut ternaryMiddle ptr ast:PExpr = null
 
     if isConditionalOperator(opTok)
-      if (ternaryMiddle = me.parseExpr()) == null or not me.expectDiscard(tokens:SEPARATOR)
+      ternaryMiddle = me.parseExpr()
+      if not ternaryMiddle? or not me.expectDiscard(tokens:SEPARATOR)
         lex:tokenFree(opTok)
         return null
       /if

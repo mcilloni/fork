@@ -48,7 +48,7 @@ method hash:Iter.loadNextBucket()
 
 method hash:Iter.next() ptr pair:Pair
   # load next bucket
-  if me'curBucket == null or me'curBucket.len() == 0 or me'pos == me'curBucket.len()
+  if not me'curBucket? or me'curBucket.len() == 0 or me'pos == me'curBucket.len()
     me.loadNextBucket()
   /if
 

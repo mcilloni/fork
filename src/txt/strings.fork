@@ -21,7 +21,7 @@ decl func strcmp(str1,str2 data) int32
 
 
 func strclone(orig ptr uint8) ptr uint8
-  if orig == null
+  if not orig?
     return null
   /if
 

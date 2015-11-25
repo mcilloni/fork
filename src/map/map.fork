@@ -308,7 +308,7 @@ func nodeMin(node ptr map:Node) data
 # map init/deinit functions
 
 func deinit(map ptr map:Map)
-  if map == null
+  if not map?
     return
   /if
 

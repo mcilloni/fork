@@ -381,7 +381,7 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
 
   mut stringToken = lex'saved
 
-  if lex'saved == null
+  if not lex'saved?
     stringToken = extractNextToken(lex)
     if lexerError(lex)?
       return null
@@ -397,7 +397,7 @@ func lexerNext(lex ptr lex:Lexer) ptr lex:Token
     /if
   /if
 
-  if stringToken == null
+  if not stringToken?
     return null
   /if
 
@@ -999,7 +999,7 @@ func ttypeStr(tt uint16) ptr uint8
 
 
 func tokenStr(tok ptr lex:Token) ptr uint8
-  return lex:ttypeStr(tok == null => tokens:EOF || tok'type)
+  return lex:ttypeStr(not tok? => tokens:EOF || tok'type)
 /func
 
 
@@ -1028,7 +1028,7 @@ func linenoNew(filename ptr uint8, lineno, pos uintptr) ptr lex:Lineno
 
 
 func issueFromLexError(err ptr err:Error, lineno ptr lex:Lineno) ptr parser:Issue
-  if err == null
+  if not err?
     return null
   /if
 

@@ -317,7 +317,7 @@ method hash:Hash.remove(key data) bool
 
   mut bucket = <ptr list:List>(val me'buckets.get(index))
 
-  if bucket == null
+  if not bucket?
     return false
   /if
 

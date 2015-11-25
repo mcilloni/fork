@@ -20,7 +20,7 @@ entry
   mut error ptr err:Error
   mut libc = dyn:open("/lib/libc.so.6", ptr error)
 
-  if libc == null
+  if not libc?
     tty:err("error: ")
     tty:errln(error'msg)
 
@@ -29,7 +29,7 @@ entry
 
   mut puts = <ptr func(str ptr uint8)>(libc.sym("puts", ptr error))
 
-  if libc == null
+  if not libc?
     tty:err("error: ")
     tty:errln(error'msg)
 
