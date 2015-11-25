@@ -87,8 +87,8 @@ method LRStr.addFuncType(type ptr ast:Type, methTarget ptr uint8)
     /if
 
     mut pair = type'members.getAt(i)
-    me'unit.genCsym(paramsCs, null, null, cast<ptr uint8>(pair'key), \
-                       cast<ptr ast:Type>(pair'value), -1, false)
+    me'unit.genCsym(paramsCs, null, null, <ptr uint8>(pair'key), \
+                       <ptr ast:Type>(pair'value), -1, false)
     i++
   /while
 
@@ -159,8 +159,8 @@ method LRStr.addStructType(type ptr ast:Type)
       cs.add("  ")
     /if
 
-    me'unit.genCsym(cs, null, null, cast<ptr uint8>(pair'key), \
-                     cast<ptr ast:Type>(pair'value), \
+    me'unit.genCsym(cs, null, null, <ptr uint8>(pair'key), \
+                     <ptr ast:Type>(pair'value), \
                      doPad => me'pad + 2 || -1, \
                      false)
     cs.add(";")
@@ -185,7 +185,7 @@ method LRStr.syntetizeStructType(type ptr ast:Type)
 
   me'unit'cnt++
 
-  mut name = cast<ptr uint8>(mem:zalloc(28))
+  mut name = <ptr uint8>(mem:zalloc(28))
   mem:copy(name, "_struct", 7)
 
   txt:numtostr(cnt, name + 7, 21)

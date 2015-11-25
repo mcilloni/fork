@@ -38,7 +38,7 @@ entry
     mut i uintptr = 0
 
     while i < errLen
-      mut issue = cast<ptr parser:Issue>(val errors.get(i))
+      mut issue = <ptr parser:Issue>(val errors.get(i))
 
       parser:issueWriteOut(issue, ptr tty:err)
 
@@ -49,7 +49,7 @@ entry
     proc:exit(1)
   /if
 
-  mut root = cast<ptr ast:PRoot>(ast)
+  mut root = <ptr ast:PRoot>(ast)
 
   mut tr ctrans:Transl
 

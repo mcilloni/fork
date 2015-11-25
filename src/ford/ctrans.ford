@@ -63,25 +63,28 @@ alias Block struct(
   decls,vars,stmts ptr cs:Charstash,
   unit ptr Transl,
   pad uintptr,
+  pblock ptr ast:PBlock,
   rvoType ptr ast:Type
 )
 
 
-decl func blNew(unit ptr Transl, pad uintptr, rvoType ptr ast:Type) Block
+decl func blNew(unit ptr Transl,
+                pblock ptr ast:PBlock,
+                pad uintptr,
+                rvoType ptr ast:Type) Block
 
 decl method Block.assign(to,from Elem, fname ptr uint8, line uintptr)
-decl method Block.declaration(root ptr ast:PRoot,
-                              fname ptr uint8,
-                              block ptr ast:PBlock,
-                              stmt ptr ast:PNode)
+decl method Block.declaration(pdecl ptr ast:PDecl,
+                              root ptr ast:PRoot,
+                              fname ptr uint8)
 
 decl method Block.decPad()
 decl method Block.dumpInCs(cs ptr cs:Charstash)
 
-decl method Block.expr(root ptr ast:PRoot,
-                              pexpr ptr ast:PExpr,
-                              fname ptr uint8,
-                              line uintptr) Elem
+decl method Block.expr(pexpr ptr ast:PExpr,
+                       root ptr ast:PRoot,
+                       fname ptr uint8,
+                       line uintptr) Elem
 
 decl method Block.incPad()
 
@@ -94,9 +97,8 @@ decl method Block.padDecls()
 decl method Block.padStmts()
 decl method Block.padVars()
 
-decl method Block.statement(root ptr ast:PRoot,
-                            block ptr ast:PBlock,
-                            stmt ptr ast:PNode,
+decl method Block.statement(stmt ptr ast:PNode,
+                            root ptr ast:PRoot,
                             fname ptr uint8)
 
 

@@ -71,7 +71,7 @@ method ctrans:Transl.function(root ptr ast:PRoot,
 
   mut rvoType = (type'retType? and type'retType.isStruct()) => type'retType || null
 
-  mut block = cast<ptr ast:PBlock>(val fn'node'leaves.get(0))
+  mut block = <ptr ast:PBlock>(val fn'node'leaves.get(0))
 
   me.fnblock(root, block, rvoType, fname)
 
@@ -85,7 +85,7 @@ method ctrans:Transl.forkmain(root ptr ast:PRoot)
   me'funcs.addDebugLine(root'fileName, entryN'node'begin'line)
   me'funcs.add("void __fork_entry(void) ")
 
-  mut block = cast<ptr ast:PBlock>(val entryN'node'leaves.get(0))
+  mut block = <ptr ast:PBlock>(val entryN'node'leaves.get(0))
 
   me.fnblock(root, block, null, root'fileName)
 
@@ -192,7 +192,7 @@ method ctrans:Transl.genDecls(root ptr ast:PRoot)
   mut moduleName ptr uint8 = root'moduleName? => root'moduleName'name || null
 
   while i < len
-    mut child = cast<ptr ast:PDecl>(val root'node'node'leaves.get(i))
+    mut child = <ptr ast:PDecl>(val root'node'node'leaves.get(i))
 
     if child'node'type != ast:PALIAS and child'node'type != ast:PENTRY
 
@@ -212,7 +212,7 @@ method ctrans:Transl.genDecls(root ptr ast:PRoot)
         if child'node'type == ast:PMUT
           mut expr = child'node'leaves.get(0)
 
-          me.globVar(sym, root, expr? => cast<ptr ast:PExpr>(val expr) || null)
+          me.globVar(sym, root, expr? => <ptr ast:PExpr>(val expr) || null)
         else
           if child'node'type == ast:PFUNCTION or child'node'type == ast:PMETHOD
             me.function(root, root'fileName, sym, dinfo'type, child)
@@ -235,7 +235,7 @@ method ctrans:Transl.genImports(root ptr ast:PRoot)
   mut len = root'imports.len()
 
   while i < len
-    mut impdef = cast<ptr ast:StringDef>(val root'imports.get(i))
+    mut impdef = <ptr ast:StringDef>(val root'imports.get(i))
 
     me.includeFord(impdef'name)
 
@@ -253,8 +253,8 @@ method ctrans:Transl.genTypedefs(root ptr ast:PRoot)
 
   while i < len
     mut pair = als.getAt(i)
-    mut name = cast<ptr uint8>(pair'key)
-    mut type = cast<ptr ast:DeclInfo>(pair'value)'type
+    mut name = <ptr uint8>(pair'key)
+    mut type = <ptr ast:DeclInfo>(pair'value)'type
 
     me.typedef(name, type, false)
 

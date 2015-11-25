@@ -28,7 +28,7 @@ func lsFree(ls ptr ctrans:LineStr)
 
 
 func lsNew(line ast:Line, str ptr uint8) ptr ctrans:LineStr
-  mut ls = cast<ptr ctrans:LineStr>(mem:alloc(size(ctrans:LineStr)))
+  mut ls = <ptr ctrans:LineStr>(mem:alloc(size(ctrans:LineStr)))
 
   ls'line = line
   ls'str = str
@@ -38,13 +38,18 @@ func lsNew(line ast:Line, str ptr uint8) ptr ctrans:LineStr
 
 
 # Block functions
-func blNew(unit ptr ctrans:Transl, pad uintptr, rvoType ptr ast:Type) ctrans:Block
+func blNew(unit ptr ctrans:Transl,
+           pblock ptr ast:PBlock,
+           pad uintptr,
+           rvoType ptr ast:Type) ctrans:Block
+
   mut ret ctrans:Block
 
   ret'decls = cs:new(20)
   ret'vars = cs:new(20)
   ret'stmts = cs:new(20)
   ret'unit = unit
+  ret'pblock = pblock
   ret'pad = pad
   ret'rvoType = rvoType
 
@@ -98,7 +103,7 @@ method ctrans:Block.ifblock(stmt ptr ast:PNode,
                             root ptr ast:PRoot,
                             fname ptr uint8)
 
-  mut pexpr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
+  mut pexpr = <ptr ast:PExpr>(val stmt'leaves.get(0))
 
   mut cond = me.expr(root, pexpr, fname, stmt'begin'line)
 
@@ -110,14 +115,14 @@ method ctrans:Block.ifblock(stmt ptr ast:PNode,
   me'stmts.add(cond.value())
   me'stmts.addWord(")")
 
-  mut block = cast<ptr ast:PBlock>(val stmt'leaves.get(1))
+  mut block = <ptr ast:PBlock>(val stmt'leaves.get(1))
 
   me.subblock(root, block, fname)
 
   if stmt'type == ast:PIFELSE
     me'stmts.add(" else ")
 
-    block = cast<ptr ast:PBlock>(val stmt'leaves.get(2))
+    block = <ptr ast:PBlock>(val stmt'leaves.get(2))
 
     me.subblock(root, block, fname)
   /if
@@ -144,7 +149,7 @@ method ctrans:Block.returnstmt(stmt ptr ast:PNode,
   if expr?
     me'stmts.addChar(32)
 
-    elem = me.expr(root, cast<ptr ast:PExpr>(val expr), fname, line)
+    elem = me.expr(root, <ptr ast:PExpr>(val expr), fname, line)
 
     if me'rvoType?
       mut rvoOut ctrans:Elem
@@ -173,9 +178,8 @@ method ctrans:Block.returnstmt(stmt ptr ast:PNode,
 /method
 
 
-method ctrans:Block.statement(root ptr ast:PRoot,
-                              block ptr ast:PBlock,
-                              stmt ptr ast:PNode,
+method ctrans:Block.statement(stmt ptr ast:PNode,
+                              root ptr ast:PRoot,
                               fname ptr uint8)
 
   mut semicolon = false
@@ -188,27 +192,31 @@ method ctrans:Block.statement(root ptr ast:PRoot,
        or stmt'type == ast:PFUNCTION \
        or stmt'type == ast:PMETHOD
 
-      me.declaration(root, fname, block, stmt)
+      me.declaration(<ptr ast:PDecl>(stmt), root, fname)
     else
-      if stmt'type == ast:PWHILE
-        me.whileblock(stmt, root, fname)
-        semicolon = false
+      if stmt'type == ast:PMUTEXP
+        me.muldecl(<ptr ast:PMulDecl>(stmt), root, block, fname)
       else
-        if stmt'type == ast:PCONTINUE
-          me'stmts.add("continue")
-          semicolon = true
+        if stmt'type == ast:PWHILE
+          me.whileblock(stmt, root, fname)
+          semicolon = false
         else
-          if stmt'type == ast:PBREAK
-            me'stmts.add("break")
+          if stmt'type == ast:PCONTINUE
+            me'stmts.add("continue")
             semicolon = true
           else
-            if stmt'type == ast:PRETURN
-              me.returnstmt(stmt, root, fname)
+            if stmt'type == ast:PBREAK
+              me'stmts.add("break")
               semicolon = true
             else
-              if stmt'type == ast:PEXPR
-                mut ign = me.expr(root, cast<ptr ast:PExpr>(stmt), fname, stmt'begin'line)
-                ign.wipe()
+              if stmt'type == ast:PRETURN
+                me.returnstmt(stmt, root, fname)
+                semicolon = true
+              else
+                if stmt'type == ast:PEXPR
+                  mut ign = me.expr(root, <ptr ast:PExpr>(stmt), fname, stmt'begin'line)
+                  ign.wipe()
+                /if
               /if
             /if
           /if
@@ -245,7 +253,7 @@ method ctrans:Block.whileblock(stmt ptr ast:PNode,
 
   me.incPad()
 
-  mut pexpr = cast<ptr ast:PExpr>(val stmt'leaves.get(0))
+  mut pexpr = <ptr ast:PExpr>(val stmt'leaves.get(0))
 
   mut cond = me.expr(root, pexpr, fname, line)
 
@@ -257,7 +265,7 @@ method ctrans:Block.whileblock(stmt ptr ast:PNode,
   me'stmts.add(cond.value())
   me'stmts.addWord(")")
 
-  mut block = cast<ptr ast:PBlock>(val stmt'leaves.get(1))
+  mut block = <ptr ast:PBlock>(val stmt'leaves.get(1))
 
   me.subblock(root, block, fname)
 
@@ -306,7 +314,7 @@ func translBlock(cs ptr cs:Charstash,
 
   cs.addLine("{")
 
-  mut bl = blNew(unit, p, rvoType)
+  mut bl = blNew(unit, block, p, rvoType)
 
   if rvoType? and horribleRVOHack
     bl.newDecl(false, null, "*_rvoOut", fname, rvoType, block'node'begin'line - 1)
@@ -323,9 +331,9 @@ func translBlock(cs ptr cs:Charstash,
   mut i uintptr = 0
 
   while i < bLen
-    mut stmt = cast<ptr ast:PNode>(val block'node'leaves.get(i))
+    mut stmt = <ptr ast:PNode>(val block'node'leaves.get(i))
 
-    bl.statement(root, block, stmt, fname)
+    bl.statement(stmt, root, fname)
 
     i++
   /while

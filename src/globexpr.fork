@@ -23,8 +23,8 @@ import tty
 
 method ctrans:Transl.globDotExpr(pexpr ptr ast:PExpr)
 
-  mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-  mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+  mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
   mut targetType = e1'type
 
@@ -33,7 +33,7 @@ method ctrans:Transl.globDotExpr(pexpr ptr ast:PExpr)
   /if
 
   mut typeName = ctrans:symMod(targetType'moduleName, targetType'name)
-  mut methName = cast<ptr uint8>(e2'node'value)
+  mut methName = <ptr uint8>(e2'node'value)
 
   me'vars.addMethSym(typeName, methName)
 
@@ -53,17 +53,17 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:STRING
-    me'vars.addCStr(cast<ptr uint8>(value))
+    me'vars.addCStr(<ptr uint8>(value))
     return
   /if
 
   if pexpr'opType == tokens:ID
 
-    mut name = cast<ptr uint8>(value)
+    mut name = <ptr uint8>(value)
     mut modName ptr uint8 = root'moduleName? => root'moduleName'name || null
     mut fDecl = root'node'syms.get(name)
 
-    if fDecl? and not fDecl'declOnly and cast<ptr ast:PNode>(pexpr).findSym(name) == fDecl'type
+    if fDecl? and not fDecl'declOnly and <ptr ast:PNode>(pexpr).findSym(name) == fDecl'type
       me'vars.addSymName(modName, name)
     else
       me'vars.add(name)
@@ -92,8 +92,8 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:COLON
-    mut modName = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
-    mut name = cast<ptr uint8>(cast<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
+    mut modName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
+    mut name = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
 
     me'vars.addSymName(modName, name)
 
@@ -101,14 +101,14 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:APOS
-    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
     me.globExpr(root, e1)
 
     me'vars.add((e1'type? and e1'type'type == ast:TYPE_PTR) => "->" || ".")
 
-    me'vars.add(cast<ptr uint8>(e2'node'value))
+    me'vars.add(<ptr uint8>(e2'node'value))
 
     return
   /if
@@ -122,7 +122,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:CAST
-    mut expr = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut expr = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
     me'vars.add("((")
     me.wrapType(me'vars, pexpr'type, -1)
@@ -136,7 +136,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:OPAR
-    mut toCall = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut toCall = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut methCall = toCall'opType == tokens:DOT
 
     if methCall
@@ -151,7 +151,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
 
     # add me parameter
     if methCall
-      mut target = cast<ptr ast:PExpr>(val toCall'node'leaves.get(0))
+      mut target = <ptr ast:PExpr>(val toCall'node'leaves.get(0))
       mut notPtr = not target'type.isPtr()
 
       if notPtr
@@ -172,7 +172,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
     mut i uintptr = 1
 
     while i < len
-      mut param = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(i))
+      mut param = <ptr ast:PExpr>(val pexpr'node'leaves.get(i))
 
       if i > 1
         me'vars.addWord(",")
@@ -188,8 +188,8 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:OBRAC
-    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
     me'vars.add("(")
 
@@ -205,8 +205,8 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:DQUEST
-    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
     # warn: due to constraints, every expression will be evaluated twice.
     # Please don't use "??" with complex expressions on the left.
@@ -237,9 +237,9 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:FATARROW
-    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
-    mut e3 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(2))
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+    mut e3 = <ptr ast:PExpr>(val pexpr'node'leaves.get(2))
 
     me'vars.add("(")
 
@@ -259,7 +259,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:DEC
-    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     me'vars.add("--")
 
     me.globExpr(root, e)
@@ -267,7 +267,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:INC
-    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
     me'vars.add("++")
 
@@ -276,7 +276,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if pexpr'opType == tokens:QUEST
-    mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
     me'vars.add("(")
     me.globExpr(root, e)
@@ -287,8 +287,8 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
   if ctrans:isBinOp(pexpr'opType) or pexpr'opType == tokens:MINUS
-    mut e1 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    mut e2 = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
     if pexpr'opType == tokens:POW
       me'vars.add("math$__forkpow(")
@@ -313,7 +313,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
 
   #assume prefix unary now
 
-  mut e = cast<ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
   me'vars.add(ctrans:opConv(pexpr'opType))
   me'vars.add("(")
   me.globExpr(root, e)

@@ -43,7 +43,9 @@ stage3:
 
 	FORDC="$(shell pwd)/build.2/fordc" FORKC="$(shell pwd)/build.2/forkc" FORKL="$(shell pwd)/build.2/forkl" $(MAKE) build
 
-bootstrap: stage3
+bootstrap:
+	$(MAKE) clean
+	$(MAKE) stage3
 
 copy-libs:
 	mkdir -p build/libfork/ford
