@@ -25,7 +25,7 @@ import txt
 import utils
 
 
-func addAllSymbolsToStab(stab ptr ast:Symtable, syms ptr kv:KVList)
+method ast:Symtable.addFuncParams(syms ptr kv:KVList)
   mut len = syms.len()
   mut i uintptr = 0
 
@@ -35,11 +35,11 @@ func addAllSymbolsToStab(stab ptr ast:Symtable, syms ptr kv:KVList)
     mut name = <ptr uint8>(pair'key)
     mut type = <ptr ast:Type>(pair'value)
 
-    stab.add(name, true, type, 0) #0 ignored
+    me.add(name, true, true, type, 0) #0 ignored
 
     i++
   /while
-/func
+/method
 
 
 func ensureMethodCorrectness(rsv sema:Resolver,
@@ -91,7 +91,7 @@ func ensureMethodCorrectness(rsv sema:Resolver,
   mut pblock = <ptr ast:PBlock>(val pdecl'node'leaves.get(0))
   mut meType = astfn:typeNewPtr(rsv'root'typePool, null, null, type)
 
-  pblock'syms.add("me", true, meType, 0)
+  pblock'syms.add("me", true, false, meType, 0)
 
   return true
 /func
@@ -303,8 +303,8 @@ func validateMulDecl(rsv sema:Resolver,
       # will never be both null.
       varType = varType ?? initType
 
-      # each variable is still a mut. So they're added as muts.
-      stab.add(sym'name, false, varType, ast:PMUT)
+      # Each variable in a MutExp is still a mut. So they're added as muts.
+      stab.add(sym'name, false, false, varType, ast:PMUT)
       newVars = true
     /if
 
@@ -319,32 +319,6 @@ func validateMulDecl(rsv sema:Resolver,
   /if
 
   return true
-/func
-
-
-func validateFunc(rsv sema:Resolver,
-                  pdecl ptr ast:PDecl,
-                  funcType ptr ast:Type,
-                  errors ptr list:List) bool
-
-  mut sym ast:Symbol
-
-  sym'type = funcType
-  sym'name = pdecl'sym'name
-
-  mut pblock = <ptr ast:PBlock>(val pdecl'node'leaves.get(0))
-
-  pblock'syms = ast:stabNew()
-
-  addAllSymbolsToStab(pblock'syms, funcType'members)
-
-  if pdecl'node'type == ast:PMETHOD
-    if not ensureMethodCorrectness(rsv, pdecl, funcType, errors)
-      return false
-    /if
-  /if
-
-  return validatePBlock(rsv, pblock, sym, false, errors)
 /func
 
 
@@ -562,4 +536,30 @@ func validateWhile(rsv sema:Resolver,
   mut pblock = <ptr ast:PBlock>(val stmt'leaves.get(1))
 
   return validatePBlock(rsv, pblock, funcInfo, true, errors)
+/func
+
+
+func validateFunc(rsv sema:Resolver,
+                  pdecl ptr ast:PDecl,
+                  funcType ptr ast:Type,
+                  errors ptr list:List) bool
+
+  mut sym ast:Symbol
+
+  sym'type = funcType
+  sym'name = pdecl'sym'name
+
+  mut pblock = <ptr ast:PBlock>(val pdecl'node'leaves.get(0))
+
+  pblock'syms = ast:stabNew()
+
+  pblock'syms.addFuncParams(funcType'members)
+
+  if pdecl'node'type == ast:PMETHOD
+    if not ensureMethodCorrectness(rsv, pdecl, funcType, errors)
+      return false
+    /if
+  /if
+
+  return validatePBlock(rsv, pblock, sym, false, errors)
 /func

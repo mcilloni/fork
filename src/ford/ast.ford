@@ -130,7 +130,7 @@ decl method Symbol.summarize(cs ptr cs:Charstash)
 
 alias DeclInfo struct(
   declType uint16,
-  declOnly bool,
+  declOnly,funcParam bool,
   type ptr Type
 )
 
@@ -150,7 +150,11 @@ decl func stabFree(stab ptr Symtable)
 decl func stabNew() ptr Symtable
 
 
-decl method Symtable.add(name ptr uint8, isDecl bool, type ptr Type, symType uint16)
+decl method Symtable.add(name ptr uint8,
+                         isDecl,funcParam bool,
+                         type ptr Type,
+                         symType uint16)
+
 decl method Symtable.get(name ptr uint8) ptr DeclInfo
 decl method Symtable.typeof(name ptr uint8) ptr Type
 

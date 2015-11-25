@@ -79,7 +79,7 @@ func findMethod(rsv sema:Resolver,
 
 
 func rootDeclsRegister(rsv sema:Resolver, name ptr uint8, isDecl bool, type ptr ast:Type, declType uint16)
-  rsv'root'node'syms.add(name, isDecl, type, declType)
+  rsv'root'node'syms.add(name, isDecl, false, type, declType)
 
   rsv'decls.remove(name)
 /func
@@ -297,7 +297,7 @@ func registerDecl(rsv sema:Resolver,
     return null
   /if
 
-  stab.add(name, pdecl'isDecl, type, declType)
+  stab.add(name, pdecl'isDecl, false, type, declType)
 
   return type
 /func

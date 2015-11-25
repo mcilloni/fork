@@ -187,8 +187,13 @@ func stabFree(stab ptr ast:Symtable)
 /func
 
 
-method ast:Symtable.add(name ptr uint8, isDecl bool, type ptr ast:Type, symType uint16)
-  me'syms.put(txt:strclone(name), astfn:declInfoNew(symType, isDecl, type))
+method ast:Symtable.add(name ptr uint8,
+                        isDecl,funcParam bool,
+                        type ptr ast:Type,
+                        symType uint16)
+
+  me'syms.put(txt:strclone(name), \
+                astfn:declInfoNew(symType, isDecl, funcParam, type))
 /method
 
 
