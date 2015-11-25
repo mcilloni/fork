@@ -105,7 +105,21 @@ func resolverCollect(rsv ptr sema:Resolver,
   mut failure = false
 
   while i < len
-    mut pdecl = <ptr ast:PDecl>(val root'node'node'leaves.get(i))
+    mut pnode = <ptr ast:PNode>(val root'node'node'leaves.get(i))
+
+    if pnode.isMulDecl()
+      mut msg = "mut struct expansion is not allowed on global scope"
+      errors.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, \
+                                      root'fileName, msg))
+
+      failure = true
+      break
+    /if
+
+    # Once we're sure that this isn't a multiple declaration, we are certain it
+    # is a PDecl
+    mut pdecl = <ptr ast:PDecl>(pnode)
+
     mut ntype = pdecl'node'type
 
     if ntype == ast:PMUT or ntype == ast:PFUNCTION or ntype == ast:PMETHOD

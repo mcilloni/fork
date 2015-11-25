@@ -28,10 +28,10 @@ func validatePDecl(rsv sema:Resolver, pdecl ptr ast:PDecl, errors ptr list:List)
   mut ntype = pdecl'node'type
 
   if ntype == ast:PMUT or ntype == ast:PFUNCTION or ntype == ast:PENTRY or ntype == ast:PMETHOD
-    return sema:registerTopDecl(rsv, pdecl, errors) != null
+    return sema:registerTopDecl(rsv, pdecl, errors)?
   else
     if ntype == ast:PALIAS
-      return sema:registerAlias(rsv, pdecl, errors) != null
+      return sema:registerAlias(rsv, pdecl, errors)?
     else
       tty:errln("Unreachable: invalid pdecl value")
       proc:abort()
@@ -63,7 +63,7 @@ func semaValidateAstRoot(ctx ptr parser:Parser, root ptr ast:PRoot, errors ptr l
   mut rsv sema:Resolver
 
   mut decls = sema:resolverCollect(ptr rsv, ctx, root, errors)
-  if decls == null
+  if not decls?
     return false
   /if
 
@@ -72,7 +72,8 @@ func semaValidateAstRoot(ctx ptr parser:Parser, root ptr ast:PRoot, errors ptr l
   mut result = true
 
   while i < len
-    # PDecl because root can only have pdecl children
+    # The resolve only collects PDecls, and fails on PMulDecls - so this cast is
+    # always valid
     mut pdecl = <ptr ast:PDecl>(decls.getAt(i)'value)
 
     if not pdecl'node'validated
