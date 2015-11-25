@@ -73,8 +73,13 @@ func boolelem(v bool, type ptr ast:Type) ctrans:Elem
 
 func deref(elem ctrans:Elem, ptrType ptr ast:Type) ctrans:Elem
   mut ret ctrans:Elem
+  mut cs = cs:new(20)
 
-  ret'str = txt:strappend("*", elem.value())
+  cs.add("(*")
+  cs.add(elem.value())
+  cs.add(")")
+
+  ret'str = cs:unwrap(cs)
   ret'type = ptrType'retType
 
   return ret
@@ -386,6 +391,32 @@ method ctrans:Block.label(lb ctrans:Elem, empty bool)
 /method
 
 
+method Block.mulassign(to ptr ctrans:Elem,
+                       from ctrans:Elem,
+                       fname ptr uint8,
+                       line uintptr)
+
+  mut type = from'type
+  mut i uintptr = 0
+  mut len = type'members.len()
+  mut fromName = from.value()
+
+  while i < len
+    mut member = type'members.getAt(i)
+    mut memName = <ptr uint8>(member'key)
+    mut memType = <ptr ast:Type>(member'value)
+
+    mut structElem = structelem(fromName, memName, type, memType)
+
+    me.assign(val to, structElem, fname, line)
+
+    structElem.wipe()
+    i++
+    to++
+  /while
+/method
+
+
 method ctrans:Block.nextlabel() ctrans:Elem
   mut ret ctrans:Elem
 
@@ -411,11 +442,11 @@ method ctrans:Block.nextvar(type ptr ast:Type,
   if type.isLoc()
     mut hackStr = refhack(ret, type'retType)
 
-    me.newDecl(false, null, hackStr, fname, type'retType, line)
+    me.newDecl(false, hackStr, fname, type'retType, line)
 
     mem:free(hackStr)
   else
-    me.newDecl(false, null, ret.value(), fname, type, line)
+    me.newDecl(false, ret.value(), fname, type, line)
   /if
 
   return ret
@@ -474,7 +505,7 @@ method ctrans:Block.ref(elem ctrans:Elem,
   mut ret = me.ssavar(null)
   mut hackStr = refhack(ret, origType)
 
-  me.newDecl(false, null, hackStr, fname, origType, line)
+  me.newDecl(false, hackStr, fname, origType, line)
 
   mem:free(hackStr)
 
@@ -533,7 +564,7 @@ method ctrans:Block.structaccess(root ptr ast:PRoot,
                                  fname ptr uint8,
                                  line uintptr) ctrans:Elem
 
-  mut s = me.expr(root, e1, fname, line)
+  mut s = me.expr(e1, root, fname, line)
 
 
   mut ret = structelem(s.value(), <ptr uint8>(e2'node'value), e1'type, type)
@@ -587,45 +618,59 @@ method ctrans:Block.varcopy(to,from ctrans:Elem,
 /method
 
 
-method ctrans:Block.newDecl(ext bool,
-                            methodType,name,fname ptr uint8,
-                            type ptr ast:Type,
-                            line uintptr)
+method Block.muldecl(pmuldecl ptr ast:PMulDecl,
+                     root ptr ast:PRoot,
+                     fname ptr uint8)
 
-  mut cs = ext => me'decls || me'vars
+  mut pnode = <ptr ast:PNode>(pmuldecl)
 
-  cs.addPad(me'pad)
-  cs.addDebugLine(fname, line)
+  if pnode'leaves.len() > 0
+    mut expr = <ptr ast:PExpr>(val pnode'leaves.get(0))
+    mut exprEl = me.expr(expr, root, fname, pnode'begin'line)
 
-  cs.addPad(me'pad)
-  me'unit.genCsym(cs, methodType, null, name, type, me'pad, false)
-  cs.addLine(";")
+    mut len = pmuldecl'syms.len()
+    mut i uintptr = 0
+
+    # Old style C array, way easier this way
+    mut elems = <ptr ctrans:Elem>(mem:zalloc(len * size(ctrans:Elem)))
+
+    while i < len
+      mut sym = <ptr ast:PSymbol>(val pmuldecl'syms.get(i))
+      mut type = pnode.findSym(sym'name)
+
+      elems[i] = elem(sym'name, type)
+
+      i++
+    /while
+
+    me.mulassign(elems, exprEl, fname, pnode'begin'line)
+
+    i = 0
+    while i < len
+      elems[i].wipe()
+      i++
+    /while
+
+    exprEl.wipe()
+    mem:free(elems)
+  /if
 /method
 
 
 method ctrans:Block.declaration(pdecl ptr ast:PDecl,
                                 root ptr ast:PRoot,
-                                block ptr ast:PBlock,
                                 fname ptr uint8)
 
-  mut ext = pdecl'isDecl
-  mut type = me'pblock'syms.typeof(pdecl'sym'name)
-  mut methodType ptr uint8 = null
   mut pnode = <ptr ast:PNode>(pdecl)
 
-  if pnode'type == ast:PMETHOD
-    methodType = ctrans:symMod(pdecl'methodTypeModule, pdecl'methodType)
-  /if
+  if pnode'leaves.len() > 0
+    mut name = pdecl'sym'name
+    mut type = pnode.findSym(name)
 
-  mut destCs = ext => me'decls || me'vars
-
-  me.newDecl(ext, methodType, pdecl'sym'name, fname, type, pnode'begin'line)
-
-  if not ext and pnode'leaves.len() > 0
-    mut id = elem(pdecl'sym'name, type)
+    mut id = elem(name, type)
 
     mut expr = <ptr ast:PExpr>(val pnode'leaves.get(0))
-    mut exprEl = me.expr(root, expr, fname, pnode'begin'line)
+    mut exprEl = me.expr(expr, root, fname, pnode'begin'line)
 
     me.assign(id, exprEl, fname, pnode'begin'line)
 
@@ -643,7 +688,7 @@ method ctrans:Block.handleAnd(root ptr ast:PRoot,
 
   mut ret = me.nextvar(type, fname, line)
 
-  mut el1 = me.expr(root, e1, fname, line)
+  mut el1 = me.expr(e1, root, fname, line)
 
   me.padStmts()
   me'stmts.addDebugLine(fname, line)
@@ -658,7 +703,7 @@ method ctrans:Block.handleAnd(root ptr ast:PRoot,
   me'stmts.add(fail.value())
   me'stmts.addLine(";")
 
-  mut el2 = me.expr(root, e2, fname, line)
+  mut el2 = me.expr(e2, root, fname, line)
 
   me.assign(ret, el2, fname, line)
 
@@ -697,7 +742,7 @@ method ctrans:Block.handleDQuest(root ptr ast:PRoot,
                                  fname ptr uint8,
                                  line uintptr) ctrans:Elem
 
-  mut el1 = me.expr(root, c1, fname, line)
+  mut el1 = me.expr(c1, root, fname, line)
   mut ret = me.nextvar(type, fname, line)
 
   me.padStmts()
@@ -723,7 +768,7 @@ method ctrans:Block.handleDQuest(root ptr ast:PRoot,
   # increase - temporarely - padding
   me'pad = me'pad + 2
 
-  mut el2 = me.expr(root, c2, fname, line)
+  mut el2 = me.expr(c2, root, fname, line)
 
   me.assign(ret, el2, fname, line)
 
@@ -764,7 +809,7 @@ method ctrans:Block.handleFn(root ptr ast:PRoot,
     # add me parameter
 
     mut notPtr = not targetType.isPtr()
-    mut meElem = me.expr(root, target, fname, line)
+    mut meElem = me.expr(target, root, fname, line)
 
     if notPtr
       mut ptrElem = me.ref(meElem, target'type, fname, line)
@@ -775,7 +820,7 @@ method ctrans:Block.handleFn(root ptr ast:PRoot,
 
     params.append(meElem.copy())
   else
-    callElem = me.expr(root, toCall, fname, line)
+    callElem = me.expr(toCall, root, fname, line)
   /if
 
 
@@ -801,7 +846,7 @@ method ctrans:Block.handleFn(root ptr ast:PRoot,
     mut type = <ptr ast:Type>(memTypes.getAt(i - 1)'value)
     mut param = <ptr ast:PExpr>(val pexpr'node'leaves.get(i))
 
-    mut paramExpr = me.exprWithOptimizedType(root, param, type, fname, line)
+    mut paramExpr = me.exprWithOptimizedType(param, root, type, fname, line)
     params.append(paramExpr.copy())
 
     i++
@@ -821,6 +866,38 @@ method ctrans:Block.handleFn(root ptr ast:PRoot,
 /method
 
 
+method ctrans:Block.handleMulAssign(exprs ptr ast:PExpr,
+                                    from ctrans:Elem,
+                                    root ptr ast:PRoot,
+                                    fname ptr uint8,
+                                    line uintptr)
+
+  mut pnode = <ptr ast:PNode>(exprs)
+
+  mut len = pnode'leaves.len()
+  mut i uintptr = 0
+
+  mut elems = <ptr ctrans:Elem>(mem:zalloc(len * size(ctrans:Elem)))
+
+  while i < len
+    mut member = <ptr ast:PExpr>(val pnode'leaves.get(i))
+
+    elems[i] = me.expr(member, root, fname, line)
+
+    i++
+  /while
+
+  me.mulassign(elems, from, fname, pnode'begin'line)
+
+  i = 0
+  while i < len
+    elems[i].wipe()
+    i++
+  /while
+
+/method
+
+
 method ctrans:Block.handleOr(root ptr ast:PRoot,
                              type ptr ast:Type,
                              e1,e2 ptr ast:PExpr,
@@ -829,7 +906,7 @@ method ctrans:Block.handleOr(root ptr ast:PRoot,
 
   mut ret = me.nextvar(type, fname, line)
 
-  mut el1 = me.expr(root, e1, fname, line)
+  mut el1 = me.expr(e1, root, fname, line)
 
   me.padStmts()
   me'stmts.addDebugLine(fname, line)
@@ -844,7 +921,7 @@ method ctrans:Block.handleOr(root ptr ast:PRoot,
   me'stmts.add(succ.value())
   me'stmts.addLine(";")
 
-  mut el2 = me.expr(root, e2, fname, line)
+  mut el2 = me.expr(e2, root, fname, line)
 
   me.assign(ret, el2, fname, line)
 
@@ -908,7 +985,7 @@ method ctrans:Block.handleStructLiteral(root ptr ast:PRoot,
 
   while i < len
     mut param = <ptr ast:PExpr>(val lit'node'leaves.get(i))
-    mut paramExpr = me.expr(root, param, fname, line)
+    mut paramExpr = me.expr(param, root, fname, line)
     mut memberName = <ptr uint8>(members.getAt(i)'key)
 
     mut member = structelem(ret.value(), memberName, type, param'type)
@@ -929,7 +1006,7 @@ method ctrans:Block.handleTern(root ptr ast:PRoot,
                                fname ptr uint8,
                                line uintptr) ctrans:Elem
 
-  mut cond = me.expr(root, condEx, fname, line)
+  mut cond = me.expr(condEx, root, fname, line)
   mut ret = me.nextvar(type, fname, line)
 
   me.padStmts()
@@ -945,7 +1022,7 @@ method ctrans:Block.handleTern(root ptr ast:PRoot,
   # increase - temporarely - padding
   me.incPad()
 
-  mut el1 = me.expr(root, c1, fname, line)
+  mut el1 = me.expr(c1, root, fname, line)
 
   me.assign(ret, el1, fname, line)
 
@@ -962,7 +1039,7 @@ method ctrans:Block.handleTern(root ptr ast:PRoot,
   # increase - temporarely - padding
   me.incPad()
 
-  mut el2 = me.expr(root, c2, fname, line)
+  mut el2 = me.expr(c2, root, fname, line)
 
   me.assign(ret, el2, fname, line)
 
@@ -980,8 +1057,8 @@ method ctrans:Block.handleTern(root ptr ast:PRoot,
 /method
 
 
-method ctrans:Block.exprWithOptimizedType(root ptr ast:PRoot,
-                                          pexpr ptr ast:PExpr,
+method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
+                                          root ptr ast:PRoot,
                                           destType ptr ast:Type,
                                           fname ptr uint8,
                                           line uintptr) ctrans:Elem
@@ -989,16 +1066,21 @@ method ctrans:Block.exprWithOptimizedType(root ptr ast:PRoot,
   mut value = pexpr'node'value
 
   if pexpr'opType == tokens:ASSIGN
+    mut to ctrans:Elem = {null, null} # ensure segfault if used
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
-    mut to = me.expr(root, e1, fname, line)
-    mut from = me.expr(root, e2, fname, line)
+    mut from = me.expr(e2, root, fname, line)
 
-    me.assign(to, from, fname, line)
+    if e1'opType == tokens:OCURLY
+      me.handleMulAssign(e1, from, root, fname, line)
+    else
+      to = me.expr(e1, root, fname, line)
+
+      me.assign(to, from, fname, line)
+    /if
 
     from.wipe()
-
     return to
   /if
 
@@ -1059,7 +1141,7 @@ method ctrans:Block.exprWithOptimizedType(root ptr ast:PRoot,
 
   if pexpr'opType == tokens:CAST
     mut tocast = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    mut expr = me.expr(root, tocast, fname, line)
+    mut expr = me.expr(tocast, root, fname, line)
 
     mut ret = me.castexpr(expr, pexpr'type, fname, line)
 
@@ -1076,8 +1158,8 @@ method ctrans:Block.exprWithOptimizedType(root ptr ast:PRoot,
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
-    mut from = me.expr(root, e1, fname, line)
-    mut index = me.expr(root, e2, fname, line)
+    mut from = me.expr(e1, root, fname, line)
+    mut index = me.expr(e2, root, fname, line)
 
     mut ret = me.access(from, index, e1'type, fname, line)
 
@@ -1109,7 +1191,7 @@ method ctrans:Block.exprWithOptimizedType(root ptr ast:PRoot,
   if pexpr'opType == tokens:DEC
     mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
-    mut el = me.expr(root, e, fname, line)
+    mut el = me.expr(e, root, fname, line)
 
     me.dec(el, fname, line)
 
@@ -1119,7 +1201,7 @@ method ctrans:Block.exprWithOptimizedType(root ptr ast:PRoot,
   if pexpr'opType == tokens:INC
     mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
-    mut el = me.expr(root, e, fname, line)
+    mut el = me.expr(e, root, fname, line)
 
     me.inc(el, fname, line)
 
@@ -1129,7 +1211,7 @@ method ctrans:Block.exprWithOptimizedType(root ptr ast:PRoot,
   if pexpr'opType == tokens:QUEST
     mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
-    mut el = me.expr(root, e, fname, line)
+    mut el = me.expr(e, root, fname, line)
 
     mut ret = me.quest(el, pexpr'type, fname, line)
 
@@ -1141,7 +1223,7 @@ method ctrans:Block.exprWithOptimizedType(root ptr ast:PRoot,
   if pexpr'opType == tokens:PTR
     mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
-    mut el = me.expr(root, e, fname, line)
+    mut el = me.expr(e, root, fname, line)
 
     mut ret = me.ref(el, e'type, fname, line)
 
@@ -1153,7 +1235,7 @@ method ctrans:Block.exprWithOptimizedType(root ptr ast:PRoot,
   if pexpr'opType == tokens:VAL
     mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
-    mut el = me.expr(root, e, fname, line)
+    mut el = me.expr(e, root, fname, line)
 
     mut ret = deref(el, e'type)
 
@@ -1170,8 +1252,8 @@ method ctrans:Block.exprWithOptimizedType(root ptr ast:PRoot,
       return me.handleShortcircuit(root, pexpr'opType, pexpr'type, e1, e2, fname, line)
     /if
 
-    mut el1 = me.expr(root, e1, fname, line)
-    mut el2 = me.expr(root, e2, fname, line)
+    mut el1 = me.expr(e1, root, fname, line)
+    mut el2 = me.expr(e2, root, fname, line)
 
     mut ret = me.binop(pexpr'opType, pexpr'type, el1, el2, fname, line)
 
@@ -1184,7 +1266,7 @@ method ctrans:Block.exprWithOptimizedType(root ptr ast:PRoot,
   #assume prefix unary now
 
   mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-  mut el = me.expr(root, e, fname, line)
+  mut el = me.expr(e, root, fname, line)
 
   mut ret = me.unop(pexpr'opType, pexpr'type, el, fname, line)
 

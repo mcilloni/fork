@@ -88,10 +88,14 @@ decl method Block.expr(pexpr ptr ast:PExpr,
 
 decl method Block.incPad()
 
-decl method ctrans:Block.newDecl(ext bool,
-                                 methodType,name,fname ptr uint8,
-                                 type ptr ast:Type,
-                                 line uintptr)
+decl method Block.muldecl(pmuldecl ptr ast:PMulDecl,
+                          root ptr ast:PRoot,
+                          fname ptr uint8)
+
+decl method Block.newDecl(ext bool,
+                          name,fname ptr uint8,
+                          type ptr ast:Type,
+                          line uintptr)
 
 decl method Block.padDecls()
 decl method Block.padStmts()

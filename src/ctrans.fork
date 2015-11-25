@@ -73,6 +73,8 @@ method ctrans:Transl.function(root ptr ast:PRoot,
 
   mut block = <ptr ast:PBlock>(val fn'node'leaves.get(0))
 
+  
+
   me.fnblock(root, block, rvoType, fname)
 
   me'funcs.addLine("\n")

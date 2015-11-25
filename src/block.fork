@@ -72,6 +72,41 @@ method ctrans:Block.padVars()
 /method
 
 
+method ctrans:Block.newDecl(ext bool,
+                            name,fname ptr uint8,
+                            type ptr ast:Type,
+                            line uintptr)
+
+  mut cs = ext => me'decls || me'vars
+
+  cs.addPad(me'pad)
+  cs.addDebugLine(fname, line)
+
+  cs.addPad(me'pad)
+  me'unit.genCsym(cs, null, null, name, type, me'pad, false)
+  cs.addLine(";")
+/method
+
+
+method ctrans:Block.genDecls(stab ptr ast:Symtable, fname ptr uint8, line uintptr)
+  mut len = stab'syms.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut pair = stab'syms.getAt(i)
+    mut name = <ptr uint8>(pair'key)
+    mut dinfo = <ptr ast:DeclInfo>(pair'value)
+    mut type = dinfo'type
+
+    if not dinfo'funcParam
+      me.newDecl(dinfo'declOnly, name, fname, type, line)
+    /if
+
+    i++
+  /while
+/method
+
+
 # Deinits the block.
 method ctrans:Block.dumpInCs(cs ptr cs:Charstash)
   mut decls = cs:unwrap(me'decls)
@@ -105,7 +140,7 @@ method ctrans:Block.ifblock(stmt ptr ast:PNode,
 
   mut pexpr = <ptr ast:PExpr>(val stmt'leaves.get(0))
 
-  mut cond = me.expr(root, pexpr, fname, stmt'begin'line)
+  mut cond = me.expr(pexpr, root, fname, stmt'begin'line)
 
   me.padStmts()
   me'stmts.addDebugLine(fname, stmt'begin'line)
@@ -149,7 +184,7 @@ method ctrans:Block.returnstmt(stmt ptr ast:PNode,
   if expr?
     me'stmts.addChar(32)
 
-    elem = me.expr(root, <ptr ast:PExpr>(val expr), fname, line)
+    elem = me.expr(<ptr ast:PExpr>(val expr), root, fname, line)
 
     if me'rvoType?
       mut rvoOut ctrans:Elem
@@ -195,7 +230,7 @@ method ctrans:Block.statement(stmt ptr ast:PNode,
       me.declaration(<ptr ast:PDecl>(stmt), root, fname)
     else
       if stmt'type == ast:PMUTEXP
-        me.muldecl(<ptr ast:PMulDecl>(stmt), root, block, fname)
+        me.muldecl(<ptr ast:PMulDecl>(stmt), root, fname)
       else
         if stmt'type == ast:PWHILE
           me.whileblock(stmt, root, fname)
@@ -214,8 +249,7 @@ method ctrans:Block.statement(stmt ptr ast:PNode,
                 semicolon = true
               else
                 if stmt'type == ast:PEXPR
-                  mut ign = me.expr(root, <ptr ast:PExpr>(stmt), fname, stmt'begin'line)
-                  ign.wipe()
+                  me.expr(<ptr ast:PExpr>(stmt), root, fname, stmt'begin'line).wipe()
                 /if
               /if
             /if
@@ -255,7 +289,7 @@ method ctrans:Block.whileblock(stmt ptr ast:PNode,
 
   mut pexpr = <ptr ast:PExpr>(val stmt'leaves.get(0))
 
-  mut cond = me.expr(root, pexpr, fname, line)
+  mut cond = me.expr(pexpr, root, fname, line)
 
   me.padStmts()
   me'stmts.addDebugLine(fname, line)
@@ -317,7 +351,7 @@ func translBlock(cs ptr cs:Charstash,
   mut bl = blNew(unit, block, p, rvoType)
 
   if rvoType? and horribleRVOHack
-    bl.newDecl(false, null, "*_rvoOut", fname, rvoType, block'node'begin'line - 1)
+    bl.newDecl(false, "*_rvoOut", fname, rvoType, block'node'begin'line - 1)
 
     bl.padStmts()
     bl'stmts.addDebugLine(fname, block'node'begin'line - 1)
@@ -326,6 +360,7 @@ func translBlock(cs ptr cs:Charstash,
     bl'stmts.addLine("_rvoOut = _rvoHack;\n")
   /if
 
+  bl.genDecls(block'syms, fname, block'node'begin'line)
 
   mut bLen = block'node'leaves.len()
   mut i uintptr = 0
