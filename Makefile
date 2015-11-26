@@ -46,6 +46,7 @@ stage3:
 bootstrap:
 	$(MAKE) clean
 	$(MAKE) stage3
+	@diff "$(shell pwd)/build/forkc1" "$(shell pwd)/build.2/forkc1" >/dev/null && echo "Compiler works" || echo "Compiler is broken - stage2 and stage3 differ"
 
 copy-libs:
 	mkdir -p build/libfork/ford
