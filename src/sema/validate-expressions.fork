@@ -850,6 +850,9 @@ func validateAssignExpr(rsv sema:Resolver,
 
       i++
     /while
+
+    # Return empty type - because an lvalue struct literal has no type in Fork.
+    return normalizeEmptyType(rsv'ctx, null)
   /if
 
   return ltype

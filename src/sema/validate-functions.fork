@@ -146,6 +146,12 @@ func validateDecl(rsv sema:Resolver,
       return false
     /if
 
+    if exprType.isEmpty()
+      errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                      rsv'root'fileName, "expression has no type"))
+      return false
+    /if
+
     if type?
       if not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pdecl), type, exprType)
         mut cs = cs:new(20)
@@ -165,7 +171,9 @@ func validateDecl(rsv sema:Resolver,
       /if
     else
       if exprType.isNull()
-        errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "can't declare a variable with type 'null'"))
+        errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                                  rsv'root'fileName, \
+                                  "can't declare a variable with type 'null'"))
         return false
       /if
 

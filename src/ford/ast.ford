@@ -107,6 +107,7 @@ decl method Type.dump(cs ptr cs:Charstash)
 decl method Type.equals(other ptr Type) bool
 decl method Type.isBool() bool
 decl method Type.isData() bool
+decl method Type.isEmpty() bool
 decl method Type.isFunc() bool
 decl method Type.isInt() bool
 decl method Type.isLoc() bool

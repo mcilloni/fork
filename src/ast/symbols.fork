@@ -138,6 +138,11 @@ method ast:Type.isData() bool
 /method
 
 
+method ast:Type.isEmpty() bool
+  return me'type == ast:TYPE_EMPTY
+/method
+
+
 method ast:Type.isFunc() bool
   return me'type == ast:TYPE_FUNC
 /method
