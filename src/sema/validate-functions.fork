@@ -91,7 +91,7 @@ func ensureMethodCorrectness(rsv sema:Resolver,
   mut pblock = <ptr ast:PBlock>(val pdecl'node'leaves.get(0))
   mut meType = astfn:typeNewPtr(rsv'root'typePool, null, null, type)
 
-  pblock'syms.add("me", true, false, meType, 0)
+  pblock'syms.add("me", true, true, meType, 0)
 
   return true
 /func
