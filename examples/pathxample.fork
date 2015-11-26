@@ -30,34 +30,34 @@ func dirDump(dir ptr fs:Dir, p uintptr) ptr err:Error
   tty:outln(" {")
 
   while true
-    mut res = dir.next()
-    if res'err?
-      return res'err
+    mut {file,err} = dir.next()
+    if err?
+      return err
     /if
 
-    if not res'file?
+    if not file?
       break
     /if
 
     pad(p + 2)
-    if res'file.isDir()
-      mut res2 = res'file.openDir()
+    if file.isDir()
+      {dir,err} = file.openDir()
 
-      fs:fileFree(res'file)
+      fs:fileFree(file)
 
-      if res2'err?
-        return res2'err
+      if err?
+        return err
       /if
 
-      mut err = dirDump(res2'dir, p + 2)
-      fs:dirClose(res2'dir)
+      mut err = dirDump(dir, p + 2)
+      fs:dirClose(dir)
 
       if err?
         return err
       /if
     else
-      tty:outln(res'file'name)
-      fs:fileFree(res'file)
+      tty:outln(file'name)
+      fs:fileFree(file)
     /if
   /while
 
@@ -75,27 +75,27 @@ entry
     tty:failln("No arguments given")
   /if
 
-  mut res = fs:stat(arg'args[0])
-  if res'err?
-    tty:failln(res'err'msg)
+  mut {file,err} = fs:stat(arg'args[0])
+  if err?
+    tty:failln(err'msg)
   /if
 
-  if not res'file.isDir()
+  if not file.isDir()
     tty:failln("Argument is not a directory")
   /if
 
-  mut res2 = res'file.openDir()
-  fs:fileFree(res'file)
-
-  if res2'err?
-    tty:failln(res2'err'msg)
-  /if
-
-  mut err = dirDump(res2'dir, 0)
+  mut {dir,err} = file.openDir()
+  fs:fileFree(file)
 
   if err?
     tty:failln(err'msg)
   /if
 
-  fs:dirClose(res2'dir)
+  err = dirDump(dir, 0)
+
+  if err?
+    tty:failln(err'msg)
+  /if
+
+  fs:dirClose(dir)
 /entry

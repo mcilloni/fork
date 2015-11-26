@@ -488,16 +488,16 @@ method synt:Parser.parseMutExp() {pnode ptr ast:PNode, needsAssign bool}
   mut syms = list:new()
 
   while true
-    mut res = me.parseMutId()
+    mut {id,ptype,end} = me.parseMutId()
 
-    if not res'id?
+    if not id?
       list:freeAll(syms, <ptr func(item data)>(ptr mem:decRef))
       return {null, false}
     /if
 
-    mut needsAssign = needsAssign or not res'ptype?
+    mut needsAssign = needsAssign or not ptype?
 
-    syms.append(astfn:psymbolNew(res'id, res'ptype))
+    syms.append(astfn:psymbolNew(id, ptype))
 
     if not me'next? \
         or (me'next'type != tokens:CCURLY and me'next'type != tokens:COMMA)
@@ -537,26 +537,23 @@ method synt:Parser.parseMut(external bool) ptr ast:PNode
   mut needsAssign = false
 
   if me'next'type == tokens:OCURLY
-    mut res = me.parseMutExp()
-    if not res'pnode?
+    {pnode,needsAssign} = me.parseMutExp()
+    if not pnode?
       return null
     /if
 
-    pnode = res'pnode
-    needsAssign = res'needsAssign
   else
 
-    mut res = me.parseMutId()
+    mut {id,ptype,end} = me.parseMutId()
 
-    if not res'id?
+    if not id?
       return null
     /if
 
-    needsAssign = not res'ptype?
-    end = res'end
+    needsAssign = not ptype?
 
     pnode = <ptr ast:PNode>(astfn:pdeclNew(ast:PMUT, \
-                                astfn:psymbolNew(res'id, res'ptype), external))
+                                astfn:psymbolNew(id, ptype), external))
   /if
 
   if me'next? and me'next'type == tokens:ASSIGN

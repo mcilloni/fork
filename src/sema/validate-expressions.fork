@@ -343,7 +343,11 @@ func validateExprCast(rsv sema:Resolver,
   mut childExpr = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
   mut chType = sema:validateExprRecl(rsv, childExpr, recList, errors)
 
-  if not chType? or not sema:typeIsCastable(rsv'ctx, <ptr ast:PNode>(pexpr), pexpr'type, chType)
+  if not chType?
+    return null
+  /if
+
+  if not sema:typeIsCastable(rsv'ctx, <ptr ast:PNode>(pexpr), pexpr'type, chType)
     mut cs = cs:new(20)
 
     cs.add("can't cast ")

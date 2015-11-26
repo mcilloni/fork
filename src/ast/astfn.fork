@@ -29,11 +29,9 @@ func declInfoFree(declInfo ptr ast:DeclInfo)
 
 func declInfoNew(declType uint16, declOnly,funcParam bool, type ptr ast:Type) ptr ast:DeclInfo
 
-  # TODO: fix bug in ctrans and remove this
-  mut v ast:DeclInfo = {declType, declOnly, funcParam, type}
   mut ret = <ptr ast:DeclInfo>(mem:alloc(size(ast:DeclInfo)))
 
-  val ret = v
+  val ret = {declType, declOnly, funcParam, type}
 
   return ret
 /func
