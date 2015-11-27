@@ -64,3 +64,6 @@ decl func pexprNewTernary(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,en
 decl func pexprNewSingle(tok ptr lex:Token) ptr ast:PExpr
 
 decl func prootNew(modName ptr ast:StringDef, imports ptr list:List, fileName ptr uint8) ptr ast:PRoot
+
+decl func pmoduleAdd(pmod ptr ast:PModule, root ptr ast:PRoot) bool
+decl func pmoduleNew() ptr ast:PModule

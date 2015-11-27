@@ -14,6 +14,7 @@ module synt
 import ast
 import astfn
 import err
+import fs
 import lex
 import list
 import mem
@@ -1245,4 +1246,53 @@ func parse(filename ptr uint8) {file ptr ast:PNode, err ptr parser:Issue}
   mem:free(prs'filename)
 
   return {ret, prs'err}
+/func
+
+
+func parseModule(path ptr uint8) {pmod ptr ast:PModule, errs ptr list:List}
+  mut errs = list:new()
+
+  mut {dir,err} = fs:dir(path)
+  mut zero ast:Line = {0 , 0}
+
+  if err?
+    errs.append(parser:issueNew(parser:ISSUE_ERR, zero, path, err'msg))
+    err:errorFree(err)
+    return {null, errs}
+  /if
+
+  mut ret = astfn:pmoduleNew()
+
+  while true
+    mut {file,err} = dir.next()
+
+    if err?
+      errs.append(parser:issueNew(parser:ISSUE_ERR, zero, path, err'msg))
+      err:errorFree(err)
+
+      continue
+    /if
+
+    if not file?
+      break
+    /if
+
+    if not file.isDir() and txt:strEndsWith(file'name, ".fork")
+      mut {root,issue} = parse(file.path())
+
+      if issue?
+        errs.append(issue)
+      /if
+
+      if root?
+        if not astfn:pmoduleAdd(ret, <ptr ast:PRoot>(root))
+          mut msg = "files belonging to different modules in directory"
+
+          errs.append(parser:issueNew(parser:ISSUE_ERR, zero, path, msg))
+        /if
+      /if
+    /if
+  /while
+
+  return {ret,errs}
 /func

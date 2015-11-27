@@ -20,6 +20,7 @@ import map
 import mem
 import platform
 import txt
+import vect
 
 
 func declInfoFree(declInfo ptr ast:DeclInfo)
@@ -92,6 +93,39 @@ func pexprNewTernary(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end ast
   lex:tokenFree(tok)
 
   return pexpr
+/func
+
+
+method ast:PModule.differs(root ptr ast:PRoot) bool
+  mut hasModuleName = root'moduleName?
+  if me'name?
+    return not hasModuleName or not txt:strequals(me'name, root'moduleName'name)
+  /if
+
+  return hasModuleName
+/method
+
+
+func pmoduleAdd(pmod ptr ast:PModule, root ptr ast:PRoot) bool
+  if pmod'roots.len() > 0
+    if pmod.differs(root)
+      return false
+    /if
+  else
+    pmod'name = root'moduleName? => txt:strclone(root'moduleName'name) || null
+  /if
+
+  pmod'roots.append(root)
+  return true
+/func
+
+
+func pmoduleNew() ptr ast:PModule
+  mut pmod = <ptr ast:PModule>(mem:alloc(size(ast:PModule)))
+
+  val pmod = {null, vect:new(5)}
+
+  return pmod
 /func
 
 

@@ -20,6 +20,7 @@ import list
 import mem
 import txt
 import utils
+import vect
 
 
 func methodKey(typeModule,typeName,methodName ptr uint8) ptr uint8
@@ -171,6 +172,16 @@ method ast:PRoot.hasImported(name ptr uint8) bool
 
   return false
 /method
+
+
+func pmoduleFree(pmod ptr ast:PModule)
+  if pmod?
+    mem:free(pmod'name)
+    vect:freeAll(pmod'roots, <ptr func(r data)>(ptr pnodeFree))
+
+    mem:free(pmod)
+  /if
+/func
 
 
 func pnodeFree(pnode ptr ast:PNode)

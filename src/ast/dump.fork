@@ -328,6 +328,30 @@ method ast:PNode.dump()
 /method
 
 
+method ast:PModule.dump()
+  tty:out("Module ")
+
+  tty:outln(me'name ?? "<main>")
+
+  tty:outln("")
+
+  mut i uintptr = 0
+  mut len = me'roots.len()
+
+  while i < len
+    mut root = <ptr ast:PRoot>(val me'roots.get(i))
+
+    tty:out("\nfile ")
+    tty:out(root'fileName)
+    tty:outln(":\n")
+
+    root'node'node.dump()
+
+    i++
+  /while
+/method
+
+
 method ast:Symbol.dump(cs ptr cs:Charstash)
   cs.add(me'name)
   cs.addChar(32)

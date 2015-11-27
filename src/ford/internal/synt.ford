@@ -13,12 +13,13 @@ module synt
 
 import ast
 import lex
+import list
 import parser
 import utils
 
 
 decl func parse(filename ptr uint8) {file ptr ast:PNode, err ptr parser:Issue}
-
+decl func parseModule(path ptr uint8) {pmod ptr ast:PModule, errs ptr list:List}
 
 # private (in theory)
 
