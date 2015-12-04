@@ -26,9 +26,8 @@ entry
   /if
 
   mut ctx = parser:new()
-  mut ast ptr ast:PNode
   mut fname = txt:strequals(argv'args[0], "-") => "/dev/stdin" || argv'args[0]
-  mut errors = ctx.parseFile(fname, ptr ast)
+  mut {ast,errors} = ctx.parseFile(fname)
 
   mut isFord = txt:strEndsWith(fname, ".ford")
 
