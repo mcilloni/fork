@@ -42,6 +42,7 @@ decl method List.add(index uintptr, item data) intptr
 decl method List.addInt(pos uintptr, value uintptr) intptr
 decl method List.append(item data) intptr
 decl method List.appendInt(value uintptr) intptr
+decl method List.appendList(list ptr List) intptr
 decl method List.extract(start uintptr, len intptr) ptr List
 decl method List.freeContents(freeFunc ptr func(item data))
 decl method List.get(pos uintptr) ptr data

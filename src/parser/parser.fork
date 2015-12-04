@@ -27,39 +27,41 @@ import utils
 
 # Parser init/deinit funcs
 
-func free(ctx ptr parser:Parser)
-  if ctx?
-    if ctx'imports?
-      map:free(ctx'imports)
+func free(prs ptr parser:Parser)
+  if prs?
+    if prs'imports?
+      map:free(prs'imports)
     /if
 
-    if ctx'fordPaths?
-      list:freeAll(ctx'fordPaths, ptr mem:free)
+    if prs'fordPaths?
+      list:freeAll(prs'fordPaths, ptr mem:free)
     /if
 
-    map:free(ctx'builtins)
+    map:free(prs'builtins)
 
-    mem:free(ctx'currentFile)
-    mem:free(ctx)
+    mem:free(prs'currentFile)
+    mem:free(prs)
   /if
 /func
 
 
 func new() ptr parser:Parser
-  mut ctx = <ptr parser:Parser>(mem:zalloc(size(parser:Parser)))
-  ctx'imports = map:strnew()
+  mut prs = <ptr parser:Parser>(mem:zalloc(size(parser:Parser)))
+  prs'imports = map:strnew()
 
-  ctx'imports.setFreeFuncs(ptr mem:free, <ptr func(item data)>(ptr ast:pnodeFree))
+  prs'imports.setFreeFuncs(ptr mem:free, <ptr func(item data)>(ptr ast:pnodeFree))
 
-  ctx'fordPaths = envExtractFordPaths()
-  ctx'builtins = astfn:builtinSetNew()
-  return ctx
+  prs'fordPaths = envExtractFordPaths()
+  prs'builtins = astfn:builtinSetNew()
+  return prs
 /func
 
 
 # Parser methods
 
-method parser:Parser.findImport(importName ptr ast:StringDef, importAst ptr ptr ast:PNode) ptr list:List
+method parser:Parser.findImport(importName ptr ast:StringDef) {ast ptr ast:PNode,
+                                                                issues ptr list:List}
+
   mut fordName = txt:strappend(importName'name, ".ford")
 
   mut len = me'fordPaths.len()
@@ -72,11 +74,11 @@ method parser:Parser.findImport(importName ptr ast:StringDef, importAst ptr ptr 
 
     if fs:pathExists(joinedPath)
 
-      mut ret = me.parseFile(joinedPath, importAst)
+      mut {ast,issues} = me.parseFile(joinedPath)
 
       mem:free(joinedPath)
       mem:free(fordName)
-      return ret
+      return {ast,issues}
     /if
 
     mem:free(joinedPath)
@@ -100,7 +102,7 @@ method parser:Parser.findImport(importName ptr ast:StringDef, importAst ptr ptr 
   mem:free(fordName)
   mem:free(glued)
 
-  return errors
+  return {null,errors}
 /method
 
 
@@ -109,19 +111,20 @@ method parser:Parser.getImport(name ptr uint8) ptr ast:PRoot
 /method
 
 
-method parser:Parser.importMod(importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr list:List
+method parser:Parser.importMod(importName ptr ast:StringDef) {ast ptr ast:PNode,
+                                                               issues ptr list:List}
 
-  val value = <ptr ast:PNode>(me'imports.get(importName))
+  mut ast = <ptr ast:PNode>(me'imports.get(importName))
 
-  if not (val value)?
-    mut errors = me.findImport(importName, value)
+  if not ast?
+    mut {ast,errors} = me.findImport(importName)
     if errors.len() == 0
-      me'imports.put(txt:strclone(importName'name), val value)
+      me'imports.put(txt:strclone(importName'name), ast)
     /if
 
-    return errors
+    return {ast,errors}
   else
-    return list:new()
+    return {null,list:new()}
   /if
 
 /method
@@ -132,9 +135,8 @@ method parser:Parser.importAll(imports ptr list:List) ptr list:List
   mut i uintptr = 0
 
   while i < len
-    mut value ptr ast:PNode
     mut importName = <ptr ast:StringDef>(val imports.get(i))
-    mut errs = me.importMod(importName, ptr value)
+    mut {ast,errs} = me.importMod(importName)
 
     if errs.len() != 0
       return errs
@@ -152,27 +154,27 @@ method parser:Parser.matchBuiltin(name ptr uint8) ptr ast:Type
 /method
 
 
-method parser:Parser.parseDirectory(dirName ptr uint8,
-                                    newModule ptr ptr ast:PNode) ptr list:List
+method parser:Parser.parseDirectory(dirName ptr uint8) {pmod ast:PModule,
+                                                         issues ptr list:List}
 
-  # TODO: Complete after improving files and directories
+
 
 /method
 
 
-method parser:Parser.parseFile(fileName ptr uint8, newRoot ptr ptr ast:PNode) ptr list:List
-  mut result = synt:parse(fileName)
+method parser:Parser.parseFile(fileName ptr uint8) {root ptr ast:PNode,
+                                                     issues ptr list:List}
 
-  if result'err?
+  mut {file,err} = synt:parse(fileName)
+
+  if err?
     mut list = list:new()
-    list.append(result'err)
+    list.append(err)
 
-    return list
+    return {null, list}
   /if
 
-  val newRoot = result'file
-
-  return sema:semaValidateAst(me, val newRoot)
+  return {file, sema:validateAst(me, file)}
 /method
 
 

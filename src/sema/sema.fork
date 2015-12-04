@@ -12,11 +12,13 @@ module sema
 
 
 import ast
+import astfn
 import hash
 import kv
 import list
 import mem
 import parser
+import proc
 import sema
 import synt
 import utils
@@ -27,28 +29,140 @@ func intHash(n data) uintptr
 /func
 
 
-func semaValidateAst(ctx ptr parser:Parser, root ptr ast:PNode) ptr list:List
-  if root'type != ast:PROOT
-    return null
+# This function validates a single declaration.
+# The resolver is used to resolve symbols and aliases; if they are in the global
+# scope, they may be unresolved yet, and are then verified.
+method sema:Resolver.validatePDecl(pdecl ptr ast:PDecl) bool
+  mut ntype = pdecl'node'type
+
+  if ntype == ast:PMUT or ntype == ast:PFUNCTION or ntype == ast:PENTRY or ntype == ast:PMETHOD
+    return me.registerTopDecl(pdecl)?
+  else
+    if ntype == ast:PALIAS
+      return me.registerAlias(pdecl)?
+    else
+      proc:panic("unreachable: invalid pdecl value")
+    /if
   /if
 
+  # unreachable
+  return false
+/method
+
+
+# This method validates a file AST.
+# Being supposed to be called by validateModuleFile, we may assume that all the
+# imports have been already evaluated.
+#
+# This function parses the children of the given AST root, using the resolver to
+# resolve eventual symbols and aliases.
+#
+# If not found, a symbol is looked after and verified out of order, allowing
+# complete visibility of the global module scope without any issue with the
+# declaration order of variables, aliases and functions.
+method sema:Resolver.validateFile(root ptr ast:PRoot) bool
+
+  if root'node'node'validated
+    return true
+  /if
+
+  root'node'syms = ast:stabNew()
+
+  me.setCurrentRoot(root)
+
+  mut pnode = <ptr ast:PNode>(root)
+
+  mut len = pnode'leaves.len()
+  mut i uintptr = 0
+  mut result = true
+
+  while i < len
+    mut node = <ptr ast:PNode>(pnode'leaves.get(i))
+
+    if node.isDecl()
+      if not node'validated
+        if not me.validatePDecl(<ptr ast:PDecl>(node))
+          result = false
+
+          break
+        /if
+      /if
+    /if
+
+    i++
+  /while
+
+  return result
+/method
+
+
+method sema:Resolver.validateModuleFile(root ptr ast:PRoot)
   mut proot = <ptr ast:PRoot>(root)
 
-  ctx.setCurrentFile(proot'fileName)
+  me'prs.setCurrentFile(proot'fileName)
 
-  mut errors = ctx.importAll(proot'imports)
+  mut importErrors = me'prs.importAll(proot'imports)
+  mut importErrorsLen = importErrors.len()
 
-  ctx.setCurrentFile(proot'fileName)
+  me'errs.appendList(importErrors)
+  list:free(importErrors)
 
-  if errors.len() != 0
-    return errors
+  me'prs.setCurrentFile(proot'fileName)
+
+  if importErrorsLen != 0
+    return
   /if
 
   proot'typePool = mem:fpNew(<ptr func(item data)>(ptr ast:typeFree))
 
   proot'aliases = ast:stabNew()
 
-  sema:semaValidateAstRoot(ctx, proot, errors)
+  me.validateFile(proot)
+/method
 
-  return errors
+
+func validateModuleAst(prs ptr parser:Parser, pmod ptr ast:PModule) ptr list:List
+  mut errs = list:new()
+
+  mut rsv sema:Resolver
+
+  mut decls = rsv.collect(prs, pmod, errs)
+  if not decls?
+    return errs
+  /if
+
+  mut i uintptr = 0
+  mut len = pmod'roots.len()
+
+  while i < len
+    mut root = <ptr ast:PRoot>(val pmod'roots.get(i))
+
+    rsv.validateModuleFile(root)
+
+    i++
+  /while
+
+  kv:free(decls)
+  sema:resolverDeinit(ptr rsv)
+
+  return errs
+/func
+
+
+func validateAst(prs ptr parser:Parser, root ptr ast:PNode) ptr list:List
+  if not root.isRoot()
+    proc:panic("non PRoot node can't be validated")
+    return null
+  /if
+
+  mut pmod = astfn:pmoduleNew()
+
+  astfn:pmoduleAdd(pmod, <ptr ast:PRoot>(root))
+
+  mut ret = validateModuleAst(prs, pmod)
+
+  mem:free(pmod'name)
+  mem:free(pmod)
+
+  return ret
 /func

@@ -12,6 +12,7 @@ module proc
 
 
 import proc
+import tty
 
 
 mut __forkprogArgs proc:Args
@@ -39,4 +40,12 @@ func getenv(variable ptr uint8) ptr uint8
   decl func getenv(variable ptr uint8) ptr uint8
 
   return getenv(variable)
+/func
+
+
+func panic(msg ptr uint8)
+  tty:err("panic: ")
+  tty:errln(msg)
+
+  abort()
 /func

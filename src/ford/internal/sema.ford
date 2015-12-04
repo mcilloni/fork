@@ -19,87 +19,68 @@ import utils
 
 
 alias Resolver struct (
-  ctx ptr parser:Parser,
-  root ptr ast:PRoot,
-  aliases,decls ptr kv:KVList
+  prs ptr parser:Parser,
+  curRoot ptr ast:PRoot,
+  aliases,decls ptr kv:KVList,
+  errs ptr list:List
 )
 
-
-decl func resolverCollect(rsv ptr Resolver,
-                          ctx ptr parser:Parser,
-                          root ptr ast:PRoot,
-                          errors ptr list:List) ptr kv:KVList
 
 decl func resolverDeinit(rsv ptr Resolver)
 
 
-decl func registerAlias(rsv Resolver,
-                        pdecl ptr ast:PDecl,
-                        errors ptr list:List) ptr ast:Type
+decl method Resolver.collect(prs ptr parser:Parser,
+                             pmod ptr ast:PModule,
+                             errors ptr list:List) ptr kv:KVList
 
-decl func registerDecl(rsv Resolver,
-                       pdecl ptr ast:PDecl,
-                       name ptr uint8,
-                       type ptr ast:Type,
-                       declType uint16,
-                       errors ptr list:List) ptr ast:Type
+decl method Resolver.findAliasImport(moduleName,name ptr uint8) ptr ast:Type
 
-decl func registerTopDecl(rsv Resolver,
-                          pdecl ptr ast:PDecl,
-                          errors ptr list:List) ptr ast:Type
-
-
-decl func resolveDeclType(rsv Resolver,
-                          name ptr uint8,
-                          node ptr ast:PNode,
-                          recList,errors ptr list:List) ptr ast:Type
-
-decl func resolveType(rsv Resolver,
-                      ptype ptr ast:PType,
-                      errors ptr list:List) ptr ast:Type
-
-decl func resolveTypeName(rsv Resolver,
-                          name ptr uint8,
-                          errors ptr list:List) ptr ast:Type
-
-decl func validateExprRecl(rsv Resolver,
-                           pexpr ptr ast:PExpr,
-                           recList,errors ptr list:List) ptr ast:Type
-
-decl func validateExpr(rsv Resolver,
-                       pexpr ptr ast:PExpr,
-                       errors ptr list:List) ptr ast:Type
-
-decl func validateFunc(rsv Resolver,
-                       pdecl ptr ast:PDecl,
-                       funcType ptr ast:Type,
-                       errors ptr list:List) bool
-
-
-decl func semaValidateAstRoot(ctx ptr parser:Parser,
-                              root ptr ast:PRoot,
-                              errors ptr list:List) bool
-
-# validates the AST, and returns a list of the issues found.
-decl func semaValidateAst(context ptr parser:Parser,
-                          root ptr ast:PNode) ptr list:List
-
-# ast sema operations
-
-decl func findAliasImport(ctx ptr parser:Parser, moduleName,name ptr uint8) ptr ast:Type
-decl func findAliasLocal(node ptr ast:PNode, name ptr uint8) ptr ast:Type
-
-decl func findMethod(rsv Resolver,
-                     node ptr ast:PNode,
+decl method Resolver.findMethod(node ptr ast:PNode,
                      typeModule,typeName,methodName ptr uint8) ptr ast:Type
 
-decl func findRecAlias(ctx ptr parser:Parser, scope ptr ast:PNode, ralias ptr ast:Type) ptr ast:Type
+decl method Resolver.findRecAlias(scope ptr ast:PNode, ralias ptr ast:Type) ptr ast:Type
+decl method Resolver.findSymModule(moduleName, name ptr uint8) ptr ast:Type
 
-decl func findSymModule(ctx ptr parser:Parser, moduleName, name ptr uint8) ptr ast:Type
+decl method Resolver.registerAlias(pdecl ptr ast:PDecl) ptr ast:Type
 
-decl func typeIsAssignable(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr ast:Type) bool
-decl func typeIsCastable(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr ast:Type) bool
-decl func typeChooseLarger(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr ast:Type) bool
+decl method Resolver.registerDecl(pdecl ptr ast:PDecl,
+                                  name ptr uint8,
+                                  type ptr ast:Type,
+                                  declType uint16) ptr ast:Type
+
+decl method Resolver.registerTopDecl(pdecl ptr ast:PDecl) ptr ast:Type
 
 
-decl func exprIsCompileConst(pexpr ptr ast:PExpr) bool
+decl method Resolver.resolveDeclType(name ptr uint8,
+                                     node ptr ast:PNode,
+                                     recList ptr list:List) ptr ast:Type
+
+decl method Resolver.resolveType(ptype ptr ast:PType) ptr ast:Type
+
+decl method Resolver.resolveTypeName(name ptr uint8) ptr ast:Type
+
+
+decl method Resolver.setCurrentRoot(root ptr ast:PRoot)
+
+decl method Resolver.typeIsAssignable(scope ptr ast:PNode, dest,src ptr ast:Type) bool
+decl method Resolver.typeIsCastable(scope ptr ast:PNode, dest,src ptr ast:Type) bool
+decl method Resolver.typeChooseLarger(scope ptr ast:PNode, dest,src ptr ast:Type) bool
+
+decl method Resolver.validateExprRecl(pexpr ptr ast:PExpr,
+                                      recList ptr list:List) ptr ast:Type
+
+decl method Resolver.validateExpr(pexpr ptr ast:PExpr) ptr ast:Type
+
+decl method Resolver.validateFunc(pdecl ptr ast:PDecl,
+                                  funcType ptr ast:Type) bool
+
+# validates the AST, and returns a list of the issues found.
+decl func validateAst(prs ptr parser:Parser,
+                      root ptr ast:PNode) ptr list:List
+
+decl func validateModuleAst(prs ptr parser:Parser,
+                            pmod ptr ast:PModule) ptr list:List
+
+
+decl method ast:PExpr.isCompileConst() bool
+decl method ast:PNode.findAliasLocal(name ptr uint8) ptr ast:Type

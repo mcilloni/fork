@@ -148,6 +148,28 @@ method list:List.append(item data) intptr
 /method
 
 
+method List.appendList(list ptr list:List) intptr
+  if not list?
+    return -1
+  /if
+
+  mut i uintptr = 0
+  mut len = list.len()
+
+  while i < len
+    mut it = list.getInt(i)
+
+    if it?
+      me.appendInt(val it)
+    /if
+
+    i++
+  /while
+
+  return me.len()
+/method
+
+
 method list:List.extract(start uintptr, len intptr) ptr list:List
   mut extract = list:new()
 

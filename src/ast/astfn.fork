@@ -115,6 +115,7 @@ func pmoduleAdd(pmod ptr ast:PModule, root ptr ast:PRoot) bool
     pmod'name = root'moduleName? => txt:strclone(root'moduleName'name) || null
   /if
 
+  root'pmodule = pmod
   pmod'roots.append(root)
   return true
 /func
@@ -184,6 +185,7 @@ func prootNew(moduleName ptr ast:StringDef, imports ptr list:List, fileName ptr 
   pnode'leaves = list:new()
   pnode'parent = null
 
+  proot'pmodule = null
   proot'moduleName = moduleName
   proot'imports = imports
   proot'fileName = txt:strclone(fileName)

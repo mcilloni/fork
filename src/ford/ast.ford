@@ -231,7 +231,8 @@ alias PRoot struct(
   imports ptr list:List,
   aliases ptr Symtable,
   typePool ptr mem:FreePool,
-  entryNode ptr PDecl
+  entryNode ptr PDecl,
+  pmodule ptr PModule
 )
 
 decl method PRoot.hasImported(name ptr uint8) bool

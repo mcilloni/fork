@@ -29,47 +29,50 @@ func resolverDeinit(rsv ptr sema:Resolver)
 /func
 
 
-func resolverCollectAlias(rsv ptr sema:Resolver,
-                          pdecl ptr ast:PDecl,
-                          root ptr ast:PRoot,
-                          errors ptr list:List) bool
+method sema:Resolver.setCurrentRoot(root ptr ast:PRoot)
+  me'curRoot = root
+/method
+
+
+method sema:Resolver.collectAlias(pdecl ptr ast:PDecl,
+                                  root ptr ast:PRoot) bool
 
   mut name = pdecl'sym'name
 
-  if rsv'aliases.contains(name)
+  if me'aliases.contains(name)
 
     mut cs = cs:new(20)
     cs.add("alias ")
     cs.add(name)
     cs.add(" is already defined")
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, cs:unwrap(cs)))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, \
+                                      root'fileName, cs:unwrap(cs)))
 
     return false
   /if
 
-  rsv'aliases.put(name, pdecl)
+  me'aliases.put(name, pdecl)
 
   return true
-/func
+/method
 
 
-func resolverCollectDecls(rsv ptr sema:Resolver,
-                          pdecl ptr ast:PDecl,
-                          root ptr ast:PRoot,
-                          errors ptr list:List) bool
+method sema:Resolver.collectDecls(pdecl ptr ast:PDecl,
+                                  root ptr ast:PRoot) bool
 
   mut name = ast:declKey(pdecl)
-  mut existent = <ptr ast:PDecl>(rsv'decls.get(name))
+  mut existent = <ptr ast:PDecl>(me'decls.get(name))
 
   if existent?
     mut cs = cs:new(20)
     cs.add("symbol ")
     cs.add(name)
-    cs.add(" defined twice")
+    cs.add(" defined twice in current module")
 
     mut str = cs:unwrap(cs)
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, str))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, \
+                                      root'fileName, str))
 
     mem:free(str)
     mem:free(name)
@@ -79,90 +82,117 @@ func resolverCollectDecls(rsv ptr sema:Resolver,
 
   #search for method in module
 
-  rsv'decls.put(name, pdecl)
+  me'decls.put(name, pdecl)
   return true
-/func
+/method
 
 
-func resolverCollect(rsv ptr sema:Resolver,
-                     ctx ptr parser:Parser,
-                     root ptr ast:PRoot,
-                     errors ptr list:List) ptr kv:KVList
+method sema:Resolver.collectPDecl(pnode ptr ast:PNode,
+                                  root ptr ast:PRoot,
+                                  entryNode ptr ptr ast:PDecl) bool
 
-  rsv'aliases = kv:strnew(5)
-  rsv'decls = kv:strnew(10)
 
-  rsv'root = root
-  rsv'ctx = ctx
+
+  if pnode.isMulDecl()
+    mut msg = "mut struct expansion is not allowed on global scope"
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, \
+                                     root'fileName, msg))
+
+    return false
+  /if
+
+  # Once we're sure that this isn't a multiple declaration, we are certain it
+  # is a PDecl
+  mut pdecl = <ptr ast:PDecl>(pnode)
+
+  mut ntype = pdecl'node'type
+
+  if ntype == ast:PMUT or ntype == ast:PFUNCTION or ntype == ast:PMETHOD
+    if not me.collectDecls(pdecl, root)
+      return false
+    /if
+  else
+
+    if ntype == ast:PALIAS
+      if not me.collectAlias(pdecl, root)
+        return false
+      /if
+    else
+
+      if ntype == ast:PENTRY
+        if not (val entryNode)?
+          val entryNode = pdecl
+        else
+          me'errs.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, \
+                                           root'fileName, \
+                                           "entry declared twice in same module"))
+
+          return false
+        /if
+      else
+        proc:panic("unreachable: invalid pdecl value")
+      /if
+    /if
+  /if
+
+  return true
+/method
+
+
+method sema:Resolver.collectFromRoot(root ptr ast:PRoot,
+                                     values ptr kv:KVList,
+                                     entryNode ptr ptr ast:PDecl) bool
+
+  mut len = root'node'node'leaves.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut pnode = <ptr ast:PNode>(val root'node'node'leaves.get(i))
+
+    if not me.collectPDecl(pnode, root, entryNode)
+
+      return false
+    /if
+
+    mut pdecl = <ptr ast:PDecl>(pnode)
+    values.put(ast:declKey(pdecl), pdecl)
+
+    i++
+  /while
+
+  return true
+/method
+
+
+method sema:Resolver.collect(prs ptr parser:Parser,
+                             pmod ptr ast:PModule,
+                             errors ptr list:List) ptr kv:KVList
+
+  me'aliases = kv:strnew(5)
+  me'decls = kv:strnew(10)
+  me'errs = errors
+
+  me'prs = prs
 
   mut ret = kv:strnew(20)
 
   ret.setFreeFuncs(ptr mem:free, null)
 
-  mut len = root'node'node'leaves.len()
-  mut i uintptr = 0
   mut entryNode ptr ast:PDecl = null
-  mut failure = false
+  mut i uintptr = 0
+  mut len = pmod'roots.len()
 
   while i < len
-    mut pnode = <ptr ast:PNode>(val root'node'node'leaves.get(i))
+    mut root = <ptr ast:PRoot>(val pmod'roots.get(i))
 
-    if pnode.isMulDecl()
-      mut msg = "mut struct expansion is not allowed on global scope"
-      errors.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, \
-                                      root'fileName, msg))
+    if not me.collectFromRoot(root, ret, ptr entryNode)
+      kv:free(ret)
 
-      failure = true
-      break
+      return null
     /if
-
-    # Once we're sure that this isn't a multiple declaration, we are certain it
-    # is a PDecl
-    mut pdecl = <ptr ast:PDecl>(pnode)
-
-    mut ntype = pdecl'node'type
-
-    if ntype == ast:PMUT or ntype == ast:PFUNCTION or ntype == ast:PMETHOD
-      if not resolverCollectDecls(rsv, pdecl, root, errors)
-        failure = true
-        break
-      /if
-    else
-
-      if ntype == ast:PALIAS
-        if not resolverCollectAlias(rsv, pdecl, root, errors)
-          failure = true
-          break
-        /if
-      else
-
-        if ntype == ast:PENTRY
-          if not entryNode?
-            entryNode = pdecl
-          else
-            errors.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, root'fileName, "entry declared twice in same file"))
-
-            failure = true
-            break
-          /if
-        else
-          tty:errln("Unreachable: invalid pdecl value")
-          proc:abort()
-        /if
-      /if
-    /if
-
-    ret.put(ast:declKey(pdecl), pdecl)
 
     i++
   /while
 
-  if failure
-    kv:free(ret)
-    resolverDeinit(rsv)
-
-    return null
-  /if
-
   return ret
-/func
+/method

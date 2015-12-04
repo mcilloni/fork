@@ -19,7 +19,7 @@ func alloc(len uintptr) data
   mut ret = malloc(len)
 
   if not ret? and len != 0
-    proc:abort()
+    proc:panic("bad alloc")
   /if
 
   return ret
@@ -31,7 +31,7 @@ func zalloc(len uintptr) data
   mut ret = calloc(1, len)
 
   if not ret? and len != 0
-    proc:abort()
+    proc:panic("bad alloc")
   /if
 
   return ret

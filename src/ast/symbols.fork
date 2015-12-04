@@ -115,8 +115,7 @@ method ast:Type.equals(other ptr ast:Type) bool
                 if me'type == ast:TYPE_NULL
                   return true
                 else
-                  tty:errln("Unreachable: unknown type comparison")
-                  proc:abort()
+                  proc:panic("unreachable: unknown type comparison")
                 /if
               /if
             /if

@@ -31,8 +31,7 @@ entry
   /if
 
   mut ctx = parser:new()
-  mut ast ptr ast:PNode
-  mut errors = ctx.parseFile(argv'args[0], ptr ast)
+  mut {ast,errors} = ctx.parseFile(argv'args[0])
 
   mut errLen = errors.len()
 

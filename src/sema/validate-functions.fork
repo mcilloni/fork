@@ -42,22 +42,20 @@ method ast:Symtable.addFuncParams(syms ptr kv:KVList)
 /method
 
 
-func ensureMethodCorrectness(rsv sema:Resolver,
-                             pdecl ptr ast:PDecl,
-                             funcType ptr ast:Type,
-                             errors ptr list:List) bool
+method sema:Resolver.ensureMethodCorrectness(pdecl ptr ast:PDecl,
+                                             funcType ptr ast:Type) bool
 
   mut type ptr ast:Type = null
 
   # the method's type is either defined in the given module, or not defined at all.
   if pdecl'methodTypeModule?
-    type = sema:findAliasImport(rsv'ctx, pdecl'methodTypeModule, pdecl'methodType)
+    type = me.findAliasImport(pdecl'methodTypeModule, pdecl'methodType)
 
     # if it's not present, then it may be possibile that it belongs to the current scope
     # if this file is in the same module of this type.
     if not type?
-      if rsv'root'moduleName? and txt:strequals(rsv'root'moduleName'name, pdecl'methodTypeModule)
-        type = sema:findAliasLocal(<ptr ast:PNode>(pdecl), pdecl'methodType)
+      if me'curRoot'moduleName? and txt:strequals(me'curRoot'moduleName'name, pdecl'methodTypeModule)
+        type = <ptr ast:PNode>(pdecl).findAliasLocal(pdecl'methodType)
       /if
     /if
 
@@ -76,12 +74,12 @@ func ensureMethodCorrectness(rsv sema:Resolver,
 
       mut msg = cs:unwrap(cs)
 
-      errors.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, rsv'root'fileName, msg))
+      me'errs.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, me'curRoot'fileName, msg))
 
       mem:free(msg)
     /if
   else
-    type = sema:resolveTypeName(rsv, pdecl'methodType, errors)
+    type = me.resolveTypeName(pdecl'methodType)
   /if
 
   if not type?
@@ -89,45 +87,40 @@ func ensureMethodCorrectness(rsv sema:Resolver,
   /if
 
   mut pblock = <ptr ast:PBlock>(val pdecl'node'leaves.get(0))
-  mut meType = astfn:typeNewPtr(rsv'root'typePool, null, null, type)
+  mut meType = astfn:typeNewPtr(me'curRoot'typePool, null, null, type)
 
   pblock'syms.add("me", true, true, meType, 0)
 
   return true
-/func
+/method
 
 
-func validateBreakContinue(rsv sema:Resolver,
-                           stmt ptr ast:PNode,
-                           inLoop bool,
-                           errors ptr list:List) bool
+method sema:Resolver.validateBreakContinue(stmt ptr ast:PNode, inLoop bool) bool
 
   if not inLoop
-    errors.append(parser:issueNew(parser:ISSUE_ERR, stmt'begin, rsv'root'fileName, "break or continue outside of a loop"))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, stmt'begin, me'curRoot'fileName, "break or continue outside of a loop"))
 
     return false
   /if
 
   return true
-/func
+/method
 
 
-func validateDecl(rsv sema:Resolver,
-                  pdecl ptr ast:PDecl,
-                  errors ptr list:List) bool
+method sema:Resolver.validateDecl(pdecl ptr ast:PDecl) bool
 
   mut isDecl = pdecl'isDecl
 
   mut type ptr ast:Type = null
 
   if pdecl'sym'type?
-    type = sema:resolveType(rsv, pdecl'sym'type, errors)
+    type = me.resolveType(pdecl'sym'type)
     if not type?
       return false
     /if
   else
     if isDecl
-      errors.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, rsv'root'fileName, "a decl must have a type"))
+      me'errs.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, me'curRoot'fileName, "a decl must have a type"))
 
       return false
     /if
@@ -138,22 +131,22 @@ func validateDecl(rsv sema:Resolver,
   if leavLen > 0
     mut pexpr = <ptr ast:PExpr>(val pdecl'node'leaves.get(0))
     if isDecl
-      errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "a decl can't have an assignment"))
+      me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "a decl can't have an assignment"))
     /if
 
-    mut exprType = sema:validateExpr(rsv, pexpr, errors)
+    mut exprType = me.validateExpr(pexpr)
     if not exprType?
       return false
     /if
 
     if exprType.isEmpty()
-      errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
-                      rsv'root'fileName, "expression has no type"))
+      me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                      me'curRoot'fileName, "expression has no type"))
       return false
     /if
 
     if type?
-      if not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pdecl), type, exprType)
+      if not me.typeIsAssignable(<ptr ast:PNode>(pdecl), type, exprType)
         mut cs = cs:new(20)
         cs.add("cannot assign an expression of type '")
         exprType.summarize(cs)
@@ -163,7 +156,7 @@ func validateDecl(rsv sema:Resolver,
 
         mut msg = cs:unwrap(cs)
 
-        errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+        me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
 
         mem:free(msg)
 
@@ -171,8 +164,8 @@ func validateDecl(rsv sema:Resolver,
       /if
     else
       if exprType.isNull()
-        errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
-                                  rsv'root'fileName, \
+        me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                                  me'curRoot'fileName, \
                                   "can't declare a variable with type 'null'"))
         return false
       /if
@@ -182,20 +175,18 @@ func validateDecl(rsv sema:Resolver,
   /if
 
   if not type?
-    errors.append(parser:issueNew(parser:ISSUE_ERR, \
-                    pdecl'node'begin, rsv'root'fileName, \
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, \
+                    pdecl'node'begin, me'curRoot'fileName, \
                     "declaration without an explicit or inferrable type"))
 
     return false
   /if
 
-  return sema:registerDecl(rsv, pdecl, pdecl'sym'name, type, pdecl'node'type, errors)?
-/func
+  return me.registerDecl(pdecl, pdecl'sym'name, type, pdecl'node'type)?
+/method
 
 
-func validateMulDecl(rsv sema:Resolver,
-                     pmuldecl ptr ast:PMulDecl,
-                     errors ptr list:List) bool
+method sema:Resolver.validateMulDecl(pmuldecl ptr ast:PMulDecl) bool
 
   mut pnode = <ptr ast:PNode>(pmuldecl)
   mut exprType ptr ast:Type = null
@@ -205,7 +196,7 @@ func validateMulDecl(rsv sema:Resolver,
   if leavLen > 0
     mut pexpr = <ptr ast:PExpr>(val pnode'leaves.get(0))
 
-    exprType = sema:validateExpr(rsv, pexpr, errors)
+    exprType = me.validateExpr(pexpr)
     if not exprType?
       return false
     /if
@@ -218,8 +209,8 @@ func validateMulDecl(rsv sema:Resolver,
 
       mut msg = cs:unwrap(cs)
 
-      errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
-                        rsv'root'fileName, msg))
+      me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                        me'curRoot'fileName, msg))
       mem:free(msg)
 
       return false
@@ -227,8 +218,8 @@ func validateMulDecl(rsv sema:Resolver,
 
     if exprType'members.len() != len
       mut msg = "trying to expand a struct with a wrong number of variables (use '_' if you don't need one of the fields)"
-      errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
-                        rsv'root'fileName, msg))
+      me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                        me'curRoot'fileName, msg))
 
       return false
     /if
@@ -263,14 +254,14 @@ func validateMulDecl(rsv sema:Resolver,
       if exists?
         mut msg = txt:strappend(sym'name, " has been redeclared")
 
-        errors.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, rsv'root'fileName, msg))
+        me'errs.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, me'curRoot'fileName, msg))
 
         mem:free(msg)
 
         return false
       /if
 
-      varType = sema:resolveType(rsv, sym'type, errors)
+      varType = me.resolveType(sym'type)
 
       if not varType?
         return false
@@ -283,7 +274,7 @@ func validateMulDecl(rsv sema:Resolver,
     # 2. the variable exists, there is no type specifier, but there's an expr.
 
     if varType? and initType?
-      if not sema:typeIsAssignable(rsv'ctx, pnode, varType, initType)
+      if not me.typeIsAssignable(pnode, varType, initType)
         mut cs = cs:new(20)
         cs.add("cannot assign an expression of type '")
         initType.summarize(cs)
@@ -295,7 +286,7 @@ func validateMulDecl(rsv sema:Resolver,
 
         mut msg = cs:unwrap(cs)
 
-        errors.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, rsv'root'fileName, msg))
+        me'errs.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, me'curRoot'fileName, msg))
 
         mem:free(msg)
 
@@ -321,24 +312,22 @@ func validateMulDecl(rsv sema:Resolver,
 
   if not newVars
     mut msg = "no new variables in mut statement"
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, me'curRoot'fileName, msg))
 
     return false
   /if
 
   return true
-/func
+/method
 
 
-func validateIf(rsv sema:Resolver,
-                stmt ptr ast:PNode,
-                funcInfo ast:Symbol,
-                inLoop bool,
-                errors ptr list:List) bool
+method sema:Resolver.validateIf(stmt ptr ast:PNode,
+                                funcInfo ast:Symbol,
+                                inLoop bool) bool
 
   mut cond = <ptr ast:PExpr>(val stmt'leaves.get(0))
 
-  mut condType = sema:validateExpr(rsv, cond, errors)
+  mut condType = me.validateExpr(cond)
   if not condType?
     return false
   /if
@@ -351,7 +340,7 @@ func validateIf(rsv sema:Resolver,
 
     mut msg = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, cond'node'begin, me'curRoot'fileName, msg))
 
     mem:free(msg)
 
@@ -359,26 +348,24 @@ func validateIf(rsv sema:Resolver,
   /if
 
   mut firstBlock = <ptr ast:PBlock>(val stmt'leaves.get(1))
-  if not validatePBlock(rsv, firstBlock, funcInfo, inLoop, errors)
+  if not me.validatePBlock(firstBlock, funcInfo, inLoop)
     return false
   /if
 
   if stmt'type == ast:PIFELSE
     mut elseBlock = <ptr ast:PBlock>(val stmt'leaves.get(2))
-    if not validatePBlock(rsv, elseBlock, funcInfo, inLoop, errors)
+    if not me.validatePBlock(elseBlock, funcInfo, inLoop)
       return false
     /if
   /if
 
   return true
-/func
+/method
 
 
-func validatePBlock(rsv sema:Resolver,
-                    pblock ptr ast:PBlock,
-                    funcInfo ast:Symbol,
-                    inLoop bool,
-                    errors ptr list:List) bool
+method sema:Resolver.validatePBlock(pblock ptr ast:PBlock,
+                                    funcInfo ast:Symbol,
+                                    inLoop bool) bool
 
   if not pblock'syms?
     pblock'syms = ast:stabNew()
@@ -390,7 +377,7 @@ func validatePBlock(rsv sema:Resolver,
   while i < len
     mut stmt = <ptr ast:PNode>(val pblock'node'leaves.get(i))
 
-    if not validateStmt(rsv, stmt, funcInfo, inLoop, errors)
+    if not me.validateStmt(stmt, funcInfo, inLoop)
       return false
     /if
 
@@ -398,13 +385,10 @@ func validatePBlock(rsv sema:Resolver,
   /while
 
   return true
-/func
+/method
 
 
-func validateReturn(rsv sema:Resolver,
-                    stmt ptr ast:PNode,
-                    funcInfo ast:Symbol,
-                    errors ptr list:List) bool
+method sema:Resolver.validateReturn(stmt ptr ast:PNode, funcInfo ast:Symbol) bool
 
   mut hasRetExpr = (stmt'leaves.len() == 1)
   mut funcRetTypeEmpty = not funcInfo'type'retType? or funcInfo'type'retType'type == ast:TYPE_EMPTY
@@ -417,7 +401,7 @@ func validateReturn(rsv sema:Resolver,
 
     mut msg = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, stmt'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, stmt'begin, me'curRoot'fileName, msg))
 
     mem:free(msg)
 
@@ -432,7 +416,7 @@ func validateReturn(rsv sema:Resolver,
 
     mut msg = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, stmt'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, stmt'begin, me'curRoot'fileName, msg))
 
     mem:free(msg)
 
@@ -443,12 +427,12 @@ func validateReturn(rsv sema:Resolver,
     mut retType = funcInfo'type'retType
     mut retExpr = <ptr ast:PExpr>(val stmt'leaves.get(0))
 
-    mut exprType = sema:validateExpr(rsv, retExpr, errors)
+    mut exprType = me.validateExpr(retExpr)
     if not exprType?
       return false
     /if
 
-    if not sema:typeIsAssignable(rsv'ctx, stmt, retType, exprType)
+    if not me.typeIsAssignable(stmt, retType, exprType)
       mut cs = cs:new(20)
       cs.add("cannot return type '")
       exprType.summarize(cs)
@@ -460,7 +444,7 @@ func validateReturn(rsv sema:Resolver,
 
       mut msg = cs:unwrap(cs)
 
-      errors.append(parser:issueNew(parser:ISSUE_ERR, stmt'begin, rsv'root'fileName, msg))
+      me'errs.append(parser:issueNew(parser:ISSUE_ERR, stmt'begin, me'curRoot'fileName, msg))
 
       mem:free(msg)
 
@@ -469,59 +453,54 @@ func validateReturn(rsv sema:Resolver,
   /if
 
   return true
-/func
+/method
 
 
-func validateStmt(rsv sema:Resolver,
-                  stmt ptr ast:PNode,
-                  funcInfo ast:Symbol,
-                  inLoop bool,
-                  errors ptr list:List) bool
+method sema:Resolver.validateStmt(stmt ptr ast:PNode,
+                                  funcInfo ast:Symbol,
+                                  inLoop bool) bool
 
   if stmt.isBreakContinue()
-    return validateBreakContinue(rsv, stmt, inLoop, errors)
+    return me.validateBreakContinue(stmt, inLoop)
   /if
 
   if stmt.isDecl()
-    return validateDecl(rsv, <ptr ast:PDecl>(stmt), errors)
+    return me.validateDecl(<ptr ast:PDecl>(stmt))
   /if
 
   if stmt.isExpr()
-    return sema:validateExpr(rsv, <ptr ast:PExpr>(stmt), errors)?
+    return me.validateExpr(<ptr ast:PExpr>(stmt))?
   /if
 
   if stmt.isIf()
-    return validateIf(rsv, stmt, funcInfo, inLoop, errors)
+    return me.validateIf(stmt, funcInfo, inLoop)
   /if
 
   if stmt.isMulDecl()
-    return validateMulDecl(rsv, <ptr ast:PMulDecl>(stmt), errors)
+    return me.validateMulDecl(<ptr ast:PMulDecl>(stmt))
   /if
 
   if stmt.isReturn()
-    return validateReturn(rsv, stmt, funcInfo, errors)
+    return me.validateReturn(stmt, funcInfo)
   /if
 
   if stmt.isWhile()
-    return validateWhile(rsv, stmt, funcInfo, inLoop, errors)
+    return me.validateWhile(stmt, funcInfo, inLoop)
   /if
 
   # unreachable
-  tty:errln("unknown statement type")
-  proc:abort()
+  proc:panic("unknown statement type")
   return false
-/func
+/method
 
 
-func validateWhile(rsv sema:Resolver,
-                   stmt ptr ast:PNode,
-                   funcInfo ast:Symbol,
-                   inLoop bool,
-                   errors ptr list:List) bool
+method sema:Resolver.validateWhile(stmt ptr ast:PNode,
+                                   funcInfo ast:Symbol,
+                                   inLoop bool) bool
 
   mut cond = <ptr ast:PExpr>(val stmt'leaves.get(0))
 
-  mut condType = sema:validateExpr(rsv, cond, errors)
+  mut condType = me.validateExpr(cond)
   if not condType?
     return false
   /if
@@ -534,7 +513,7 @@ func validateWhile(rsv sema:Resolver,
 
     mut msg = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, cond'node'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, cond'node'begin, me'curRoot'fileName, msg))
 
     mem:free(msg)
 
@@ -543,14 +522,12 @@ func validateWhile(rsv sema:Resolver,
 
   mut pblock = <ptr ast:PBlock>(val stmt'leaves.get(1))
 
-  return validatePBlock(rsv, pblock, funcInfo, true, errors)
-/func
+  return me.validatePBlock(pblock, funcInfo, true)
+/method
 
 
-func validateFunc(rsv sema:Resolver,
-                  pdecl ptr ast:PDecl,
-                  funcType ptr ast:Type,
-                  errors ptr list:List) bool
+method sema:Resolver.validateFunc(pdecl ptr ast:PDecl,
+                                  funcType ptr ast:Type) bool
 
   mut sym ast:Symbol
 
@@ -564,10 +541,10 @@ func validateFunc(rsv sema:Resolver,
   pblock'syms.addFuncParams(funcType'members)
 
   if pdecl'node'type == ast:PMETHOD
-    if not ensureMethodCorrectness(rsv, pdecl, funcType, errors)
+    if not me.ensureMethodCorrectness(pdecl, funcType)
       return false
     /if
   /if
 
-  return validatePBlock(rsv, pblock, sym, false, errors)
-/func
+  return me.validatePBlock(pblock, sym, false)
+/method

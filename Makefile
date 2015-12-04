@@ -13,3 +13,4 @@ st:
 
 clean:
 	rm -rf build
+	$(MAKE) -C examples clean

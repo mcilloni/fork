@@ -27,38 +27,38 @@ import txt
 import utils
 
 
-func exprIsCompileConst(expr ptr ast:PExpr) bool
-  if   expr'opType == tokens:NUMBER \
-    or expr'opType == tokens:STRING \
-    or expr'opType == tokens:TRUE \
-    or expr'opType == tokens:FALSE \
-    or expr'opType == tokens:NULL \
-    or expr'opType == tokens:SIZE
+method ast:PExpr.isCompileConst() bool
+  if   me'opType == tokens:NUMBER \
+    or me'opType == tokens:STRING \
+    or me'opType == tokens:TRUE \
+    or me'opType == tokens:FALSE \
+    or me'opType == tokens:NULL \
+    or me'opType == tokens:SIZE
 
     return true
   /if
 
-  if expr'opType == tokens:PTR
-    mut elem = <ptr ast:PExpr>(val expr'node'leaves.get(0))
+  if me'opType == tokens:PTR
+    mut elem = <ptr ast:PExpr>(val me'node'leaves.get(0))
 
     return elem'opType == tokens:ID or elem'opType == tokens:COLON
   /if
 
-  if ttypeIsUnary(expr'opType)
-    mut elem = <ptr ast:PExpr>(val expr'node'leaves.get(0))
+  if ttypeIsUnary(me'opType)
+    mut elem = <ptr ast:PExpr>(val me'node'leaves.get(0))
 
-    return exprIsCompileConst(elem)
+    return elem.isCompileConst()
   /if
 
-  if ttypeIsBinary(expr'opType)
-    mut left = <ptr ast:PExpr>(val expr'node'leaves.get(0))
-    mut right = <ptr ast:PExpr>(val expr'node'leaves.get(1))
+  if ttypeIsBinary(me'opType)
+    mut left = <ptr ast:PExpr>(val me'node'leaves.get(0))
+    mut right = <ptr ast:PExpr>(val me'node'leaves.get(1))
 
-    return exprIsCompileConst(left) and exprIsCompileConst(right)
+    return left.isCompileConst() and right.isCompileConst()
   /if
 
   return false
-/func
+/method
 
 
 func ttypeOpCanDoPtrArith(tt uint16) bool
@@ -165,26 +165,26 @@ func assignLhsDump(cs ptr cs:Charstash, pexpr ptr ast:PExpr)
 /func
 
 
-func intForVal(ctx ptr parser:Parser, value intptr) ptr ast:Type
+method sema:Resolver.intForVal(value intptr) ptr ast:Type
   mut aval = math:abs(value)
 
   if aval < 2**7
-    return ctx.matchBuiltin("int8")
+    return me'prs.matchBuiltin("int8")
   else
     if aval < 2**15
-      return ctx.matchBuiltin("int16")
+      return me'prs.matchBuiltin("int16")
     else
-      if aval < 2 ** 31
-        return ctx.matchBuiltin("int32")
+      if aval < 2**31
+        return me'prs.matchBuiltin("int32")
       /if
     /if
   /if
 
-  return ctx.matchBuiltin("int64")
-/func
+  return me'prs.matchBuiltin("int64")
+/method
 
 
-func intTypesFindLargestCompatible(ctx ptr parser:Parser, type1, type2 ptr ast:Type) ptr ast:Type
+method sema:Resolver.intTypesFindLargestCompatible(type1, type2 ptr ast:Type) ptr ast:Type
 
   mut bothSigned = type1'isSigned and type2'isSigned
   mut bothUnsigned = not type1'isSigned and not type2'isSigned
@@ -195,11 +195,13 @@ func intTypesFindLargestCompatible(ctx ptr parser:Parser, type1, type2 ptr ast:T
   /if
 
   # return intptr, must improve in the future
-  return ctx.matchBuiltin("intptr")
-/func
+  return me'prs.matchBuiltin("intptr")
+/method
 
 
-func typeIsAssignable(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr ast:Type) bool
+method sema:Resolver.typeIsAssignable(scope ptr ast:PNode,
+                                      dest,src ptr ast:Type) bool
+
   if not dest? or not src?
     return dest == src
   /if
@@ -225,10 +227,10 @@ func typeIsAssignable(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr a
 
   if dest'type != src'type
     if dest'type == ast:TYPE_RECALIAS or src'type == ast:TYPE_RECALIAS
-      dest = sema:findRecAlias(ctx, scope, dest)
-      src = sema:findRecAlias(ctx, scope, src)
+      dest = me.findRecAlias(scope, dest)
+      src = me.findRecAlias(scope, src)
 
-      return typeIsAssignable(ctx, scope, dest, src)
+      return me.typeIsAssignable(scope, dest, src)
     /if
 
     if isPtr and src'type == ast:TYPE_NULL
@@ -257,7 +259,7 @@ func typeIsAssignable(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr a
       mut type1 = <ptr ast:Type>(pair1'value)
       mut type2 = <ptr ast:Type>(pair2'value)
 
-      if not typeIsAssignable(ctx, scope, type2, type1)
+      if not me.typeIsAssignable(scope, type2, type1)
         return false
       /if
 
@@ -266,7 +268,7 @@ func typeIsAssignable(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr a
   /if
 
   if isPtr or isLoc or isFunc
-    if not typeIsAssignable(ctx, scope, dest'retType, src'retType)
+    if not me.typeIsAssignable(scope, dest'retType, src'retType)
       return false
     /if
   /if
@@ -284,10 +286,12 @@ func typeIsAssignable(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr a
   /if
 
   return true
-/func
+/method
 
 
-func typeIsCastable(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr ast:Type) bool
+method sema:Resolver.typeIsCastable(scope ptr ast:PNode,
+                                    dest,src ptr ast:Type) bool
+
   if dest'type == ast:TYPE_EMPTY or src'type == ast:TYPE_EMPTY
     return false
   /if
@@ -300,54 +304,52 @@ func typeIsCastable(ctx ptr parser:Parser, scope ptr ast:PNode, dest,src ptr ast
     return src'type == ast:TYPE_INT or src'type == ast:TYPE_PTR or src'type == ast:TYPE_NULL or src'type == ast:TYPE_DATA
   /if
 
-  return sema:typeIsAssignable(ctx, scope, dest, src)
-/func
+  return me.typeIsAssignable(scope, dest, src)
+/method
 
 
-func validateExprConst(rsv sema:Resolver,
-                       pexpr ptr ast:PExpr) ptr ast:Type
+method sema:Resolver.validateExprConst(pexpr ptr ast:PExpr) ptr ast:Type
 
   mut op = pexpr'opType
 
   if op == tokens:STRING
-    return rsv'ctx.matchBuiltin("ptr uint8")
+    return me'prs.matchBuiltin("ptr uint8")
   /if
 
   if op == tokens:NUMBER
-    return intForVal(rsv'ctx, <intptr>(pexpr'node'value))
+    return me.intForVal(<intptr>(pexpr'node'value))
   /if
 
   if op == tokens:TRUE or op == tokens:FALSE
-    return rsv'ctx.matchBuiltin("bool")
+    return me'prs.matchBuiltin("bool")
   /if
 
   if op == tokens:NULL
-    return rsv'ctx.matchBuiltin("null")
+    return me'prs.matchBuiltin("null")
   /if
 
   return null
-/func
+/method
 
 
-func validateExprCast(rsv sema:Resolver,
-                      pexpr ptr ast:PExpr,
-                      recList,errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateExprCast(pexpr ptr ast:PExpr,
+                                      recList ptr list:List) ptr ast:Type
 
   mut ptype = <ptr ast:PType>(pexpr'node'value)
-  pexpr'type = sema:resolveType(rsv, ptype, errors)
+  pexpr'type = me.resolveType(ptype)
 
   if not pexpr'type?
     return null
   /if
 
   mut childExpr = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-  mut chType = sema:validateExprRecl(rsv, childExpr, recList, errors)
+  mut chType = me.validateExprRecl(childExpr, recList)
 
   if not chType?
     return null
   /if
 
-  if not sema:typeIsCastable(rsv'ctx, <ptr ast:PNode>(pexpr), pexpr'type, chType)
+  if not me.typeIsCastable(<ptr ast:PNode>(pexpr), pexpr'type, chType)
     mut cs = cs:new(20)
 
     cs.add("can't cast ")
@@ -357,42 +359,39 @@ func validateExprCast(rsv sema:Resolver,
 
     mut str = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, str))
 
     mem:free(str)
     return null
   /if
 
   return pexpr'type
-/func
+/method
 
 
-func validateSizeExpr(rsv sema:Resolver,
-                      pexpr ptr ast:PExpr,
-                      errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateSizeExpr(pexpr ptr ast:PExpr) ptr ast:Type
 
   mut ptype = <ptr ast:PType>(pexpr'node'value)
 
-  mut sizeType = sema:resolveType(rsv, ptype, errors)
+  mut sizeType = me.resolveType(ptype)
   if not sizeType?
     return null
   /if
 
   if sizeType'type == ast:TYPE_FUNC
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "invalid application of 'size' to a function type"))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "invalid application of 'size' to a function type"))
     return null
   /if
 
   pexpr'sizeType = sizeType
 
-  return rsv'ctx.matchBuiltin("uintptr")
-/func
+  return me'prs.matchBuiltin("uintptr")
+/method
 
 
-func validateExprId(rsv sema:Resolver,
-                    pexpr ptr ast:PExpr,
-                    recList,errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateExprId(pexpr ptr ast:PExpr,
+                                    recList ptr list:List) ptr ast:Type
 
   mut name = <ptr uint8>(pexpr'node'value)
   mut type = <ptr ast:PNode>(pexpr).findSym(name)
@@ -407,7 +406,7 @@ func validateExprId(rsv sema:Resolver,
 
     mut str = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, str))
 
     mem:free(str)
 
@@ -416,17 +415,16 @@ func validateExprId(rsv sema:Resolver,
 
   # try searching for a top declaration
   if not type?
-    return sema:resolveDeclType(rsv, name, <ptr ast:PNode>(pexpr), recList, errors)
+    return me.resolveDeclType(name, <ptr ast:PNode>(pexpr), recList)
   /if
 
   return type
-/func
+/method
 
 
-func validateBoolExpr(rsv sema:Resolver,
-                      pexpr ptr ast:PExpr,
-                      ltype,rtype ptr ast:Type,
-                      recList,errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateBoolExpr(pexpr ptr ast:PExpr,
+                                      ltype,rtype ptr ast:Type,
+                                      recList ptr list:List) ptr ast:Type
 
   mut op = pexpr'opType
 
@@ -442,21 +440,20 @@ func validateBoolExpr(rsv sema:Resolver,
 
     mut str = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, str))
 
     mem:free(str)
 
     return null
   /if
 
-  return rsv'ctx.matchBuiltin("bool")
-/func
+  return me'prs.matchBuiltin("bool")
+/method
 
 
-func validateArithPtrExpr(rsv sema:Resolver,
-                          pexpr ptr ast:PExpr,
-                          ltype,rtype ptr ast:Type,
-                          recList,errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateArithPtrExpr(pexpr ptr ast:PExpr,
+                                          ltype,rtype ptr ast:Type,
+                                          recList ptr list:List) ptr ast:Type
 
   if not ttypeOpCanDoPtrArith(pexpr'opType)
     mut cs = cs:new(20)
@@ -467,7 +464,7 @@ func validateArithPtrExpr(rsv sema:Resolver,
 
     mut str = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, str))
 
     mem:free(str)
 
@@ -476,7 +473,7 @@ func validateArithPtrExpr(rsv sema:Resolver,
 
   if ltype.isPtr() and rtype.isPtr()
     if pexpr'opType == tokens:MINUS
-      if not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pexpr), ltype, rtype)
+      if not me.typeIsAssignable(<ptr ast:PNode>(pexpr), ltype, rtype)
         mut cs = cs:new(20)
 
         cs.add("types ")
@@ -487,16 +484,16 @@ func validateArithPtrExpr(rsv sema:Resolver,
 
         mut str = cs:unwrap(cs)
 
-        errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+        me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, str))
 
         mem:free(str)
 
         return null
       /if
 
-      return rsv'ctx.matchBuiltin("intptr")
+      return me'prs.matchBuiltin("intptr")
     else
-      errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "only difference between two pointers can be allowed"))
+      me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "only difference between two pointers can be allowed"))
       return null
     /if
   /if
@@ -505,41 +502,38 @@ func validateArithPtrExpr(rsv sema:Resolver,
   # Let's choose the pointer and then return the type of it.
 
   return ltype.isPtr() => ltype || rtype
-/func
+/method
 
 
-func validateArithExpr(rsv sema:Resolver,
-                       pexpr ptr ast:PExpr,
-                       ltype,rtype ptr ast:Type,
-                       recList,errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateArithExpr(pexpr ptr ast:PExpr,
+                                       ltype,rtype ptr ast:Type,
+                                       recList ptr list:List) ptr ast:Type
 
   mut op = pexpr'opType
 
   if not (ltype.isInt() or ltype.isPtr()) or not (rtype.isPtr() or rtype.isInt())
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "arithmetic operations can only involve pointers and integers"))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "arithmetic operations can only involve pointers and integers"))
 
     return null
   /if
 
   if ltype.isPtr() or rtype.isPtr()
-    return validateArithPtrExpr(rsv, pexpr, ltype, rtype, recList, errors)
+    return me.validateArithPtrExpr(pexpr, ltype, rtype, recList)
   /if
 
   if op == tokens:POW
-    return rsv'ctx.matchBuiltin("uintptr")
+    return me'prs.matchBuiltin("uintptr")
   /if
 
   # In this case, we only have integers, so we just need to evaluate the larger
   # type or resolve to boolean in case of a major/minor comparison.
 
-  return ttypeIsComparison(op) => rsv'ctx.matchBuiltin("bool") || (ltype'typeSize > rtype'typeSize => ltype || rtype)
-/func
+  return ttypeIsComparison(op) => me'prs.matchBuiltin("bool") || (ltype'typeSize > rtype'typeSize => ltype || rtype)
+/method
 
 
-func validateEqDiffExpr(rsv sema:Resolver,
-                        pexpr ptr ast:PExpr,
-                        ltype,rtype ptr ast:Type,
-                        errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateEqDiffExpr(pexpr ptr ast:PExpr,
+                                        ltype,rtype ptr ast:Type) ptr ast:Type
 
   mut success = true
 
@@ -556,28 +550,26 @@ func validateEqDiffExpr(rsv sema:Resolver,
   /if
 
   if not success
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "cannot evaluate the equivalence of two incompatible types"))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "cannot evaluate the equivalence of two incompatible types"))
   /if
 
-  return success => rsv'ctx.matchBuiltin("bool") || null
-/func
+  return success => me'prs.matchBuiltin("bool") || null
+/method
 
 
-func validateModuleAccessExpr(rsv sema:Resolver,
-                              pexpr ptr ast:PExpr,
-                              errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateModuleAccessExpr(pexpr ptr ast:PExpr) ptr ast:Type
 
   mut modName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
-  if not rsv'root.hasImported(modName)
+  if not me'curRoot.hasImported(modName)
     mut msg = txt:strappend(modName, " has never been imported")
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
     mem:free(msg)
 
     return null
   /if
 
   mut symName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
-  mut type = sema:findSymModule(rsv'ctx, modName, symName)
+  mut type = me.findSymModule(modName, symName)
 
   if not type?
     mut cs = cs:new(20)
@@ -589,7 +581,7 @@ func validateModuleAccessExpr(rsv sema:Resolver,
 
     mut msg = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
 
     mem:free(msg)
 
@@ -597,33 +589,30 @@ func validateModuleAccessExpr(rsv sema:Resolver,
   /if
 
   return type
-/func
+/method
 
 
-func resolveRecType(rsv sema:Resolver,
-                    type ptr ast:Type) ptr ast:Type
+method sema:Resolver.resolveRecType(type ptr ast:Type) ptr ast:Type
 
   if type'type != ast:TYPE_RECALIAS
     return type
   /if
 
   if type'moduleName?
-    return sema:findAliasImport(rsv'ctx, type'moduleName, type'name)
+    return me.findAliasImport(type'moduleName, type'name)
   /if
 
-  return sema:findAliasLocal(<ptr ast:PNode>(rsv'root), type'name)
-/func
+  return <ptr ast:PNode>(me'curRoot).findAliasLocal(type'name)
+/method
 
 
-func validateStructureAccessExpr(rsv sema:Resolver,
-                                 pexpr ptr ast:PExpr,
-                                 ltype ptr ast:Type,
-                                 errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateStructureAccessExpr(pexpr ptr ast:PExpr,
+                                                 ltype ptr ast:Type) ptr ast:Type
 
   mut accType = ltype
 
   if ltype'type == ast:TYPE_PTR
-    accType = resolveRecType(rsv, ltype'retType)
+    accType = me.resolveRecType(ltype'retType)
   /if
 
   if not accType.isStruct()
@@ -634,7 +623,7 @@ func validateStructureAccessExpr(rsv sema:Resolver,
 
     mut msg = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
 
     mem:free(msg)
 
@@ -654,7 +643,7 @@ func validateStructureAccessExpr(rsv sema:Resolver,
 
     mut msg = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
 
     mem:free(msg)
 
@@ -662,37 +651,34 @@ func validateStructureAccessExpr(rsv sema:Resolver,
   /if
 
   return type
-/func
+/method
 
 
-func validateArrayAccess(rsv sema:Resolver,
-                         pexpr ptr ast:PExpr,
-                         ltype,rtype ptr ast:Type,
-                         errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateArrayAccess(pexpr ptr ast:PExpr,
+                         ltype,rtype ptr ast:Type) ptr ast:Type
 
   if ltype'type != ast:TYPE_PTR and not ltype.isLoc()
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
-                    rsv'root'fileName, \
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                    me'curRoot'fileName, \
                     "array access is allowed only for pointers and locations"))
   /if
 
   if not rtype.isInt()
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "an expression of integer type is required for array access"))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "an expression of integer type is required for array access"))
   /if
 
   return ltype'retType
-/func
+/method
 
 
-func normalizeEmptyType(ctx ptr parser:Parser, type ptr ast:Type) ptr ast:Type
-  return type ?? ctx.matchBuiltin("\0")
-/func
+method sema:Resolver.normalizeEmptyType(type ptr ast:Type) ptr ast:Type
+  return type ?? me'prs.matchBuiltin("\0")
+/method
 
 
-func validateFunctionCallExpr(rsv sema:Resolver,
-                              pexpr ptr ast:PExpr,
-                              ltype ptr ast:Type,
-                              recList,errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateFunctionCallExpr(pexpr ptr ast:PExpr,
+                                              ltype ptr ast:Type,
+                                              recList ptr list:List) ptr ast:Type
 
   mut accType = ltype
 
@@ -701,8 +687,8 @@ func validateFunctionCallExpr(rsv sema:Resolver,
   /if
 
   if not accType.isFunc()
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
-                    rsv'root'fileName, \
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                    me'curRoot'fileName, \
                     "expression is neither a function nor a pointer to a function"))
 
     return null
@@ -738,8 +724,8 @@ func validateFunctionCallExpr(rsv sema:Resolver,
 
     mut msg = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
-                                              rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                                              me'curRoot'fileName, msg))
 
     mem:free(msg)
 
@@ -755,12 +741,12 @@ func validateFunctionCallExpr(rsv sema:Resolver,
 
     mut expType = <ptr ast:Type>(expPair'value)
 
-    mut gotType = sema:validateExprRecl(rsv, gotParam, recList, errors)
+    mut gotType = me.validateExprRecl(gotParam, recList)
     if not gotType?
       return null
     /if
 
-    if not sema:typeIsAssignable(rsv'ctx, scope, expType, gotType)
+    if not me.typeIsAssignable(scope, expType, gotType)
       mut cs = cs:new(20)
       cs.add("passing '")
 
@@ -776,8 +762,8 @@ func validateFunctionCallExpr(rsv sema:Resolver,
 
       mut msg = cs:unwrap(cs)
 
-      errors.append(parser:issueNew(parser:ISSUE_ERR, \
-                            pexpr'node'begin, rsv'root'fileName, msg))
+      me'errs.append(parser:issueNew(parser:ISSUE_ERR, \
+                            pexpr'node'begin, me'curRoot'fileName, msg))
 
       mem:free(msg)
 
@@ -787,14 +773,12 @@ func validateFunctionCallExpr(rsv sema:Resolver,
     i++
   /while
 
-  return normalizeEmptyType(rsv'ctx, <ptr ast:Type>(accType'retType))
-/func
+  return me.normalizeEmptyType(<ptr ast:Type>(accType'retType))
+/method
 
 
-func validateAssignExpr(rsv sema:Resolver,
-                        pexpr,left ptr ast:PExpr,
-                        ltype,rtype ptr ast:Type,
-                        errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateAssignExpr(pexpr,left ptr ast:PExpr,
+                                        ltype,rtype ptr ast:Type) ptr ast:Type
 
   if not ttypeCanBeAssignTarget(left'opType, ltype)
     mut msg = "expression cannot be target of assignment"
@@ -803,12 +787,12 @@ func validateAssignExpr(rsv sema:Resolver,
       msg = "can't reassign 'me'"
     /if
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, left'node'begin, \
-                                              rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, left'node'begin, \
+                                              me'curRoot'fileName, msg))
     return null
   /if
 
-  if not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pexpr), ltype, rtype)
+  if not me.typeIsAssignable(<ptr ast:PNode>(pexpr), ltype, rtype)
     mut cs = cs:new(20)
 
     cs.add("cannot assign expression of type '")
@@ -819,8 +803,8 @@ func validateAssignExpr(rsv sema:Resolver,
 
     mut str = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
-                                              rsv'root'fileName, str))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+                                              me'curRoot'fileName, str))
 
     mem:free(str)
 
@@ -844,8 +828,8 @@ func validateAssignExpr(rsv sema:Resolver,
 
         mut str = cs:unwrap(cs)
 
-        errors.append(parser:issueNew(parser:ISSUE_ERR, member'node'begin, \
-                                              rsv'root'fileName, str))
+        me'errs.append(parser:issueNew(parser:ISSUE_ERR, member'node'begin, \
+                                              me'curRoot'fileName, str))
 
         mem:free(str)
 
@@ -856,17 +840,15 @@ func validateAssignExpr(rsv sema:Resolver,
     /while
 
     # Return empty type - because an lvalue struct literal has no type in Fork.
-    return normalizeEmptyType(rsv'ctx, null)
+    return me.normalizeEmptyType(null)
   /if
 
   return ltype
-/func
+/method
 
 
-func validateNullCoalescingExpr(rsv sema:Resolver,
-                                pexpr ptr ast:PExpr,
-                                ltype,rtype ptr ast:Type,
-                                errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateNullCoalescingExpr(pexpr ptr ast:PExpr,
+                                ltype,rtype ptr ast:Type) ptr ast:Type
 
   if not ltype.isPtr()
     mut cs = cs:new(20)
@@ -877,14 +859,14 @@ func validateNullCoalescingExpr(rsv sema:Resolver,
 
     mut str = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, str))
 
     mem:free(str)
 
     return null
   /if
 
-  if not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pexpr), ltype, rtype)
+  if not me.typeIsAssignable(<ptr ast:PNode>(pexpr), ltype, rtype)
     mut cs = cs:new(20)
 
     cs.add("cannot coalesce type '")
@@ -895,7 +877,7 @@ func validateNullCoalescingExpr(rsv sema:Resolver,
 
     mut str = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, str))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, str))
 
     mem:free(str)
 
@@ -903,7 +885,7 @@ func validateNullCoalescingExpr(rsv sema:Resolver,
   /if
 
   return ltype
-/func
+/method
 
 
 # a.b syntax is allowed ONLY if it's a method call.
@@ -913,12 +895,11 @@ func pnodeAllowedToUseDot(node ptr ast:PNode) bool
 /func
 
 
-func resolveMethod(rsv sema:Resolver,
-                   pexpr ptr ast:PExpr,
-                   typeModule,typeName,methodName ptr uint8,
-                   recList,errors ptr list:List) ptr ast:Type
+method sema:Resolver.resolveMethod(pexpr ptr ast:PExpr,
+                                   typeModule,typeName,methodName ptr uint8,
+                                   recList ptr list:List) ptr ast:Type
 
-  mut type = sema:findMethod(rsv, <ptr ast:PNode>(pexpr), typeModule, typeName, methodName)
+  mut type = me.findMethod(<ptr ast:PNode>(pexpr), typeModule, typeName, methodName)
 
   if type?
     return type
@@ -927,22 +908,21 @@ func resolveMethod(rsv sema:Resolver,
   mut name = ast:methodKey(typeModule, typeName, methodName)
 
   # try searching for a top declaration
-  type = sema:resolveDeclType(rsv, name, <ptr ast:PNode>(pexpr), recList, errors)
+  type = me.resolveDeclType(name, <ptr ast:PNode>(pexpr), recList)
 
   mem:free(name)
 
   return type
-/func
+/method
 
 
-func validateMethodExpr(rsv sema:Resolver,
-                        pexpr ptr ast:PExpr,
-                        ltype ptr ast:Type,
-                        recList,errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateMethodExpr(pexpr ptr ast:PExpr,
+                                        ltype ptr ast:Type,
+                                        recList ptr list:List) ptr ast:Type
 
   if not pnodeAllowedToUseDot(pexpr'node'parent)
     mut msg = "methods can be accessed only when invoked"
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
 
     return null
   /if
@@ -950,7 +930,7 @@ func validateMethodExpr(rsv sema:Resolver,
   mut accType = ltype
 
   if ltype'type == ast:TYPE_PTR
-    accType = resolveRecType(rsv, ltype'retType)
+    accType = me.resolveRecType(ltype'retType)
   /if
 
   if not accType'name?
@@ -961,7 +941,7 @@ func validateMethodExpr(rsv sema:Resolver,
 
     mut msg = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
 
     mem:free(msg)
 
@@ -970,13 +950,12 @@ func validateMethodExpr(rsv sema:Resolver,
 
   mut methodName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
 
-  return resolveMethod(rsv, pexpr, accType'moduleName, accType'name, methodName, recList, errors)
-/func
+  return me.resolveMethod(pexpr, accType'moduleName, accType'name, methodName, recList)
+/method
 
 
-func validateBinaryExpr(rsv sema:Resolver,
-                        pexpr ptr ast:PExpr,
-                        recList,errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateBinaryExpr(pexpr ptr ast:PExpr,
+                                        recList ptr list:List) ptr ast:Type
 
   mut op = pexpr'opType
 
@@ -984,11 +963,11 @@ func validateBinaryExpr(rsv sema:Resolver,
   # (i.e. no expressions or expressions only on lhs)
 
   if op == tokens:COLON
-    return validateModuleAccessExpr(rsv, pexpr, errors)
+    return me.validateModuleAccessExpr(pexpr)
   /if
 
   mut left = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-  mut ltype = sema:validateExprRecl(rsv, left, recList, errors)
+  mut ltype = me.validateExprRecl(left, recList)
 
   if not ltype?
     return null
@@ -996,21 +975,21 @@ func validateBinaryExpr(rsv sema:Resolver,
 
   # method access
   if op == tokens:DOT
-    return validateMethodExpr(rsv, pexpr, ltype, recList, errors)
+    return me.validateMethodExpr(pexpr, ltype, recList)
   /if
 
   # structure field access
   if op == tokens:APOS
-    return validateStructureAccessExpr(rsv, pexpr, ltype,  errors)
+    return me.validateStructureAccessExpr(pexpr, ltype)
   /if
 
   # function call
   if op == tokens:OPAR
-    return validateFunctionCallExpr(rsv, pexpr, ltype, recList, errors)
+    return me.validateFunctionCallExpr(pexpr, ltype, recList)
   /if
 
   mut right = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
-  mut rtype = sema:validateExprRecl(rsv, right, recList, errors)
+  mut rtype = me.validateExprRecl(right, recList)
 
   if not rtype?
     return null
@@ -1018,49 +997,45 @@ func validateBinaryExpr(rsv sema:Resolver,
 
   # array access
   if op == tokens:OBRAC
-    return validateArrayAccess(rsv, pexpr, ltype, rtype, errors)
+    return me.validateArrayAccess(pexpr, ltype, rtype)
   /if
 
   if op == tokens:DQUEST
-    return validateNullCoalescingExpr(rsv, pexpr, ltype, rtype, errors)
+    return me.validateNullCoalescingExpr(pexpr, ltype, rtype)
   /if
 
   if ttypeIsBool(op)
-    return validateBoolExpr(rsv, pexpr, ltype, rtype, recList, errors)
+    return me.validateBoolExpr(pexpr, ltype, rtype, recList)
   /if
 
   if ttypeIsArith(op)
-    return validateArithExpr(rsv, pexpr, ltype, rtype, recList, errors)
+    return me.validateArithExpr(pexpr, ltype, rtype, recList)
   /if
 
   if ttypeIsEqDiff(op)
-    return validateEqDiffExpr(rsv, pexpr, ltype, rtype, errors)
+    return me.validateEqDiffExpr(pexpr, ltype, rtype)
   /if
 
-  return validateAssignExpr(rsv, pexpr, left, ltype, rtype, errors)
-/func
+  return me.validateAssignExpr(pexpr, left, ltype, rtype)
+/method
 
 
-func validateNotExpr(rsv sema:Resolver,
-                     pexpr ptr ast:PExpr,
-                     atype ptr ast:Type,
-                     errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateNotExpr(pexpr ptr ast:PExpr,
+                                     atype ptr ast:Type) ptr ast:Type
 
   if not atype.isBool()
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "expression must be boolean"))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "expression must be boolean"))
 
     return null
   /if
 
   # always boolean
   return atype
-/func
+/method
 
 
-func validateValExpr(rsv sema:Resolver,
-                     pexpr ptr ast:PExpr,
-                     atype ptr ast:Type,
-                     errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateValExpr(pexpr ptr ast:PExpr,
+                                     atype ptr ast:Type) ptr ast:Type
 
   if atype'type != ast:TYPE_PTR
     mut cs = cs:new(20)
@@ -1070,7 +1045,7 @@ func validateValExpr(rsv sema:Resolver,
 
     mut msg = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
 
     mem:free(msg)
 
@@ -1078,28 +1053,24 @@ func validateValExpr(rsv sema:Resolver,
   /if
 
   return <ptr ast:Type>(atype'retType)
-/func
+/method
 
 
-func validatePtrExpr(rsv sema:Resolver,
-                     pexpr ptr ast:PExpr,
-                     atype ptr ast:Type,
-                     errors ptr list:List) ptr ast:Type
+method sema:Resolver.validatePtrExpr(pexpr ptr ast:PExpr,
+                                     atype ptr ast:Type) ptr ast:Type
 
   if atype.isNull()
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "can't extract the address of null"))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "can't extract the address of null"))
 
     return null
   /if
 
-  return astfn:typeNewPtr(rsv'root'typePool, null, null, atype)
-/func
+  return astfn:typeNewPtr(me'curRoot'typePool, null, null, atype)
+/method
 
 
-func validateUMinusExpr(rsv sema:Resolver,
-                        pexpr ptr ast:PExpr,
-                        atype ptr ast:Type,
-                        errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateUMinusExpr(pexpr ptr ast:PExpr,
+                                        atype ptr ast:Type) ptr ast:Type
 
   if not atype.isInt()
     mut cs = cs:new(20)
@@ -1109,7 +1080,7 @@ func validateUMinusExpr(rsv sema:Resolver,
 
     mut msg = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
 
     mem:free(msg)
 
@@ -1124,7 +1095,7 @@ func validateUMinusExpr(rsv sema:Resolver,
 
     mut msg = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
 
     mem:free(msg)
 
@@ -1132,13 +1103,11 @@ func validateUMinusExpr(rsv sema:Resolver,
   /if
 
   return atype
-/func
+/method
 
 
-func validateIncDecExpr(rsv sema:Resolver,
-                        pexpr,atarget ptr ast:PExpr,
-                        atype ptr ast:Type,
-                        errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateIncDecExpr(pexpr,atarget ptr ast:PExpr,
+                                        atype ptr ast:Type) ptr ast:Type
 
   if not atype.isInt() and not atype.isPtr()
     mut cs = cs:new(20)
@@ -1148,7 +1117,7 @@ func validateIncDecExpr(rsv sema:Resolver,
 
     mut msg = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
 
     mem:free(msg)
 
@@ -1156,19 +1125,17 @@ func validateIncDecExpr(rsv sema:Resolver,
   /if
 
   if not ttypeCanBeAssignTarget(atarget'opType, atype)
-    errors.append(parser:issueNew(parser:ISSUE_ERR, atarget'node'begin, rsv'root'fileName, "expression is not assignable"))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, atarget'node'begin, me'curRoot'fileName, "expression is not assignable"))
 
     return null
   /if
 
   return atype
-/func
+/method
 
 
-func validateQuestExpr(rsv sema:Resolver,
-                       pexpr ptr ast:PExpr,
-                       atype ptr ast:Type,
-                       errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateQuestExpr(pexpr ptr ast:PExpr,
+                                       atype ptr ast:Type) ptr ast:Type
 
   if not atype.isPtr()
     mut cs = cs:new(20)
@@ -1178,75 +1145,73 @@ func validateQuestExpr(rsv sema:Resolver,
 
     mut msg = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
 
     mem:free(msg)
 
     return null
   /if
 
-  return rsv'ctx.matchBuiltin("bool")
-/func
+  return me'prs.matchBuiltin("bool")
+/method
 
 
-func validateUnaryExpr(rsv sema:Resolver,
-                       pexpr ptr ast:PExpr,
-                       recList, errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateUnaryExpr(pexpr ptr ast:PExpr,
+                                       recList ptr list:List) ptr ast:Type
 
   mut op = pexpr'opType
 
   mut arg = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-  mut atype = sema:validateExprRecl(rsv, arg, recList, errors)
+  mut atype = me.validateExprRecl(arg, recList)
 
   if not atype?
     return null
   /if
 
   if op == tokens:NOT
-    return validateNotExpr(rsv, pexpr, atype, errors)
+    return me.validateNotExpr(pexpr, atype)
   /if
 
   if op == tokens:VAL
-    return validateValExpr(rsv, pexpr, atype, errors)
+    return me.validateValExpr(pexpr, atype)
   /if
 
   if op == tokens:PTR
-    return validatePtrExpr(rsv, pexpr, atype, errors)
+    return me.validatePtrExpr(pexpr, atype)
   /if
 
   if op == tokens:UMINUS
-    return validateUMinusExpr(rsv, pexpr, atype, errors)
+    return me.validateUMinusExpr(pexpr, atype)
   /if
 
   if op == tokens:QUEST
-    return validateQuestExpr(rsv, pexpr, atype, errors)
+    return me.validateQuestExpr(pexpr, atype)
   /if
 
   # if we've reached this point then it's '++' or '--'
 
-  return validateIncDecExpr(rsv, pexpr, arg, atype, errors)
-/func
+  return me.validateIncDecExpr(pexpr, arg, atype)
+/method
 
 
-func validateTernaryExpr(rsv sema:Resolver,
-                         pexpr ptr ast:PExpr,
-                         recList, errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateTernaryExpr(pexpr ptr ast:PExpr,
+                                         recList ptr list:List) ptr ast:Type
 
   mut condition = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-  mut condType = sema:validateExprRecl(rsv, condition, recList, errors)
+  mut condType = me.validateExprRecl(condition, recList)
 
   mut left = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
-  mut leftType = sema:validateExprRecl(rsv, left, recList, errors)
+  mut leftType = me.validateExprRecl(left, recList)
 
   mut right = <ptr ast:PExpr>(val pexpr'node'leaves.get(2))
-  mut rightType = sema:validateExprRecl(rsv, right, recList, errors)
+  mut rightType = me.validateExprRecl(right, recList)
 
   if not condType? or not leftType? or not rightType?
     return null
   /if
 
   if not condType.isBool()
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, "non boolean ternary condition"))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "non boolean ternary condition"))
 
     return null
   /if
@@ -1256,7 +1221,9 @@ func validateTernaryExpr(rsv sema:Resolver,
   # ternary operator the position of the two conditional choices is irrelevant
   # for sake of type determination, so we must run it twice with reversed
   # arguments
-  if not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pexpr), leftType, rightType) and not sema:typeIsAssignable(rsv'ctx, <ptr ast:PNode>(pexpr), rightType, leftType)
+  if     not me.typeIsAssignable(<ptr ast:PNode>(pexpr), leftType, rightType) \
+     and not me.typeIsAssignable(<ptr ast:PNode>(pexpr), rightType, leftType)
+
     mut cs = cs:new(20)
     cs.add("ternary expression arguments have incompatible types '")
     leftType.summarize(cs)
@@ -1266,7 +1233,7 @@ func validateTernaryExpr(rsv sema:Resolver,
 
     mut msg = cs:unwrap(cs)
 
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
 
     mem:free(msg)
 
@@ -1274,7 +1241,7 @@ func validateTernaryExpr(rsv sema:Resolver,
   /if
 
   if leftType.isData() or rightType.isData()
-    return rsv'ctx.matchBuiltin("data")
+    return me'prs.matchBuiltin("data")
   /if
 
   if leftType.isNull()
@@ -1286,31 +1253,28 @@ func validateTernaryExpr(rsv sema:Resolver,
   /if
 
   if leftType.isInt()
-    return intTypesFindLargestCompatible(rsv'ctx, leftType, rightType)
+    return me.intTypesFindLargestCompatible(leftType, rightType)
   /if
 
   # left and right type should pretty much the same now
   return leftType
-/func
+/method
 
 
-func validateMeExpr(rsv sema:Resolver,
-                    pexpr ptr ast:PExpr,
-                    errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateMeExpr(pexpr ptr ast:PExpr) ptr ast:Type
 
   mut meType = <ptr ast:PNode>(pexpr).findSym("me")
   if not meType?
     mut msg = "'me' outside of method body"
-    errors.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, rsv'root'fileName, msg))
+    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
   /if
 
   return meType
-/func
+/method
 
 
-func validateStructLiteralExpr(rsv sema:Resolver,
-                               pexpr ptr ast:PExpr,
-                               recList,errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateStructLiteralExpr(pexpr ptr ast:PExpr,
+                                               recList ptr list:List) ptr ast:Type
 
   mut scope = <ptr ast:PNode>(pexpr)
   mut leavesLen = scope'leaves.len()
@@ -1321,7 +1285,7 @@ func validateStructLiteralExpr(rsv sema:Resolver,
 
   while i < leavesLen
     mut param = <ptr ast:PExpr>(val scope'leaves.get(i))
-    mut type = sema:validateExprRecl(rsv, param, recList, errors)
+    mut type = me.validateExprRecl(param, recList)
 
     if not type?
       kv:free(members)
@@ -1334,14 +1298,13 @@ func validateStructLiteralExpr(rsv sema:Resolver,
     i++
   /while
 
-  return astfn:typeNewStruct(rsv'root'typePool, null, null, members)
+  return astfn:typeNewStruct(me'curRoot'typePool, null, null, members)
 
-/func
+/method
 
 
-func validateExprRecl(rsv sema:Resolver,
-                      pexpr ptr ast:PExpr,
-                      recList,errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateExprRecl(pexpr ptr ast:PExpr,
+                                      recList ptr list:List) ptr ast:Type
 
 
   if pexpr'node'validated
@@ -1352,30 +1315,30 @@ func validateExprRecl(rsv sema:Resolver,
 
   mut op = pexpr'opType
   if ttypeIsConst(op)
-    return (pexpr'type = validateExprConst(rsv, pexpr))
+    return (pexpr'type = me.validateExprConst(pexpr))
   else
     if op == tokens:ME
-      pexpr'type = validateMeExpr(rsv, pexpr, errors)
+      pexpr'type = me.validateMeExpr(pexpr)
     else
       if op == tokens:ID
-        pexpr'type = validateExprId(rsv, pexpr, recList, errors)
+        pexpr'type = me.validateExprId(pexpr, recList)
       else
         if op == tokens:CAST
-          pexpr'type = validateExprCast(rsv, pexpr, recList, errors)
+          pexpr'type = me.validateExprCast(pexpr, recList)
         else
           if op == tokens:SIZE
-            pexpr'type = validateSizeExpr(rsv, pexpr, errors)
+            pexpr'type = me.validateSizeExpr(pexpr)
           else
             if op == tokens:OCURLY
-              pexpr'type = validateStructLiteralExpr(rsv, pexpr, recList, errors)
+              pexpr'type = me.validateStructLiteralExpr(pexpr, recList)
             else
               if ttypeIsTernary(op)
-                pexpr'type = validateTernaryExpr(rsv, pexpr, recList, errors)
+                pexpr'type = me.validateTernaryExpr(pexpr, recList)
               else
                 if ttypeIsBinary(op)
-                  pexpr'type = validateBinaryExpr(rsv, pexpr, recList, errors)
+                  pexpr'type = me.validateBinaryExpr(pexpr, recList)
                 else
-                  pexpr'type = validateUnaryExpr(rsv, pexpr, recList, errors)
+                  pexpr'type = me.validateUnaryExpr(pexpr, recList)
                 /if
               /if
             /if
@@ -1390,12 +1353,10 @@ func validateExprRecl(rsv sema:Resolver,
   /if
 
   return pexpr'type
-/func
+/method
 
 
-func validateExpr(rsv sema:Resolver,
-                  pexpr ptr ast:PExpr,
-                  errors ptr list:List) ptr ast:Type
+method sema:Resolver.validateExpr(pexpr ptr ast:PExpr) ptr ast:Type
 
-  return validateExprRecl(rsv, pexpr, null, errors)
-/func
+  return me.validateExprRecl(pexpr, null)
+/method

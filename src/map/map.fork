@@ -112,8 +112,7 @@ func nodeRotateLeft(node ptr map:Node) ptr map:Node
   mut ret = node'right
 
   if ret'color == BLACK
-    tty:errln("rotating left a black node")
-    proc:abort()
+    proc:panic("rotating left a black node")
   /if
 
   node'right = ret'left
@@ -130,8 +129,7 @@ func nodeRotateRight(node ptr map:Node) ptr map:Node
   mut ret = node'left
 
   if ret'color == BLACK
-    tty:errln("rotating right a black node")
-    proc:abort()
+    proc:panic("rotating right a black node")
   /if
 
   node'left = ret'right

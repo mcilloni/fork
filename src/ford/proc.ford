@@ -27,3 +27,4 @@ decl func args() ptr Args
 decl func abort()
 decl func exit(retval int16)
 decl func getenv(variable ptr uint8) ptr uint8
+decl func panic(msg ptr uint8)

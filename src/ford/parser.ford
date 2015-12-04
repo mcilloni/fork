@@ -27,20 +27,25 @@ alias Parser struct (
 
 # Parser init/deinit functions
 
-decl func free(ctx ptr Parser)
+decl func free(prs ptr Parser)
 decl func new() ptr Parser
 
 
 # Parser methods
 
 decl method Parser.getImport(name ptr uint8) ptr ast:PRoot
-decl method Parser.importMod(importName ptr ast:StringDef, value ptr ptr ast:PNode) ptr list:List
+
+decl method Parser.importMod(importName ptr ast:StringDef) {ast ptr ast:PNode,
+                                                               issues ptr list:List}
+                                                               
 decl method Parser.importAll(imports ptr list:List) ptr list:List
 decl method Parser.matchBuiltin(name ptr uint8) ptr ast:Type
-decl method Parser.parseDirectory(dirName ptr uint8,
-                                  newModule ptr ptr ast:PNode) ptr list:List
-decl method Parser.parseFile(fileName ptr uint8,
-                             newRoot ptr ptr ast:PNode) ptr list:List
+
+decl method Parser.parseDirectory(dirName ptr uint8) {pmod ast:PModule,
+                                                       issues ptr list:List}
+
+decl method Parser.parseFile(fileName ptr uint8) {root ptr ast:PNode,
+                                                   issues ptr list:List}
 
 decl method Parser.setCurrentFile(filename ptr uint8)
 
