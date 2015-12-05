@@ -47,10 +47,12 @@ method ast:PNode.findAliasLocal(name ptr uint8) ptr ast:Type
       mut root = <ptr ast:PRoot>(val roots.get(i))
 
       if root != curRoot
-        tAlias = root'aliases.typeof(name)
+        if root'aliases?
+          tAlias = root'aliases.typeof(name)
 
-        if tAlias?
-          return tAlias
+          if tAlias?
+            return tAlias
+          /if
         /if
       /if
 

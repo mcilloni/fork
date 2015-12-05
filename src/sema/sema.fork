@@ -66,8 +66,6 @@ method sema:Resolver.validateFile(root ptr ast:PRoot) bool
     return true
   /if
 
-  root'node'syms = ast:stabNew()
-
   me.setCurrentRoot(root)
 
   mut pnode = <ptr ast:PNode>(root)
@@ -112,10 +110,6 @@ method sema:Resolver.validateModuleFile(root ptr ast:PRoot)
   if importErrorsLen != 0
     return
   /if
-
-  proot'typePool = mem:fpNew(<ptr func(item data)>(ptr ast:typeFree))
-
-  proot'aliases = ast:stabNew()
 
   me.validateFile(proot)
 /method

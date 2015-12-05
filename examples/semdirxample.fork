@@ -78,13 +78,13 @@ entry
   while i < len
     mut root = <ptr ast:PRoot>(val pmod'roots.get(i))
 
-    tty:out("## FILE: ")
+    tty:out("\n\n## FILE: ")
     tty:out(root'fileName)
     tty:outln("")
 
     mut aliases = root'aliases'syms
 
-    tty:out("\n\n== ALIASES: ")
+    tty:out("\n== ALIASES: ")
     tty:outint(aliases.len())
     tty:outch(10)
 
@@ -109,7 +109,7 @@ entry
     len = decls.len()
 
     while j < len
-      pair = decls.getAt(i)
+      pair = decls.getAt(j)
       mut dinfo = <ptr ast:DeclInfo>(pair'value)
       mut typeStr ptr uint8 = null
 

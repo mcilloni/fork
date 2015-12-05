@@ -91,6 +91,11 @@ method ast:PNode.findSymInFile(name ptr uint8) {type ptr ast:Type,
 
   if pblock?
     mut stab = pblock.findStab()
+
+    if not stab?
+      return {null, pblock.findPRoot()}
+    /if
+
     mut type = stab.typeof(name)
 
     if type?
@@ -128,9 +133,11 @@ method ast:PNode.findSym(name ptr uint8) ptr ast:Type
         while i < len
           mut root = <ptr ast:PRoot>(val roots.get(i))
 
-          mut modSym = root'node'syms.typeof(name)
-          if modSym?
-            return modSym
+          if root'node'syms?
+            mut modSym = root'node'syms.typeof(name)
+            if modSym?
+              return modSym
+            /if
           /if
 
           i++

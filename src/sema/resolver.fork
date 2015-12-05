@@ -182,6 +182,11 @@ method sema:Resolver.collect(prs ptr parser:Parser,
   while i < len
     mut root = <ptr ast:PRoot>(val pmod'roots.get(i))
 
+    # init the root file with type pool and aliases/decls symtable
+    root'typePool = mem:fpNew(<ptr func(item data)>(ptr ast:typeFree))
+    root'aliases = ast:stabNew()
+    root'node'syms = ast:stabNew()
+
     if not me.collectFromRoot(root, ret, <ptr ptr ast:PDecl>(ptr pmod'entryNode))
       kv:free(ret)
 
