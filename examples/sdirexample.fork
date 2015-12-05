@@ -23,16 +23,16 @@ entry
     proc:exit(1)
   /if
 
-  mut {pmod,errs} = synt:parseModule(argv'args[0])
-  mut len = errs.len()
+  mut {pmod,issues} = synt:parseModule(argv'args[0])
+  mut len = issues.len()
 
   if len > 0
     mut i uintptr = 0
 
     while i < len
-      mut err = <ptr ast:Issue>(val errs.get(i))
+      mut issue = issues.get(i)
 
-      err.writeOut(ptr tty:err)
+      issue.writeOut(ptr tty:err)
 
       i++
     /while
@@ -41,4 +41,5 @@ entry
 
   pmod.dump()
   ast:pmoduleFree(pmod)
+  ast:issuesFree(issues)
 /entry
