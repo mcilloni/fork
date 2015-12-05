@@ -22,7 +22,7 @@ alias Resolver struct (
   prs ptr parser:Parser,
   curRoot ptr ast:PRoot,
   aliases,decls ptr kv:KVList,
-  errs ptr list:List
+  issues ptr ast:Issues
 )
 
 
@@ -31,7 +31,7 @@ decl func resolverDeinit(rsv ptr Resolver)
 
 decl method Resolver.collect(prs ptr parser:Parser,
                              pmod ptr ast:PModule,
-                             errors ptr list:List) ptr kv:KVList
+                             issues ptr ast:Issues) ptr kv:KVList
 
 decl method Resolver.findAliasImport(moduleName,name ptr uint8) ptr ast:Type
 
@@ -76,10 +76,10 @@ decl method Resolver.validateFunc(pdecl ptr ast:PDecl,
 
 # validates the AST, and returns a list of the issues found.
 decl func validateAst(prs ptr parser:Parser,
-                      root ptr ast:PNode) ptr list:List
+                      root ptr ast:PNode) ptr ast:Issues
 
 decl func validateModuleAst(prs ptr parser:Parser,
-                            pmod ptr ast:PModule) ptr list:List
+                            pmod ptr ast:PModule) ptr ast:Issues
 
 
 decl method ast:PExpr.isCompileConst() bool

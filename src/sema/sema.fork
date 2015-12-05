@@ -101,11 +101,11 @@ method sema:Resolver.validateModuleFile(root ptr ast:PRoot)
 
   me'prs.setCurrentFile(proot'fileName)
 
-  mut importErrors = me'prs.importAll(proot'imports)
-  mut importErrorsLen = importErrors.len()
+  mut importIssues = me'prs.importAll(proot'imports)
+  mut importErrorsLen = importIssues.errLen()
 
-  me'errs.appendList(importErrors)
-  list:free(importErrors)
+  me'issues.addAll(importIssues)
+  ast:issuesFree(importIssues)
 
   me'prs.setCurrentFile(proot'fileName)
 
@@ -121,14 +121,14 @@ method sema:Resolver.validateModuleFile(root ptr ast:PRoot)
 /method
 
 
-func validateModuleAst(prs ptr parser:Parser, pmod ptr ast:PModule) ptr list:List
-  mut errs = list:new()
+func validateModuleAst(prs ptr parser:Parser, pmod ptr ast:PModule) ptr ast:Issues
+  mut iss = ast:issuesNew()
 
   mut rsv sema:Resolver
 
-  mut decls = rsv.collect(prs, pmod, errs)
+  mut decls = rsv.collect(prs, pmod, iss)
   if not decls?
-    return errs
+    return iss
   /if
 
   mut i uintptr = 0
@@ -145,11 +145,11 @@ func validateModuleAst(prs ptr parser:Parser, pmod ptr ast:PModule) ptr list:Lis
   kv:free(decls)
   sema:resolverDeinit(ptr rsv)
 
-  return errs
+  return iss
 /func
 
 
-func validateAst(prs ptr parser:Parser, root ptr ast:PNode) ptr list:List
+func validateAst(prs ptr parser:Parser, root ptr ast:PNode) ptr ast:Issues
   if not root.isRoot()
     proc:panic("non PRoot node can't be validated")
     return null

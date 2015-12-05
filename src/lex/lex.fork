@@ -171,7 +171,7 @@ func lexExtractString(lex ptr lex:Lexer) ptr lex:StringTok
     got[0] = ch'ch
     got[1] = 0 # `\0` c string terminator
 
-    lex'error = parser:issueToError(lex:errorMism(lex'lineno, "\"", ptr got[0]))
+    lex'error = ast:issueToError(lex:errorMism(lex'lineno, "\"", ptr got[0]))
     return null
   /if
 
@@ -1027,7 +1027,7 @@ func linenoNew(filename ptr uint8, lineno, pos uintptr) ptr lex:Lineno
 /func
 
 
-func issueFromLexError(err ptr err:Error, lineno ptr lex:Lineno) ptr parser:Issue
+func issueFromLexError(err ptr err:Error, lineno ptr lex:Lineno) ptr ast:Issue
   if not err?
     return null
   /if
@@ -1036,7 +1036,7 @@ func issueFromLexError(err ptr err:Error, lineno ptr lex:Lineno) ptr parser:Issu
   where'line = lineno'lineno
   where'pos = lineno'pos
 
-  mut ret = parser:issueNew(parser:ISSUE_ERR, where, lineno'filename, err'msg)
+  mut ret = ast:issueNew(ast:ISSUE_ERR, where, lineno'filename, err'msg)
 
   err:errorFree(err)
 
@@ -1090,16 +1090,16 @@ func tokDiscardEnd(tok ptr lex:Token) ast:Line
 /func
 
 
-func error(lineno ptr lex:Lineno, msg ptr uint8) ptr parser:Issue
+func error(lineno ptr lex:Lineno, msg ptr uint8) ptr ast:Issue
   mut line ast:Line
   line'line = lineno'lineno
   line'pos = lineno'pos
 
-  return parser:issueNew(parser:ISSUE_ERR, line, lineno'filename, msg)
+  return ast:issueNew(ast:ISSUE_ERR, line, lineno'filename, msg)
 /func
 
 
-func errorMism(lineno ptr lex:Lineno, exp ptr uint8, got ptr uint8) ptr parser:Issue
+func errorMism(lineno ptr lex:Lineno, exp ptr uint8, got ptr uint8) ptr ast:Issue
 
   mut toglue [5] ptr uint8
   toglue[0] = "expected "

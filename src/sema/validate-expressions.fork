@@ -359,7 +359,7 @@ method sema:Resolver.validateExprCast(pexpr ptr ast:PExpr,
 
     mut str = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, str))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
     mem:free(str)
     return null
@@ -380,7 +380,8 @@ method sema:Resolver.validateSizeExpr(pexpr ptr ast:PExpr) ptr ast:Type
 
   if sizeType'type == ast:TYPE_FUNC
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "invalid application of 'size' to a function type"))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                    "invalid application of 'size' to a function type")
     return null
   /if
 
@@ -406,7 +407,7 @@ method sema:Resolver.validateExprId(pexpr ptr ast:PExpr,
 
     mut str = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, str))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
     mem:free(str)
 
@@ -440,7 +441,7 @@ method sema:Resolver.validateBoolExpr(pexpr ptr ast:PExpr,
 
     mut str = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, str))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
     mem:free(str)
 
@@ -464,7 +465,7 @@ method sema:Resolver.validateArithPtrExpr(pexpr ptr ast:PExpr,
 
     mut str = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, str))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
     mem:free(str)
 
@@ -484,7 +485,7 @@ method sema:Resolver.validateArithPtrExpr(pexpr ptr ast:PExpr,
 
         mut str = cs:unwrap(cs)
 
-        me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, str))
+        me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
         mem:free(str)
 
@@ -493,7 +494,8 @@ method sema:Resolver.validateArithPtrExpr(pexpr ptr ast:PExpr,
 
       return me'prs.matchBuiltin("intptr")
     else
-      me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "only difference between two pointers can be allowed"))
+      me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                      "only difference between two pointers can be allowed")
       return null
     /if
   /if
@@ -512,7 +514,8 @@ method sema:Resolver.validateArithExpr(pexpr ptr ast:PExpr,
   mut op = pexpr'opType
 
   if not (ltype.isInt() or ltype.isPtr()) or not (rtype.isPtr() or rtype.isInt())
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "arithmetic operations can only involve pointers and integers"))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                    "arithmetic operations can only involve pointers and integers")
 
     return null
   /if
@@ -550,7 +553,8 @@ method sema:Resolver.validateEqDiffExpr(pexpr ptr ast:PExpr,
   /if
 
   if not success
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "cannot evaluate the equivalence of two incompatible types"))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                    "cannot evaluate the equivalence of two incompatible types")
   /if
 
   return success => me'prs.matchBuiltin("bool") || null
@@ -562,7 +566,7 @@ method sema:Resolver.validateModuleAccessExpr(pexpr ptr ast:PExpr) ptr ast:Type
   mut modName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
   if not me'curRoot.hasImported(modName)
     mut msg = txt:strappend(modName, " has never been imported")
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
     mem:free(msg)
 
     return null
@@ -581,7 +585,7 @@ method sema:Resolver.validateModuleAccessExpr(pexpr ptr ast:PExpr) ptr ast:Type
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 
@@ -623,7 +627,7 @@ method sema:Resolver.validateStructureAccessExpr(pexpr ptr ast:PExpr,
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 
@@ -643,7 +647,7 @@ method sema:Resolver.validateStructureAccessExpr(pexpr ptr ast:PExpr,
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 
@@ -658,13 +662,14 @@ method sema:Resolver.validateArrayAccess(pexpr ptr ast:PExpr,
                          ltype,rtype ptr ast:Type) ptr ast:Type
 
   if ltype'type != ast:TYPE_PTR and not ltype.isLoc()
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+    me'issues.error(pexpr'node'begin, \
                     me'curRoot'fileName, \
-                    "array access is allowed only for pointers and locations"))
+                    "array access is allowed only for pointers and locations")
   /if
 
   if not rtype.isInt()
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "an expression of integer type is required for array access"))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                    "an expression of integer type is required for array access")
   /if
 
   return ltype'retType
@@ -687,9 +692,9 @@ method sema:Resolver.validateFunctionCallExpr(pexpr ptr ast:PExpr,
   /if
 
   if not accType.isFunc()
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
+    me'issues.error(pexpr'node'begin, \
                     me'curRoot'fileName, \
-                    "expression is neither a function nor a pointer to a function"))
+                    "expression is neither a function nor a pointer to a function")
 
     return null
   /if
@@ -724,8 +729,7 @@ method sema:Resolver.validateFunctionCallExpr(pexpr ptr ast:PExpr,
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
-                                              me'curRoot'fileName, msg))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 
@@ -762,8 +766,7 @@ method sema:Resolver.validateFunctionCallExpr(pexpr ptr ast:PExpr,
 
       mut msg = cs:unwrap(cs)
 
-      me'errs.append(parser:issueNew(parser:ISSUE_ERR, \
-                            pexpr'node'begin, me'curRoot'fileName, msg))
+      me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
       mem:free(msg)
 
@@ -787,8 +790,7 @@ method sema:Resolver.validateAssignExpr(pexpr,left ptr ast:PExpr,
       msg = "can't reassign 'me'"
     /if
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, left'node'begin, \
-                                              me'curRoot'fileName, msg))
+    me'issues.error(left'node'begin, me'curRoot'fileName, msg)
     return null
   /if
 
@@ -803,8 +805,7 @@ method sema:Resolver.validateAssignExpr(pexpr,left ptr ast:PExpr,
 
     mut str = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
-                                              me'curRoot'fileName, str))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
     mem:free(str)
 
@@ -828,8 +829,7 @@ method sema:Resolver.validateAssignExpr(pexpr,left ptr ast:PExpr,
 
         mut str = cs:unwrap(cs)
 
-        me'errs.append(parser:issueNew(parser:ISSUE_ERR, member'node'begin, \
-                                              me'curRoot'fileName, str))
+        me'issues.error(member'node'begin, me'curRoot'fileName, str)
 
         mem:free(str)
 
@@ -859,7 +859,7 @@ method sema:Resolver.validateNullCoalescingExpr(pexpr ptr ast:PExpr,
 
     mut str = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, str))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
     mem:free(str)
 
@@ -877,7 +877,7 @@ method sema:Resolver.validateNullCoalescingExpr(pexpr ptr ast:PExpr,
 
     mut str = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, str))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
     mem:free(str)
 
@@ -922,7 +922,7 @@ method sema:Resolver.validateMethodExpr(pexpr ptr ast:PExpr,
 
   if not pnodeAllowedToUseDot(pexpr'node'parent)
     mut msg = "methods can be accessed only when invoked"
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
     return null
   /if
@@ -941,7 +941,7 @@ method sema:Resolver.validateMethodExpr(pexpr ptr ast:PExpr,
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 
@@ -1024,7 +1024,8 @@ method sema:Resolver.validateNotExpr(pexpr ptr ast:PExpr,
                                      atype ptr ast:Type) ptr ast:Type
 
   if not atype.isBool()
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "expression must be boolean"))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                    "expression must be boolean")
 
     return null
   /if
@@ -1045,7 +1046,7 @@ method sema:Resolver.validateValExpr(pexpr ptr ast:PExpr,
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 
@@ -1060,7 +1061,8 @@ method sema:Resolver.validatePtrExpr(pexpr ptr ast:PExpr,
                                      atype ptr ast:Type) ptr ast:Type
 
   if atype.isNull()
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "can't extract the address of null"))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                    "can't extract the address of null")
 
     return null
   /if
@@ -1080,7 +1082,7 @@ method sema:Resolver.validateUMinusExpr(pexpr ptr ast:PExpr,
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 
@@ -1095,7 +1097,7 @@ method sema:Resolver.validateUMinusExpr(pexpr ptr ast:PExpr,
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 
@@ -1117,7 +1119,7 @@ method sema:Resolver.validateIncDecExpr(pexpr,atarget ptr ast:PExpr,
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 
@@ -1125,7 +1127,8 @@ method sema:Resolver.validateIncDecExpr(pexpr,atarget ptr ast:PExpr,
   /if
 
   if not ttypeCanBeAssignTarget(atarget'opType, atype)
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, atarget'node'begin, me'curRoot'fileName, "expression is not assignable"))
+    me'issues.error(atarget'node'begin, me'curRoot'fileName, \
+                    "expression is not assignable")
 
     return null
   /if
@@ -1145,7 +1148,7 @@ method sema:Resolver.validateQuestExpr(pexpr ptr ast:PExpr,
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 
@@ -1211,7 +1214,8 @@ method sema:Resolver.validateTernaryExpr(pexpr ptr ast:PExpr,
   /if
 
   if not condType.isBool()
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "non boolean ternary condition"))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                    "non boolean ternary condition")
 
     return null
   /if
@@ -1233,7 +1237,7 @@ method sema:Resolver.validateTernaryExpr(pexpr ptr ast:PExpr,
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 
@@ -1266,7 +1270,7 @@ method sema:Resolver.validateMeExpr(pexpr ptr ast:PExpr) ptr ast:Type
   mut meType = <ptr ast:PNode>(pexpr).findSym("me")
   if not meType?
     mut msg = "'me' outside of method body"
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
   /if
 
   return meType

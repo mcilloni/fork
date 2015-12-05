@@ -60,7 +60,7 @@ func new() ptr parser:Parser
 # Parser methods
 
 method parser:Parser.findImport(importName ptr ast:StringDef) {ast ptr ast:PNode,
-                                                                issues ptr list:List}
+                                                                issues ptr ast:Issues}
 
   mut fordName = txt:strappend(importName'name, ".ford")
 
@@ -86,7 +86,7 @@ method parser:Parser.findImport(importName ptr ast:StringDef) {ast ptr ast:PNode
     i++
   /while
 
-  mut errors = list:new()
+  mut issues = ast:issuesNew()
 
   mut toGlue [4] ptr uint8
 
@@ -97,12 +97,12 @@ method parser:Parser.findImport(importName ptr ast:StringDef) {ast ptr ast:PNode
 
   mut glued = txt:strglue(ptr toGlue[0])
 
-  errors.append(parser:issueNew(parser:ISSUE_ERR, importName'begin, me'currentFile, glued))
+  issues.error(importName'begin, me'currentFile, glued)
 
   mem:free(fordName)
   mem:free(glued)
 
-  return {null,errors}
+  return {null,issues}
 /method
 
 
@@ -112,7 +112,7 @@ method parser:Parser.getImport(name ptr uint8) ptr ast:PRoot
 
 
 method parser:Parser.importMod(importName ptr ast:StringDef) {ast ptr ast:PNode,
-                                                               issues ptr list:List}
+                                                               issues ptr ast:Issues}
 
   mut ast = <ptr ast:PNode>(me'imports.get(importName))
 
@@ -124,13 +124,13 @@ method parser:Parser.importMod(importName ptr ast:StringDef) {ast ptr ast:PNode,
 
     return {ast,errors}
   else
-    return {null,list:new()}
+    return {null,ast:issuesNew()}
   /if
 
 /method
 
 
-method parser:Parser.importAll(imports ptr list:List) ptr list:List
+method parser:Parser.importAll(imports ptr list:List) ptr ast:Issues
   mut len = imports.len()
   mut i uintptr = 0
 
@@ -145,7 +145,7 @@ method parser:Parser.importAll(imports ptr list:List) ptr list:List
     i++
   /while
 
-  return list:new()
+  return ast:issuesNew()
 /method
 
 
@@ -163,15 +163,15 @@ method parser:Parser.parseDirectory(dirName ptr uint8) {pmod ast:PModule,
 
 
 method parser:Parser.parseFile(fileName ptr uint8) {root ptr ast:PNode,
-                                                     issues ptr list:List}
+                                                     issues ptr ast:Issues}
 
   mut {file,err} = synt:parse(fileName)
 
   if err?
-    mut list = list:new()
-    list.append(err)
+    mut issues = ast:issuesNew()
+    issues.add(err)
 
-    return {null, list}
+    return {null, issues}
   /if
 
   return {file, sema:validateAst(me, file)}

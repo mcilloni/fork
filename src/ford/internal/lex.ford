@@ -29,7 +29,7 @@ decl func linenoNew(file ptr uint8, line,pos uintptr) ptr Lineno
 
 decl func lineMake(lexl ptr Lineno) ast:Line
 
-decl func issueFromLexError(err ptr err:Error, lineno ptr Lineno) ptr parser:Issue
+decl func issueFromLexError(err ptr err:Error, lineno ptr Lineno) ptr ast:Issue
 
 alias StringTok struct(
   str ptr uint8,
@@ -69,8 +69,8 @@ decl func tokenStr(tok ptr Token) ptr uint8
 
 decl func ttypeStr(tt uint16) ptr uint8
 
-decl func error(line ptr Lineno, msg ptr uint8) ptr parser:Issue
-decl func errorMism(line ptr Lineno, got ptr uint8, expected ptr uint8) ptr parser:Issue
+decl func error(line ptr Lineno, msg ptr uint8) ptr ast:Issue
+decl func errorMism(line ptr Lineno, got ptr uint8, expected ptr uint8) ptr ast:Issue
 decl func errorLex(lex ptr Lexer, msg ptr uint8) ptr err:Error
 
 decl func tokExtractBegin(tok ptr Token) ast:Line

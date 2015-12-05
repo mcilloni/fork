@@ -12,6 +12,7 @@ module ast
 
 
 import cs
+import err
 import hash
 import kv
 import list
@@ -258,6 +259,43 @@ decl func pmoduleFree(pmod ptr PModule)
 
 decl func declKey(pdecl ptr PDecl) ptr uint8
 decl func methodKey(typeModule,typeName,methodName ptr uint8) ptr uint8
+
+
+alias Issue struct (
+  gravity uint8,
+  where Line,
+  filename,message ptr uint8
+)
+
+
+decl func issueFree(issue ptr Issue)
+decl func issueNew(gravity uint8, where Line, filename, message ptr uint8) ptr Issue
+decl func issueToError(issue ptr Issue) ptr err:Error
+
+decl method Issue.writeOut(out ptr func(err ptr uint8))
+
+
+alias Issues struct (
+  list list:List,
+  errLen uintptr
+)
+
+
+decl func issuesFree(iss ptr Issues)
+decl func issuesNew() ptr Issues
+
+
+decl method Issues.add(issue ptr Issue)
+decl method Issues.addAll(iss ptr Issues)
+decl method Issues.errLen() uintptr
+decl method Issues.error(where Line, filename, message ptr uint8)
+decl method Issues.get(i uintptr) ptr Issue
+decl method Issues.len() uintptr
+
+
+decl mut ISSUE_ERR uint8
+decl mut ISSUE_WARN uint8
+decl mut ISSUE_INFO uint8
 
 
 decl mut PROOT      uint16

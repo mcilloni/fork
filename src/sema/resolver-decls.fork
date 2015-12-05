@@ -157,8 +157,7 @@ method sema:Resolver.registerDeclReal(pdecl ptr ast:PDecl,
         if not pexpr.isCompileConst()
           mut msg = "expression is not a compile time constant"
 
-          me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
-                                          me'curRoot'fileName, msg))
+          me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
         /if
 
         # if we're are validating the declaration directly and not because of
@@ -181,7 +180,7 @@ method sema:Resolver.registerDeclReal(pdecl ptr ast:PDecl,
 
               mut msg = cs:unwrap(cs)
 
-              me'errs.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, me'curRoot'fileName, msg))
+              me'issues.error(ptype'begin, me'curRoot'fileName, msg)
 
               mem:free(msg)
 
@@ -189,7 +188,8 @@ method sema:Resolver.registerDeclReal(pdecl ptr ast:PDecl,
             /if
           else
             if valType.isNull()
-              me'errs.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, me'curRoot'fileName, "can't declare a variable with type 'null'"))
+              me'issues.error(ptype'begin, me'curRoot'fileName, \
+                              "can't declare a variable with type 'null'")
               return null
             /if
 
@@ -264,7 +264,7 @@ method sema:Resolver.resolveDeclType(name ptr uint8,
   # The declaration is absent
 
   mut msg = txt:strappend(name, " is not defined in current scope")
-  me'errs.append(parser:issueNew(parser:ISSUE_ERR, node'begin, me'curRoot'fileName, msg))
+  me'issues.error(node'begin, me'curRoot'fileName, msg)
 
   mem:free(msg)
 
@@ -288,7 +288,7 @@ method sema:Resolver.registerDecl(pdecl ptr ast:PDecl,
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, declNode'begin, me'curRoot'fileName, msg))
+    me'issues.error(declNode'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 

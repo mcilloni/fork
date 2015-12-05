@@ -26,7 +26,7 @@ entry
   mut {file,err} = synt:parse(argv'args[0])
 
   if err?
-    parser:issueWriteOut(err, ptr tty:err)
+    err.writeOut(ptr tty:err)
     proc:exit(1)
   /if
 

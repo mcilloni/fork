@@ -74,7 +74,7 @@ method sema:Resolver.ensureMethodCorrectness(pdecl ptr ast:PDecl,
 
       mut msg = cs:unwrap(cs)
 
-      me'errs.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, me'curRoot'fileName, msg))
+      me'issues.error(pdecl'node'begin, me'curRoot'fileName, msg)
 
       mem:free(msg)
     /if
@@ -98,7 +98,7 @@ method sema:Resolver.ensureMethodCorrectness(pdecl ptr ast:PDecl,
 method sema:Resolver.validateBreakContinue(stmt ptr ast:PNode, inLoop bool) bool
 
   if not inLoop
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, stmt'begin, me'curRoot'fileName, "break or continue outside of a loop"))
+    me'issues.error(stmt'begin, me'curRoot'fileName, "break or continue outside of a loop")
 
     return false
   /if
@@ -120,7 +120,7 @@ method sema:Resolver.validateDecl(pdecl ptr ast:PDecl) bool
     /if
   else
     if isDecl
-      me'errs.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, me'curRoot'fileName, "a decl must have a type"))
+      me'issues.error(pdecl'node'begin, me'curRoot'fileName, "a decl must have a type")
 
       return false
     /if
@@ -131,7 +131,7 @@ method sema:Resolver.validateDecl(pdecl ptr ast:PDecl) bool
   if leavLen > 0
     mut pexpr = <ptr ast:PExpr>(val pdecl'node'leaves.get(0))
     if isDecl
-      me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, "a decl can't have an assignment"))
+      me'issues.error(pexpr'node'begin, me'curRoot'fileName, "a decl can't have an assignment")
     /if
 
     mut exprType = me.validateExpr(pexpr)
@@ -140,8 +140,8 @@ method sema:Resolver.validateDecl(pdecl ptr ast:PDecl) bool
     /if
 
     if exprType.isEmpty()
-      me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
-                      me'curRoot'fileName, "expression has no type"))
+      me'issues.error(pexpr'node'begin, \
+                      me'curRoot'fileName, "expression has no type")
       return false
     /if
 
@@ -156,7 +156,7 @@ method sema:Resolver.validateDecl(pdecl ptr ast:PDecl) bool
 
         mut msg = cs:unwrap(cs)
 
-        me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, me'curRoot'fileName, msg))
+        me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
         mem:free(msg)
 
@@ -164,9 +164,9 @@ method sema:Resolver.validateDecl(pdecl ptr ast:PDecl) bool
       /if
     else
       if exprType.isNull()
-        me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
-                                  me'curRoot'fileName, \
-                                  "can't declare a variable with type 'null'"))
+        me'issues.error(pexpr'node'begin, \
+                        me'curRoot'fileName, \
+                        "can't declare a variable with type 'null'")
         return false
       /if
 
@@ -175,9 +175,8 @@ method sema:Resolver.validateDecl(pdecl ptr ast:PDecl) bool
   /if
 
   if not type?
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, \
-                    pdecl'node'begin, me'curRoot'fileName, \
-                    "declaration without an explicit or inferrable type"))
+    me'issues.error(pdecl'node'begin, me'curRoot'fileName, \
+                    "declaration without an explicit or inferrable type")
 
     return false
   /if
@@ -209,8 +208,7 @@ method sema:Resolver.validateMulDecl(pmuldecl ptr ast:PMulDecl) bool
 
       mut msg = cs:unwrap(cs)
 
-      me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
-                        me'curRoot'fileName, msg))
+      me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
       mem:free(msg)
 
       return false
@@ -218,8 +216,7 @@ method sema:Resolver.validateMulDecl(pmuldecl ptr ast:PMulDecl) bool
 
     if exprType'members.len() != len
       mut msg = "trying to expand a struct with a wrong number of variables (use '_' if you don't need one of the fields)"
-      me'errs.append(parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, \
-                        me'curRoot'fileName, msg))
+      me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
       return false
     /if
@@ -254,7 +251,7 @@ method sema:Resolver.validateMulDecl(pmuldecl ptr ast:PMulDecl) bool
       if exists?
         mut msg = txt:strappend(sym'name, " has been redeclared")
 
-        me'errs.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, me'curRoot'fileName, msg))
+        me'issues.error(pnode'begin, me'curRoot'fileName, msg)
 
         mem:free(msg)
 
@@ -286,7 +283,7 @@ method sema:Resolver.validateMulDecl(pmuldecl ptr ast:PMulDecl) bool
 
         mut msg = cs:unwrap(cs)
 
-        me'errs.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, me'curRoot'fileName, msg))
+        me'issues.error(pnode'begin, me'curRoot'fileName, msg)
 
         mem:free(msg)
 
@@ -312,7 +309,7 @@ method sema:Resolver.validateMulDecl(pmuldecl ptr ast:PMulDecl) bool
 
   if not newVars
     mut msg = "no new variables in mut statement"
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, me'curRoot'fileName, msg))
+    me'issues.error(pnode'begin, me'curRoot'fileName, msg)
 
     return false
   /if
@@ -340,7 +337,7 @@ method sema:Resolver.validateIf(stmt ptr ast:PNode,
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, cond'node'begin, me'curRoot'fileName, msg))
+    me'issues.error(cond'node'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 
@@ -401,7 +398,7 @@ method sema:Resolver.validateReturn(stmt ptr ast:PNode, funcInfo ast:Symbol) boo
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, stmt'begin, me'curRoot'fileName, msg))
+    me'issues.error(stmt'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 
@@ -416,7 +413,7 @@ method sema:Resolver.validateReturn(stmt ptr ast:PNode, funcInfo ast:Symbol) boo
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, stmt'begin, me'curRoot'fileName, msg))
+    me'issues.error(stmt'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 
@@ -444,7 +441,7 @@ method sema:Resolver.validateReturn(stmt ptr ast:PNode, funcInfo ast:Symbol) boo
 
       mut msg = cs:unwrap(cs)
 
-      me'errs.append(parser:issueNew(parser:ISSUE_ERR, stmt'begin, me'curRoot'fileName, msg))
+      me'issues.error(stmt'begin, me'curRoot'fileName, msg)
 
       mem:free(msg)
 
@@ -513,7 +510,7 @@ method sema:Resolver.validateWhile(stmt ptr ast:PNode,
 
     mut msg = cs:unwrap(cs)
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, cond'node'begin, me'curRoot'fileName, msg))
+    me'issues.error(cond'node'begin, me'curRoot'fileName, msg)
 
     mem:free(msg)
 

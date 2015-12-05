@@ -31,22 +31,22 @@ entry
   /if
 
   mut ctx = parser:new()
-  mut {ast,errors} = ctx.parseFile(argv'args[0])
+  mut {ast,issues} = ctx.parseFile(argv'args[0])
 
-  mut errLen = errors.len()
+  mut issLen = issues.len()
 
-  if errLen > 0
+  if issLen > 0
     mut i uintptr = 0
 
-    while i < errLen
-      mut issue = <ptr parser:Issue>(val errors.get(i))
+    while i < issLen
+      mut issue = issues.get(i)
 
-      parser:issueWriteOut(issue, ptr tty:out)
+      issue.writeOut(ptr tty:out)
 
       i++
     /while
 
-    list:free(errors)
+    ast:issuesFree(issues)
     proc:exit(1)
   /if
 

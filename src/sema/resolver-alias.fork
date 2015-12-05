@@ -43,8 +43,8 @@ method sema:Resolver.rootAliasRegister(name ptr uint8, type ptr ast:Type)
 /method
 
 
-method sema:Resolver.checkNotFuncType(type ptr ast:Type) ptr parser:Issue
-  return type'type == ast:TYPE_FUNC => parser:issueNew(parser:ISSUE_ERR, type'begin, me'curRoot'fileName, "a function type is not allowed here") || null
+method sema:Resolver.checkNotFuncType(type ptr ast:Type) ptr ast:Issue
+  return type'type == ast:TYPE_FUNC => ast:issueNew(ast:ISSUE_ERR, type'begin, me'curRoot'fileName, "a function type is not allowed here") || null
 /method
 
 
@@ -64,7 +64,8 @@ method sema:Resolver.convertRetType(retPType ptr ast:PType,
 
   # if this is not the retType of a ptr, then it's an error having a function
   if res? and res'type == ast:TYPE_FUNC and not isPtr
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, retPType'begin, me'curRoot'fileName, "function types are abstract - use pointers to them"))
+    me'issues.error(retPType'begin, me'curRoot'fileName, \
+                    "function types are abstract - use pointers to them")
 
     return null
   /if
@@ -105,7 +106,7 @@ method sema:Resolver.convertSymbolList(pargs,recList ptr list:List,
   /if
 
   mut plen = pargs.len()
-  mut errLen = me'errs.len()
+  mut errLen = me'issues.errLen()
   mut i uintptr = 0
 
   mut members = kv:strnew(plen)
@@ -128,7 +129,8 @@ method sema:Resolver.convertSymbolList(pargs,recList ptr list:List,
     if type?
       # if this is not the retType of a ptr, then it's an error having a function
       if type'type == ast:TYPE_FUNC
-        me'errs.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, me'curRoot'fileName, "function types are abstract - use pointers to them"))
+        me'issues.error(ptype'begin, me'curRoot'fileName, \
+                        "function types are abstract - use pointers to them")
 
         kv:free(members)
 
@@ -141,7 +143,7 @@ method sema:Resolver.convertSymbolList(pargs,recList ptr list:List,
     i++
   /while
 
-  if me'errs.len() > errLen
+  if me'issues.errLen() > errLen
     kv:free(members)
     return null
   /if
@@ -197,7 +199,7 @@ method sema:Resolver.resolveModuleAlias(ptype ptr ast:PType) ptr ast:Type
 
   if not me'curRoot.hasImported(ptype'moduleName)
     mut msg = txt:strappend("no import called ", ptype'moduleName)
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, me'curRoot'fileName, msg))
+    me'issues.error(ptype'begin, me'curRoot'fileName, msg)
     mem:free(msg)
 
     return null
@@ -217,7 +219,7 @@ method sema:Resolver.resolveModuleAlias(ptype ptr ast:PType) ptr ast:Type
   cs.add(ptype'moduleName)
 
   mut msg = cs:unwrap(cs)
-  me'errs.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, me'curRoot'fileName, msg))
+  me'issues.error(ptype'begin, me'curRoot'fileName, msg)
   mem:free(msg)
 
   return null
@@ -246,7 +248,7 @@ method sema:Resolver.resolveIdType(ptype ptr ast:PType,
     utils:listDumpHierarchyIntoCS(recList, cs)
 
     mut msg = cs:unwrap(cs)
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, me'curRoot'fileName, msg))
+    me'issues.error(ptype'begin, me'curRoot'fileName, msg)
     mem:free(msg)
 
     return null
@@ -279,7 +281,7 @@ method sema:Resolver.resolveIdType(ptype ptr ast:PType,
   cs.add(" in current scope")
 
   mut msg = cs:unwrap(cs)
-  me'errs.append(parser:issueNew(parser:ISSUE_ERR, ptype'begin, me'curRoot'fileName, msg))
+  me'issues.error(ptype'begin, me'curRoot'fileName, msg)
   mem:free(msg)
 
   return null

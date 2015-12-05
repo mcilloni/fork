@@ -30,9 +30,9 @@ entry
     mut i uintptr = 0
 
     while i < len
-      mut err = <ptr parser:Issue>(val errs.get(i))
+      mut err = <ptr ast:Issue>(val errs.get(i))
 
-      parser:issueWriteOut(err, ptr tty:err)
+      err.writeOut(ptr tty:err)
 
       i++
     /while

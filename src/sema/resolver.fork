@@ -46,8 +46,7 @@ method sema:Resolver.collectAlias(pdecl ptr ast:PDecl,
     cs.add(name)
     cs.add(" is already defined")
 
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, \
-                                      root'fileName, cs:unwrap(cs)))
+    me'issues.error(pdecl'node'begin, root'fileName, cs:unwrap(cs))
 
     return false
   /if
@@ -71,8 +70,7 @@ method sema:Resolver.collectDecls(pdecl ptr ast:PDecl,
     cs.add(" defined twice in current module")
 
     mut str = cs:unwrap(cs)
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, \
-                                      root'fileName, str))
+    me'issues.error(pdecl'node'begin, root'fileName, str)
 
     mem:free(str)
     mem:free(name)
@@ -95,8 +93,7 @@ method sema:Resolver.collectPDecl(pnode ptr ast:PNode,
 
   if pnode.isMulDecl()
     mut msg = "mut struct expansion is not allowed on global scope"
-    me'errs.append(parser:issueNew(parser:ISSUE_ERR, pnode'begin, \
-                                     root'fileName, msg))
+    me'issues.error(pnode'begin, root'fileName, msg)
 
     return false
   /if
@@ -123,9 +120,8 @@ method sema:Resolver.collectPDecl(pnode ptr ast:PNode,
         if not (val entryNode)?
           val entryNode = pdecl
         else
-          me'errs.append(parser:issueNew(parser:ISSUE_ERR, pdecl'node'begin, \
-                                           root'fileName, \
-                                           "entry declared twice in same module"))
+          me'issues.error(pdecl'node'begin, root'fileName, \
+                          "entry declared twice in same module")
 
           return false
         /if
@@ -166,11 +162,11 @@ method sema:Resolver.collectFromRoot(root ptr ast:PRoot,
 
 method sema:Resolver.collect(prs ptr parser:Parser,
                              pmod ptr ast:PModule,
-                             errors ptr list:List) ptr kv:KVList
+                             issues ptr ast:Issues) ptr kv:KVList
 
   me'aliases = kv:strnew(5)
   me'decls = kv:strnew(10)
-  me'errs = errors
+  me'issues = issues
 
   me'prs = prs
 

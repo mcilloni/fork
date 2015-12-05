@@ -18,14 +18,14 @@ import parser
 import utils
 
 
-decl func parse(filename ptr uint8) {file ptr ast:PNode, err ptr parser:Issue}
+decl func parse(filename ptr uint8) {file ptr ast:PNode, err ptr ast:Issue}
 decl func parseModule(path ptr uint8) {pmod ptr ast:PModule, errs ptr list:List}
 
 # private (in theory)
 
 alias Parser struct(
   filename ptr uint8,
-  err ptr parser:Issue,
+  err ptr ast:Issue,
   prs ptr Parser,
   lex ptr lex:Lexer,
   next ptr lex:Token,
