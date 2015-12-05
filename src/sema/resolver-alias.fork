@@ -25,8 +25,39 @@ import txt
 import utils
 
 
+# searches the current PRoot first, then the rest of the module.
 method ast:PNode.findAliasLocal(name ptr uint8) ptr ast:Type
-  return me.findPRoot()'aliases.typeof(name)
+  mut curRoot = me.findPRoot()
+  mut tAlias = curRoot'aliases.typeof(name)
+
+  if tAlias?
+    return tAlias
+  /if
+
+  mut roots = curRoot'pmodule'roots
+
+  mut len = roots.len()
+
+  # Don't waste time: if len == 1 then there is only a PRoot - the current - and
+  # we've already searched it.
+  if len > 1
+    mut i uintptr = 0
+
+    while i < len
+      mut root = <ptr ast:PRoot>(val roots.get(i))
+
+      if root != curRoot
+        tAlias = root'aliases.typeof(name)
+
+        if tAlias?
+          return tAlias
+        /if
+      /if
+
+      i++
+    /while
+  /if
+  return null
 /method
 
 
@@ -271,7 +302,7 @@ method sema:Resolver.resolveIdType(ptype ptr ast:PType,
       proc:panic("This should not be reachable")
     /if
 
-    return me.registerAliasReal(ptype'name, whichDecl'sym'type, recList, ignoreSize)
+    return me.registerAliasReal(ptype'name, whichDecl, recList, ignoreSize)
   /if
 
   # no match found, error
@@ -327,7 +358,7 @@ method sema:Resolver.resolveTypeReal(ptype ptr ast:PType,
 
 
 method sema:Resolver.registerAliasReal(name ptr uint8,
-                                       ptype ptr ast:PType,
+                                       pdecl ptr ast:PDecl,
                                        recList ptr list:List,
                                        ignSize bool) ptr ast:Type
 
@@ -337,9 +368,17 @@ method sema:Resolver.registerAliasReal(name ptr uint8,
     recList = list:new()
   /if
 
+  mut ptype = pdecl'sym'type
+
+  mut oldRoot = me'curRoot
+
 
   recList.push(name)
+
+  me.setCurrentRoot(pdecl'node.findPRoot())
   mut ret = me.resolveTypeReal(ptype, recList, ignSize)
+  me.setCurrentRoot(oldRoot)
+
   recList.pop()
 
   if ret?
@@ -351,6 +390,7 @@ method sema:Resolver.registerAliasReal(name ptr uint8,
     list:free(recList)
   /if
 
+
   return ret
 /method
 
@@ -360,7 +400,7 @@ method sema:Resolver.registerAlias(pdecl ptr ast:PDecl) ptr ast:Type
   mut recList list:List
   list:init(ptr recList)
 
-  mut ret = me.registerAliasReal(pdecl'sym'name, pdecl'sym'type, ptr recList, false)
+  mut ret = me.registerAliasReal(pdecl'sym'name, pdecl, ptr recList, false)
 
   list:deinit(ptr recList)
 

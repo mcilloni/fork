@@ -41,7 +41,7 @@ decl method Parser.importMod(importName ptr ast:StringDef) {ast ptr ast:PNode,
 decl method Parser.importAll(imports ptr list:List) ptr ast:Issues
 decl method Parser.matchBuiltin(name ptr uint8) ptr ast:Type
 
-decl method Parser.parseDirectory(dirName ptr uint8) {pmod ast:PModule,
+decl method Parser.parseDirectory(dirName ptr uint8) {pmod ptr ast:PModule,
                                                        issues ptr ast:Issues}
 
 decl method Parser.parseFile(fileName ptr uint8) {root ptr ast:PNode,

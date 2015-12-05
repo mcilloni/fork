@@ -248,7 +248,8 @@ alias PExpr struct(
 
 alias PModule struct(
   name ptr uint8,
-  roots ptr vect:Vect
+  roots ptr vect:Vect,
+  entryNode ptr PNode
 )
 
 

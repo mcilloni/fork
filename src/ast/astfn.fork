@@ -124,7 +124,7 @@ func pmoduleAdd(pmod ptr ast:PModule, root ptr ast:PRoot) bool
 func pmoduleNew() ptr ast:PModule
   mut pmod = <ptr ast:PModule>(mem:alloc(size(ast:PModule)))
 
-  val pmod = {null, vect:new(5)}
+  val pmod = {null, vect:new(5), null}
 
   return pmod
 /func

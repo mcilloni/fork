@@ -154,10 +154,16 @@ method parser:Parser.matchBuiltin(name ptr uint8) ptr ast:Type
 /method
 
 
-method parser:Parser.parseDirectory(dirName ptr uint8) {pmod ast:PModule,
-                                                         issues ptr list:List}
+method parser:Parser.parseDirectory(dirName ptr uint8) {pmod ptr ast:PModule,
+                                                         issues ptr ast:Issues}
 
+  mut {pmod,issues} = synt:parseModule(dirName)
 
+  if issues.errLen() > 0
+    return {null, issues}
+  /if
+
+  return {pmod, sema:validateModuleAst(me, pmod)}
 
 /method
 
@@ -165,7 +171,7 @@ method parser:Parser.parseDirectory(dirName ptr uint8) {pmod ast:PModule,
 method parser:Parser.parseFile(fileName ptr uint8) {root ptr ast:PNode,
                                                      issues ptr ast:Issues}
 
-  mut {file,err} = synt:parse(fileName)
+  mut {proot,err} = synt:parse(fileName)
 
   if err?
     mut issues = ast:issuesNew()
@@ -174,7 +180,7 @@ method parser:Parser.parseFile(fileName ptr uint8) {root ptr ast:PNode,
     return {null, issues}
   /if
 
-  return {file, sema:validateAst(me, file)}
+  return {proot, sema:validateAst(me, proot)}
 /method
 
 

@@ -85,14 +85,58 @@ method ast:PNode.findStab() ptr ast:Symtable
 /method
 
 
-method ast:PNode.findSym(name ptr uint8) ptr ast:Type
+method ast:PNode.findSymInFile(name ptr uint8) {type ptr ast:Type,
+                                                root ptr ast:PRoot}
   mut pblock = me.findPBlock()
 
   if pblock?
     mut stab = pblock.findStab()
     mut type = stab.typeof(name)
 
-    return type ?? (pblock'parent? => pblock'parent.findSym(name) || null)
+    if type?
+      return {type, null}
+    /if
+
+    if pblock'parent?
+      return {pblock'parent.findSym(name), null}
+    /if
+
+    return {null, <ptr ast:PRoot>(pblock)}
+  /if
+
+  return {null, null}
+/method
+
+
+method ast:PNode.findSym(name ptr uint8) ptr ast:Type
+  mut {locSym, curRoot} = me.findSymInFile(name)
+
+  if locSym?
+    return locSym
+  /if
+
+  # try to search into the rest of the module for a global declaration.
+  if curRoot? and curRoot'node'node.isRoot()
+    if curRoot'pmodule?
+      mut roots = curRoot'pmodule'roots
+      mut i uintptr = 0
+      mut len = roots.len()
+
+      # If len = 1, then the module is made by just one element - this root.
+      # Skip the check.
+      if len > 1
+        while i < len
+          mut root = <ptr ast:PRoot>(val roots.get(i))
+
+          mut modSym = root'node'syms.typeof(name)
+          if modSym?
+            return modSym
+          /if
+
+          i++
+        /while
+      /if
+    /if
   /if
 
   return null

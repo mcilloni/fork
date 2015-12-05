@@ -174,14 +174,15 @@ method sema:Resolver.collect(prs ptr parser:Parser,
 
   ret.setFreeFuncs(ptr mem:free, null)
 
-  mut entryNode ptr ast:PDecl = null
+  pmod'entryNode = null
+
   mut i uintptr = 0
   mut len = pmod'roots.len()
 
   while i < len
     mut root = <ptr ast:PRoot>(val pmod'roots.get(i))
 
-    if not me.collectFromRoot(root, ret, ptr entryNode)
+    if not me.collectFromRoot(root, ret, <ptr ptr ast:PDecl>(ptr pmod'entryNode))
       kv:free(ret)
 
       return null

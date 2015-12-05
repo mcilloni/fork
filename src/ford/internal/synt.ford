@@ -18,8 +18,8 @@ import parser
 import utils
 
 
-decl func parse(filename ptr uint8) {file ptr ast:PNode, err ptr ast:Issue}
-decl func parseModule(path ptr uint8) {pmod ptr ast:PModule, errs ptr list:List}
+decl func parse(filename ptr uint8) {file ptr ast:PNode, iss ptr ast:Issue}
+decl func parseModule(path ptr uint8) {pmod ptr ast:PModule, isss ptr ast:Issues}
 
 # private (in theory)
 

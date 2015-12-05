@@ -111,6 +111,11 @@ method sema:Resolver.registerDeclReal(pdecl ptr ast:PDecl,
   mut typeResolved = realType?
   mut inMap = typeResolved
 
+  # save the current root - we need to change it to this pdecl's root, because
+  # cross-module validation can jump from a file to another.
+  mut oldRoot = me'curRoot
+  me.setCurrentRoot(pdecl'node.findPRoot())
+
   # check: if this symbol is present, it's because it has already been
   # type-resolved (we ensured univocity of declarations while collecting decls)
   # and maybe not validated yet. Return type if validated.
@@ -211,6 +216,9 @@ method sema:Resolver.registerDeclReal(pdecl ptr ast:PDecl,
   if isEntry
     me'curRoot'entryNode = pdecl
   /if
+
+  # restore root.
+  me.setCurrentRoot(oldRoot)
 
   return realType
 /method

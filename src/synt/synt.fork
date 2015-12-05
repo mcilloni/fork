@@ -1249,16 +1249,16 @@ func parse(filename ptr uint8) {file ptr ast:PNode, err ptr ast:Issue}
 /func
 
 
-func parseModule(path ptr uint8) {pmod ptr ast:PModule, errs ptr list:List}
-  mut errs = list:new()
+func parseModule(path ptr uint8) {pmod ptr ast:PModule, errs ptr ast:Issues}
+  mut issues = ast:issuesNew()
 
   mut {dir,err} = fs:dir(path)
   mut zero ast:Line = {0 , 0}
 
   if err?
-    errs.append(ast:issueNew(ast:ISSUE_ERR, zero, path, err'msg))
+    issues.error(zero, path, err'msg)
     err:errorFree(err)
-    return {null, errs}
+    return {null, issues}
   /if
 
   mut ret = astfn:pmoduleNew()
@@ -1267,7 +1267,7 @@ func parseModule(path ptr uint8) {pmod ptr ast:PModule, errs ptr list:List}
     mut {file,err} = dir.next()
 
     if err?
-      errs.append(ast:issueNew(ast:ISSUE_ERR, zero, path, err'msg))
+      issues.error(zero, path, err'msg)
       err:errorFree(err)
 
       continue
@@ -1281,18 +1281,18 @@ func parseModule(path ptr uint8) {pmod ptr ast:PModule, errs ptr list:List}
       mut {root,issue} = parse(file.path())
 
       if issue?
-        errs.append(issue)
+        issues.add(issue)
       /if
 
       if root?
         if not astfn:pmoduleAdd(ret, <ptr ast:PRoot>(root))
           mut msg = "files belonging to different modules in directory"
 
-          errs.append(ast:issueNew(ast:ISSUE_ERR, zero, path, msg))
+          issues.error(zero, path, msg)
         /if
       /if
     /if
   /while
 
-  return {ret,errs}
+  return {ret,issues}
 /func
