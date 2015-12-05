@@ -15,7 +15,6 @@ import ast
 import ctrans
 import cs
 import mem
-import parser
 import proc
 import tokens
 import tty
@@ -207,17 +206,6 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   if pexpr'opType == tokens:DQUEST
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
-
-    # warn: due to constraints, every expression will be evaluated twice.
-    # Please don't use "??" with complex expressions on the left.
-    if e1'opType != tokens:APOS and e1'opType != tokens:ID and e1'opType != tokens:COLON
-      mut msg = "ctrans: unsupported operation - lhs would be evaluated twice"
-      mut issue = parser:issueNew(parser:ISSUE_ERR, pexpr'node'begin, root'fileName, msg)
-
-      parser:issueWriteOut(issue, ptr tty:err)
-
-      proc:exit(1)
-    /if
 
     me'vars.add("(")
 

@@ -25,26 +25,26 @@ entry
     proc:exit(1)
   /if
 
-  mut ctx = parser:new()
+  mut prs = parser:new()
   mut fname = txt:strequals(argv'args[0], "-") => "/dev/stdin" || argv'args[0]
-  mut {ast,errors} = ctx.parseFile(fname)
+  mut {ast,issues} = prs.parseFile(fname)
 
   mut isFord = txt:strEndsWith(fname, ".ford")
 
-  mut errLen = errors.len()
+  mut errLen = issues.len()
 
   if errLen > 0
     mut i uintptr = 0
 
     while i < errLen
-      mut issue = <ptr parser:Issue>(val errors.get(i))
+      mut issue = issues.get(i)
 
-      parser:issueWriteOut(issue, ptr tty:err)
+      issue.writeOut(ptr tty:err)
 
       i++
     /while
 
-    list:free(errors)
+    ast:issuesFree(issues)
     proc:exit(1)
   /if
 
@@ -60,7 +60,7 @@ entry
 
   tr.dump(ptr ttys)
 
-  parser:free(ctx)
+  parser:free(prs)
 
   ast:pnodeFree(ast)
 /entry
