@@ -12,7 +12,6 @@ module mem
 
 
 import err
-import lex
 import list
 import mem
 import txt

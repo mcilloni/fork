@@ -12,7 +12,7 @@ module synt
 
 
 import ast
-import lex
+import fs
 import list
 import parser
 import utils
@@ -27,18 +27,18 @@ alias Parser struct(
   filename ptr uint8,
   err ptr ast:Issue,
   prs ptr Parser,
-  lex ptr lex:Lexer,
-  next ptr lex:Token,
-  last ptr lex:Lineno,
+  lex ptr ast:Lexer,
+  next ptr ast:Token,
+  last ptr fs:Lineno,
   moduleName ptr uint8
 )
 
 decl method Parser.discardNext()
-decl method Parser.expect(ttype uint16) ptr lex:Token
+decl method Parser.expect(ttype uint16) ptr ast:Token
 decl method Parser.expectDiscard(ttype uint16) bool
-decl method Parser.next() ptr lex:Token
+decl method Parser.next() ptr ast:Token
 decl method Parser.parseExpr() ptr ast:PExpr
 decl method Parser.parseType() ptr ast:PType
 
-decl func isBinary(tok ptr lex:Token) bool
-decl func isUnary(tok ptr lex:Token) bool
+decl func isBinary(tok ptr ast:Token) bool
+decl func isUnary(tok ptr ast:Token) bool

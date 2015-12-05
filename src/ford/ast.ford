@@ -13,17 +13,15 @@ module ast
 
 import cs
 import err
+import fs
 import hash
+import io
 import kv
 import list
 import map
 import mem
+import txt
 import vect
-
-
-alias Line struct(
-  line, pos uintptr
-)
 
 
 # PType and PTypeDescr do not represent a type, but its parse-time representation.
@@ -34,7 +32,7 @@ alias PType struct (
   refc mem:Ref,
   name, moduleName ptr uint8,
   descr ptr PTypeDescr,
-  begin, end Line
+  begin, end txt:Line
 )
 
 decl method PType.dump()
@@ -98,7 +96,7 @@ alias Type struct(
   builtin bool,
 
   # where the original type was defined.
-  begin, end Line
+  begin, end txt:Line
 )
 
 
@@ -172,7 +170,7 @@ alias PNode struct(
   value uintptr,
   parent ptr PNode,
   leaves ptr list:List,
-  begin, end Line,
+  begin, end txt:Line,
   validated bool
 )
 
@@ -207,7 +205,7 @@ alias PBlock struct(
 
 alias StringDef struct(
   name ptr uint8,
-  begin,end Line
+  begin,end txt:Line
 )
 
 
@@ -264,13 +262,13 @@ decl func methodKey(typeModule,typeName,methodName ptr uint8) ptr uint8
 
 alias Issue struct (
   gravity uint8,
-  where Line,
+  where txt:Line,
   filename,message ptr uint8
 )
 
 
 decl func issueFree(issue ptr Issue)
-decl func issueNew(gravity uint8, where Line, filename, message ptr uint8) ptr Issue
+decl func issueNew(gravity uint8, where txt:Line, filename, message ptr uint8) ptr Issue
 decl func issueToError(issue ptr Issue) ptr err:Error
 
 decl method Issue.writeOut(out ptr func(err ptr uint8))
@@ -289,7 +287,7 @@ decl func issuesNew() ptr Issues
 decl method Issues.add(issue ptr Issue)
 decl method Issues.addAll(iss ptr Issues)
 decl method Issues.errLen() uintptr
-decl method Issues.error(where Line, filename, message ptr uint8)
+decl method Issues.error(where txt:Line, filename, message ptr uint8)
 decl method Issues.get(i uintptr) ptr Issue
 decl method Issues.len() uintptr
 
@@ -336,3 +334,185 @@ decl mut TYPE_INT       uint16
 decl mut TYPE_DATA      uint16
 decl mut TYPE_RECALIAS uint16
 decl mut TYPE_NULL      uint16
+
+
+# astfn
+
+decl func psymbolNew(name ptr uint8, type ptr PType) ptr PSymbol
+
+decl func ptypeNew(name,moduleName ptr uint8, descr ptr PTypeDescr) ptr PType
+
+decl func ptypeDescrNew(ptype uint16, retPType ptr PType, params ptr list:List) ptr PTypeDescr
+decl func ptypeDescrNewLoc(innerPType ptr PType, length uintptr) ptr PTypeDescr
+
+decl func symbolClone(sym ptr Symbol) ptr Symbol
+decl func symbolFree(sym ptr Symbol)
+decl func symbolNew(name ptr uint8, type ptr Type) ptr Symbol
+
+decl func builtinSetNew() ptr map:Map
+
+decl func typeClone(pool ptr mem:FreePool, type ptr Type) ptr Type
+decl func typeNewFunc(pool ptr mem:FreePool, moduleName, name ptr uint8, retVal ptr Type, members ptr kv:KVList) ptr Type
+decl func typeNewLoc(pool ptr mem:FreePool, moduleName, name ptr uint8, itemCount uintptr, retVal ptr Type) ptr Type
+decl func typeNewPtr(pool ptr mem:FreePool, moduleName, name ptr uint8, retVal ptr Type) ptr Type
+decl func typeNewRecursiveAlias(pool ptr mem:FreePool, moduleName, name ptr uint8) ptr Type
+decl func typeNewStruct(pool ptr mem:FreePool, moduleName, name ptr uint8, members ptr kv:KVList) ptr Type
+decl func typeSetAlias(type ptr Type, moduleName, name ptr uint8)
+decl func typeSetBoundaries(type ptr Type, begin,end txt:Line)
+
+
+decl func declInfoFree(declInfo ptr DeclInfo)
+decl func declInfoNew(declType uint16, declOnly,funcParam bool, type ptr Type) ptr DeclInfo
+
+
+decl func strdefFree(strdef ptr StringDef)
+decl func strdefNew(name ptr uint8, begin,end txt:Line) ptr StringDef
+
+
+decl func pnodeAppendChild(parent ptr PNode, child ptr PNode) ptr PNode
+decl func pnodeNew(ptype uint16, value uintptr) ptr PNode
+
+decl func pblockNew() ptr PBlock
+
+decl func pdeclNew(ptype uint16, sym ptr PSymbol, isDecl bool) ptr PDecl
+
+decl func pmuldeclNew(ptype uint16, syms ptr list:List) ptr PMulDecl
+
+decl func pexprNew(tok ptr Token, lhs,rhs ptr PExpr, begin,end txt:Line) ptr PExpr
+decl func pexprNewTernary(tok ptr Token, lhs,mid,rhs ptr PExpr, begin,end txt:Line) ptr PExpr
+decl func pexprNewSingle(tok ptr Token) ptr PExpr
+
+decl func prootNew(modName ptr StringDef, imports ptr list:List, fileName ptr uint8) ptr PRoot
+
+decl func pmoduleAdd(pmod ptr PModule, root ptr PRoot) bool
+decl func pmoduleNew() ptr PModule
+
+
+## lexer
+
+decl func lineMake(lexl ptr fs:Lineno) txt:Line
+
+decl func issueFromLexError(err ptr err:Error, lineno ptr fs:Lineno) ptr Issue
+
+alias StringTok struct(
+  str ptr uint8,
+  begin,end,line uintptr
+)
+
+alias Lexer struct (
+  file ptr io:Stream,
+  lineno ptr fs:Lineno,
+  error ptr err:Error,
+  saved ptr StringTok,
+  peek uint8,
+  newline, firstLineTok, firstLineLetter bool
+)
+
+alias Token struct (
+  type uint16,
+  endPos uintptr,
+  value uintptr,
+  lineno ptr fs:Lineno
+)
+
+
+decl func lexerClose(lex ptr Lexer)
+decl func lexerEof(lex ptr Lexer) bool
+decl func lexerError(lex ptr Lexer) ptr err:Error
+
+decl func lexerFromStream(stream ptr io:Stream,
+                          name ptr uint8) {lex ptr Lexer, err ptr err:Error}
+
+decl func lexerNew(name ptr uint8) {lex ptr Lexer, err ptr err:Error}
+decl func lexerNext(lex ptr Lexer) ptr Token
+
+decl func tokenFree(tok ptr Token)
+decl func tokenNew(type uint16, value uintptr, line ptr fs:Lineno, end uintptr) ptr Token
+decl func tokenStr(tok ptr Token) ptr uint8
+
+decl func ttypeStr(tt uint16) ptr uint8
+
+decl func error(line ptr fs:Lineno, msg ptr uint8) ptr Issue
+decl func errorMism(line ptr fs:Lineno, got ptr uint8, expected ptr uint8) ptr Issue
+decl func errorLex(lex ptr Lexer, msg ptr uint8) ptr err:Error
+
+decl func tokExtractBegin(tok ptr Token) txt:Line
+decl func tokExtractEnd(tok ptr Token) txt:Line
+
+decl func tokDiscardEnd(tok ptr Token) txt:Line
+decl func tokDiscardBegin(tok ptr Token) txt:Line
+
+
+## tokens
+
+
+decl mut EOF uint16
+decl mut NEWLINE uint16
+decl mut ALIAS uint16
+decl mut AMPER uint16
+decl mut AND uint16
+decl mut APOS uint16
+decl mut ASSIGN uint16
+decl mut BREAK uint16
+decl mut CAST uint16
+decl mut CBRAC uint16
+decl mut CCURLY uint16
+decl mut COLON uint16
+decl mut COMMA uint16
+decl mut CONTINUE uint16
+decl mut CPAR uint16
+decl mut DEC uint16
+decl mut DECL uint16
+decl mut DIFFERENT uint16
+decl mut DIV uint16
+decl mut DOT uint16
+decl mut DQUEST uint16
+decl mut ELSE uint16
+decl mut ENDENTRY uint16
+decl mut ENDFUNC uint16
+decl mut ENDIF uint16
+decl mut ENDMETHOD uint16
+decl mut ENDWHILE uint16
+decl mut ENTRY uint16
+decl mut EQUAL uint16
+decl mut FALSE uint16
+decl mut FATARROW uint16
+decl mut FUNC uint16
+decl mut ID uint16
+decl mut IF uint16
+decl mut IMPORT uint16
+decl mut INC uint16
+decl mut MAJEQ uint16
+decl mut MAJOR uint16
+decl mut ME uint16
+decl mut METHOD uint16
+decl mut MINEQ uint16
+decl mut MINOR uint16
+decl mut MINUS uint16
+decl mut MOD uint16
+decl mut MODULE uint16
+decl mut MUT uint16
+decl mut NOT uint16
+decl mut NULL uint16
+decl mut NUMBER uint16
+decl mut OBRAC uint16
+decl mut OCURLY uint16
+decl mut OPAR uint16
+decl mut OR uint16
+decl mut PIPE uint16
+decl mut PLUS uint16
+decl mut POW uint16
+decl mut PTR uint16
+decl mut QUEST uint16
+decl mut RETURN uint16
+decl mut SEPARATOR uint16
+decl mut SIZE uint16
+decl mut STRING uint16
+decl mut STRUCT uint16
+decl mut TIMES uint16
+decl mut TRUE uint16
+decl mut TWOCOLONS uint16
+decl mut UMINUS uint16
+decl mut VAL uint16
+decl mut WHILE uint16
+decl mut XOR uint16

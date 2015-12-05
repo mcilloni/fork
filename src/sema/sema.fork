@@ -12,7 +12,6 @@ module sema
 
 
 import ast
-import astfn
 import hash
 import kv
 import list
@@ -149,9 +148,9 @@ func validateAst(prs ptr parser:Parser, root ptr ast:PNode) ptr ast:Issues
     return null
   /if
 
-  mut pmod = astfn:pmoduleNew()
+  mut pmod = ast:pmoduleNew()
 
-  astfn:pmoduleAdd(pmod, <ptr ast:PRoot>(root))
+  ast:pmoduleAdd(pmod, <ptr ast:PRoot>(root))
 
   mut ret = validateModuleAst(prs, pmod)
 

@@ -12,7 +12,6 @@ module sema
 
 
 import ast
-import astfn
 import cs
 import kv
 import list
@@ -87,7 +86,7 @@ method sema:Resolver.ensureMethodCorrectness(pdecl ptr ast:PDecl,
   /if
 
   mut pblock = <ptr ast:PBlock>(val pdecl'node'leaves.get(0))
-  mut meType = astfn:typeNewPtr(me'curRoot'typePool, null, null, type)
+  mut meType = ast:typeNewPtr(me'curRoot'typePool, null, null, type)
 
   pblock'syms.add("me", true, true, meType, 0)
 

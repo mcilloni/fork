@@ -51,7 +51,6 @@ all:
 	$(MAKE) -C proc
 	$(MAKE) -C dyn
 	$(MAKE) -C utils
-	$(MAKE) -C lex
 	$(MAKE) -C ast
 	$(MAKE) -C synt
 	$(MAKE) -C sema

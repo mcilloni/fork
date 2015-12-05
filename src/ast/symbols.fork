@@ -12,7 +12,6 @@ module ast
 
 
 import ast
-import astfn
 import kv
 import map
 import mem
@@ -177,7 +176,7 @@ func stabNew() ptr ast:Symtable
 
   stab'syms = kv:strnew(10)
 
-  stab'syms.setFreeFuncs(ptr mem:free, ptr astfn:declInfoFree)
+  stab'syms.setFreeFuncs(ptr mem:free, ptr ast:declInfoFree)
 
   return stab
 /func
@@ -197,7 +196,7 @@ method ast:Symtable.add(name ptr uint8,
                         symType uint16)
 
   me'syms.put(txt:strclone(name), \
-                astfn:declInfoNew(symType, isDecl, funcParam, type))
+                ast:declInfoNew(symType, isDecl, funcParam, type))
 /method
 
 

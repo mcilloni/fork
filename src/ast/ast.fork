@@ -12,10 +12,8 @@ module ast
 
 
 import ast
-import astfn
 import cs
 import hash
-import lex
 import list
 import mem
 import txt
@@ -240,9 +238,9 @@ func pnodeFree(pnode ptr ast:PNode)
     if pnode.isRoot()
 
       mut proot = <ptr ast:PRoot>(pnode)
-      astfn:strdefFree(proot'moduleName)
+      ast:strdefFree(proot'moduleName)
       mem:free(proot'fileName)
-      list:freeAll(proot'imports, <ptr func(inst data)>(ptr astfn:strdefFree))
+      list:freeAll(proot'imports, <ptr func(inst data)>(ptr ast:strdefFree))
       ast:stabFree(proot'aliases)
 
       mem:fpFree(proot'typePool)

@@ -8,13 +8,11 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-module astfn
+module ast
 
 
 import ast
-import astfn
 import kv
-import lex
 import list
 import map
 import mem
@@ -64,17 +62,17 @@ func pdeclNew(nodeType uint16, sym ptr ast:PSymbol, isDecl bool) ptr ast:PDecl
 /func
 
 
-func pexprNew(tok ptr lex:Token, lhs,rhs ptr ast:PExpr, begin,end ast:Line) ptr ast:PExpr
+func pexprNew(tok ptr ast:Token, lhs,rhs ptr ast:PExpr, begin,end txt:Line) ptr ast:PExpr
   return pexprNewTernary(tok, lhs, null, rhs, begin, end)
 /func
 
 
-func pexprNewSingle(tok ptr lex:Token) ptr ast:PExpr
-  return pexprNew(tok, null, null, lex:tokExtractBegin(tok), lex:tokExtractEnd(tok))
+func pexprNewSingle(tok ptr ast:Token) ptr ast:PExpr
+  return pexprNew(tok, null, null, ast:tokExtractBegin(tok), ast:tokExtractEnd(tok))
 /func
 
 
-func pexprNewTernary(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end ast:Line) ptr ast:PExpr
+func pexprNewTernary(tok ptr ast:Token, lhs,mid,rhs ptr ast:PExpr, begin,end txt:Line) ptr ast:PExpr
   mut pexpr = <ptr ast:PExpr>(mem:zalloc(size(ast:PExpr)))
   pexpr'node'type = ast:PEXPR
   pexpr'node'value = tok'value
@@ -86,11 +84,11 @@ func pexprNewTernary(tok ptr lex:Token, lhs,mid,rhs ptr ast:PExpr, begin,end ast
   pnode'begin = begin
   pnode'end = end
 
-  astfn:pnodeAppendChild(pnode, <ptr ast:PNode>(lhs))
-  astfn:pnodeAppendChild(pnode, <ptr ast:PNode>(mid))
-  astfn:pnodeAppendChild(pnode, <ptr ast:PNode>(rhs))
+  ast:pnodeAppendChild(pnode, <ptr ast:PNode>(lhs))
+  ast:pnodeAppendChild(pnode, <ptr ast:PNode>(mid))
+  ast:pnodeAppendChild(pnode, <ptr ast:PNode>(rhs))
 
-  lex:tokenFree(tok)
+  ast:tokenFree(tok)
 
   return pexpr
 /func
@@ -246,7 +244,7 @@ func ptypeDescrNew(type uint16, retType ptr ast:PType, params ptr list:List) ptr
 
 
 func ptypeDescrNewLoc(innerType ptr ast:PType, length uintptr) ptr ast:PTypeDescr
-  mut typeDescr = astfn:ptypeDescrNew(ast:PTYPE_LOC, innerType, null)
+  mut typeDescr = ast:ptypeDescrNew(ast:PTYPE_LOC, innerType, null)
   typeDescr'length = length
 
   return typeDescr
@@ -294,7 +292,7 @@ func strdefFree(strdef ptr ast:StringDef)
 /func
 
 
-func strdefNew(name ptr uint8, begin,end ast:Line) ptr ast:StringDef
+func strdefNew(name ptr uint8, begin,end txt:Line) ptr ast:StringDef
   mut strdef = <ptr ast:StringDef>(mem:zalloc(size(ast:StringDef)))
   strdef'name = name
   strdef'begin = begin
@@ -338,7 +336,7 @@ func symbolListClone(pool ptr mem:FreePool, symList ptr kv:KVList) ptr kv:KVList
   while i < len
     mut elem = symList.getAt(i)
     mut newStr = txt:strclone(<ptr uint8>(elem'key))
-    mut newType = astfn:typeClone(pool, <ptr ast:Type>(elem'value))
+    mut newType = ast:typeClone(pool, <ptr ast:Type>(elem'value))
 
     ret.put(newStr, newType)
 
@@ -410,7 +408,7 @@ func typeClone(pool ptr mem:FreePool, type ptr ast:Type) ptr ast:Type
   mut newInst = <ptr ast:Type>(mem:copy(mem:fpAlloc(pool, size(ast:Type)), type, size(ast:Type)))
   newInst'moduleName = txt:strclone(type'moduleName)
   newInst'name = txt:strclone(type'name)
-  newInst'retType = astfn:typeClone(pool, type'retType)
+  newInst'retType = ast:typeClone(pool, type'retType)
   newInst'members = symbolListClone(pool, type'members)
 
   return newInst
@@ -486,7 +484,7 @@ func typeNewBuiltinNull() ptr ast:Type
 
 
 func typeNewBuiltinString(uint8t ptr ast:Type) ptr ast:Type
-  return astfn:typeNewPtr(null, null, null, uint8t)
+  return ast:typeNewPtr(null, null, null, uint8t)
 /func
 
 
@@ -553,7 +551,7 @@ func typeSetAlias(type ptr ast:Type, moduleName, name ptr uint8)
 /func
 
 
-func typeSetBoundaries(type ptr ast:Type, begin,end ast:Line)
+func typeSetBoundaries(type ptr ast:Type, begin,end txt:Line)
   if type?
     type'begin = begin
     type'end = end

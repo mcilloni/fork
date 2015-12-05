@@ -14,11 +14,10 @@ module ast
 import ast
 import cs
 import kv
-import lex
 import list
 import mem
-import tokens
 import tty
+import txt
 import utils
 
 
@@ -33,13 +32,13 @@ func printPadding(depth uintptr)
 /func
 
 
-method ast:Line.dump()
+method txt:Line.dump()
   tty:outint(me'line)
   tty:out(":")
   tty:outint(me'pos)
 /method
 
-func linesDump(begin,end ast:Line)
+func linesDump(begin,end txt:Line)
   tty:out("(at ")
   begin.dump()
   tty:out("-")
@@ -238,36 +237,36 @@ func pmuldeclDumpInfo(pmuldecl ptr ast:PMulDecl, depth uintptr)
 
 
 func pexprDumpInfo(pexpr ptr ast:PExpr, depth uintptr)
-  mut tok lex:Token
+  mut tok ast:Token
   tok'type = pexpr'opType
 
   tty:out(": ")
 
-  if pexpr'opType == tokens:ID
+  if pexpr'opType == ast:ID
     tty:out("an id - \"")
     tty:out(<ptr uint8>(pexpr'node'value))
     tty:out("\"")
   else
-    if pexpr'opType == tokens:NUMBER
+    if pexpr'opType == ast:NUMBER
       tty:outint(pexpr'node'value)
     else
-      if pexpr'opType == tokens:STRING
+      if pexpr'opType == ast:STRING
         tty:out("a string - \"")
         tty:out(<ptr uint8>(pexpr'node'value))
         tty:out("\"")
       else
-        if pexpr'opType == tokens:OPAR
+        if pexpr'opType == ast:OPAR
           tty:out("a function call")
         else
-          if pexpr'opType == tokens:OBRAC
+          if pexpr'opType == ast:OBRAC
             tty:out("an array access")
           else
-            if pexpr'opType == tokens:OCURLY
+            if pexpr'opType == ast:OCURLY
               tty:out("a struct literal")
             else
-              tty:out(lex:tokenStr(ptr tok))
+              tty:out(ast:tokenStr(ptr tok))
 
-              if pexpr'opType == tokens:CAST or pexpr'opType == tokens:SIZE
+              if pexpr'opType == ast:CAST or pexpr'opType == ast:SIZE
                 tty:out(" to ")
 
                 <ptr ast:PType>(pexpr'node'value).dump()

@@ -27,7 +27,7 @@ func issueFree(issue ptr ast:Issue)
 /func
 
 
-func issueNew(gravity uint8, where ast:Line, filename, message ptr uint8)  ptr ast:Issue
+func issueNew(gravity uint8, where txt:Line, filename, message ptr uint8)  ptr ast:Issue
   mut issue = <ptr ast:Issue>(mem:zalloc(size(ast:Issue)))
 
   issue'gravity = gravity
@@ -149,7 +149,7 @@ method ast:Issues.errLen() uintptr
 /method
 
 
-method ast:Issues.error(where ast:Line, filename, message ptr uint8)
+method ast:Issues.error(where txt:Line, filename, message ptr uint8)
   me'list.append(issueNew(ISSUE_ERR, where, filename, message))
 
   me'errLen++

@@ -12,7 +12,6 @@ module parser
 
 
 import ast
-import astfn
 import fs
 import list
 import map
@@ -52,7 +51,7 @@ func new() ptr parser:Parser
   prs'imports.setFreeFuncs(ptr mem:free, <ptr func(item data)>(ptr ast:pnodeFree))
 
   prs'fordPaths = envExtractFordPaths()
-  prs'builtins = astfn:builtinSetNew()
+  prs'builtins = ast:builtinSetNew()
   return prs
 /func
 

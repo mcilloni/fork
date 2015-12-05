@@ -8,10 +8,9 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
+import ast
 import err
-import lex
 import proc
-import tokens
 import tty
 
 
@@ -22,27 +21,27 @@ entry
     proc:exit(1)
   /if
 
-  mut result = lex:lexerNew(val argv'args)
+  mut result = ast:lexerNew(val argv'args)
   if result'err?
     tty:errln(err:errorMsg(result'err))
     proc:exit(1)
   /if
 
-  mut tok ptr lex:Token
+  mut tok ptr ast:Token
 
-  while (tok = lex:lexerNext(result'lex))?
-    mut err = lex:lexerError(result'lex)
+  while (tok = ast:lexerNext(result'lex))?
+    mut err = ast:lexerError(result'lex)
     if err?
       tty:errln(err:errorMsg(err))
       proc:exit(2)
     /if
 
-    tty:out(lex:tokenStr(tok))
-    if tok'type == tokens:ID or tok'type == tokens:STRING
+    tty:out(ast:tokenStr(tok))
+    if tok'type == ast:ID or tok'type == ast:STRING
       tty:out(": ")
       tty:out(<ptr uint8>(tok'value))
     else
-      if tok'type == tokens:NUMBER
+      if tok'type == ast:NUMBER
         tty:out(": ")
         tty:outint(tok'value)
       /if
@@ -50,9 +49,9 @@ entry
 
     tty:outch(10)
 
-    lex:tokenFree(tok)
+    ast:tokenFree(tok)
   /while
 
-  lex:lexerClose(result'lex)
+  ast:lexerClose(result'lex)
 
 /entry

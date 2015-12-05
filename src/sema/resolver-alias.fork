@@ -12,7 +12,6 @@ module sema
 
 
 import ast
-import astfn
 import cs
 import kv
 import list
@@ -89,7 +88,7 @@ method sema:Resolver.convertRetType(retPType ptr ast:PType,
 
   # if this condition evaluates to true, than we're in the case of a recursive alias.
   if not isLoc and not retPType'moduleName? and retPType'name? and recList? and utils:listContains(recList, retPType'name)
-    res = astfn:typeNewRecursiveAlias(me'curRoot'typePool, me'curRoot'moduleName'name, retPType'name)
+    res = ast:typeNewRecursiveAlias(me'curRoot'typePool, me'curRoot'moduleName'name, retPType'name)
   else
     # otherwise, this is a normal type. Validate it with validateAlias.
     res = me.resolveTypeReal(retPType, recList, isPtr)
@@ -122,9 +121,9 @@ method sema:Resolver.convertPtrLocType(ptype ptr ast:PType,
   /if
 
   if isLoc
-    res = astfn:typeNewLoc(me'curRoot'typePool, null, null, ptdes'length, res)
+    res = ast:typeNewLoc(me'curRoot'typePool, null, null, ptdes'length, res)
   else
-    res = astfn:typeNewPtr(me'curRoot'typePool, null, null, res)
+    res = ast:typeNewPtr(me'curRoot'typePool, null, null, res)
   /if
 
   return res
@@ -154,7 +153,7 @@ method sema:Resolver.convertSymbolList(pargs,recList ptr list:List,
     # functions can refer to recursive types, because their arguments and their
     # return types do not affect the size of the function (a function is always sizeless)
     if funcArgs and not ptype'moduleName? and ptype'name? and recList? and utils:listContains(recList, ptype'name)
-      type = astfn:typeNewRecursiveAlias(me'curRoot'typePool, me'curRoot'moduleName'name, ptype'name)
+      type = ast:typeNewRecursiveAlias(me'curRoot'typePool, me'curRoot'moduleName'name, ptype'name)
     else
       type = me.resolveTypeReal(ptype, recList, false)
     /if
@@ -192,7 +191,7 @@ method sema:Resolver.convertStructType(ptype ptr ast:PType,
 
   mut members = me.convertSymbolList(ptdes'arguments, recList, false)
 
-  return members? => astfn:typeNewStruct(me'curRoot'typePool, null, null, members) || null
+  return members? => ast:typeNewStruct(me'curRoot'typePool, null, null, members) || null
 /method
 
 
@@ -214,7 +213,7 @@ method sema:Resolver.convertFuncType(ptype ptr ast:PType,
     return null
   /if
 
-  return astfn:typeNewFunc(me'curRoot'typePool, null, null, retVal, members)
+  return ast:typeNewFunc(me'curRoot'typePool, null, null, retVal, members)
 /method
 
 
@@ -240,7 +239,7 @@ method sema:Resolver.resolveModuleAlias(ptype ptr ast:PType) ptr ast:Type
 
   mut type = me.findAliasImport(ptype'moduleName, ptype'name)
   if type?
-    return astfn:typeClone(me'curRoot'typePool, type)
+    return ast:typeClone(me'curRoot'typePool, type)
   /if
 
   # we could not find the type anywhere in the module.
@@ -265,12 +264,12 @@ method sema:Resolver.resolveIdType(ptype ptr ast:PType,
 
   mut builtin = me'prs.matchBuiltin(ptype'name)
   if builtin?
-    return astfn:typeClone(me'curRoot'typePool, builtin)
+    return ast:typeClone(me'curRoot'typePool, builtin)
   /if
 
   if recList? and utils:listContains(recList, ptype'name)
     if ignoreSize
-      return astfn:typeNewRecursiveAlias(me'curRoot'typePool, me'curRoot'moduleName? => me'curRoot'moduleName'name || null, ptype'name)
+      return ast:typeNewRecursiveAlias(me'curRoot'typePool, me'curRoot'moduleName? => me'curRoot'moduleName'name || null, ptype'name)
     /if
 
     mut cs = cs:new(20)
@@ -290,7 +289,7 @@ method sema:Resolver.resolveIdType(ptype ptr ast:PType,
   # it's not builtin, so it must be a local alias.
   mut type = <ptr ast:PNode>(me'curRoot).findAliasLocal(ptype'name)
   if type?
-    return astfn:typeClone(me'curRoot'typePool, type)
+    return ast:typeClone(me'curRoot'typePool, type)
   /if
 
   # If here, then it's either undefined, or not validated yet.
@@ -418,8 +417,8 @@ method sema:Resolver.resolveType(ptype ptr ast:PType) ptr ast:Type
 
 method sema:Resolver.resolveTypeName(name ptr uint8) ptr ast:Type
 
-  mut ptd = astfn:ptypeDescrNew(ast:PTYPE_ID, null, null)
-  mut ptype = astfn:ptypeNew(name, null, ptd)
+  mut ptd = ast:ptypeDescrNew(ast:PTYPE_ID, null, null)
+  mut ptype = ast:ptypeNew(name, null, ptd)
 
   mut ret = me.resolveType(ptype)
 

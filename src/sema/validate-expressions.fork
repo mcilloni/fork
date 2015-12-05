@@ -12,36 +12,33 @@ module sema
 
 
 import ast
-import astfn
 import cs
 import kv
-import lex
 import list
 import math
 import mem
 import parser
 import sema
 import synt
-import tokens
 import txt
 import utils
 
 
 method ast:PExpr.isCompileConst() bool
-  if   me'opType == tokens:NUMBER \
-    or me'opType == tokens:STRING \
-    or me'opType == tokens:TRUE \
-    or me'opType == tokens:FALSE \
-    or me'opType == tokens:NULL \
-    or me'opType == tokens:SIZE
+  if   me'opType == ast:NUMBER \
+    or me'opType == ast:STRING \
+    or me'opType == ast:TRUE \
+    or me'opType == ast:FALSE \
+    or me'opType == ast:NULL \
+    or me'opType == ast:SIZE
 
     return true
   /if
 
-  if me'opType == tokens:PTR
+  if me'opType == ast:PTR
     mut elem = <ptr ast:PExpr>(val me'node'leaves.get(0))
 
-    return elem'opType == tokens:ID or elem'opType == tokens:COLON
+    return elem'opType == ast:ID or elem'opType == ast:COLON
   /if
 
   if ttypeIsUnary(me'opType)
@@ -62,21 +59,21 @@ method ast:PExpr.isCompileConst() bool
 
 
 func ttypeOpCanDoPtrArith(tt uint16) bool
-  return tt == tokens:PLUS or tt == tokens:MINUS or tt == tokens:INC or tt == tokens:DEC
+  return tt == ast:PLUS or tt == ast:MINUS or tt == ast:INC or tt == ast:DEC
 /func
 
 
 func ttypeIsTernary(tt uint16) bool
-  return tt == tokens:FATARROW
+  return tt == ast:FATARROW
 /func
 
 
 func ttypeIsBinary(tt uint16) bool
-  mut tok lex:Token
+  mut tok ast:Token
 
   tok'type = tt
 
-  return synt:isBinary(ptr tok) or tt == tokens:MINUS
+  return synt:isBinary(ptr tok) or tt == ast:MINUS
 /func
 
 
@@ -86,33 +83,33 @@ func ttypeIsUnary(tt uint16) bool
 
 
 func ttypeIsComparison(tt uint16) bool
-  return tt == tokens:MAJOR or tt == tokens:MINOR or tt == tokens:MAJEQ or tt == tokens:MINEQ or tt == tokens:EQUAL or tt == tokens:DIFFERENT
+  return tt == ast:MAJOR or tt == ast:MINOR or tt == ast:MAJEQ or tt == ast:MINEQ or tt == ast:EQUAL or tt == ast:DIFFERENT
 /func
 
 
 func ttypeIsConst(tt uint16) bool
-  return tt == tokens:STRING or tt == tokens:NUMBER or tt == tokens:NULL or tt == tokens:TRUE or tt == tokens:FALSE
+  return tt == ast:STRING or tt == ast:NUMBER or tt == ast:NULL or tt == ast:TRUE or tt == ast:FALSE
 /func
 
 
 func ttypeIsEqDiff(tt uint16) bool
-  return tt == tokens:EQUAL or tt == tokens:DIFFERENT
+  return tt == ast:EQUAL or tt == ast:DIFFERENT
 /func
 
 
 func ttypeIsArith(tt uint16) bool
-  return tt == tokens:PLUS or tt == tokens:MINUS or tt == tokens:MINOR or tt == tokens:MAJOR or tt == tokens:MAJEQ or tt == tokens:MINEQ or tt == tokens:MOD or tt == tokens:DIV or tt == tokens:INC or tt == tokens:DEC or tt == tokens:POW or tt == tokens:TIMES or tt == tokens:UMINUS or tt == tokens:AMPER or tt == tokens:PIPE or tt == tokens:XOR
+  return tt == ast:PLUS or tt == ast:MINUS or tt == ast:MINOR or tt == ast:MAJOR or tt == ast:MAJEQ or tt == ast:MINEQ or tt == ast:MOD or tt == ast:DIV or tt == ast:INC or tt == ast:DEC or tt == ast:POW or tt == ast:TIMES or tt == ast:UMINUS or tt == ast:AMPER or tt == ast:PIPE or tt == ast:XOR
 /func
 
 
 func ttypeIsBool(tt uint16) bool
-  return tt == tokens:AND or tt == tokens:OR or tt == tokens:NOT
+  return tt == ast:AND or tt == ast:OR or tt == ast:NOT
 /func
 
 
 func ttypeCanBeAssignTarget(tt uint16, type ptr ast:Type) bool
-  return (tt == tokens:VAL or tt == tokens:OBRAC or tt == tokens:APOS or \
-          tt == tokens:COLON or tt == tokens:ID or tt == tokens:OCURLY) and \
+  return (tt == ast:VAL or tt == ast:OBRAC or tt == ast:APOS or \
+          tt == ast:COLON or tt == ast:ID or tt == ast:OCURLY) and \
           (type.isPtr() or type.isInt() or type.isStruct() or type.isBool())
 /func
 
@@ -120,14 +117,14 @@ func ttypeCanBeAssignTarget(tt uint16, type ptr ast:Type) bool
 func assignLhsDump(cs ptr cs:Charstash, pexpr ptr ast:PExpr)
   mut op = pexpr'opType
 
-  if op == tokens:ID
+  if op == ast:ID
     cs.add(<ptr uint8>(pexpr'node'value))
     return
   /if
 
   mut left = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
-  if op == tokens:VAL
+  if op == ast:VAL
     cs.add("'val ")
 
     assignLhsDump(cs, left)
@@ -137,7 +134,7 @@ func assignLhsDump(cs ptr cs:Charstash, pexpr ptr ast:PExpr)
     return
   /if
 
-  if op == tokens:OBRAC
+  if op == ast:OBRAC
     cs.add(" member of '")
     assignLhsDump(cs, left)
     cs.add("' ")
@@ -147,12 +144,12 @@ func assignLhsDump(cs ptr cs:Charstash, pexpr ptr ast:PExpr)
 
   mut right = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
-  if op == tokens:APOS or op == tokens:COMMA
+  if op == ast:APOS or op == ast:COMMA
     cs.add("'")
 
     assignLhsDump(cs, left)
 
-    cs.add(op == tokens:APOS => "'" || ":")
+    cs.add(op == ast:APOS => "'" || ":")
 
     assignLhsDump(cs, right)
 
@@ -312,19 +309,19 @@ method sema:Resolver.validateExprConst(pexpr ptr ast:PExpr) ptr ast:Type
 
   mut op = pexpr'opType
 
-  if op == tokens:STRING
+  if op == ast:STRING
     return me'prs.matchBuiltin("ptr uint8")
   /if
 
-  if op == tokens:NUMBER
+  if op == ast:NUMBER
     return me.intForVal(<intptr>(pexpr'node'value))
   /if
 
-  if op == tokens:TRUE or op == tokens:FALSE
+  if op == ast:TRUE or op == ast:FALSE
     return me'prs.matchBuiltin("bool")
   /if
 
-  if op == tokens:NULL
+  if op == ast:NULL
     return me'prs.matchBuiltin("null")
   /if
 
@@ -433,7 +430,7 @@ method sema:Resolver.validateBoolExpr(pexpr ptr ast:PExpr,
     mut cs = cs:new(20)
 
     cs.add("cannot apply ")
-    cs.add(lex:ttypeStr(op))
+    cs.add(ast:ttypeStr(op))
     cs.add(" to types ")
     ltype.summarize(cs)
     cs.add(" and ")
@@ -460,7 +457,7 @@ method sema:Resolver.validateArithPtrExpr(pexpr ptr ast:PExpr,
     mut cs = cs:new(20)
 
     cs.add("operator ")
-    cs.add(lex:ttypeStr(pexpr'opType))
+    cs.add(ast:ttypeStr(pexpr'opType))
     cs.add(" is not appliable to pointers")
 
     mut str = cs:unwrap(cs)
@@ -473,7 +470,7 @@ method sema:Resolver.validateArithPtrExpr(pexpr ptr ast:PExpr,
   /if
 
   if ltype.isPtr() and rtype.isPtr()
-    if pexpr'opType == tokens:MINUS
+    if pexpr'opType == ast:MINUS
       if not me.typeIsAssignable(<ptr ast:PNode>(pexpr), ltype, rtype)
         mut cs = cs:new(20)
 
@@ -524,7 +521,7 @@ method sema:Resolver.validateArithExpr(pexpr ptr ast:PExpr,
     return me.validateArithPtrExpr(pexpr, ltype, rtype, recList)
   /if
 
-  if op == tokens:POW
+  if op == ast:POW
     return me'prs.matchBuiltin("uintptr")
   /if
 
@@ -786,7 +783,7 @@ method sema:Resolver.validateAssignExpr(pexpr,left ptr ast:PExpr,
   if not ttypeCanBeAssignTarget(left'opType, ltype)
     mut msg = "expression cannot be target of assignment"
 
-    if left'opType == tokens:ME
+    if left'opType == ast:ME
       msg = "can't reassign 'me'"
     /if
 
@@ -813,7 +810,7 @@ method sema:Resolver.validateAssignExpr(pexpr,left ptr ast:PExpr,
   /if
 
   # Check if every member of the left structure literal is assignable.
-  if left'opType == tokens:OCURLY
+  if left'opType == ast:OCURLY
     mut i uintptr = 0
     mut len = left'node'leaves.len()
 
@@ -891,7 +888,7 @@ method sema:Resolver.validateNullCoalescingExpr(pexpr ptr ast:PExpr,
 # a.b syntax is allowed ONLY if it's a method call.
 # Otherwise method access is semantically nonsense (until closures, of course).
 func pnodeAllowedToUseDot(node ptr ast:PNode) bool
-  return node'type == ast:PEXPR and <ptr ast:PExpr>(node)'opType == tokens:OPAR
+  return node'type == ast:PEXPR and <ptr ast:PExpr>(node)'opType == ast:OPAR
 /func
 
 
@@ -962,7 +959,7 @@ method sema:Resolver.validateBinaryExpr(pexpr ptr ast:PExpr,
   # handle apos, dot, colon and call operators before because they are special
   # (i.e. no expressions or expressions only on lhs)
 
-  if op == tokens:COLON
+  if op == ast:COLON
     return me.validateModuleAccessExpr(pexpr)
   /if
 
@@ -974,17 +971,17 @@ method sema:Resolver.validateBinaryExpr(pexpr ptr ast:PExpr,
   /if
 
   # method access
-  if op == tokens:DOT
+  if op == ast:DOT
     return me.validateMethodExpr(pexpr, ltype, recList)
   /if
 
   # structure field access
-  if op == tokens:APOS
+  if op == ast:APOS
     return me.validateStructureAccessExpr(pexpr, ltype)
   /if
 
   # function call
-  if op == tokens:OPAR
+  if op == ast:OPAR
     return me.validateFunctionCallExpr(pexpr, ltype, recList)
   /if
 
@@ -996,11 +993,11 @@ method sema:Resolver.validateBinaryExpr(pexpr ptr ast:PExpr,
   /if
 
   # array access
-  if op == tokens:OBRAC
+  if op == ast:OBRAC
     return me.validateArrayAccess(pexpr, ltype, rtype)
   /if
 
-  if op == tokens:DQUEST
+  if op == ast:DQUEST
     return me.validateNullCoalescingExpr(pexpr, ltype, rtype)
   /if
 
@@ -1067,7 +1064,7 @@ method sema:Resolver.validatePtrExpr(pexpr ptr ast:PExpr,
     return null
   /if
 
-  return astfn:typeNewPtr(me'curRoot'typePool, null, null, atype)
+  return ast:typeNewPtr(me'curRoot'typePool, null, null, atype)
 /method
 
 
@@ -1171,23 +1168,23 @@ method sema:Resolver.validateUnaryExpr(pexpr ptr ast:PExpr,
     return null
   /if
 
-  if op == tokens:NOT
+  if op == ast:NOT
     return me.validateNotExpr(pexpr, atype)
   /if
 
-  if op == tokens:VAL
+  if op == ast:VAL
     return me.validateValExpr(pexpr, atype)
   /if
 
-  if op == tokens:PTR
+  if op == ast:PTR
     return me.validatePtrExpr(pexpr, atype)
   /if
 
-  if op == tokens:UMINUS
+  if op == ast:UMINUS
     return me.validateUMinusExpr(pexpr, atype)
   /if
 
-  if op == tokens:QUEST
+  if op == ast:QUEST
     return me.validateQuestExpr(pexpr, atype)
   /if
 
@@ -1302,7 +1299,7 @@ method sema:Resolver.validateStructLiteralExpr(pexpr ptr ast:PExpr,
     i++
   /while
 
-  return astfn:typeNewStruct(me'curRoot'typePool, null, null, members)
+  return ast:typeNewStruct(me'curRoot'typePool, null, null, members)
 
 /method
 
@@ -1321,19 +1318,19 @@ method sema:Resolver.validateExprRecl(pexpr ptr ast:PExpr,
   if ttypeIsConst(op)
     return (pexpr'type = me.validateExprConst(pexpr))
   else
-    if op == tokens:ME
+    if op == ast:ME
       pexpr'type = me.validateMeExpr(pexpr)
     else
-      if op == tokens:ID
+      if op == ast:ID
         pexpr'type = me.validateExprId(pexpr, recList)
       else
-        if op == tokens:CAST
+        if op == ast:CAST
           pexpr'type = me.validateExprCast(pexpr, recList)
         else
-          if op == tokens:SIZE
+          if op == ast:SIZE
             pexpr'type = me.validateSizeExpr(pexpr)
           else
-            if op == tokens:OCURLY
+            if op == ast:OCURLY
               pexpr'type = me.validateStructLiteralExpr(pexpr, recList)
             else
               if ttypeIsTernary(op)

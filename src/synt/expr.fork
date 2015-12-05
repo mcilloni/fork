@@ -12,11 +12,9 @@ module synt
 
 
 import ast
-import astfn
-import lex
+import fs
 import mem
 import synt
-import tokens
 import utils
 
 
@@ -27,36 +25,36 @@ mut ASSOC_LEFT uint8 = 0
 mut ASSOC_RIGHT uint8 = 1
 
 
-func isBinary(tok ptr lex:Token) bool
+func isBinary(tok ptr ast:Token) bool
   return tok? and (tok'type mod 10) < 2
 /func
 
 
-func isUnary(tok ptr lex:Token) bool
+func isUnary(tok ptr ast:Token) bool
   return tok? and not isBinary(tok)
 /func
 
 
-func assocRight(tok ptr lex:Token) bool
+func assocRight(tok ptr ast:Token) bool
   return tok? and ((tok'type & 1) != 0)
 /func
 
 
-func assocLeft(tok ptr lex:Token) bool
+func assocLeft(tok ptr ast:Token) bool
   return tok? and not assocRight(tok)
 /func
 
 
 func tokTypePrec(ttype uint16) int16
-  if ttype == tokens:MINUS
-    return tokTypePrec(tokens:PLUS)
+  if ttype == ast:MINUS
+    return tokTypePrec(ast:PLUS)
   /if
 
   return ttype / 1000
 /func
 
 
-func opPrec(tok ptr lex:Token) int16
+func opPrec(tok ptr ast:Token) int16
   if tok?
     return tokTypePrec(tok'type)
   /if
@@ -65,69 +63,69 @@ func opPrec(tok ptr lex:Token) int16
 /func
 
 
-func isOp(tok ptr lex:Token) bool
+func isOp(tok ptr ast:Token) bool
   return opPrec(tok) != 0
 /func
 
 
-func isValidInExpr(tok ptr lex:Token) bool
-  return tok? and (isOp(tok) or tok'type == tokens:ID or tok'type == tokens:NUMBER)
+func isValidInExpr(tok ptr ast:Token) bool
+  return tok? and (isOp(tok) or tok'type == ast:ID or tok'type == ast:NUMBER)
 /func
 
 
 method synt:Parser.parseCastTag() ptr ast:PExpr
 
-  mut castTok ptr lex:Token = null
+  mut castTok ptr ast:Token = null
 
   # If we have the "cast" operator, than we should read it, and use it to mark
   # the expression's beginning.
   # Otherwise it's a `<` and we must create a "fake" cast token - to create a
   # cast PExpr.
-  if me'next'type == tokens:CAST
+  if me'next'type == ast:CAST
     castTok = me.next()
   /if
 
-  mut minor = me.expect(tokens:MINOR)
+  mut minor = me.expect(ast:MINOR)
 
   if not minor?
     # tokenFree SHOULD check for nulls - like every free function should - and
     # be noop for them.
-    lex:tokenFree(castTok)
+    ast:tokenFree(castTok)
     return null
   /if
 
   if not castTok?
-    castTok = lex:tokenNew(tokens:CAST, 0, lex:linenoClone(minor'lineno), minor'endPos)
+    castTok = ast:tokenNew(ast:CAST, 0, fs:linenoClone(minor'lineno), minor'endPos)
   /if
 
-  lex:tokenFree(minor)
+  ast:tokenFree(minor)
 
   mut type = me.parseType()
   if not type?
-    lex:tokenFree(castTok)
+    ast:tokenFree(castTok)
     return null
   /if
 
-  if not me.expectDiscard(tokens:MAJOR) or not me.expectDiscard(tokens:OPAR)
-    lex:tokenFree(castTok)
+  if not me.expectDiscard(ast:MAJOR) or not me.expectDiscard(ast:OPAR)
+    ast:tokenFree(castTok)
     mem:decRef(type)
     return null
   /if
 
   mut expr = me.parseExpr()
   if not expr?
-    lex:tokenFree(castTok)
+    ast:tokenFree(castTok)
     mem:decRef(type)
   /if
 
-  mut cpar = me.expect(tokens:CPAR)
+  mut cpar = me.expect(ast:CPAR)
   if not cpar?
-    lex:tokenFree(castTok)
+    ast:tokenFree(castTok)
     mem:decRef(type)
     return null
   /if
 
-  mut pexpr = astfn:pexprNew(castTok, expr, null, lex:tokExtractBegin(castTok), lex:tokDiscardEnd(cpar))
+  mut pexpr = ast:pexprNew(castTok, expr, null, ast:tokExtractBegin(castTok), ast:tokDiscardEnd(cpar))
   pexpr'node'value = <uintptr>(type)
 
   return pexpr
@@ -139,53 +137,53 @@ method synt:Parser.parseSizeOp() ptr ast:PExpr
   mut sizeTok = me.next()
 
 
-  if not me.expectDiscard(tokens:OPAR)
-    lex:tokenFree(sizeTok)
+  if not me.expectDiscard(ast:OPAR)
+    ast:tokenFree(sizeTok)
     return null
   /if
 
   mut type = me.parseType()
   if not type?
-    lex:tokenFree(sizeTok)
+    ast:tokenFree(sizeTok)
     return null
   /if
 
-  mut cpar = me.expect(tokens:CPAR)
+  mut cpar = me.expect(ast:CPAR)
   if not cpar?
-    lex:tokenFree(sizeTok)
+    ast:tokenFree(sizeTok)
     return null
   /if
 
-  mut sizeop = astfn:pexprNew(sizeTok, null, null, lex:tokExtractBegin(sizeTok), lex:tokDiscardEnd(cpar))
+  mut sizeop = ast:pexprNew(sizeTok, null, null, ast:tokExtractBegin(sizeTok), ast:tokDiscardEnd(cpar))
   sizeop'node'value = <uintptr>(type)
 
   return sizeop
 /method
 
 
-func tokIsPostfixExpressionSuffixStart(tok ptr lex:Token) bool
-  return tok? and   (tok'type == tokens:OPAR or tok'type == tokens:OBRAC \
-                  or tok'type == tokens:INC or tok'type == tokens:DEC \
-                  or tok'type == tokens:APOS or tok'type == tokens:DOT)
+func tokIsPostfixExpressionSuffixStart(tok ptr ast:Token) bool
+  return tok? and   (tok'type == ast:OPAR or tok'type == ast:OBRAC \
+                  or tok'type == ast:INC or tok'type == ast:DEC \
+                  or tok'type == ast:APOS or tok'type == ast:DOT)
 /func
 
 
 method synt:Parser.parseId() ptr ast:PExpr
   mut first = me.next()
-  mut ret = astfn:pexprNewSingle(first)
+  mut ret = ast:pexprNewSingle(first)
 
-  if me'next? and me'next'type == tokens:COLON
+  if me'next? and me'next'type == ast:COLON
     mut colon = me.next()
 
-    mut id = me.expect(tokens:ID)
+    mut id = me.expect(ast:ID)
     if not id?
-      lex:tokenFree(colon)
+      ast:tokenFree(colon)
       ast:pnodeFree(<ptr ast:PNode>(ret))
       return null
     /if
 
-    mut idExpr = astfn:pexprNewSingle(id)
-    ret = astfn:pexprNew(colon, ret, idExpr, ret'node'begin, idExpr'node'end)
+    mut idExpr = ast:pexprNewSingle(id)
+    ret = ast:pexprNew(colon, ret, idExpr, ret'node'begin, idExpr'node'end)
   /if
 
   return ret
@@ -207,7 +205,7 @@ method synt:Parser.parseGenParens(cpar uint16) ptr ast:PExpr
     return null
   /if
 
-  lex:tokenFree(cparTok)
+  ast:tokenFree(cparTok)
 
   return expression
 
@@ -217,7 +215,7 @@ method synt:Parser.parseGenParens(cpar uint16) ptr ast:PExpr
 method synt:Parser.parseParens() ptr ast:PExpr
 
   me.discardNext()
-  return me.parseGenParens(tokens:CPAR)
+  return me.parseGenParens(ast:CPAR)
 
 /method
 
@@ -236,10 +234,10 @@ method synt:Parser.parseExprList(parent ptr ast:PExpr,
       return null
     /if
 
-    astfn:pnodeAppendChild(parentNode, <ptr ast:PNode>(expr))
+    ast:pnodeAppendChild(parentNode, <ptr ast:PNode>(expr))
 
-    if not me'next? or not (me'next'type == tokens:COMMA or me'next'type == endToken)
-      me'err = lex:errorMism(me'last, "a comma ','", lex:tokenStr(me'next))
+    if not me'next? or not (me'next'type == ast:COMMA or me'next'type == endToken)
+      me'err = ast:errorMism(me'last, "a comma ','", ast:tokenStr(me'next))
       ast:pnodeFree(parentNode)
 
       return null
@@ -259,7 +257,7 @@ method synt:Parser.parseExprList(parent ptr ast:PExpr,
     return null
   /if
 
-  parent'node'end = lex:tokDiscardEnd(end)
+  parent'node'end = ast:tokDiscardEnd(end)
 
   return parent
 /method
@@ -268,7 +266,7 @@ method synt:Parser.parseExprList(parent ptr ast:PExpr,
 method synt:Parser.parseCurly() ptr ast:PExpr
   mut ocurly = me.next()
 
-  mut ret = me.parseExprList(astfn:pexprNewSingle(ocurly), tokens:CCURLY)
+  mut ret = me.parseExprList(ast:pexprNewSingle(ocurly), ast:CCURLY)
 
   return ret
 /method
@@ -277,38 +275,38 @@ method synt:Parser.parseCurly() ptr ast:PExpr
 method synt:Parser.parsePrimaryExpr() ptr ast:PExpr
 
   if not me'next?
-    me'err = lex:error(me'last, "expected a primary expression, got an EOF")
+    me'err = ast:error(me'last, "expected a primary expression, got an EOF")
     return null
   /if
 
-  if    me'next'type == tokens:FALSE \
-     or me'next'type == tokens:TRUE \
-     or me'next'type == tokens:STRING \
-     or me'next'type == tokens:NUMBER \
-     or me'next'type == tokens:NULL \
-     or me'next'type == tokens:ME
+  if    me'next'type == ast:FALSE \
+     or me'next'type == ast:TRUE \
+     or me'next'type == ast:STRING \
+     or me'next'type == ast:NUMBER \
+     or me'next'type == ast:NULL \
+     or me'next'type == ast:ME
 
-    return astfn:pexprNewSingle(me.next())
+    return ast:pexprNewSingle(me.next())
   /if
 
-  if me'next'type == tokens:ID
+  if me'next'type == ast:ID
     return me.parseId()
   /if
 
-  if me'next'type == tokens:CAST or me'next'type == tokens:MINOR
+  if me'next'type == ast:CAST or me'next'type == ast:MINOR
     return me.parseCastTag()
   /if
 
-  if me'next'type == tokens:SIZE
+  if me'next'type == ast:SIZE
     return me.parseSizeOp()
   /if
 
-  if me'next'type == tokens:OCURLY
+  if me'next'type == ast:OCURLY
     return me.parseCurly()
   /if
 
-  if me'next'type != tokens:OPAR
-    me'err = lex:errorMism(me'next'lineno, "an identifier, a costant, a struct literal or an expression between ()", lex:tokenStr(me'next))
+  if me'next'type != ast:OPAR
+    me'err = ast:errorMism(me'next'lineno, "an identifier, a costant, a struct literal or an expression between ()", ast:tokenStr(me'next))
     return null
   /if
 
@@ -320,13 +318,13 @@ method synt:Parser.parsePrimaryExpr() ptr ast:PExpr
 method synt:Parser.parseAccessExpr(lhs ptr ast:PExpr) ptr ast:PExpr
 
   mut obrac = me.next()
-  mut expression = me.parseGenParens(tokens:CBRAC)
+  mut expression = me.parseGenParens(ast:CBRAC)
 
   if not expression?
       return null
   /if
 
-  return astfn:pexprNew(obrac, lhs, expression, lhs'node'begin, expression'node'end)
+  return ast:pexprNew(obrac, lhs, expression, lhs'node'begin, expression'node'end)
 
 /method
 
@@ -339,9 +337,9 @@ method synt:Parser.parseCallExpr(lhs ptr ast:PExpr) ptr ast:PExpr
     return null
   /if
 
-  mut begin = lex:tokExtractBegin(opar)
+  mut begin = ast:tokExtractBegin(opar)
 
-  return me.parseExprList(astfn:pexprNew(opar, lhs, null, begin, begin), tokens:CPAR)
+  return me.parseExprList(ast:pexprNew(opar, lhs, null, begin, begin), ast:CPAR)
 /method
 
 
@@ -349,16 +347,16 @@ method synt:Parser.parseFieldDotExpr(lhs ptr ast:PExpr) ptr ast:PExpr
 
   # APOS or DOT
   mut op = me.next()
-  mut id = me.expect(tokens:ID)
+  mut id = me.expect(ast:ID)
 
   if not id?
-    lex:tokenFree(op)
+    ast:tokenFree(op)
     return null
   /if
 
-  mut idExpr = astfn:pexprNewSingle(id)
+  mut idExpr = ast:pexprNewSingle(id)
 
-  return astfn:pexprNew(op, lhs, idExpr, lhs'node'begin, idExpr'node'end)
+  return ast:pexprNew(op, lhs, idExpr, lhs'node'begin, idExpr'node'end)
 /method
 
 
@@ -371,17 +369,17 @@ method synt:Parser.parsePostfixSuffix(primaryLhs ptr ast:PExpr) ptr ast:PExpr
       break
     /if
 
-    if me'next'type == tokens:OBRAC
+    if me'next'type == ast:OBRAC
       lhs = me.parseAccessExpr(lhs)
     else
-      if me'next'type == tokens:OPAR
+      if me'next'type == ast:OPAR
         lhs = me.parseCallExpr(lhs)
       else
-        if me'next'type == tokens:INC or me'next'type == tokens:DEC or me'next'type == tokens:QUEST
+        if me'next'type == ast:INC or me'next'type == ast:DEC or me'next'type == ast:QUEST
           mut pfOp = me.next()
-          lhs = astfn:pexprNew(pfOp, lhs, null, lhs'node'begin, lex:tokExtractEnd(pfOp))
+          lhs = ast:pexprNew(pfOp, lhs, null, lhs'node'begin, ast:tokExtractEnd(pfOp))
         else
-          if me'next'type == tokens:APOS or me'next'type == tokens:DOT
+          if me'next'type == ast:APOS or me'next'type == ast:DOT
             lhs = me.parseFieldDotExpr(lhs)
           else
             break
@@ -415,21 +413,21 @@ method synt:Parser.parseUnaryExprOp() ptr ast:PExpr
 
   mut result = me.parseUnaryExpr()
   if not result?
-    lex:tokenFree(operator)
+    ast:tokenFree(operator)
     return null
   /if
 
-  if operator'type == tokens:MINUS
-    operator'type = tokens:UMINUS
+  if operator'type == ast:MINUS
+    operator'type = ast:UMINUS
   /if
 
-  return astfn:pexprNew(operator, result, null, lex:tokExtractBegin(operator), result'node'end)
+  return ast:pexprNew(operator, result, null, ast:tokExtractBegin(operator), result'node'end)
 /method
 
 
 method synt:Parser.parseUnaryExpr() ptr ast:PExpr
   if not me'next?
-    me'err = lex:error(me'last, "unexpected EOF")
+    me'err = ast:error(me'last, "unexpected EOF")
     return null
   /if
 
@@ -441,8 +439,8 @@ method synt:Parser.parseUnaryExpr() ptr ast:PExpr
 /method
 
 
-func isConditionalOperator(tok ptr lex:Token) bool
-  return tok? and tok'type == tokens:FATARROW
+func isConditionalOperator(tok ptr ast:Token) bool
+  return tok? and tok'type == ast:FATARROW
 /func
 
 
@@ -458,8 +456,8 @@ method synt:Parser.parseBinaryRhs(lhs ptr ast:PExpr, minPri uint16) ptr ast:PExp
 
     if isConditionalOperator(opTok)
       ternaryMiddle = me.parseExpr()
-      if not ternaryMiddle? or not me.expectDiscard(tokens:SEPARATOR)
-        lex:tokenFree(opTok)
+      if not ternaryMiddle? or not me.expectDiscard(ast:SEPARATOR)
+        ast:tokenFree(opTok)
         return null
       /if
     /if
@@ -484,7 +482,7 @@ method synt:Parser.parseBinaryRhs(lhs ptr ast:PExpr, minPri uint16) ptr ast:PExp
       /if
     /if
 
-    lhs = astfn:pexprNewTernary(opTok, lhs, ternaryMiddle, rhs, lhs'node'begin, rhs'node'end)
+    lhs = ast:pexprNewTernary(opTok, lhs, ternaryMiddle, rhs, lhs'node'begin, rhs'node'end)
   /while
 
   return lhs
@@ -494,7 +492,7 @@ method synt:Parser.parseBinaryRhs(lhs ptr ast:PExpr, minPri uint16) ptr ast:PExp
 method synt:Parser.parseAssignExpr() ptr ast:PExpr
   mut lhs = me.parseUnaryExpr()
 
-  return lhs? => me.parseBinaryRhs(lhs, tokTypePrec(tokens:ASSIGN)) || null
+  return lhs? => me.parseBinaryRhs(lhs, tokTypePrec(ast:ASSIGN)) || null
 /method
 
 
