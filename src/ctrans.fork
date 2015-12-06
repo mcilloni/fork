@@ -22,7 +22,6 @@ import list
 import mem
 import pair
 import proc
-import tokens
 import txt
 import tty
 
@@ -117,66 +116,66 @@ method ctrans:Transl.typedef(name ptr uint8, type ptr ast:Type, ssa bool)
 
 
 method ctrans:Transl.dump(stream ptr io:Stream) ptr err:Error
-  io:streamWrite(stream, "// generated with ctrans v")
-  io:streamWrite(stream, ctrans:VERSION)
-  io:streamWrite(stream, " (")
+  stream.write("// generated with ctrans v")
+  stream.write(ctrans:VERSION)
+  stream.write(" (")
 
-  io:streamWrite(stream, "libfork v")
-  io:streamWrite(stream, libfork:VERSION)
-  io:streamWrite(stream, ")\n\n\n")
+  stream.write("libfork v")
+  stream.write(libfork:VERSION)
+  stream.write(")\n\n\n")
 
   if me'header
-    io:streamWrite(stream, "#ifndef ford$$")
-    io:streamWrite(stream, me'modName )
-    io:streamWrite(stream, "_h\n")
+    stream.write("#ifndef ford$$")
+    stream.write(me'modName )
+    stream.write("_h\n")
 
-    io:streamWrite(stream, "#define ford$$")
-    io:streamWrite(stream, me'modName)
-    io:streamWrite(stream, "_h\n\n\n")
+    stream.write("#define ford$$")
+    stream.write(me'modName)
+    stream.write("_h\n\n\n")
   /if
 
-  io:streamWrite(stream, "#include <stdint.h>\n\n")
+  stream.write("#include <stdint.h>\n\n")
 
   #just in case, you know.
-  io:streamWrite(stream, "#undef NULL\n\n")
+  stream.write("#undef NULL\n\n")
 
   mut includes = cs:unwrap(me'includes)
-  io:streamWrite(stream, includes)
+  stream.write(includes)
   mem:free(includes)
 
-  io:streamWrite(stream, "\n\n")
+  stream.write("\n\n")
 
   mut typedefs = cs:unwrap(me'typedefs)
-  io:streamWrite(stream, typedefs)
+  stream.write(typedefs)
   mem:free(typedefs)
 
-  io:streamWrite(stream, "\n\n")
+  stream.write("\n\n")
 
   mut externs = cs:unwrap(me'externs)
-  io:streamWrite(stream, externs)
+  stream.write(externs)
   mem:free(externs)
 
-  io:streamWrite(stream, "\n\n")
+  stream.write("\n\n")
 
   mut vars = cs:unwrap(me'vars)
-  io:streamWrite(stream, vars)
+  stream.write(vars)
   mem:free(vars)
 
-  io:streamWrite(stream, "\n\n")
+  stream.write("\n\n")
 
   mut funcs = cs:unwrap(me'funcs)
-  io:streamWrite(stream, funcs)
+  stream.write(funcs)
   mem:free(funcs)
 
-  io:streamWrite(stream, "\n\n")
+  stream.write("\n\n")
 
   if me'header
-    io:streamWrite(stream, "\n\n#endif //ford$$")
-    io:streamWrite(stream, me'modName)
-    io:streamWrite(stream, "_h\n\n")
+    stream.write("\n\n#endif //ford$$")
+    stream.write(me'modName)
+    stream.write("_h\n\n")
   /if
 
-  return io:streamError(stream)
+  return stream.error()
 /method
 
 

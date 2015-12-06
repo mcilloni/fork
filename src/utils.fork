@@ -16,7 +16,6 @@ import cs
 import ctrans
 import mem
 import proc
-import tokens
 import tty
 import txt
 
@@ -117,83 +116,83 @@ func isBinOp(tok uint16) bool
 
 
 func opConv(tok uint16) ptr uint8
-  if tok == tokens:AMPER or tok == tokens:PTR
+  if tok == ast:AMPER or tok == ast:PTR
     return "&"
   /if
 
-  if tok == tokens:AND
+  if tok == ast:AND
     return "&&"
   /if
 
-  if tok == tokens:ASSIGN
+  if tok == ast:ASSIGN
     return "="
   /if
 
-  if tok == tokens:DEC
+  if tok == ast:DEC
     return "--"
   /if
 
-  if tok == tokens:DIFFERENT
+  if tok == ast:DIFFERENT
     return "!="
   /if
 
-  if tok == tokens:DIV
+  if tok == ast:DIV
     return "/"
   /if
 
-  if tok == tokens:EQUAL
+  if tok == ast:EQUAL
     return "=="
   /if
 
-  if tok == tokens:INC
+  if tok == ast:INC
     return "++"
   /if
 
-  if tok == tokens:MAJEQ
+  if tok == ast:MAJEQ
     return ">="
   /if
 
-  if tok == tokens:MAJOR
+  if tok == ast:MAJOR
     return ">"
   /if
 
-  if tok == tokens:MINEQ
+  if tok == ast:MINEQ
     return "<="
   /if
 
-  if tok == tokens:MINOR
+  if tok == ast:MINOR
     return "<"
   /if
 
-  if tok == tokens:MINUS or tok == tokens:UMINUS
+  if tok == ast:MINUS or tok == ast:UMINUS
     return "-"
   /if
 
-  if tok == tokens:MOD
+  if tok == ast:MOD
     return "%"
   /if
 
-  if tok == tokens:NOT
+  if tok == ast:NOT
     return "!"
   /if
 
-  if tok == tokens:OR
+  if tok == ast:OR
     return "||"
   /if
 
-  if tok == tokens:PIPE
+  if tok == ast:PIPE
     return "|"
   /if
 
-  if tok == tokens:PLUS
+  if tok == ast:PLUS
     return "+"
   /if
 
-  if tok == tokens:TIMES or tok == tokens:VAL
+  if tok == ast:TIMES or tok == ast:VAL
     return "*"
   /if
 
-  if tok == tokens:XOR
+  if tok == ast:XOR
     return "^"
   /if
 

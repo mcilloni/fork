@@ -27,7 +27,7 @@ func lsFree(ls ptr ctrans:LineStr)
 /func
 
 
-func lsNew(line ast:Line, str ptr uint8) ptr ctrans:LineStr
+func lsNew(line txt:Line, str ptr uint8) ptr ctrans:LineStr
   mut ls = <ptr ctrans:LineStr>(mem:alloc(size(ctrans:LineStr)))
 
   ls'line = line

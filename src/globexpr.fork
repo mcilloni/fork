@@ -16,7 +16,6 @@ import ctrans
 import cs
 import mem
 import proc
-import tokens
 import tty
 
 
@@ -45,18 +44,18 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
 
   mut value = pexpr'node'value
 
-  if pexpr'opType == tokens:NUMBER
+  if pexpr'opType == ast:NUMBER
     me'vars.addInt(value)
 
     return
   /if
 
-  if pexpr'opType == tokens:STRING
+  if pexpr'opType == ast:STRING
     me'vars.addCStr(<ptr uint8>(value))
     return
   /if
 
-  if pexpr'opType == tokens:ID
+  if pexpr'opType == ast:ID
 
     mut name = <ptr uint8>(value)
     mut modName ptr uint8 = root'moduleName? => root'moduleName'name || null
@@ -72,25 +71,25 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   /if
 
 
-  if pexpr'opType == tokens:NULL
+  if pexpr'opType == ast:NULL
     me'vars.add("(void*) 0")
 
     return
   /if
 
-  if pexpr'opType == tokens:TRUE
+  if pexpr'opType == ast:TRUE
     me'vars.add("1")
 
     return
   /if
 
-  if pexpr'opType == tokens:FALSE
+  if pexpr'opType == ast:FALSE
     me'vars.add("0")
 
     return
   /if
 
-  if pexpr'opType == tokens:COLON
+  if pexpr'opType == ast:COLON
     mut modName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
     mut name = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
 
@@ -99,7 +98,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
     return
   /if
 
-  if pexpr'opType == tokens:APOS
+  if pexpr'opType == ast:APOS
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
@@ -112,7 +111,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
     return
   /if
 
-  if pexpr'opType == tokens:SIZE
+  if pexpr'opType == ast:SIZE
       me'vars.add("sizeof(")
       me.wrapType(me'vars, pexpr'sizeType, -1)
       me'vars.add(")")
@@ -120,7 +119,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
       return
   /if
 
-  if pexpr'opType == tokens:CAST
+  if pexpr'opType == ast:CAST
     mut expr = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
     me'vars.add("((")
@@ -134,9 +133,9 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
     return
   /if
 
-  if pexpr'opType == tokens:OPAR
+  if pexpr'opType == ast:OPAR
     mut toCall = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-    mut methCall = toCall'opType == tokens:DOT
+    mut methCall = toCall'opType == ast:DOT
 
     if methCall
       me.globDotExpr(toCall)
@@ -186,7 +185,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
     return
   /if
 
-  if pexpr'opType == tokens:OBRAC
+  if pexpr'opType == ast:OBRAC
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
@@ -203,7 +202,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
     return
   /if
 
-  if pexpr'opType == tokens:DQUEST
+  if pexpr'opType == ast:DQUEST
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
@@ -224,7 +223,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
     return
   /if
 
-  if pexpr'opType == tokens:FATARROW
+  if pexpr'opType == ast:FATARROW
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
     mut e3 = <ptr ast:PExpr>(val pexpr'node'leaves.get(2))
@@ -246,7 +245,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
     return
   /if
 
-  if pexpr'opType == tokens:DEC
+  if pexpr'opType == ast:DEC
     mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     me'vars.add("--")
 
@@ -254,7 +253,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
     return
   /if
 
-  if pexpr'opType == tokens:INC
+  if pexpr'opType == ast:INC
     mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
     me'vars.add("++")
@@ -263,7 +262,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
     return
   /if
 
-  if pexpr'opType == tokens:QUEST
+  if pexpr'opType == ast:QUEST
     mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
     me'vars.add("(")
@@ -274,11 +273,11 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
     return
   /if
 
-  if ctrans:isBinOp(pexpr'opType) or pexpr'opType == tokens:MINUS
+  if ctrans:isBinOp(pexpr'opType) or pexpr'opType == ast:MINUS
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
-    if pexpr'opType == tokens:POW
+    if pexpr'opType == ast:POW
       me'vars.add("math$__forkpow(")
       me.globExpr(root, e1)
       me'vars.add(", ")

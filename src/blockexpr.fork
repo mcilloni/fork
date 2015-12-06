@@ -17,14 +17,13 @@ import cs
 import mem
 import parser
 import proc
-import tokens
 import tty
 import txt
 import vect
 
 
 func isShortcircuitOp(op uint16) bool
-  return op == tokens:AND or op == tokens:OR
+  return op == ast:AND or op == ast:OR
 /func
 
 
@@ -200,7 +199,7 @@ method ctrans:Block.access(from,index ctrans:Elem,
                            fname ptr uint8,
                            line uintptr) ctrans:Elem
 
-  mut rightPtr = me.binop(tokens:PLUS, fromType, from, index, fname, line)
+  mut rightPtr = me.binop(ast:PLUS, fromType, from, index, fname, line)
 
   mut ret = deref(rightPtr, fromType)
 
@@ -266,7 +265,7 @@ method ctrans:Block.binop(op uint16,
                           fname ptr uint8,
                           line uintptr) ctrans:Elem
 
-  if op == tokens:POW
+  if op == ast:POW
     return me.pow(op1, op2, destType, fname, line)
   /if
 
@@ -790,7 +789,7 @@ method ctrans:Block.handleFn(root ptr ast:PRoot,
 
 
   mut toCall = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-  mut methCall = toCall'opType == tokens:DOT
+  mut methCall = toCall'opType == ast:DOT
 
   mut len = pexpr'node'leaves.len()
 
@@ -961,7 +960,7 @@ method ctrans:Block.handleShortcircuit(root ptr ast:PRoot,
                                        fname ptr uint8,
                                        line uintptr) ctrans:Elem
 
-  if op == tokens:AND
+  if op == ast:AND
     return me.handleAnd(root, type, e1, e2, fname, line)
   /if
 
@@ -1065,14 +1064,14 @@ method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
 
   mut value = pexpr'node'value
 
-  if pexpr'opType == tokens:ASSIGN
+  if pexpr'opType == ast:ASSIGN
     mut to ctrans:Elem = {null, null} # ensure segfault if used
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
     mut from = me.expr(e2, root, fname, line)
 
-    if e1'opType == tokens:OCURLY
+    if e1'opType == ast:OCURLY
       me.handleMulAssign(e1, from, root, fname, line)
     else
       to = me.expr(e1, root, fname, line)
@@ -1084,15 +1083,15 @@ method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
     return to
   /if
 
-  if pexpr'opType == tokens:NUMBER
+  if pexpr'opType == ast:NUMBER
     return intelem(value, pexpr'type)
   /if
 
-  if pexpr'opType == tokens:STRING
+  if pexpr'opType == ast:STRING
     return me.str(<ptr uint8>(value), pexpr'type, fname, line)
   /if
 
-  if pexpr'opType == tokens:ID
+  if pexpr'opType == ast:ID
 
     mut name = <ptr uint8>(value)
     mut modName ptr uint8 = root'moduleName? => root'moduleName'name || null
@@ -1109,37 +1108,37 @@ method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
     /if
   /if
 
-  if pexpr'opType == tokens:ME
+  if pexpr'opType == ast:ME
     return elem("me", pexpr'type)
   /if
 
-  if pexpr'opType == tokens:NULL
+  if pexpr'opType == ast:NULL
     return elem("(void*) 0", pexpr'type)
   /if
 
-  if pexpr'opType == tokens:TRUE or pexpr'opType == tokens:FALSE
-    return boolelem(pexpr'opType == tokens:TRUE, pexpr'type)
+  if pexpr'opType == ast:TRUE or pexpr'opType == ast:FALSE
+    return boolelem(pexpr'opType == ast:TRUE, pexpr'type)
   /if
 
-  if pexpr'opType == tokens:COLON
+  if pexpr'opType == ast:COLON
     mut modName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
     mut name = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
 
     return modelem(modName, name, pexpr'type)
   /if
 
-  if pexpr'opType == tokens:APOS
+  if pexpr'opType == ast:APOS
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
     return me.structaccess(root, e1, e2, pexpr'type, fname, line)
   /if
 
-  if pexpr'opType == tokens:SIZE
+  if pexpr'opType == ast:SIZE
     return sizeelem(pexpr'sizeType, pexpr'type)
   /if
 
-  if pexpr'opType == tokens:CAST
+  if pexpr'opType == ast:CAST
     mut tocast = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut expr = me.expr(tocast, root, fname, line)
 
@@ -1150,11 +1149,11 @@ method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
     return ret
   /if
 
-  if pexpr'opType == tokens:OPAR
+  if pexpr'opType == ast:OPAR
     return me.handleFn(root, pexpr, fname, line)
   /if
 
-  if pexpr'opType == tokens:OBRAC
+  if pexpr'opType == ast:OBRAC
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
@@ -1169,18 +1168,18 @@ method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
     return ret
   /if
 
-  if pexpr'opType == tokens:OCURLY
+  if pexpr'opType == ast:OCURLY
     return me.handleStructLiteral(root, pexpr, destType, fname, line)
   /if
 
-  if pexpr'opType == tokens:DQUEST
+  if pexpr'opType == ast:DQUEST
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
     return me.handleDQuest(root, e1, e2, pexpr'type, fname, line)
   /if
 
-  if pexpr'opType == tokens:FATARROW
+  if pexpr'opType == ast:FATARROW
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
     mut e3 = <ptr ast:PExpr>(val pexpr'node'leaves.get(2))
@@ -1188,7 +1187,7 @@ method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
     return me.handleTern(root, e1, e2, e3, pexpr'type, fname, line)
   /if
 
-  if pexpr'opType == tokens:DEC
+  if pexpr'opType == ast:DEC
     mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
     mut el = me.expr(e, root, fname, line)
@@ -1198,7 +1197,7 @@ method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
     return el
   /if
 
-  if pexpr'opType == tokens:INC
+  if pexpr'opType == ast:INC
     mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
     mut el = me.expr(e, root, fname, line)
@@ -1208,7 +1207,7 @@ method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
     return el
   /if
 
-  if pexpr'opType == tokens:QUEST
+  if pexpr'opType == ast:QUEST
     mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
     mut el = me.expr(e, root, fname, line)
@@ -1220,7 +1219,7 @@ method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
     return ret
   /if
 
-  if pexpr'opType == tokens:PTR
+  if pexpr'opType == ast:PTR
     mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
     mut el = me.expr(e, root, fname, line)
@@ -1232,7 +1231,7 @@ method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
     return ret
   /if
 
-  if pexpr'opType == tokens:VAL
+  if pexpr'opType == ast:VAL
     mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
 
     mut el = me.expr(e, root, fname, line)
@@ -1244,7 +1243,7 @@ method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
     return ret
   /if
 
-  if ctrans:isBinOp(pexpr'opType) or pexpr'opType == tokens:MINUS
+  if ctrans:isBinOp(pexpr'opType) or pexpr'opType == ast:MINUS
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 

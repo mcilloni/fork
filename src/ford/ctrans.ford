@@ -16,6 +16,7 @@ import cs
 import err
 import io
 import list
+import txt
 
 
 alias Transl struct(
@@ -130,12 +131,12 @@ decl method cs:Charstash.addPad(p uintptr)
 decl method cs:Charstash.addSymName(modName,name ptr uint8)
 
 alias LineStr struct(
-  line ast:Line,
+  line txt:Line,
   str ptr uint8
 )
 
 decl func lsFree(ls ptr LineStr)
-decl func lsNew(line ast:Line, str ptr uint8) ptr LineStr
+decl func lsNew(line txt:Line, str ptr uint8) ptr LineStr
 
 
 alias Elem struct(
