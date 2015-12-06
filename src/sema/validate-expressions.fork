@@ -98,7 +98,24 @@ func ttypeIsEqDiff(tt uint16) bool
 
 
 func ttypeIsArith(tt uint16) bool
-  return tt == ast:PLUS or tt == ast:MINUS or tt == ast:MINOR or tt == ast:MAJOR or tt == ast:MAJEQ or tt == ast:MINEQ or tt == ast:MOD or tt == ast:DIV or tt == ast:INC or tt == ast:DEC or tt == ast:POW or tt == ast:TIMES or tt == ast:UMINUS or tt == ast:AMPER or tt == ast:PIPE or tt == ast:XOR
+  return    tt == ast:AMPER \
+         or tt == ast:DEC \
+         or tt == ast:DIV \
+         or tt == ast:INC \
+         or tt == ast:MAJEQ \
+         or tt == ast:MAJOR \
+         or tt == ast:MINEQ \
+         or tt == ast:MINOR \
+         or tt == ast:MINUS \
+         or tt == ast:MOD \
+         or tt == ast:PIPE \
+         or tt == ast:PLUS \
+         or tt == ast:POW \
+         or tt == ast:SHIFTL \
+         or tt == ast:SHIFTR \
+         or tt == ast:TIMES \
+         or tt == ast:UMINUS \
+         or tt == ast:XOR
 /func
 
 

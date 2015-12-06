@@ -22,7 +22,10 @@ import txt
 import utils
 
 
-alias Char struct(ch uint8, pos uintptr)
+alias Char {
+  ch uint8,
+  pos uintptr
+}
 
 
 func strtokNew(str ptr uint8, line,begin,end uintptr) ptr ast:StringTok
@@ -701,9 +704,21 @@ func lexerNext(lex ptr ast:Lexer) ptr ast:Token
     value = txt:strtonum(strToken)
   /if
 
-  if type == 0 # if it's still unmodified, then it's an identifier
-    type = ast:ID
-    value = <uintptr>(strToken)
+  if type == 0 # if it's still unmodified, then it's an identifier, or sh(<,>)
+
+    # `sh<` and `sh>` check is here, because sh is still a valid identifier.
+    if     not lexerEof(lex) \
+       and txt:strequals(strToken, "sh") \
+       and (lex'peek == 60 or lex'peek == 62)
+
+      mut {ch,endPos} = nextChar(lex)
+
+      # `<` == 60, `>` == 62
+      type = (ch == 60) => ast:SHIFTL || ast:SHIFTR
+    else
+      type = ast:ID
+      value = <uintptr>(strToken)
+    /if
   else
     mem:free(strToken)
   /if
@@ -958,6 +973,14 @@ func ttypeStr(tt uint16) ptr uint8
 
   if tt == ast:SIZE
     return "size"
+  /if
+
+  if tt == ast:SHIFTL
+    return "sh<"
+  /if
+
+  if tt == ast:SHIFTR
+    return "sh>"
   /if
 
   if tt == ast:STRING

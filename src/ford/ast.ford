@@ -506,6 +506,8 @@ decl mut PTR uint16
 decl mut QUEST uint16
 decl mut RETURN uint16
 decl mut SEPARATOR uint16
+decl mut SHIFTL uint16
+decl mut SHIFTR uint16
 decl mut SIZE uint16
 decl mut STRING uint16
 decl mut STRUCT uint16

@@ -45,7 +45,7 @@ binAnd ::= ( binAnd, '&', equality ) | equality
 equality ::= ( equality, ( '==' | '!=' ), comparison) | comparison
 comparison ::= ( comparison, compOp, shift ) | shift
 compOp ::= '>' | '<' | '>=' | '<='
-shift ::= addiction
+shift ::= ( shift, ('sh<' | 'sh>'), addition) | addition
 addition ::= ( addition, ('+' | '-'), multiplication ) | multiplication
 multiplication ::= ( multiplication, ( '*', '/', 'mod' ), cast ) | cast
 unary ::= postfix | (unaryOp, unary)

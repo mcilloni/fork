@@ -44,11 +44,11 @@ mut NUMBER uint16 = 390
 mut OCURLY uint16 = 420
 mut RETURN uint16 = 450
 mut SEPARATOR uint16 = 460
-mut SIZE uint16 = 470
-mut STRING uint16 = 490
-mut STRUCT uint16 = 500
-mut TRUE uint16 = 510
-mut WHILE uint16 = 540
+mut SIZE uint16 = 490
+mut STRING uint16 = 500
+mut STRUCT uint16 = 520
+mut TRUE uint16 = 550
+mut WHILE uint16 = 560
 
 # Operator tokens.
 # The first two ciphers represent the priority; this can be
@@ -59,37 +59,40 @@ mut WHILE uint16 = 540
 # - 2 stands for unary, left associative
 # - 3 stands for unary, right associative
 
-mut TWOCOLONS uint16 = 16520
+mut TWOCOLONS uint16 = 17520
 
-mut QUEST uint16 = 15192
-mut INC uint16 = 15092
-mut OPAR uint16 = 15411
-mut OBRAC uint16 = 15401
-mut DOT uint16 = 15060
-mut APOS uint16 = 15050
-mut DEC uint16 = 15042
+mut APOS uint16 = 16050
+mut DEC uint16 = 16042
+mut DOT uint16 = 16060
+mut INC uint16 = 16092
+mut OPAR uint16 = 16411
+mut OBRAC uint16 = 16401
+mut QUEST uint16 = 16192
 
-mut UMINUS uint16 = 14353
-mut MINUS uint16 = 14343
-mut NOT uint16 = 14383
-mut PTR uint16 = 14463
-mut VAL uint16 = 14523
+mut MINUS uint16 = 15343
+mut NOT uint16 = 15383
+mut PTR uint16 = 15463
+mut UMINUS uint16 = 15353
+mut VAL uint16 = 15523
 
-mut POW uint16 = 13450
+mut POW uint16 = 14450
 
-mut DIV uint16 = 12170
-mut MOD uint16 = 12350
-mut TIMES uint16 = 12510
+mut DIV uint16 = 13170
+mut MOD uint16 = 13350
+mut TIMES uint16 = 13510
 
-mut PLUS uint16 = 11440
+mut PLUS uint16 = 12440
+
+mut SHIFTL uint16 = 11440
+mut SHIFTR uint16 = 11340
 
 mut MAJEQ uint16 = 10300
 mut MAJOR uint16 = 10310
 mut MINEQ uint16 = 10320
 mut MINOR uint16 = 10330
 
-mut EQUAL uint16 = 9240
 mut DIFFERENT uint16 = 9160
+mut EQUAL uint16 = 9240
 
 mut AMPER uint16 = 8040
 
