@@ -58,6 +58,7 @@ decl func pathExistsDir(path ptr uint8) bool
 decl func pathJoin(path1,path2 ptr uint8) ptr uint8
 decl func pathListFiles(path ptr uint8) {paths ptr list:List, err ptr err:Error}
 
+
 # line number structure
 
 alias Lineno struct(

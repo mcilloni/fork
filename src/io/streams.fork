@@ -22,6 +22,8 @@ mut STREAM_OUT uint8 = 2
 mut STREAM_INOUT uint8 = 3
 
 
+# Stream functions
+
 func streamClose(stream ptr io:Stream) bool
   mut ret = stream'cookie'cfn(stream'cookie'priv8, ptr stream'error)
 
@@ -30,17 +32,11 @@ func streamClose(stream ptr io:Stream) bool
 /func
 
 
-func streamEnded(stream ptr io:Stream) bool
-  return stream'eof
-/func
+func streamNew(priv8 data,
+               rfn ptr io:readfunc,
+               wfn ptr io:writefunc,
+               cfn ptr io:closefunc) ptr io:Stream
 
-
-func streamError(stream ptr io:Stream) ptr err:Error
-  return stream'error
-/func
-
-
-func streamNew(priv8 data, rfn ptr io:readfunc, wfn ptr io:writefunc, cfn ptr io:closefunc) ptr io:Stream
   mut ret = <ptr io:Stream>(mem:zalloc(size(io:Stream)))
   ret'cookie'priv8 = priv8
 
@@ -59,21 +55,33 @@ func streamNew(priv8 data, rfn ptr io:readfunc, wfn ptr io:writefunc, cfn ptr io
 /func
 
 
-func streamRead(stream ptr io:Stream, string ptr uint8, len intptr) uintptr
-  if (stream'inout & STREAM_IN) == 0
-    stream'error = err:errorNew("Stream opened write-only")
+# Stream methods
+
+method Stream.ended() bool
+  return me'eof
+/method
+
+
+method Stream.error() ptr err:Error
+  return me'error
+/method
+
+
+method Stream.read(str ptr uint8, len intptr) uintptr
+  if (me'inout & STREAM_IN) == 0
+    me'error = err:errorNew("stream opened write-only")
     return 0
   /if
 
-  return stream'cookie'rfn(stream'cookie'priv8, string, len, ptr stream'error, ptr stream'eof)
-/func
+  return me'cookie'rfn(me'cookie'priv8, str, len, ptr me'error, ptr me'eof)
+/method
 
 
-func streamWrite(stream ptr io:Stream, string ptr uint8) uintptr
-  if (stream'inout & STREAM_OUT) == 0
-    stream'error = err:errorNew("Stream opened read-only")
+method Stream.write(string ptr uint8) uintptr
+  if (me'inout & STREAM_OUT) == 0
+    me'error = err:errorNew("stream opened read-only")
     return 0
   /if
 
-  return stream'cookie'wfn(stream'cookie'priv8, string, <intptr>(txt:strlen(string)), ptr stream'error)
-/func
+  return me'cookie'wfn(me'cookie'priv8, string, <intptr>(txt:strlen(string)), ptr me'error)
+/method

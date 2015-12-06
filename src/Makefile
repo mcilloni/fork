@@ -54,6 +54,7 @@ all:
 	$(MAKE) -C ast
 	$(MAKE) -C synt
 	$(MAKE) -C sema
+	$(MAKE) -C fords
 	$(MAKE) -C parser
 	$(MAKE) -C libfork
 

@@ -44,8 +44,15 @@ alias Stream struct (
 
 # Stream functions
 decl func streamClose(stream ptr Stream) bool
-decl func streamEnded(stream ptr Stream) bool
-decl func streamError(stream ptr Stream) ptr err:Error
-decl func streamNew(priv8 data, rfn ptr readfunc, wfn ptr writefunc, cfn ptr closefunc) ptr Stream
-decl func streamRead(stream ptr Stream, str ptr uint8, len intptr) uintptr
-decl func streamWrite(stream ptr Stream, str ptr uint8) uintptr
+decl func streamNew(priv8 data,
+                    rfn ptr readfunc,
+                    wfn ptr writefunc,
+                    cfn ptr closefunc) ptr Stream
+
+
+# Stream methods
+
+decl method Stream.ended() bool
+decl method Stream.error() ptr err:Error
+decl method Stream.read(str ptr uint8, len intptr) uintptr
+decl method Stream.write(str ptr uint8) uintptr
