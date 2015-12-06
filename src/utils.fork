@@ -188,6 +188,14 @@ func opConv(tok uint16) ptr uint8
     return "+"
   /if
 
+  if tok == ast:SHIFTL
+    return "<<"
+  /if
+
+  if tok == ast:SHIFTR
+    return ">>"
+  /if
+
   if tok == ast:TIMES or tok == ast:VAL
     return "*"
   /if
