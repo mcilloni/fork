@@ -1,0 +1,1091 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ast
+
+
+import ast
+import cs
+import err
+import fs
+import io
+import mem
+import parser
+import txt
+import utils
+
+
+alias Char struct(ch uint8, pos uintptr)
+
+
+func strtokNew(str ptr uint8, line,begin,end uintptr) ptr ast:StringTok
+  mut strTok = <ptr ast:StringTok>(mem:zalloc(size(ast:StringTok)))
+
+  strTok'str = str
+
+  strTok'begin = begin
+  strTok'end = end
+  strTok'line = line
+
+  return strTok
+/func
+
+
+func strtokFree(stok ptr ast:StringTok)
+  if stok?
+    mem:free(stok)
+  /if
+/func
+
+
+func nextChar(lex ptr ast:Lexer) Char
+  mut ret Char
+  ret'ch = lex'peek
+  ret'pos = 0
+
+  lex'file.read(ptr lex'peek, 1)
+  if (lex'error = lex'file.error())?
+    ret'ch = 0
+    return ret
+  /if
+
+  lex'lineno'pos++
+
+  ret'pos = lex'lineno'pos
+
+  if lex'file.ended()
+    lex'peek = 0
+  /if
+
+  if ret'ch == 12 #carriage return
+    if lex'peek != 10 #new line (Windows format case)
+      lex'error = ast:errorLex(lex, "inconsistent end of line - no newline after carriage return")
+      ret'ch = 0
+      return ret
+    /if
+    return nextChar(lex)
+  /if
+
+  if lex'firstLineLetter
+    lex'firstLineLetter = false
+    lex'lineno'lineno++
+    lex'lineno'pos = 1
+  /if
+
+  if ret'ch == 10 # newline
+    lex'firstLineLetter = true
+  /if
+
+  return ret
+/func
+
+
+func lexDiscardComment(lex ptr ast:Lexer)
+  mut ch Char
+  ch'ch = 0
+  while not ast:lexerEof(lex) and ch'ch != 10
+    if (ch = nextChar(lex))'ch == 0 #discard
+      return #exit on error
+    /if
+  /while
+
+/func
+
+
+mut STX = 2 # There is no reason for using 2 and not another reserved character.
+
+
+func applyEscape(ch uint8, escape bool) uint8
+
+  if not escape
+    return ch
+  /if
+
+  if ch == 97 # `a`
+    return 7 # BEL
+  /if
+
+  if ch == 98 # `b`
+    return 8 # BS
+  /if
+
+  if ch == 110 # `n`
+    return 10 # NL
+  /if
+
+  if ch == 114 # `r`
+    return 13
+  /if
+
+  if ch == 116 # `t`
+    return 9
+  /if
+
+  return ch
+/func
+
+
+func lexExtractString(lex ptr ast:Lexer) ptr ast:StringTok
+  mut ch = nextChar(lex) #discard the `"`
+  mut begin = ch'pos
+
+  mut cs = cs:new(10) #just a magic number here
+  #an STX is added at the beginning, indicating that the content is not a token but a whole string.
+  cs.addChar(STX)
+
+  mut escape = false
+
+  while not ast:lexerEof(lex) and utils:charCanBeInString(lex'peek, escape)
+    ch = nextChar(lex)
+    if ch'ch == 0
+      cs:free(cs)
+      return null
+    /if
+
+    if not escape and ch'ch == 92 # `\\`
+      escape = true
+    else
+      cs.addChar(applyEscape(ch'ch, escape))
+      escape = false
+    /if
+  /while
+
+  if ast:lexerEof(lex)
+    cs:free(cs)
+    lex'error = ast:errorLex(lex, "unexpected EOF in string body")
+    return null
+  /if
+
+  if (ch = nextChar(lex))'ch != 34 # `"`
+    cs:free(cs)
+    mut got [2] uint8
+    got[0] = ch'ch
+    got[1] = 0 # `\0` c string terminator
+
+    lex'error = ast:issueToError(ast:errorMism(lex'lineno, "\"", ptr got[0]))
+    return null
+  /if
+
+  return strtokNew(cs:unwrap(cs), lex'lineno'lineno, begin, ch'pos)
+/func
+
+
+func lexExtractSym(lex ptr ast:Lexer) ptr ast:StringTok
+  mut cs = cs:new(10) #magic number
+  mut i uintptr = 0
+  mut ch Char
+  mut first = true
+  mut begin uintptr = 0
+
+  while not ast:lexerEof(lex) and utils:charIsSym(lex'peek) and i < 2
+    ch = nextChar(lex)
+    if ch'ch == 0
+      cs:free(cs)
+      return null
+    /if
+
+    if first
+      begin = ch'pos
+      first = false
+    /if
+
+    cs.addChar(ch'ch)
+  /while
+
+  return strtokNew(cs:unwrap(cs), lex'lineno'lineno, begin, ch'pos)
+/func
+
+
+func lexHandleId(lex ptr ast:Lexer) ptr ast:StringTok
+  mut cs = cs:new(10) #magic number
+  mut ch Char
+  mut begin uintptr
+  mut first = true
+
+  while utils:charIsIdVal(lex'peek)
+    ch = nextChar(lex)
+    if ch'ch == 0
+      cs:free(cs)
+      return null
+    /if
+
+    if first
+      begin = ch'pos
+      first = false
+    /if
+
+    cs.addChar(ch'ch)
+  /while
+
+  return strtokNew(cs:unwrap(cs), lex'lineno'lineno, begin, ch'pos)
+/func
+
+
+func skipWhites(lex ptr ast:Lexer, ignoreNewline bool)
+  while utils:charIsWhite(lex'peek)
+    mut ch = nextChar(lex)
+    if not ignoreNewline and ch'ch == 10 and not lex'firstLineTok #character `\n`
+      lex'firstLineTok = true
+      lex'newline = true
+    /if
+  /while
+/func
+
+
+func extractNextToken(lex ptr ast:Lexer) ptr ast:StringTok
+
+  if lex'file.ended()
+    return null
+  /if
+
+  skipWhites(lex, false)
+
+  if lex'peek == 0
+    return null
+  /if
+
+  # if we have a '\', then ignore the next newline
+  if lex'peek == 92
+    nextChar(lex) # discard `\`
+    skipWhites(lex, true)
+  /if
+
+  if lex'peek == 35 # character `#` - means the beginning of a single line comment
+    lexDiscardComment(lex)
+    if not ast:lexerEof(lex) and not lex'firstLineTok
+      lex'newline = true
+      lex'firstLineTok = true
+    /if
+
+    return extractNextToken(lex)
+  /if
+
+  if lex'peek == 34 # character `"` - means the beginning of a string
+    return lexExtractString(lex)
+  /if
+
+  if utils:charIsSym(lex'peek)
+    return lexExtractSym(lex)
+  /if
+
+  if utils:charIsPar(lex'peek)
+    mut str = <ptr uint8>(mem:zalloc(2 * size(uint8)))
+    mut par = nextChar(lex)
+    str[0] = par'ch
+    return strtokNew(str, lex'lineno'lineno, par'pos, par'pos)
+  /if
+
+  lex'firstLineTok = false
+
+  return lexHandleId(lex)
+/func
+
+
+func lexerClose(lex ptr ast:Lexer)
+  io:streamClose(lex'file)
+  fs:linenoFree(lex'lineno)
+  mem:free(lex)
+/func
+
+
+func lexerError(lexer ptr ast:Lexer) ptr err:Error
+  return lexer'error
+/func
+
+
+func lexerFromStream(stream ptr io:Stream, name ptr uint8) {lex ptr ast:Lexer, err ptr err:Error}
+  mut ret = <ptr ast:Lexer>(mem:zalloc(size(ast:Lexer)))
+
+  ret'file = stream
+  ret'lineno = fs:linenoNew(txt:strclone(name),0,0)
+  ret'firstLineTok = true
+  ret'firstLineLetter = true
+
+  stream.read(ptr ret'peek, 1)
+  mut err = stream.error()
+
+  if err?
+    return {null, err}
+  /if
+
+  return {ret, null}
+/func
+
+
+func lexerNew(fname ptr uint8) {lex ptr ast:Lexer, err ptr err:Error}
+  mut result = fs:fileOpen(fname)
+
+  if result'err?
+    return {null, result'err}
+  /if
+
+  return lexerFromStream(result'stream, fname)
+/func
+
+
+func lexerEof(lexer ptr ast:Lexer) bool
+  return lexer'file.ended()
+/func
+
+
+func tokenNew(type uint16, value uintptr, lineno ptr fs:Lineno, end uintptr) ptr ast:Token
+  mut ret = <ptr ast:Token>(mem:alloc(size(ast:Token)))
+  ret'type = type
+  ret'endPos = end
+  ret'lineno = lineno
+  ret'value = value
+  return ret
+/func
+
+
+func tokenFree(tok ptr ast:Token)
+  if tok?
+    if (tok'type == ast:ID or tok'type == ast:STRING) and tok'value != 0
+      mem:free(<data>(tok'value))
+    /if
+    fs:linenoFree(tok'lineno)
+    mem:free(tok)
+  /if
+/func
+
+
+func errorLex(lex ptr ast:Lexer, msg ptr uint8) ptr err:Error
+  mut toglue [4] ptr uint8
+
+  toglue[0] = lex'lineno'filename
+  toglue[1] = ": "
+  toglue[2] = msg
+  toglue[3] = null
+
+  return err:errorGlue(ptr toglue[0])
+/func
+
+
+func lexerNext(lex ptr ast:Lexer) ptr ast:Token
+  if lexerEof(lex)
+    return null
+  /if
+
+  if lexerError(lex)?
+    return null
+  /if
+
+  mut stringToken = lex'saved
+
+  if not lex'saved?
+    stringToken = extractNextToken(lex)
+    if lexerError(lex)?
+      return null
+    /if
+  else
+    lex'saved = null
+
+    # this is needed because this field is set to false only by extractNextToken.
+    # if the saved one is the firstLineTok, then the next extractNextToken will still think
+    # we're at the beginning of the line. This fixes it.
+    if lex'firstLineTok
+      lex'firstLineTok = false
+    /if
+  /if
+
+  if not stringToken?
+    return null
+  /if
+
+  mut begin = fs:linenoClone(lex'lineno)
+  begin'pos = stringToken'begin
+  mut endPos = stringToken'end
+
+  mut type uint16 = 0
+  mut value uintptr = 0
+
+  if lex'newline
+    lex'saved = stringToken
+    lex'newline = false
+
+    begin'lineno--
+    begin'pos = 0
+
+    return tokenNew(ast:NEWLINE, 0, begin, 0)
+  /if
+
+  mut strToken = stringToken'str
+
+  if val strToken == STX # is a constant string
+    type = ast:STRING
+    value = <uintptr>(txt:strclone(strToken + 1))
+  /if
+
+  if txt:strequals(strToken, "alias")
+    type = ast:ALIAS
+  /if
+
+  if txt:strequals(strToken, "&")
+    type = ast:AMPER
+  /if
+
+  if txt:strequals(strToken, "and")
+    type = ast:AND
+  /if
+
+  if txt:strequals(strToken, "'")
+    type = ast:APOS
+  /if
+
+  if txt:strequals(strToken, "=")
+    type = ast:ASSIGN
+  /if
+
+  if txt:strequals(strToken, "break")
+    type = ast:BREAK
+  /if
+
+  if txt:strequals(strToken, "cast")
+    type = ast:CAST
+  /if
+
+  if txt:strequals(strToken, "]")
+    type = ast:CBRAC
+  /if
+
+  if txt:strequals(strToken, "}")
+    type = ast:CCURLY
+  /if
+
+  if txt:strequals(strToken, ":")
+    type = ast:COLON
+  /if
+
+  if txt:strequals(strToken, ",")
+    type = ast:COMMA
+  /if
+
+  if txt:strequals(strToken, "continue")
+    type = ast:CONTINUE
+  /if
+
+  if txt:strequals(strToken, ")")
+    type = ast:CPAR
+  /if
+
+  if txt:strequals(strToken, "--")
+    type = ast:DEC
+  /if
+
+  if txt:strequals(strToken, "decl")
+    type = ast:DECL
+  /if
+
+  if txt:strequals(strToken, "!=")
+    type = ast:DIFFERENT
+  /if
+
+  if txt:strequals(strToken, ".")
+    type = ast:DOT
+  /if
+
+  if txt:strequals(strToken, "??")
+    type = ast:DQUEST
+  /if
+
+  if txt:strequals(strToken, "mod")
+    type = ast:MOD
+  /if
+
+  if txt:strequals(strToken, "/")
+    if utils:charIsIdVal(lex'peek)
+      lex'saved = extractNextToken(lex)
+      if lexerError(lex)?
+        return null
+      /if
+
+      mut savedTok = lex'saved'str
+
+      if txt:strequals(savedTok, "entry")
+        type = ast:ENDENTRY
+      /if
+
+      if txt:strequals(savedTok, "func")
+        type = ast:ENDFUNC
+      /if
+
+      if txt:strequals(savedTok, "if")
+        type = ast:ENDIF
+      /if
+
+      if txt:strequals(savedTok, "method")
+        type = ast:ENDMETHOD
+      /if
+
+      if txt:strequals(savedTok, "while")
+        type = ast:ENDWHILE
+      /if
+
+      if type != 0
+        endPos = lex'saved'end
+        mem:free(savedTok)
+        strtokFree(lex'saved)
+        lex'saved = null
+      /if
+    /if
+    if type == 0 # nothing has been matched, so it is a `/`
+        type = ast:DIV
+    /if
+  /if
+
+  if txt:strequals(strToken, "else")
+    type = ast:ELSE
+  /if
+
+  if txt:strequals(strToken, "entry")
+    type = ast:ENTRY
+  /if
+
+  if txt:strequals(strToken, "==")
+    type = ast:EQUAL
+  /if
+
+  if txt:strequals(strToken, "false")
+    type = ast:FALSE
+  /if
+
+  if txt:strequals(strToken, "=>")
+    type = ast:FATARROW
+  /if
+
+  if txt:strequals(strToken, "func")
+    type = ast:FUNC
+  /if
+
+  if txt:strequals(strToken, "if")
+    type = ast:IF
+  /if
+
+  if txt:strequals(strToken, "import")
+    type = ast:IMPORT
+  /if
+
+  if txt:strequals(strToken, "++")
+    type = ast:INC
+  /if
+
+  if txt:strequals(strToken, ">=")
+    type = ast:MAJEQ
+  /if
+
+  if txt:strequals(strToken, ">")
+    type = ast:MAJOR
+  /if
+
+  if txt:strequals(strToken, "me")
+    type = ast:ME
+  /if
+
+  if txt:strequals(strToken, "method")
+    type = ast:METHOD
+  /if
+
+  if txt:strequals(strToken, "<=")
+    type = ast:MINEQ
+  /if
+
+  if txt:strequals(strToken, "<")
+    type = ast:MINOR
+  /if
+
+  if txt:strequals(strToken, "-")
+    type = ast:MINUS
+  /if
+
+  if txt:strequals(strToken, "module")
+    type = ast:MODULE
+  /if
+
+  if txt:strequals(strToken, "mut")
+    type = ast:MUT
+  /if
+
+  if txt:strequals(strToken, "not")
+    type = ast:NOT
+  /if
+
+  if txt:strequals(strToken, "null")
+    type = ast:NULL
+  /if
+
+  if txt:strequals(strToken, "[")
+    type = ast:OBRAC
+  /if
+
+  if txt:strequals(strToken, "{")
+    type = ast:OCURLY
+  /if
+
+  if txt:strequals(strToken, "(")
+    type = ast:OPAR
+  /if
+
+  if txt:strequals(strToken, "or")
+    type = ast:OR
+  /if
+
+  if txt:strequals(strToken, "|")
+    type = ast:PIPE
+  /if
+
+  if txt:strequals(strToken, "+")
+    type = ast:PLUS
+  /if
+
+  if txt:strequals(strToken, "**")
+    type = ast:POW
+  /if
+
+  if txt:strequals(strToken, "ptr")
+    type = ast:PTR
+  /if
+
+  if txt:strequals(strToken, "?")
+    type = ast:QUEST
+  /if
+
+  if txt:strequals(strToken, "return")
+    type = ast:RETURN
+  /if
+
+  if txt:strequals(strToken, "||")
+    type = ast:SEPARATOR
+  /if
+
+  if txt:strequals(strToken, "size")
+    type = ast:SIZE
+  /if
+
+  if txt:strequals(strToken, "struct")
+    type = ast:STRUCT
+  /if
+
+  if txt:strequals(strToken, "*")
+    type = ast:TIMES
+  /if
+
+  if txt:strequals(strToken, "true")
+    type = ast:TRUE
+  /if
+
+  if txt:strequals(strToken, "::")
+    type = ast:TWOCOLONS
+  /if
+
+  if txt:strequals(strToken, "val")
+    type = ast:VAL
+  /if
+
+  if txt:strequals(strToken, "while")
+    type = ast:WHILE
+  /if
+
+  if txt:strequals(strToken, "^")
+    type = ast:XOR
+  /if
+
+  if utils:strIsUInt(strToken)
+    type = ast:NUMBER
+    value = txt:strtonum(strToken)
+  /if
+
+  if type == 0 # if it's still unmodified, then it's an identifier
+    type = ast:ID
+    value = <uintptr>(strToken)
+  else
+    mem:free(strToken)
+  /if
+
+  strtokFree(stringToken)
+
+  return tokenNew(type, value, begin, endPos)
+/func
+
+
+func ttypeStr(tt uint16) ptr uint8
+  if tt == ast:EOF
+    return "Eof"
+  /if
+
+  if tt == ast:NEWLINE
+    return "a newline"
+  /if
+
+  if tt == ast:ALIAS
+    return "alias"
+  /if
+
+  if tt == ast:AMPER
+    return "&"
+  /if
+
+  if tt == ast:AND
+    return "and"
+  /if
+
+  if tt == ast:APOS
+    return "'"
+  /if
+
+  if tt == ast:ASSIGN
+    return "="
+  /if
+
+  if tt == ast:BREAK
+    return "break"
+  /if
+
+  if tt == ast:CAST
+    return "cast"
+  /if
+
+  if tt == ast:CBRAC
+    return "]"
+  /if
+
+  if tt == ast:COLON
+    return ":"
+  /if
+
+  if tt == ast:COMMA
+    return ","
+  /if
+
+  if tt == ast:CONTINUE
+    return "continue"
+  /if
+
+  if tt == ast:CCURLY
+    return "}"
+  /if
+
+
+  if tt == ast:CPAR
+    return ")"
+  /if
+
+  if tt == ast:DEC
+    return "--"
+  /if
+
+  if tt == ast:DECL
+    return "decl"
+  /if
+
+  if tt == ast:DIFFERENT
+    return "!="
+  /if
+
+  if tt == ast:DIV
+    return "/"
+  /if
+
+  if tt == ast:DOT
+    return "."
+  /if
+
+  if tt == ast:DQUEST
+    return "??"
+  /if
+
+  if tt == ast:ELSE
+    return "else"
+  /if
+
+  if tt == ast:ENDENTRY
+    return "/entry"
+  /if
+
+  if tt == ast:ENDFUNC
+    return "/func"
+  /if
+
+  if tt == ast:ENDIF
+    return "/if"
+  /if
+
+  if tt == ast:ENDMETHOD
+    return "/method"
+  /if
+
+  if tt == ast:ENDWHILE
+    return "/while"
+  /if
+
+  if tt == ast:ENTRY
+    return "entry"
+  /if
+
+  if tt == ast:EQUAL
+    return "=="
+  /if
+
+  if tt == ast:FALSE
+    return "false"
+  /if
+
+  if tt == ast:FATARROW
+    return "=>"
+  /if
+
+  if tt == ast:FUNC
+    return "func"
+  /if
+
+  if tt == ast:ID
+    return "an identifier"
+  /if
+
+  if tt == ast:IF
+    return "if"
+  /if
+
+  if tt == ast:IMPORT
+    return "import"
+  /if
+
+  if tt == ast:INC
+    return "++"
+  /if
+
+  if tt == ast:MAJEQ
+    return ">="
+  /if
+
+  if tt == ast:MAJOR
+    return ">"
+  /if
+
+  if tt == ast:ME
+    return "me"
+  /if
+
+  if tt == ast:METHOD
+    return "method"
+  /if
+
+  if tt == ast:MINEQ
+    return "<="
+  /if
+
+  if tt == ast:MINOR
+    return "<"
+  /if
+
+  if tt == ast:MINUS
+    return "-"
+  /if
+
+  if tt == ast:MOD
+    return "mod"
+  /if
+
+  if tt == ast:MODULE
+    return "module"
+  /if
+
+  if tt == ast:MUT
+    return "mut"
+  /if
+
+  if tt == ast:NOT
+    return "not"
+  /if
+
+  if tt == ast:NULL
+    return "null"
+  /if
+
+  if tt == ast:NUMBER
+    return "a number"
+  /if
+
+  if tt == ast:OBRAC
+    return "["
+  /if
+
+  if tt == ast:OCURLY
+    return "{"
+  /if
+
+  if tt == ast:OPAR
+    return "("
+  /if
+
+  if tt == ast:OR
+    return "or"
+  /if
+
+  if tt == ast:PIPE
+    return "|"
+  /if
+
+  if tt == ast:PLUS
+    return "+"
+  /if
+
+  if tt == ast:POW
+    return "**"
+  /if
+
+  if tt == ast:PTR
+    return "ptr"
+  /if
+
+  if tt == ast:QUEST
+    return "?"
+  /if
+
+  if tt == ast:RETURN
+    return "return"
+  /if
+
+  if tt == ast:SEPARATOR
+    return "||"
+  /if
+
+  if tt == ast:SIZE
+    return "size"
+  /if
+
+  if tt == ast:STRING
+    return "a string"
+  /if
+
+  if tt == ast:STRUCT
+    return "struct"
+  /if
+
+  if tt == ast:TIMES
+    return "*"
+  /if
+
+  if tt == ast:TRUE
+    return "true"
+  /if
+
+  if tt == ast:UMINUS
+    return "- (Unary)"
+  /if
+
+  if tt == ast:VAL
+    return "val"
+  /if
+
+  if tt == ast:WHILE
+    return "while"
+  /if
+
+  if tt == ast:XOR
+    return "^"
+  /if
+
+  return "<unknown, please, reportnot >"
+/func
+
+
+func tokenStr(tok ptr ast:Token) ptr uint8
+  return ast:ttypeStr(not tok? => ast:EOF || tok'type)
+/func
+
+
+func issueFromLexError(err ptr err:Error, lineno ptr fs:Lineno) ptr ast:Issue
+  if not err?
+    return null
+  /if
+
+  mut where txt:Line
+  where'line = lineno'lineno
+  where'pos = lineno'pos
+
+  mut ret = ast:issueNew(ast:ISSUE_ERR, where, lineno'filename, err'msg)
+
+  err:errorFree(err)
+
+  return ret
+/func
+
+
+func lineMake(llin ptr fs:Lineno) txt:Line
+  mut ret txt:Line
+
+  ret'line = llin'lineno
+  ret'pos =  llin'pos
+
+  return ret
+/func
+
+
+func tokExtractBegin(tok ptr ast:Token) txt:Line
+  mut ret txt:Line
+  ret'line = tok'lineno'lineno
+  ret'pos = tok'lineno'pos
+
+  return ret
+/func
+
+
+func tokExtractEnd(tok ptr ast:Token) txt:Line
+  mut ret txt:Line
+  ret'line = tok'lineno'lineno
+  ret'pos = tok'endPos
+
+  return ret
+/func
+
+
+func tokDiscardBegin(tok ptr ast:Token) txt:Line
+  mut ret = tokExtractBegin(tok)
+
+  ast:tokenFree(tok)
+
+  return ret
+/func
+
+
+func tokDiscardEnd(tok ptr ast:Token) txt:Line
+  mut ret = tokExtractEnd(tok)
+
+  ast:tokenFree(tok)
+
+  return ret
+/func
+
+
+func error(lineno ptr fs:Lineno, msg ptr uint8) ptr ast:Issue
+  mut line txt:Line
+  line'line = lineno'lineno
+  line'pos = lineno'pos
+
+  return ast:issueNew(ast:ISSUE_ERR, line, lineno'filename, msg)
+/func
+
+
+func errorMism(lineno ptr fs:Lineno, exp ptr uint8, got ptr uint8) ptr ast:Issue
+
+  mut toglue [5] ptr uint8
+  toglue[0] = "expected "
+  toglue[1] = exp
+  toglue[2] = ", got "
+  toglue[3] = got
+  toglue[4] = null
+
+  mut glued = txt:strglue(ptr toglue[0])
+  mut ret =  ast:error(lineno, glued)
+
+  mem:free(glued)
+
+  return ret
+/func

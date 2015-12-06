@@ -1,0 +1,40 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module fs
+
+
+import fs
+import mem
+import txt
+
+
+func linenoClone(lineno ptr fs:Lineno) ptr fs:Lineno
+  return linenoNew(txt:strclone(lineno'filename), lineno'lineno, lineno'pos)
+/func
+
+
+func linenoFree(lineno ptr fs:Lineno)
+  if lineno?
+    mem:free(lineno'filename)
+    mem:free(lineno)
+  /if
+/func
+
+
+func linenoNew(filename ptr uint8, lineno, pos uintptr) ptr fs:Lineno
+  mut ret = <ptr fs:Lineno>(mem:alloc(size(fs:Lineno)))
+
+  ret'filename = filename
+  ret'lineno = lineno
+  ret'pos = pos
+
+  return ret
+/func

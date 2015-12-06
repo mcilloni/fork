@@ -1,0 +1,43 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module fords
+
+
+import ast
+import err
+import fs
+import io
+import mem
+import txt
+
+
+method io:Stream.dumpFord(pmod ptr ast:PModule) ptr err:Error
+  return null
+/method
+
+
+func generate(pmod ptr ast:PModule, path ptr uint8) ptr err:Error
+  mut fName = txt:strappend(pmod'name, ".ford")
+  mut filePath = fs:pathJoin(path, fName)
+
+  mut {outstr,err} = fs:fileCreate(filePath)
+  if err?
+    return err
+  /if
+
+  err = outstr.dumpFord(pmod)
+
+  mem:free(fName)
+  mem:free(filePath)
+  io:streamClose(outstr)
+
+  return err
+/func
