@@ -20,8 +20,11 @@ alias Error struct (
 
 # Error functions
 
-decl func errorFree(err ptr Error)
-decl func errorGlue(errs ptr ptr uint8) ptr Error
-decl func errorMsg(err ptr Error) ptr uint8
-decl func errorNew(err ptr uint8) ptr Error
-decl func errorNewStrs(errstrings ptr ptr uint8) ptr Error
+decl func free(err ptr Error)
+decl func glue(errs ptr ptr uint8) ptr Error
+decl func new(err ptr uint8) ptr Error
+
+
+# Error methods
+
+decl method Error.msg() ptr uint8

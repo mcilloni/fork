@@ -20,11 +20,15 @@ import txt
 
 
 method io:Stream.dumpFord(pmod ptr ast:PModule) ptr err:Error
-  return null
+  # first, dump the module's name - fail if this is main.
 /method
 
 
 func generate(pmod ptr ast:PModule, path ptr uint8) ptr err:Error
+  if not pmod'name?
+    return err:new("can't generate ford for <main> module")
+  /if
+
   mut fName = txt:strappend(pmod'name, ".ford")
   mut filePath = fs:pathJoin(path, fName)
 

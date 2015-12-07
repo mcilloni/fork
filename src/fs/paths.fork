@@ -88,7 +88,7 @@ func pathListFiles(path ptr uint8) {paths ptr list:List, err ptr err:Error}
   if not path_listAll(path, ret, ptr listAppend, ptr buf[0], 512)
     list:free(ret)
 
-    return {null, err:errorNew(ptr buf[0])}
+    return {null, err:new(ptr buf[0])}
   /if
 
   return {ret, null}

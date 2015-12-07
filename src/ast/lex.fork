@@ -367,7 +367,7 @@ func errorLex(lex ptr ast:Lexer, msg ptr uint8) ptr err:Error
   toglue[2] = msg
   toglue[3] = null
 
-  return err:errorGlue(ptr toglue[0])
+  return err:glue(ptr toglue[0])
 /func
 
 
@@ -1035,7 +1035,7 @@ func issueFromLexError(err ptr err:Error, lineno ptr fs:Lineno) ptr ast:Issue
 
   mut ret = ast:issueNew(ast:ISSUE_ERR, where, lineno'filename, err'msg)
 
-  err:errorFree(err)
+  err:free(err)
 
   return ret
 /func

@@ -48,7 +48,7 @@ func sobjInit(sobj ptr dyn:SObj, name ptr uint8, err ptr ptr err:Error) bool
   sobj'handl = load_lib(name, ptr buf[0], 1024)
 
   if not sobj'handl?
-    val err = err:errorNew(ptr buf[0])
+    val err = err:new(ptr buf[0])
 
     return false
   /if
@@ -64,7 +64,7 @@ method dyn:SObj.sym(name ptr uint8, err ptr ptr err:Error) data
 
   mut sym = load_sym(me'handl, name, ptr buf[0], 1024)
   if not sym?
-    val err = err:errorNew(ptr buf[0])
+    val err = err:new(ptr buf[0])
 
     return null
   /if

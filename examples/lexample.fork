@@ -21,18 +21,18 @@ entry
     proc:exit(1)
   /if
 
-  mut result = ast:lexerNew(val argv'args)
-  if result'err?
-    tty:errln(err:errorMsg(result'err))
+  mut {lex,err} = ast:lexerNew(val argv'args)
+  if err?
+    tty:errln(err.msg())
     proc:exit(1)
   /if
 
   mut tok ptr ast:Token
 
-  while (tok = ast:lexerNext(result'lex))?
-    mut err = ast:lexerError(result'lex)
+  while (tok = ast:lexerNext(lex))?
+    err = ast:lexerError(lex)
     if err?
-      tty:errln(err:errorMsg(err))
+      tty:errln(err.msg())
       proc:exit(2)
     /if
 
@@ -52,6 +52,6 @@ entry
     ast:tokenFree(tok)
   /while
 
-  ast:lexerClose(result'lex)
+  ast:lexerClose(lex)
 
 /entry

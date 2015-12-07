@@ -24,7 +24,7 @@ func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err:
   mut rd = stream_readfileInternal(fd, bytes, len, ptr buf[0], 512)
 
   if rd < 0
-    val err = err:errorNew(ptr buf[0])
+    val err = err:new(ptr buf[0])
     return 0
   /if
 
@@ -47,7 +47,7 @@ func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err
     wt = stream_writefileInternal(fd, bytes + wttot, len - wttot, ptr buf[0], 512)
 
     if wt < 0
-      val err = err:errorNew(ptr buf[0])
+      val err = err:new(ptr buf[0])
       return 0
     /if
 
@@ -85,7 +85,7 @@ func stat(filename ptr uint8) {file ptr fs:File, err ptr err:Error}
 
   mut ret = file_populate(filename, ptr buf[0], 512)
   if not ret?
-    return {null, err:errorNew(ptr buf[0])}
+    return {null, err:new(ptr buf[0])}
   /if
 
   return {ret, null}
@@ -123,7 +123,7 @@ func fileOpen(filename ptr uint8) {stream ptr io:Stream, err ptr err:Error}
 
   mut fd = open_readfile(filename, ptr buf[0], 512)
   if fd < 0
-    return {null, err:errorNew(ptr buf[0])}
+    return {null, err:new(ptr buf[0])}
   /if
 
   return {io:streamNew(<data>(fd), ptr filereadInternal, \
@@ -137,7 +137,7 @@ func fileCreate(filename ptr uint8) {stream ptr io:Stream, err ptr err:Error}
 
   mut fd = open_writefile(filename, ptr buf[0], 512)
   if fd < 0
-    return {null, err:errorNew(ptr buf[0])}
+    return {null, err:new(ptr buf[0])}
   /if
 
   return {io:streamNew(<data>(fd), ptr filereadInternal, \

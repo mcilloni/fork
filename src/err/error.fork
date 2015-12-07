@@ -16,7 +16,7 @@ import mem
 import txt
 
 
-func errorFree(err ptr err:Error)
+func free(err ptr err:Error)
   if err?
     mem:free(err'msg)
     mem:free(err)
@@ -24,24 +24,20 @@ func errorFree(err ptr err:Error)
 /func
 
 
-func errorMsg(err ptr err:Error) ptr uint8
-  if err?
-    return err'msg
-  /if
-
-  return null
+func glue(strs ptr ptr uint8) ptr err:Error
+  mut err = <ptr err:Error>(mem:alloc(size(err:Error)))
+  err'msg = txt:strglue(strs)
+  return err
 /func
 
 
-func errorNew(str ptr uint8) ptr err:Error
+func new(str ptr uint8) ptr err:Error
   mut err = <ptr err:Error>(mem:alloc(size(err:Error)))
   err'msg = txt:strclone(str)
   return err
 /func
 
 
-func errorGlue(strs ptr ptr uint8) ptr err:Error
-  mut err = <ptr err:Error>(mem:alloc(size(err:Error)))
-  err'msg = txt:strglue(strs)
-  return err
-/func
+method err:Error.msg() ptr uint8
+  return me'msg
+/method

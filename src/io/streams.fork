@@ -69,7 +69,7 @@ method Stream.error() ptr err:Error
 
 method Stream.read(str ptr uint8, len intptr) uintptr
   if (me'inout & STREAM_IN) == 0
-    me'error = err:errorNew("stream opened write-only")
+    me'error = err:new("stream opened write-only")
     return 0
   /if
 
@@ -79,7 +79,7 @@ method Stream.read(str ptr uint8, len intptr) uintptr
 
 method Stream.write(string ptr uint8) uintptr
   if (me'inout & STREAM_OUT) == 0
-    me'error = err:errorNew("stream opened read-only")
+    me'error = err:new("stream opened read-only")
     return 0
   /if
 

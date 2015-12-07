@@ -75,7 +75,7 @@ func issueToError(issue ptr ast:Issue) ptr err:Error
   toglue[8] = issue'message
   toglue[9] = null
 
-  mut ret = err:errorGlue(ptr toglue[0])
+  mut ret = err:glue(ptr toglue[0])
 
   ast:issueFree(issue)
 

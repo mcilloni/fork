@@ -29,7 +29,7 @@ func dir(name ptr uint8) {dir ptr fs:Dir, err ptr err:Error}
 
   mut dirp = dir_open(name, ptr buf[0], 512)
   if not dirp?
-    return {null, err:errorNew(ptr buf[0])}
+    return {null, err:new(ptr buf[0])}
   /if
 
   mut ret = <ptr fs:Dir>(mem:alloc(size(fs:Dir)))
@@ -61,7 +61,7 @@ method fs:Dir.next() {file ptr fs:File, err ptr err:Error}
       return {null, null}
     /if
 
-    return {null, err:errorNew(ptr buf[0])}
+    return {null, err:new(ptr buf[0])}
   /if
 
   mut glued = fs:pathJoin(me'absPath, name)

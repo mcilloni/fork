@@ -1254,7 +1254,7 @@ func parseModule(path ptr uint8) {pmod ptr ast:PModule, errs ptr ast:Issues}
 
   if err?
     issues.error(zero, path, err'msg)
-    err:errorFree(err)
+    err:free(err)
     return {null, issues}
   /if
 
@@ -1265,7 +1265,7 @@ func parseModule(path ptr uint8) {pmod ptr ast:PModule, errs ptr ast:Issues}
 
     if err?
       issues.error(zero, path, err'msg)
-      err:errorFree(err)
+      err:free(err)
 
       continue
     /if
