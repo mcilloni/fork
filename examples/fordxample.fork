@@ -1,0 +1,61 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import ast
+import cs
+import fords
+import kv
+import list
+import map
+import mem
+import pair
+import parser
+import proc
+import sema
+import synt
+import tty
+import utils
+
+
+entry
+  mut argv = proc:args()
+  if argv'len != 1
+    tty:errln("Wrong number of arguments, required: 1")
+    proc:exit(1)
+  /if
+
+  mut prs = parser:new()
+  mut {pmod,issues} = prs.parseDirectory(argv'args[0])
+
+  mut issLen = issues.len()
+
+  if issLen > 0
+    mut i uintptr = 0
+
+    while i < issLen
+      mut issue = issues.get(i)
+
+      issue.writeOut(ptr tty:out)
+
+      i++
+    /while
+
+    ast:issuesFree(issues)
+    proc:exit(1)
+  /if
+
+  mut err = fords:generate(pmod, "/tmp")
+  if err?
+    tty:failln(err.msg())
+  /if
+
+  parser:free(prs)
+  ast:pmoduleFree(pmod)
+/entry

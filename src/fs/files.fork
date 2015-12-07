@@ -140,6 +140,6 @@ func fileCreate(filename ptr uint8) {stream ptr io:Stream, err ptr err:Error}
     return {null, err:new(ptr buf[0])}
   /if
 
-  return {io:streamNew(<data>(fd), ptr filereadInternal, \
-                        null, ptr filecloseInternal), null}
+  return {io:streamNew(<data>(fd), null, ptr filewriteInternal, \
+                        ptr filecloseInternal), null}
 /func

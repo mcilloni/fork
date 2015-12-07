@@ -54,5 +54,7 @@ decl func streamNew(priv8 data,
 
 decl method Stream.ended() bool
 decl method Stream.error() ptr err:Error
-decl method Stream.read(str ptr uint8, len intptr) uintptr
-decl method Stream.write(str ptr uint8) uintptr
+decl method Stream.read(buf data, len intptr) uintptr
+decl method Stream.readStr(str ptr uint8, len intptr) uintptr
+decl method Stream.write(buf data, len intptr) uintptr
+decl method Stream.writeStr(string ptr uint8) uintptr

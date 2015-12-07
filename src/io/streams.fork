@@ -22,7 +22,7 @@ mut STREAM_OUT uint8 = 2
 mut STREAM_INOUT uint8 = 3
 
 
-# Stream functions
+# io:Stream functions
 
 func streamClose(stream ptr io:Stream) bool
   mut ret = stream'cookie'cfn(stream'cookie'priv8, ptr stream'error)
@@ -55,33 +55,43 @@ func streamNew(priv8 data,
 /func
 
 
-# Stream methods
+# io:Stream methods
 
-method Stream.ended() bool
+method io:Stream.ended() bool
   return me'eof
 /method
 
 
-method Stream.error() ptr err:Error
+method io:Stream.error() ptr err:Error
   return me'error
 /method
 
 
-method Stream.read(str ptr uint8, len intptr) uintptr
+method io:Stream.read(buf data, len intptr) uintptr
   if (me'inout & STREAM_IN) == 0
     me'error = err:new("stream opened write-only")
     return 0
   /if
 
-  return me'cookie'rfn(me'cookie'priv8, str, len, ptr me'error, ptr me'eof)
+  return me'cookie'rfn(me'cookie'priv8, <ptr uint8>(buf), len, ptr me'error, ptr me'eof)
 /method
 
 
-method Stream.write(string ptr uint8) uintptr
+method io:Stream.readStr(str ptr uint8, len intptr) uintptr
+  me.read(str, len)
+/method
+
+
+method io:Stream.write(buf data, len intptr) uintptr
   if (me'inout & STREAM_OUT) == 0
     me'error = err:new("stream opened read-only")
     return 0
   /if
 
-  return me'cookie'wfn(me'cookie'priv8, string, <intptr>(txt:strlen(string)), ptr me'error)
+  return me'cookie'wfn(me'cookie'priv8, <ptr uint8>(buf), len, ptr me'error)
+/method
+
+
+method io:Stream.writeStr(string ptr uint8) uintptr
+  me.write(string, <intptr>(txt:strlen(string)))
 /method

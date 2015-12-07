@@ -15,12 +15,254 @@ import ast
 import err
 import fs
 import io
+import kv
 import mem
 import txt
 
 
+# dumps len (32bit) and then the string into the Stream.
+method io:Stream.dumpString(str ptr uint8) ptr err:Error
+  mut len uint32 = <uint32>(str? => txt:strlen(str) || 0)
+
+  if me.write(ptr len, size(uint32)) == 0
+    return me.error()
+  /if
+
+  if len > 0
+    if me.write(str, len) == 0
+      return me.error()
+    /if
+  /if
+
+  return null
+/method
+
+
+method io:Stream.dumpTypeList(kv ptr kv:KVList) ptr err:Error
+  # first, write a boolean, indicating if this kv is null or not.
+  mut ok = kv?
+  if me.write(ptr ok, size(bool)) == 0
+    return me.error()
+  /if
+
+  if not ok
+    return null
+  /if
+
+  # then write the types, one by one.
+  
+  mut i uintptr = 0
+  mut len = kv.len()
+
+  while i < len
+    mut {key,value} = val kv.getAt(i)
+
+    mut err = me.dumpString(<ptr uint8>(key))
+    if err?
+      return err
+    /if
+
+    err = me.dumpType(<ptr ast:Type>(value))
+    if err?
+      return err
+    /if
+
+    i++
+  /while
+
+  return null
+/method
+
+
+method io:Stream.dumpType(type ptr ast:Type) ptr err:Error
+  # first, write a boolean, indicating if this type is null or not.
+  mut ok = type?
+  if me.write(ptr ok, size(bool)) == 0
+    return me.error()
+  /if
+
+  if not ok
+    return null
+  /if
+
+  # then write the type of this type (uint16)
+
+  if me.write(ptr type'type, size(uint16)) == 0
+    return me.error()
+  /if
+
+  mut err = me.dumpString(type'moduleName)
+  if err?
+    return me.error()
+  /if
+
+  err = me.dumpString(type'name)
+  if err?
+    return me.error()
+  /if
+
+  if me.write(ptr type'isSigned, size(bool)) == 0
+    return me.error()
+  /if
+
+  if me.write(ptr type'typeSize, size(intptr)) == 0
+    return me.error()
+  /if
+
+  if me.write(ptr type'typeAlign, size(intptr)) == 0
+    return me.error()
+  /if
+
+  if me.write(ptr type'itemCount, size(uintptr)) == 0
+    return me.error()
+  /if
+
+  err = me.dumpType(type'retType)
+  if err?
+    return me.error()
+  /if
+
+  err = me.dumpTypeList(type'members)
+  if err?
+    return me.error()
+  /if
+
+  if me.write(ptr type'builtin, size(bool)) == 0
+    return me.error()
+  /if
+
+  # do not write begin and end, because they have no sense without their
+  # files.
+
+  return null
+/method
+
+
+method io:Stream.dumpAliasTable(aliases ptr kv:KVList) ptr err:Error
+  mut len = aliases.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut {key,value} = val aliases.getAt(i)
+
+    # dump the name, then the type of the alias
+    mut err = me.dumpString(<ptr uint8>(key))
+    if err?
+      return err
+    /if
+
+    mut dinfo = <ptr ast:DeclInfo>(value)
+
+    err = me.dumpType(dinfo'type)
+    if err?
+      return err
+    /if
+
+    i++
+  /while
+
+  return null
+/method
+
+
+method io:Stream.dumpAliases(pmod ptr ast:PModule) ptr err:Error
+  mut i uintptr = 0
+  mut len = pmod'roots.len()
+
+  while i < len
+    mut aliases = <ptr ast:PRoot>(val pmod'roots.get(i))'aliases'syms
+
+    mut err = me.dumpAliasTable(aliases)
+    if err?
+      return err
+    /if
+
+    i++
+  /while
+
+  return null
+/method
+
+
+method io:Stream.dumpDeclInfo(dinfo ptr ast:DeclInfo) ptr err:Error
+  if me.write(ptr dinfo'declType, size(uint16)) == 0
+    return me.error()
+  /if
+
+  # declOnly declarations are skipped
+  # funcParam is only meaningful inside functions, not in the global scopeName
+
+  return me.dumpType(dinfo'type)
+/method
+
+
+method io:Stream.dumpDeclTable(decls ptr kv:KVList) ptr err:Error
+  mut len = decls.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut {key,value} = val decls.getAt(i)
+    mut dinfo = <ptr ast:DeclInfo>(value)
+
+    # Ignore "decl"s - they are not meaningful in a ford
+    if not dinfo'declOnly
+      # dump the name, then the declaration info
+      mut err = me.dumpString(<ptr uint8>(key))
+      if err?
+        return err
+      /if
+
+
+      err = me.dumpDeclInfo(dinfo)
+      if err?
+        return err
+      /if
+    /if
+    i++
+  /while
+
+  return null
+/method
+
+
+method io:Stream.dumpDecls(pmod ptr ast:PModule) ptr err:Error
+  mut i uintptr = 0
+  mut len = pmod'roots.len()
+
+  while i < len
+    mut syms = <ptr ast:PBlock>(val pmod'roots.get(i))'syms'syms
+
+    mut err = me.dumpDeclTable(syms)
+    if err?
+      return err
+    /if
+
+    i++
+  /while
+
+  return null
+/method
+
+
 method io:Stream.dumpFord(pmod ptr ast:PModule) ptr err:Error
-  # first, dump the module's name - fail if this is main.
+  # first, dump the module's name - len (32 bit), then the string.
+
+  mut err = me.dumpString(pmod'name)
+  if err?
+    return err
+  /if
+
+  err = me.dumpAliases(pmod)
+  if err?
+    return err
+  /if
+
+  err = me.dumpDecls(pmod)
+  if err?
+    return err
+  /if
+
+  return null
 /method
 
 
