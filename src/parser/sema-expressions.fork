@@ -1,0 +1,1378 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module parser
+
+
+import ast
+import cs
+import kv
+import list
+import math
+import mem
+import parser
+import txt
+import utils
+
+
+method ast:PExpr.isCompileConst() bool
+  if   me'opType == ast:NUMBER \
+    or me'opType == ast:STRING \
+    or me'opType == ast:TRUE \
+    or me'opType == ast:FALSE \
+    or me'opType == ast:NULL \
+    or me'opType == ast:SIZE
+
+    return true
+  /if
+
+  if me'opType == ast:PTR
+    mut elem = <ptr ast:PExpr>(val me'node'leaves.get(0))
+
+    return elem'opType == ast:ID or elem'opType == ast:COLON
+  /if
+
+  if ttypeIsUnary(me'opType)
+    mut elem = <ptr ast:PExpr>(val me'node'leaves.get(0))
+
+    return elem.isCompileConst()
+  /if
+
+  if ttypeIsBinary(me'opType)
+    mut left = <ptr ast:PExpr>(val me'node'leaves.get(0))
+    mut right = <ptr ast:PExpr>(val me'node'leaves.get(1))
+
+    return left.isCompileConst() and right.isCompileConst()
+  /if
+
+  return false
+/method
+
+
+func ttypeOpCanDoPtrArith(tt uint16) bool
+  return tt == ast:PLUS or tt == ast:MINUS or tt == ast:INC or tt == ast:DEC
+/func
+
+
+func ttypeIsTernary(tt uint16) bool
+  return tt == ast:FATARROW
+/func
+
+
+func ttypeIsBinary(tt uint16) bool
+  mut tok ast:Token
+
+  tok'type = tt
+
+  return parser:isBinary(ptr tok) or tt == ast:MINUS
+/func
+
+
+func ttypeIsUnary(tt uint16) bool
+  return ttypeIsBinary(tt)
+/func
+
+
+func ttypeIsComparison(tt uint16) bool
+  return tt == ast:MAJOR or tt == ast:MINOR or tt == ast:MAJEQ or tt == ast:MINEQ or tt == ast:EQUAL or tt == ast:DIFFERENT
+/func
+
+
+func ttypeIsConst(tt uint16) bool
+  return tt == ast:STRING or tt == ast:NUMBER or tt == ast:NULL or tt == ast:TRUE or tt == ast:FALSE
+/func
+
+
+func ttypeIsEqDiff(tt uint16) bool
+  return tt == ast:EQUAL or tt == ast:DIFFERENT
+/func
+
+
+func ttypeIsArith(tt uint16) bool
+  return    tt == ast:AMPER \
+         or tt == ast:DEC \
+         or tt == ast:DIV \
+         or tt == ast:INC \
+         or tt == ast:MAJEQ \
+         or tt == ast:MAJOR \
+         or tt == ast:MINEQ \
+         or tt == ast:MINOR \
+         or tt == ast:MINUS \
+         or tt == ast:MOD \
+         or tt == ast:PIPE \
+         or tt == ast:PLUS \
+         or tt == ast:POW \
+         or tt == ast:SHIFTL \
+         or tt == ast:SHIFTR \
+         or tt == ast:TIMES \
+         or tt == ast:UMINUS \
+         or tt == ast:XOR
+/func
+
+
+func ttypeIsBool(tt uint16) bool
+  return tt == ast:AND or tt == ast:OR or tt == ast:NOT
+/func
+
+
+func ttypeCanBeAssignTarget(tt uint16, type ptr ast:Type) bool
+  return (tt == ast:VAL or tt == ast:OBRAC or tt == ast:APOS or \
+          tt == ast:COLON or tt == ast:ID or tt == ast:OCURLY) and \
+          (type.isPtr() or type.isInt() or type.isStruct() or type.isBool())
+/func
+
+
+func assignLhsDump(cs ptr cs:Charstash, pexpr ptr ast:PExpr)
+  mut op = pexpr'opType
+
+  if op == ast:ID
+    cs.add(<ptr uint8>(pexpr'node'value))
+    return
+  /if
+
+  mut left = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+  if op == ast:VAL
+    cs.add("'val ")
+
+    assignLhsDump(cs, left)
+
+    cs.add("' ")
+
+    return
+  /if
+
+  if op == ast:OBRAC
+    cs.add(" member of '")
+    assignLhsDump(cs, left)
+    cs.add("' ")
+
+    return
+  /if
+
+  mut right = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+  if op == ast:APOS or op == ast:COMMA
+    cs.add("'")
+
+    assignLhsDump(cs, left)
+
+    cs.add(op == ast:APOS => "'" || ":")
+
+    assignLhsDump(cs, right)
+
+    cs.add("' ")
+
+    return
+  /if
+
+  cs.add("expr ")
+/func
+
+
+method parser:Resolver.intForVal(value intptr) ptr ast:Type
+  mut aval = math:abs(value)
+
+  if aval < 2**7
+    return me'prs.matchBuiltin("int8")
+  else
+    if aval < 2**15
+      return me'prs.matchBuiltin("int16")
+    else
+      if aval < 2**31
+        return me'prs.matchBuiltin("int32")
+      /if
+    /if
+  /if
+
+  return me'prs.matchBuiltin("int64")
+/method
+
+
+method parser:Resolver.intTypesFindLargestCompatible(type1, type2 ptr ast:Type) ptr ast:Type
+
+  mut bothSigned = type1'isSigned and type2'isSigned
+  mut bothUnsigned = not type1'isSigned and not type2'isSigned
+
+
+  if bothUnsigned or bothSigned
+    return type1'typeSize > type2'typeSize => type1 || type2
+  /if
+
+  # return intptr, must improve in the future
+  return me'prs.matchBuiltin("intptr")
+/method
+
+
+method parser:Resolver.typeIsAssignable(scope ptr ast:PNode,
+                                      dest,src ptr ast:Type) bool
+
+  if not dest? or not src?
+    return dest == src
+  /if
+
+  if dest'type == ast:TYPE_EMPTY or src'type == ast:TYPE_EMPTY
+    return false
+  /if
+
+  if dest'name? and src'name? and not dest'builtin and not src'builtin
+    mut ret = txt:strequals(dest'name, src'name)
+
+    if ret and dest'moduleName? and src'moduleName?
+      ret = txt:strequals(dest'moduleName, src'moduleName)
+    /if
+
+    return ret
+  /if
+
+  mut isFunc = dest'type == ast:TYPE_FUNC
+  mut isStruct = dest'type == ast:TYPE_STRUCT
+  mut isLoc = dest'type == ast:TYPE_LOC
+  mut isPtr = dest'type == ast:TYPE_PTR
+
+  if dest'type != src'type
+    if dest'type == ast:TYPE_RECALIAS or src'type == ast:TYPE_RECALIAS
+      dest = me.findRecAlias(scope, dest)
+      src = me.findRecAlias(scope, src)
+
+      return me.typeIsAssignable(scope, dest, src)
+    /if
+
+    if isPtr and src'type == ast:TYPE_NULL
+      return true
+    /if
+
+    if dest.isData() and (src.isPtr() or src.isNull())
+      return true
+    /if
+
+    return false
+  /if
+
+  if isFunc or isStruct
+    mut i uintptr = 0
+    mut len = dest'members.len()
+
+    if len != src'members.len()
+      return false
+    /if
+
+    while i < len
+      mut pair1 = src'members.getAt(i)
+      mut pair2 = dest'members.getAt(i)
+
+      mut type1 = <ptr ast:Type>(pair1'value)
+      mut type2 = <ptr ast:Type>(pair2'value)
+
+      if not me.typeIsAssignable(scope, type2, type1)
+        return false
+      /if
+
+      i++
+    /while
+  /if
+
+  if isPtr or isLoc or isFunc
+    if not me.typeIsAssignable(scope, dest'retType, src'retType)
+      return false
+    /if
+  /if
+
+  if isLoc
+    if dest'itemCount != src'itemCount
+      return false
+    /if
+  /if
+
+  if dest'type == ast:TYPE_INT
+    if dest'typeSize < src'typeSize
+      return false
+    /if
+  /if
+
+  return true
+/method
+
+
+method parser:Resolver.typeIsCastable(scope ptr ast:PNode,
+                                    dest,src ptr ast:Type) bool
+
+  if dest'type == ast:TYPE_EMPTY or src'type == ast:TYPE_EMPTY
+    return false
+  /if
+
+  mut isData = dest'type == ast:TYPE_DATA
+  mut isPtr = dest'type == ast:TYPE_PTR
+  mut isInt = dest'type == ast:TYPE_INT
+
+  if isPtr or isInt or isData
+    return src'type == ast:TYPE_INT or src'type == ast:TYPE_PTR or src'type == ast:TYPE_NULL or src'type == ast:TYPE_DATA
+  /if
+
+  return me.typeIsAssignable(scope, dest, src)
+/method
+
+
+method parser:Resolver.validateExprConst(pexpr ptr ast:PExpr) ptr ast:Type
+
+  mut op = pexpr'opType
+
+  if op == ast:STRING
+    return me'prs.matchBuiltin("ptr uint8")
+  /if
+
+  if op == ast:NUMBER
+    return me.intForVal(<intptr>(pexpr'node'value))
+  /if
+
+  if op == ast:TRUE or op == ast:FALSE
+    return me'prs.matchBuiltin("bool")
+  /if
+
+  if op == ast:NULL
+    return me'prs.matchBuiltin("null")
+  /if
+
+  return null
+/method
+
+
+method parser:Resolver.validateExprCast(pexpr ptr ast:PExpr,
+                                      recList ptr list:List) ptr ast:Type
+
+  mut ptype = <ptr ast:PType>(pexpr'node'value)
+  pexpr'type = me.resolveType(ptype)
+
+  if not pexpr'type?
+    return null
+  /if
+
+  mut childExpr = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut chType = me.validateExprRecl(childExpr, recList)
+
+  if not chType?
+    return null
+  /if
+
+  if not me.typeIsCastable(<ptr ast:PNode>(pexpr), pexpr'type, chType)
+    mut cs = cs:new(20)
+
+    cs.add("can't cast ")
+    chType.summarize(cs)
+    cs.add(" to ")
+    pexpr'type.summarize(cs)
+
+    mut str = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
+
+    mem:free(str)
+    return null
+  /if
+
+  return pexpr'type
+/method
+
+
+method parser:Resolver.validateSizeExpr(pexpr ptr ast:PExpr) ptr ast:Type
+
+  mut ptype = <ptr ast:PType>(pexpr'node'value)
+
+  mut sizeType = me.resolveType(ptype)
+  if not sizeType?
+    return null
+  /if
+
+  if sizeType'type == ast:TYPE_FUNC
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                    "invalid application of 'size' to a function type")
+    return null
+  /if
+
+  pexpr'sizeType = sizeType
+
+  return me'prs.matchBuiltin("uintptr")
+/method
+
+
+method parser:Resolver.validateExprId(pexpr ptr ast:PExpr,
+                                    recList ptr list:List) ptr ast:Type
+
+  mut name = <ptr uint8>(pexpr'node'value)
+  mut type = <ptr ast:PNode>(pexpr).findSym(name)
+
+  if recList? and utils:listContains(recList, name)
+    mut cs = cs:new(20)
+
+    cs.add("type ")
+    cs.add(name)
+    cs.add(" causes an init loop ")
+    utils:listDumpHierarchyIntoCS(recList, cs)
+
+    mut str = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
+
+    mem:free(str)
+
+    return null
+  /if
+
+  # try searching for a top declaration
+  if not type?
+    return me.resolveDeclType(name, <ptr ast:PNode>(pexpr), recList)
+  /if
+
+  return type
+/method
+
+
+method parser:Resolver.validateBoolExpr(pexpr ptr ast:PExpr,
+                                      ltype,rtype ptr ast:Type,
+                                      recList ptr list:List) ptr ast:Type
+
+  mut op = pexpr'opType
+
+  if not ltype.isBool() or not rtype.isBool()
+    mut cs = cs:new(20)
+
+    cs.add("cannot apply ")
+    cs.add(ast:ttypeStr(op))
+    cs.add(" to types ")
+    ltype.summarize(cs)
+    cs.add(" and ")
+    rtype.summarize(cs)
+
+    mut str = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
+
+    mem:free(str)
+
+    return null
+  /if
+
+  return me'prs.matchBuiltin("bool")
+/method
+
+
+method parser:Resolver.validateArithPtrExpr(pexpr ptr ast:PExpr,
+                                          ltype,rtype ptr ast:Type,
+                                          recList ptr list:List) ptr ast:Type
+
+  if not ttypeOpCanDoPtrArith(pexpr'opType)
+    mut cs = cs:new(20)
+
+    cs.add("operator ")
+    cs.add(ast:ttypeStr(pexpr'opType))
+    cs.add(" is not appliable to pointers")
+
+    mut str = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
+
+    mem:free(str)
+
+    return null
+  /if
+
+  if ltype.isPtr() and rtype.isPtr()
+    if pexpr'opType == ast:MINUS
+      if not me.typeIsAssignable(<ptr ast:PNode>(pexpr), ltype, rtype)
+        mut cs = cs:new(20)
+
+        cs.add("types ")
+        ltype.summarize(cs)
+        cs.add(" and ")
+        rtype.summarize(cs)
+        cs.add(" are not compatible")
+
+        mut str = cs:unwrap(cs)
+
+        me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
+
+        mem:free(str)
+
+        return null
+      /if
+
+      return me'prs.matchBuiltin("intptr")
+    else
+      me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                      "only difference between two pointers can be allowed")
+      return null
+    /if
+  /if
+
+  # If we reached this point, then we have an int and a pointer.
+  # Let's choose the pointer and then return the type of it.
+
+  return ltype.isPtr() => ltype || rtype
+/method
+
+
+method parser:Resolver.validateArithExpr(pexpr ptr ast:PExpr,
+                                       ltype,rtype ptr ast:Type,
+                                       recList ptr list:List) ptr ast:Type
+
+  mut op = pexpr'opType
+
+  if not (ltype.isInt() or ltype.isPtr()) or not (rtype.isPtr() or rtype.isInt())
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                    "arithmetic operations can only involve pointers and integers")
+
+    return null
+  /if
+
+  if ltype.isPtr() or rtype.isPtr()
+    return me.validateArithPtrExpr(pexpr, ltype, rtype, recList)
+  /if
+
+  if op == ast:POW
+    return me'prs.matchBuiltin("uintptr")
+  /if
+
+  # In this case, we only have integers, so we just need to evaluate the larger
+  # type or resolve to boolean in case of a major/minor comparison.
+
+  return ttypeIsComparison(op) => me'prs.matchBuiltin("bool") || (ltype'typeSize > rtype'typeSize => ltype || rtype)
+/method
+
+
+method parser:Resolver.validateEqDiffExpr(pexpr ptr ast:PExpr,
+                                        ltype,rtype ptr ast:Type) ptr ast:Type
+
+  mut success = true
+
+  if ltype'type != rtype'type
+    # the only case in which we can accept a comparison between different types
+    # is when we are comparing a pointer with null.
+    if not ((ltype.isNull() and rtype.isPtr()) or (ltype.isPtr() and rtype.isNull()))
+      success = false
+    /if
+  else
+    if not (ltype.isPtr() or ltype.isInt() or ltype.isBool())
+      success = false
+    /if
+  /if
+
+  if not success
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                    "cannot evaluate the equivalence of two incompatible types")
+  /if
+
+  return success => me'prs.matchBuiltin("bool") || null
+/method
+
+
+method parser:Resolver.validateModuleAccessExpr(pexpr ptr ast:PExpr) ptr ast:Type
+
+  mut modName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
+  if not me'curRoot.hasImported(modName)
+    mut msg = txt:strappend(modName, " has never been imported")
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+    mem:free(msg)
+
+    return null
+  /if
+
+  mut symName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
+  mut type = me.findSymModule(modName, symName)
+
+  if not type?
+    mut cs = cs:new(20)
+    cs.add("'")
+    cs.add(symName)
+    cs.add("' is not defined in module '")
+    cs.add(modName)
+    cs.add("'")
+
+    mut msg = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+
+    mem:free(msg)
+
+    return null
+  /if
+
+  return type
+/method
+
+
+method parser:Resolver.resolveRecType(type ptr ast:Type) ptr ast:Type
+
+  if type'type != ast:TYPE_RECALIAS
+    return type
+  /if
+
+  if type'moduleName?
+    return me.findAliasImport(type'moduleName, type'name)
+  /if
+
+  return <ptr ast:PNode>(me'curRoot).findAliasLocal(type'name)
+/method
+
+
+method parser:Resolver.validateStructureAccessExpr(pexpr ptr ast:PExpr,
+                                                 ltype ptr ast:Type) ptr ast:Type
+
+  mut accType = ltype
+
+  if ltype'type == ast:TYPE_PTR
+    accType = me.resolveRecType(ltype'retType)
+  /if
+
+  if not accType.isStruct()
+    mut cs = cs:new(20)
+    cs.add("'")
+    accType.summarize(cs)
+    cs.add("' is neither a structure nor a pointer to a structure")
+
+    mut msg = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+
+    mem:free(msg)
+
+    return null
+  /if
+
+  mut field = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
+
+  mut type = <ptr ast:Type>(accType'members.get(field))
+
+  if not type?
+    mut cs = cs:new(20)
+    cs.add("no field called '")
+    cs.add(field)
+    cs.add("' in type ")
+    accType.summarize(cs)
+
+    mut msg = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+
+    mem:free(msg)
+
+    return null
+  /if
+
+  return type
+/method
+
+
+method parser:Resolver.validateArrayAccess(pexpr ptr ast:PExpr,
+                         ltype,rtype ptr ast:Type) ptr ast:Type
+
+  if ltype'type != ast:TYPE_PTR and not ltype.isLoc()
+    me'issues.error(pexpr'node'begin, \
+                    me'curRoot'fileName, \
+                    "array access is allowed only for pointers and locations")
+  /if
+
+  if not rtype.isInt()
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                    "an expression of integer type is required for array access")
+  /if
+
+  return ltype'retType
+/method
+
+
+method parser:Resolver.normalizeEmptyType(type ptr ast:Type) ptr ast:Type
+  return type ?? me'prs.matchBuiltin("\0")
+/method
+
+
+method parser:Resolver.validateFunctionCallExpr(pexpr ptr ast:PExpr,
+                                              ltype ptr ast:Type,
+                                              recList ptr list:List) ptr ast:Type
+
+  mut accType = ltype
+
+  if ltype'type == ast:TYPE_PTR
+    accType = ltype'retType
+  /if
+
+  if not accType.isFunc()
+    me'issues.error(pexpr'node'begin, \
+                    me'curRoot'fileName, \
+                    "expression is neither a function nor a pointer to a function")
+
+    return null
+  /if
+
+  mut expParams = accType'members
+  mut expLen = expParams.len()
+
+  mut argsLen = pexpr'node'leaves.len()
+
+  if argsLen != expLen + 1
+    mut cs = cs:new(20)
+    cs.add("can't call function ")
+
+    if ltype'name?
+      cs.add("'")
+
+      if ltype'moduleName?
+        cs.add(accType'moduleName)
+        cs.add(":")
+      /if
+
+      cs.add(accType'name)
+      cs.add("' ")
+    else
+      accType.summarize(cs)
+    /if
+
+    cs.add(": expected ")
+    cs.addInt(expLen)
+    cs.add(" parameters, got ")
+    cs.addInt(argsLen - 1)
+
+    mut msg = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+
+    mem:free(msg)
+
+    return null
+  /if
+
+  mut scope = <ptr ast:PNode>(pexpr)
+  mut i uintptr = 0
+
+  while i < expLen
+    mut gotParam = <ptr ast:PExpr>(val scope'leaves.get(i + 1))
+    mut expPair = expParams.getAt(i)
+
+    mut expType = <ptr ast:Type>(expPair'value)
+
+    mut gotType = me.validateExprRecl(gotParam, recList)
+    if not gotType?
+      return null
+    /if
+
+    if not me.typeIsAssignable(scope, expType, gotType)
+      mut cs = cs:new(20)
+      cs.add("passing '")
+
+      gotType.summarize(cs)
+
+      cs.add("' to parameter '")
+      cs.add(<ptr uint8>(expPair'key))
+      cs.add("' of type '")
+
+      expType.summarize(cs)
+
+      cs.add("'")
+
+      mut msg = cs:unwrap(cs)
+
+      me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+
+      mem:free(msg)
+
+      return null
+    /if
+
+    i++
+  /while
+
+  return me.normalizeEmptyType(<ptr ast:Type>(accType'retType))
+/method
+
+
+method parser:Resolver.validateAssignExpr(pexpr,left ptr ast:PExpr,
+                                        ltype,rtype ptr ast:Type) ptr ast:Type
+
+  if not ttypeCanBeAssignTarget(left'opType, ltype)
+    mut msg = "expression cannot be target of assignment"
+
+    if left'opType == ast:ME
+      msg = "can't reassign 'me'"
+    /if
+
+    me'issues.error(left'node'begin, me'curRoot'fileName, msg)
+    return null
+  /if
+
+  if not me.typeIsAssignable(<ptr ast:PNode>(pexpr), ltype, rtype)
+    mut cs = cs:new(20)
+
+    cs.add("cannot assign expression of type '")
+    rtype.summarize(cs)
+    cs.add("' to a lvalue of type '")
+    ltype.summarize(cs)
+    cs.add("'")
+
+    mut str = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
+
+    mem:free(str)
+
+    return null
+  /if
+
+  # Check if every member of the left structure literal is assignable.
+  if left'opType == ast:OCURLY
+    mut i uintptr = 0
+    mut len = left'node'leaves.len()
+
+    while i < len
+      mut member = <ptr ast:PExpr>(val left'node'leaves.get(i))
+
+      if not ttypeCanBeAssignTarget(member'opType, member'type)
+        mut cs = cs:new(20)
+
+        cs.add("the element at position ")
+        cs.addInt(i + 1)
+        cs.add(" of this struct literal is not assignable")
+
+        mut str = cs:unwrap(cs)
+
+        me'issues.error(member'node'begin, me'curRoot'fileName, str)
+
+        mem:free(str)
+
+        return null
+      /if
+
+      i++
+    /while
+
+    # Return empty type - because an lvalue struct literal has no type in Fork.
+    return me.normalizeEmptyType(null)
+  /if
+
+  return ltype
+/method
+
+
+method parser:Resolver.validateNullCoalescingExpr(pexpr ptr ast:PExpr,
+                                ltype,rtype ptr ast:Type) ptr ast:Type
+
+  if not ltype.isPtr()
+    mut cs = cs:new(20)
+
+    cs.add("cannot coalesce non pointer type '")
+    ltype.summarize(cs)
+    cs.add("'")
+
+    mut str = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
+
+    mem:free(str)
+
+    return null
+  /if
+
+  if not me.typeIsAssignable(<ptr ast:PNode>(pexpr), ltype, rtype)
+    mut cs = cs:new(20)
+
+    cs.add("cannot coalesce type '")
+    ltype.summarize(cs)
+    cs.add("' with type '")
+    rtype.summarize(cs)
+    cs.add("'")
+
+    mut str = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
+
+    mem:free(str)
+
+    return null
+  /if
+
+  return ltype
+/method
+
+
+# a.b syntax is allowed ONLY if it's a method call.
+# Otherwise method access is semantically nonsense (until closures, of course).
+func pnodeAllowedToUseDot(node ptr ast:PNode) bool
+  return node'type == ast:PEXPR and <ptr ast:PExpr>(node)'opType == ast:OPAR
+/func
+
+
+method parser:Resolver.resolveMethod(pexpr ptr ast:PExpr,
+                                   typeModule,typeName,methodName ptr uint8,
+                                   recList ptr list:List) ptr ast:Type
+
+  mut type = me.findMethod(<ptr ast:PNode>(pexpr), typeModule, typeName, methodName)
+
+  if type?
+    return type
+  /if
+
+  mut name = ast:methodKey(typeModule, typeName, methodName)
+
+  # try searching for a top declaration
+  type = me.resolveDeclType(name, <ptr ast:PNode>(pexpr), recList)
+
+  mem:free(name)
+
+  return type
+/method
+
+
+method parser:Resolver.validateMethodExpr(pexpr ptr ast:PExpr,
+                                        ltype ptr ast:Type,
+                                        recList ptr list:List) ptr ast:Type
+
+  if not pnodeAllowedToUseDot(pexpr'node'parent)
+    mut msg = "methods can be accessed only when invoked"
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+
+    return null
+  /if
+
+  mut accType = ltype
+
+  if ltype'type == ast:TYPE_PTR
+    accType = me.resolveRecType(ltype'retType)
+  /if
+
+  if not accType'name?
+    mut cs = cs:new(20)
+    cs.add("'")
+    accType.summarize(cs)
+    cs.add("' is not a named type. Raw struct, pointer or function types can't have methods")
+
+    mut msg = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+
+    mem:free(msg)
+
+    return null
+  /if
+
+  mut methodName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
+
+  return me.resolveMethod(pexpr, accType'moduleName, accType'name, methodName, recList)
+/method
+
+
+method parser:Resolver.validateBinaryExpr(pexpr ptr ast:PExpr,
+                                        recList ptr list:List) ptr ast:Type
+
+  mut op = pexpr'opType
+
+  # handle apos, dot, colon and call operators before because they are special
+  # (i.e. no expressions or expressions only on lhs)
+
+  if op == ast:COLON
+    return me.validateModuleAccessExpr(pexpr)
+  /if
+
+  mut left = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut ltype = me.validateExprRecl(left, recList)
+
+  if not ltype?
+    return null
+  /if
+
+  # method access
+  if op == ast:DOT
+    return me.validateMethodExpr(pexpr, ltype, recList)
+  /if
+
+  # structure field access
+  if op == ast:APOS
+    return me.validateStructureAccessExpr(pexpr, ltype)
+  /if
+
+  # function call
+  if op == ast:OPAR
+    return me.validateFunctionCallExpr(pexpr, ltype, recList)
+  /if
+
+  mut right = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+  mut rtype = me.validateExprRecl(right, recList)
+
+  if not rtype?
+    return null
+  /if
+
+  # array access
+  if op == ast:OBRAC
+    return me.validateArrayAccess(pexpr, ltype, rtype)
+  /if
+
+  if op == ast:DQUEST
+    return me.validateNullCoalescingExpr(pexpr, ltype, rtype)
+  /if
+
+  if ttypeIsBool(op)
+    return me.validateBoolExpr(pexpr, ltype, rtype, recList)
+  /if
+
+  if ttypeIsArith(op)
+    return me.validateArithExpr(pexpr, ltype, rtype, recList)
+  /if
+
+  if ttypeIsEqDiff(op)
+    return me.validateEqDiffExpr(pexpr, ltype, rtype)
+  /if
+
+  return me.validateAssignExpr(pexpr, left, ltype, rtype)
+/method
+
+
+method parser:Resolver.validateNotExpr(pexpr ptr ast:PExpr,
+                                     atype ptr ast:Type) ptr ast:Type
+
+  if not atype.isBool()
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                    "expression must be boolean")
+
+    return null
+  /if
+
+  # always boolean
+  return atype
+/method
+
+
+method parser:Resolver.validateValExpr(pexpr ptr ast:PExpr,
+                                     atype ptr ast:Type) ptr ast:Type
+
+  if atype'type != ast:TYPE_PTR
+    mut cs = cs:new(20)
+    cs.add("type '")
+    atype.summarize(cs)
+    cs.add("' is not dereferenceable")
+
+    mut msg = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+
+    mem:free(msg)
+
+    return null
+  /if
+
+  return <ptr ast:Type>(atype'retType)
+/method
+
+
+method parser:Resolver.validatePtrExpr(pexpr ptr ast:PExpr,
+                                     atype ptr ast:Type) ptr ast:Type
+
+  if atype.isNull()
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                    "can't extract the address of null")
+
+    return null
+  /if
+
+  return ast:typeNewPtr(me'curRoot'typePool, null, null, atype)
+/method
+
+
+method parser:Resolver.validateUMinusExpr(pexpr ptr ast:PExpr,
+                                        atype ptr ast:Type) ptr ast:Type
+
+  if not atype.isInt()
+    mut cs = cs:new(20)
+    cs.add("cannot apply unary '-' to type '")
+    atype.summarize(cs)
+    cs.add("'")
+
+    mut msg = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+
+    mem:free(msg)
+
+    return null
+  /if
+
+  if not atype'isSigned
+    mut cs = cs:new(20)
+    cs.add("cannot apply unary '-' to unsigned type '")
+    atype.summarize(cs)
+    cs.add("'")
+
+    mut msg = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+
+    mem:free(msg)
+
+    return null
+  /if
+
+  return atype
+/method
+
+
+method parser:Resolver.validateIncDecExpr(pexpr,atarget ptr ast:PExpr,
+                                        atype ptr ast:Type) ptr ast:Type
+
+  if not atype.isInt() and not atype.isPtr()
+    mut cs = cs:new(20)
+    cs.add("type '")
+    atype.summarize(cs)
+    cs.add("' is not an integer or pointer type")
+
+    mut msg = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+
+    mem:free(msg)
+
+    return null
+  /if
+
+  if not ttypeCanBeAssignTarget(atarget'opType, atype)
+    me'issues.error(atarget'node'begin, me'curRoot'fileName, \
+                    "expression is not assignable")
+
+    return null
+  /if
+
+  return atype
+/method
+
+
+method parser:Resolver.validateQuestExpr(pexpr ptr ast:PExpr,
+                                       atype ptr ast:Type) ptr ast:Type
+
+  if not atype.isPtr()
+    mut cs = cs:new(20)
+    cs.add("cannot apply '?' to type '")
+    atype.summarize(cs)
+    cs.add("'")
+
+    mut msg = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+
+    mem:free(msg)
+
+    return null
+  /if
+
+  return me'prs.matchBuiltin("bool")
+/method
+
+
+method parser:Resolver.validateUnaryExpr(pexpr ptr ast:PExpr,
+                                       recList ptr list:List) ptr ast:Type
+
+  mut op = pexpr'opType
+
+  mut arg = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut atype = me.validateExprRecl(arg, recList)
+
+  if not atype?
+    return null
+  /if
+
+  if op == ast:NOT
+    return me.validateNotExpr(pexpr, atype)
+  /if
+
+  if op == ast:VAL
+    return me.validateValExpr(pexpr, atype)
+  /if
+
+  if op == ast:PTR
+    return me.validatePtrExpr(pexpr, atype)
+  /if
+
+  if op == ast:UMINUS
+    return me.validateUMinusExpr(pexpr, atype)
+  /if
+
+  if op == ast:QUEST
+    return me.validateQuestExpr(pexpr, atype)
+  /if
+
+  # if we've reached this point then it's '++' or '--'
+
+  return me.validateIncDecExpr(pexpr, arg, atype)
+/method
+
+
+method parser:Resolver.validateTernaryExpr(pexpr ptr ast:PExpr,
+                                         recList ptr list:List) ptr ast:Type
+
+  mut condition = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut condType = me.validateExprRecl(condition, recList)
+
+  mut left = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+  mut leftType = me.validateExprRecl(left, recList)
+
+  mut right = <ptr ast:PExpr>(val pexpr'node'leaves.get(2))
+  mut rightType = me.validateExprRecl(right, recList)
+
+  if not condType? or not leftType? or not rightType?
+    return null
+  /if
+
+  if not condType.isBool()
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, \
+                    "non boolean ternary condition")
+
+    return null
+  /if
+
+  # This is done on purpose, because "typeIsAssignable" is not commutative:
+  # it evalutates that the second argument is assignable to the first, but in a
+  # ternary operator the position of the two conditional choices is irrelevant
+  # for sake of type determination, so we must run it twice with reversed
+  # arguments
+  if     not me.typeIsAssignable(<ptr ast:PNode>(pexpr), leftType, rightType) \
+     and not me.typeIsAssignable(<ptr ast:PNode>(pexpr), rightType, leftType)
+
+    mut cs = cs:new(20)
+    cs.add("ternary expression arguments have incompatible types '")
+    leftType.summarize(cs)
+    cs.add("' and '")
+    rightType.summarize(cs)
+    cs.add("'")
+
+    mut msg = cs:unwrap(cs)
+
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+
+    mem:free(msg)
+
+    return null
+  /if
+
+  if leftType.isData() or rightType.isData()
+    return me'prs.matchBuiltin("data")
+  /if
+
+  if leftType.isNull()
+    return rightType
+  /if
+
+  if rightType.isNull()
+    return leftType
+  /if
+
+  if leftType.isInt()
+    return me.intTypesFindLargestCompatible(leftType, rightType)
+  /if
+
+  # left and right type should pretty much the same now
+  return leftType
+/method
+
+
+method parser:Resolver.validateMeExpr(pexpr ptr ast:PExpr) ptr ast:Type
+
+  mut meType = <ptr ast:PNode>(pexpr).findSym("me")
+  if not meType?
+    mut msg = "'me' outside of method body"
+    me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+  /if
+
+  return meType
+/method
+
+
+method parser:Resolver.validateStructLiteralExpr(pexpr ptr ast:PExpr,
+                                               recList ptr list:List) ptr ast:Type
+
+  mut scope = <ptr ast:PNode>(pexpr)
+  mut leavesLen = scope'leaves.len()
+  mut i int32 = 0
+
+  mut members = kv:strnew(leavesLen)
+  members.setFreeFuncs(ptr mem:free, null)
+
+  while i < leavesLen
+    mut param = <ptr ast:PExpr>(val scope'leaves.get(i))
+    mut type = me.validateExprRecl(param, recList)
+
+    if not type?
+      kv:free(members)
+
+      return null
+    /if
+
+    members.put(txt:representNum(i), type)
+
+    i++
+  /while
+
+  return ast:typeNewStruct(me'curRoot'typePool, null, null, members)
+
+/method
+
+
+method parser:Resolver.validateExprRecl(pexpr ptr ast:PExpr,
+                                      recList ptr list:List) ptr ast:Type
+
+
+  if pexpr'node'validated
+    return pexpr'type
+  /if
+
+  pexpr'type = null
+
+  mut op = pexpr'opType
+  if ttypeIsConst(op)
+    return (pexpr'type = me.validateExprConst(pexpr))
+  else
+    if op == ast:ME
+      pexpr'type = me.validateMeExpr(pexpr)
+    else
+      if op == ast:ID
+        pexpr'type = me.validateExprId(pexpr, recList)
+      else
+        if op == ast:CAST
+          pexpr'type = me.validateExprCast(pexpr, recList)
+        else
+          if op == ast:SIZE
+            pexpr'type = me.validateSizeExpr(pexpr)
+          else
+            if op == ast:OCURLY
+              pexpr'type = me.validateStructLiteralExpr(pexpr, recList)
+            else
+              if ttypeIsTernary(op)
+                pexpr'type = me.validateTernaryExpr(pexpr, recList)
+              else
+                if ttypeIsBinary(op)
+                  pexpr'type = me.validateBinaryExpr(pexpr, recList)
+                else
+                  pexpr'type = me.validateUnaryExpr(pexpr, recList)
+                /if
+              /if
+            /if
+          /if
+        /if
+      /if
+    /if
+  /if
+
+  if pexpr'type?
+    pexpr'node'validated = true
+  /if
+
+  return pexpr'type
+/method
+
+
+method parser:Resolver.validateExpr(pexpr ptr ast:PExpr) ptr ast:Type
+
+  return me.validateExprRecl(pexpr, null)
+/method
