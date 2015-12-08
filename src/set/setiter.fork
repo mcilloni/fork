@@ -1,0 +1,43 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module set
+
+
+import hash
+import mem
+import pair
+import set
+
+
+method set:Set.iter() ptr set:Iter
+  mut iter = <ptr set:Iter>(mem:zalloc(size(set:Iter)))
+
+  iter'iter = me'hash.iter()
+
+  return iter
+/method
+
+
+method set:Iter.next() data
+  mut pair = me'iter.next()
+
+  mut ret = pair'key
+
+  pair:pairFree(pair)
+
+  return ret
+/method
+
+
+func iterFree(iter ptr set:Iter)
+  hash:iterFree(iter'iter)
+  mem:free(iter)
+/func

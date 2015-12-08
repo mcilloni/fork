@@ -1,0 +1,56 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module set
+
+
+import hash
+import pair
+import vect
+
+
+alias Set struct(
+  hash ptr hash:Hash
+)
+
+
+alias Iter struct (
+  iter ptr hash:Iter
+)
+
+
+# set init/deinit functions
+
+decl func deinit(hash ptr Set)
+decl func free(hash ptr Set)
+decl func new(cap uintptr, hf hash:hashfn) ptr Set
+decl func init(hash ptr Set, cap uintptr, hf hash:hashfn) ptr Set
+
+decl func strinit(hash ptr Set, cap uintptr) ptr Set
+decl func strnew(cap uintptr) ptr Set
+
+
+# hash methods
+
+decl method Set.clone() ptr Set
+decl method Set.contains(value data) bool
+decl method Set.iter() ptr Iter
+decl method Set.len() uintptr
+decl method Set.print()
+decl method Set.put(value data)
+decl method Set.remove(value data) bool
+decl method Set.setFreeFunc(ff ptr func(item data))
+
+
+# hashiter functions/methods
+
+decl method Iter.next() data
+
+decl func iterFree(hash ptr Iter)

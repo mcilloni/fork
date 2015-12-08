@@ -1,0 +1,117 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module set
+
+
+import hash
+import mem
+import set
+import tty
+import txt
+
+
+# set init/deinit functions
+
+func deinit(set ptr set:Set)
+  hash:free(set'hash)
+/func
+
+
+func free(set ptr set:Set)
+  if set?
+    deinit(set)
+    mem:free(set)
+  /if
+/func
+
+
+func init(set ptr set:Set, cap uintptr, hf hash:hashfn) ptr set:Set
+  set'hash = hash:new(cap, hf)
+
+  return set
+/func
+
+
+func new(cap uintptr, hf hash:hashfn) ptr set:Set
+  return init(<ptr set:Set>(mem:alloc(size(set:Set))), cap, hf)
+/func
+
+
+# set methods
+
+method set:Set.clone() ptr set:Set
+  mut newSet = <ptr set:Set>(mem:alloc(size(set:Set)))
+
+  newSet'hash = me'hash.clone()
+
+  return newSet
+/method
+
+
+method set:Set.contains(value data) bool
+  return me'hash.contains(value)
+/method
+
+
+method set:Set.len() uintptr
+  return me'hash.len()
+/method
+
+
+method set:Set.print()
+  # TODO: complete
+
+  tty:out("[ ")
+
+  mut siter = me.iter()
+
+  mut item data = null
+  mut first = true
+
+  while (item = siter.next())?
+    if first
+      first = false
+    else
+      tty:out(", ")
+    /if
+
+    tty:out(<ptr uint8>(item))
+  /while
+
+  set:iterFree(siter)
+
+  tty:out(" ]")
+/method
+
+
+method set:Set.put(value data)
+  me'hash.put(value, null)
+/method
+
+
+method set:Set.remove(key data) bool
+  return me'hash.remove(key)
+/method
+
+
+method set:Set.setFreeFunc(ff ptr func(item data))
+  me'hash.setFreeFuncs(ff, null)
+/method
+
+
+func strinit(set ptr set:Set, cap uintptr) ptr set:Set
+  return set:init(set, cap, ptr txt:strhash)
+/func
+
+
+func strnew(cap uintptr) ptr set:Set
+  return set:new(cap, ptr txt:strhash)
+/func
