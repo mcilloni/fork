@@ -11,10 +11,10 @@
 module ctrans
 
 
-mut RELEASE uint64 = 12
+mut RELEASE uint64 = 13
 
 mut VER_MAJ uint8 = 0
-mut VER_MIN uint8 = 6
+mut VER_MIN uint8 = 7
 mut VER_PATCH uint8 = 0
 
-mut VERSION = "0.6.0"
+mut VERSION = "0.7.0"
