@@ -11,7 +11,6 @@
 import ast
 import parser
 import proc
-import synt
 import tty
 import utils
 
@@ -23,7 +22,7 @@ entry
     proc:exit(1)
   /if
 
-  mut {pmod,issues} = synt:parseModule(argv'args[0])
+  mut {pmod,issues} = parser:parseModule(argv'args[0])
   mut len = issues.len()
 
   if len > 0

@@ -18,6 +18,7 @@ import hash
 import io
 import kv
 import mem
+import set
 import txt
 
 
@@ -256,21 +257,50 @@ method io:Stream.dumpDecls(pmod ptr ast:PModule) ptr err:Error
 /method
 
 
-method io:Stream.dumpImports(pmod ptr ast:PModule) ptr err:Error
+func collectImports(pmod ptr ast:PModule) ptr set:Set
+  mut ret = set:strnew(10)
+
   mut i uintptr = 0
   mut len = pmod'roots.len()
-
-
 
   while i < len
     mut imports = <ptr ast:PRoot>(val pmod'roots.get(i))'imports
 
-    mut err = me.dumpDeclTable(imports)
+    mut j uintptr = 0
+    mut impLen = imports.len()
+
+    while j < impLen
+      mut importName = <ptr ast:StringDef>(val imports.get(j))
+
+      ret.put(importName'name)
+
+      j++
+    /while
+
+    i++
+  /while
+
+  return ret
+/func
+
+
+method io:Stream.dumpImports(pmod ptr ast:PModule) ptr err:Error
+  mut imports = collectImports(pmod)
+
+  # dump the length of the import list, then the single imports.
+  mut len = imports.len()
+  if me.write(ptr len, size(uintptr)) == 0
+    return me.error()
+  /if
+
+  mut iter = imports.iter()
+  mut elem data = null
+
+  while (elem = iter.next())?
+    mut err = me.dumpString(<ptr uint8>(elem))
     if err?
       return err
     /if
-
-    i++
   /while
 
   return null

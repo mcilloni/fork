@@ -18,8 +18,6 @@ import map
 import mem
 import parser
 import proc
-import sema
-import synt
 import txt
 import utils
 
@@ -156,13 +154,13 @@ method parser:Parser.matchBuiltin(name ptr uint8) ptr ast:Type
 method parser:Parser.parseDirectory(dirName ptr uint8) {pmod ptr ast:PModule,
                                                          issues ptr ast:Issues}
 
-  mut {pmod,issues} = synt:parseModule(dirName)
+  mut {pmod,issues} = parser:parseModule(dirName)
 
   if issues.errLen() > 0
     return {null, issues}
   /if
 
-  return {pmod, sema:validateModuleAst(me, pmod)}
+  return {pmod, parser:validateModuleAst(me, pmod)}
 
 /method
 
@@ -170,7 +168,7 @@ method parser:Parser.parseDirectory(dirName ptr uint8) {pmod ptr ast:PModule,
 method parser:Parser.parseFile(fileName ptr uint8) {root ptr ast:PNode,
                                                      issues ptr ast:Issues}
 
-  mut {proot,err} = synt:parse(fileName)
+  mut {proot,err} = parser:parse(fileName)
 
   if err?
     mut issues = ast:issuesNew()
@@ -179,7 +177,7 @@ method parser:Parser.parseFile(fileName ptr uint8) {root ptr ast:PNode,
     return {null, issues}
   /if
 
-  return {proot, sema:validateAst(me, proot)}
+  return {proot, parser:validateAst(me, proot)}
 /method
 
 

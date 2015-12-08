@@ -53,8 +53,6 @@ all:
 	$(MAKE) -C dyn
 	$(MAKE) -C utils
 	$(MAKE) -C ast
-	$(MAKE) -C synt
-	$(MAKE) -C sema
 	$(MAKE) -C fords
 	$(MAKE) -C parser
 	$(MAKE) -C libfork
@@ -76,18 +74,19 @@ clean:
 	$(MAKE) -C file clean
 	$(MAKE) -C txt clean
 	$(MAKE) -C tty clean
+	$(MAKE) -C cs clean
 	$(MAKE) -C pair clean
 	$(MAKE) -C vect clean
 	$(MAKE) -C list clean
 	$(MAKE) -C kv clean
 	$(MAKE) -C map clean
+	$(MAKE) -C hash clean
+	$(MAKE) -C set clean
 	$(MAKE) -C proc clean
 	$(MAKE) -C dyn clean
 	$(MAKE) -C utils clean
-	$(MAKE) -C lex clean
 	$(MAKE) -C ast clean
-	$(MAKE) -C synt clean
-	$(MAKE) -C sema clean
+	$(MAKE) -C fords clean
 	$(MAKE) -C parser clean
 	$(MAKE) -C libfork clean
 	rm -rf ../build/ford/

@@ -18,8 +18,6 @@ import mem
 import pair
 import parser
 import proc
-import sema
-import synt
 import tty
 import utils
 

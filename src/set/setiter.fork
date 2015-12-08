@@ -29,6 +29,10 @@ method set:Set.iter() ptr set:Iter
 method set:Iter.next() data
   mut pair = me'iter.next()
 
+  if not pair?
+    return null
+  /if
+
   mut ret = pair'key
 
   pair:pairFree(pair)
