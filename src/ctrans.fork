@@ -72,7 +72,7 @@ method ctrans:Transl.function(root ptr ast:PRoot,
 
   mut block = <ptr ast:PBlock>(val fn'node'leaves.get(0))
 
-  
+
 
   me.fnblock(root, block, rvoType, fname)
 
@@ -116,63 +116,63 @@ method ctrans:Transl.typedef(name ptr uint8, type ptr ast:Type, ssa bool)
 
 
 method ctrans:Transl.dump(stream ptr io:Stream) ptr err:Error
-  stream.write("// generated with ctrans v")
-  stream.write(ctrans:VERSION)
-  stream.write(" (")
+  stream.writeStr("// generated with ctrans v")
+  stream.writeStr(ctrans:VERSION)
+  stream.writeStr(" (")
 
-  stream.write("libfork v")
-  stream.write(libfork:VERSION)
-  stream.write(")\n\n\n")
+  stream.writeStr("libfork v")
+  stream.writeStr(libfork:VERSION)
+  stream.writeStr(")\n\n\n")
 
   if me'header
-    stream.write("#ifndef ford$$")
-    stream.write(me'modName )
-    stream.write("_h\n")
+    stream.writeStr("#ifndef ford$$")
+    stream.writeStr(me'modName )
+    stream.writeStr("_h\n")
 
-    stream.write("#define ford$$")
-    stream.write(me'modName)
-    stream.write("_h\n\n\n")
+    stream.writeStr("#define ford$$")
+    stream.writeStr(me'modName)
+    stream.writeStr("_h\n\n\n")
   /if
 
-  stream.write("#include <stdint.h>\n\n")
+  stream.writeStr("#include <stdint.h>\n\n")
 
   #just in case, you know.
-  stream.write("#undef NULL\n\n")
+  stream.writeStr("#undef NULL\n\n")
 
   mut includes = cs:unwrap(me'includes)
-  stream.write(includes)
+  stream.writeStr(includes)
   mem:free(includes)
 
-  stream.write("\n\n")
+  stream.writeStr("\n\n")
 
   mut typedefs = cs:unwrap(me'typedefs)
-  stream.write(typedefs)
+  stream.writeStr(typedefs)
   mem:free(typedefs)
 
-  stream.write("\n\n")
+  stream.writeStr("\n\n")
 
   mut externs = cs:unwrap(me'externs)
-  stream.write(externs)
+  stream.writeStr(externs)
   mem:free(externs)
 
-  stream.write("\n\n")
+  stream.writeStr("\n\n")
 
   mut vars = cs:unwrap(me'vars)
-  stream.write(vars)
+  stream.writeStr(vars)
   mem:free(vars)
 
-  stream.write("\n\n")
+  stream.writeStr("\n\n")
 
   mut funcs = cs:unwrap(me'funcs)
-  stream.write(funcs)
+  stream.writeStr(funcs)
   mem:free(funcs)
 
-  stream.write("\n\n")
+  stream.writeStr("\n\n")
 
   if me'header
-    stream.write("\n\n#endif //ford$$")
-    stream.write(me'modName)
-    stream.write("_h\n\n")
+    stream.writeStr("\n\n#endif //ford$$")
+    stream.writeStr(me'modName)
+    stream.writeStr("_h\n\n")
   /if
 
   return stream.error()
