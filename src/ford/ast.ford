@@ -332,7 +332,7 @@ decl mut TYPE_LOC       uint16
 decl mut TYPE_BOOL      uint16
 decl mut TYPE_INT       uint16
 decl mut TYPE_DATA      uint16
-decl mut TYPE_RECALIAS uint16
+decl mut TYPE_RECALIAS  uint16
 decl mut TYPE_NULL      uint16
 
 

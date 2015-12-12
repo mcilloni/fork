@@ -11,7 +11,7 @@
 module libfork
 
 
-mut RELEASE uint64 = 12
+mut RELEASE uint16 = 12
 
 mut VER_MAJ uint8 = 0
 mut VER_MIN uint8 = 7

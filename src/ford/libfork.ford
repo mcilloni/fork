@@ -10,7 +10,7 @@
 
 module libfork
 
-decl mut RELEASE uint64
+decl mut RELEASE uint16
 
 decl mut VER_MAJ uint8
 decl mut VER_MIN uint8

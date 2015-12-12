@@ -1,0 +1,322 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module parser
+
+
+import ast
+import err
+import fs
+import io
+import mem
+import parser
+import txt
+
+
+mut MIN_VER = 12
+
+
+func fordFree(ford ptr parser:Ford)
+  if ford?
+    mem:free(ford'name)
+    ast:stabFree(ford'aliases)
+    ast:stabFree(ford'decls)
+
+    mem:free(ford)
+  /if
+/func
+
+
+alias Importer struct(
+  prs ptr parser:Parser,
+  in ptr io:Stream,
+  path ptr uint8
+)
+
+
+method io:Stream.ensureRead(buf data, len uintptr) ptr err:Error
+  mut read uintptr = 0
+
+  while read < len
+    mut nowRead = me.read(buf + read, len - read)
+
+    if nowRead == 0
+      return me.error()
+    /if
+
+    read = read + nowRead
+  /while
+
+  return null
+/method
+
+
+method Importer.loadBool() {b bool, err ptr err:Error}
+  mut ret = false
+
+  mut err = me'in.ensureRead(ptr ret, size(bool))
+
+  return {ret,err}
+/method
+
+
+method Importer.loadUInt16() {n uint16, err ptr err:Error}
+  mut ret uint16 = 0
+
+  mut err = me'in.ensureRead(ptr ret, size(uint16))
+
+  return {ret,err}
+/method
+
+
+method Importer.loadUInt32() {n uint32, err ptr err:Error}
+  mut ret uint32 = 0
+
+  mut err = me'in.ensureRead(ptr ret, size(uint32))
+
+  return {ret,err}
+/method
+
+
+method Importer.loadString() {str ptr uint8, err ptr err:Error}
+  mut {len,err} = me.loadUInt16()
+  if err?
+    return {null,err}
+  /if
+
+  if len == 0
+    return {null,null}
+  /if
+
+  mut ret = <ptr uint8>(mem:zalloc(len + 1))
+
+  err = me'in.ensureRead(ret, len)
+  if err?
+    mem:free(ret)
+    return {null,err}
+  /if
+
+  return {ret,null}
+/method
+
+
+method Importer.loadDecls() {decls ptr ast:Symtable, err ptr err:Error}
+
+/method
+
+
+method Importer.inferPTypeType(type uint16) {type uint16, err ptr err:Error}
+  if type == ast:TYPE_FUNC
+    return {ast:PTYPE_FUNC,null}
+  /if
+
+  if type == ast:TYPE_PTR
+    return {ast:PTYPE_PTR,null}
+  /if
+
+  if type == ast:TYPE_LOC
+    return {ast:PTYPE_LOC,null}
+  /if
+
+  if type == ast:TYPE_BOOL or type == ast:TYPE_INT or type == ast:TYPE_RECALIAS
+    return {ast:PTYPE_ID,null}
+  /if
+
+  if type == ast:TYPE_STRUCT
+    return {ast:PTYPE_STRUCT,null}
+  /if
+
+  mut cs = cs:new()
+  cs.add("malformed ford '")
+  cs.add(me'path)
+  cs.add("': ")
+  cs.addInt(type)
+  cs.add(" is not a dumpable type identifier")
+
+  mut msg = cs:unwrap(cs)
+
+  mut err = err:new(msg)
+
+  mem:free(msg)
+
+  return {null,err}
+/method
+
+
+method Importer.loadType() {ptype ptr ast:PType, err ptr err:Error}
+  mut {ok,err} = me.loadBool()
+  if err?
+    return {null,null}
+  /if
+
+  mut {type,err} = me.loadUInt16()
+  if err?
+    return {null,err}
+  /if
+
+  mut {ptType,err} = inferPTypeType(type)
+  if err?
+    return {null,err}
+  /if
+
+  mut modName ptr uint8 = null
+
+  mut {name,err} = me.loadString()
+  if err?
+    return {null,err}
+  /if
+
+  # if there's a name, read a possible moduleName
+  if name?
+    {modName,err} = me.loadString()
+    if err?
+      mem:free(name)
+      return {null,err}
+    /if
+  /if
+
+/method
+
+
+method Importer.loadAliases() {aliases ptr ast:Symtable, err ptr err:Error}
+  mut {len,err} = me.loadUInt32()
+  if err?
+    return {null,err}
+  /if
+
+  mut i uint32 = 0
+
+  mut aliasPtypes = hash:strnew(len)
+  aliasPtypes.setFreeFuncs(ptr mem:free, ptr mem:unref)
+
+  while i < len
+    mut {name,err} = me.loadString()
+    if err?
+      hash:free(aliasPtypes)
+      return {null,err}
+    /if
+
+    mut {ptype,err} = me.loadType()
+    if err?
+      hash:free(aliasPtypes)
+      return {null,err}
+    /if
+
+    if ptype?
+      aliasPtypes.put(name, ptype)
+    /if
+
+    i++
+  /while
+
+  return {me.solveTypes(aliasPtypes),null}
+/method
+
+
+method Importer.loadImports() ptr err:Error
+  mut {len,err} = me.loadUInt16()
+  if err?
+    return err
+  /if
+
+  mut i uint16 = 0
+
+  while i < len
+    mut {impName,err} = me.loadString()
+    if err?
+      return err
+    /if
+
+    mut {ford,err} = me'prs.findFord(impName)
+    if err?
+      return err
+    /if
+
+    i++
+  /while
+
+/method
+
+
+method Importer.checkVersion() ptr err:Error
+  mut {release,err} = me.loadUInt16()
+  if err?
+    return err
+  /if
+
+  if release < MIN_VER
+    mut cs = cs:new(20)
+    cs.add("module '")
+    cs.add(me'path)
+    cs.add("' has been built for an incompatible version and should be rebuilt")
+
+    mut msg = cs:unwrap(cs)
+    mut err = err:new(msg)
+    mem:free(msg)
+
+    return err
+  /if
+
+  return null
+/method
+
+
+method Importer.loadFord() {ford ptr parser:Ford,err ptr err:Error}
+
+  mut err = me.checkVersion()
+  if err?
+    return {null,err}
+  /if
+
+  mut {name,err} = me.loadString()
+  if err?
+    return {null,err}
+  /if
+
+  err = me.loadImports()
+  if err?
+    return {null,err}
+  /if
+
+  mut {aliases,err} = me.loadAliases()
+  if err?
+    return {null,err}
+  /if
+
+  mut {decls,err} = me.loadDecls()
+  if err?
+    return {null,err}
+  /if
+
+  mut ret = <ptr parser:Ford>(mem:alloc(size(parser:Ford)))
+
+  val ret = {name, aliases, decls}
+
+  return {ret,null}
+/method
+
+
+method parser:Parser.loadFord(path ptr uint8) {ford ptr parser:Ford,
+                                                err ptr err:Error}
+
+  mut {instr,err} = fs:fileOpen(path)
+
+  if err?
+    return {null,err}
+  /if
+
+  mut importer Importer = {me, instr, path}
+
+  mut {ford,err} = importer.loadFord()
+
+  io:streamClose(instr)
+
+  return {ford,err}
+/method

@@ -43,7 +43,7 @@ method parser:Resolver.findSymModule(moduleName, name ptr uint8) ptr ast:Type
     return null
   /if
 
-  return imp'node'syms.typeof(name)
+  return imp'decls.typeof(name)
 /method
 
 

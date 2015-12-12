@@ -17,16 +17,18 @@ import fs
 import hash
 import io
 import kv
+import libfork
 import mem
+import pair
 import set
 import txt
 
 
 # dumps len (32bit) and then the string into the Stream.
 method io:Stream.dumpString(str ptr uint8) ptr err:Error
-  mut len uint32 = <uint32>(str? => txt:strlen(str) || 0)
+  mut len uint16 = <uint16>(str? => txt:strlen(str) || 0)
 
-  if me.write(ptr len, size(uint32)) == 0
+  if me.write(ptr len, size(uint16)) == 0
     return me.error()
   /if
 
@@ -93,16 +95,17 @@ method io:Stream.dumpType(type ptr ast:Type, force bool) ptr err:Error
     return me.error()
   /if
 
-  mut err = me.dumpString(type'moduleName)
-  if err?
-    return me.error()
-  /if
-
   err = me.dumpString(type'name)
   if err?
     return me.error()
   /if
 
+  if type'name?
+    mut err = me.dumpString(type'moduleName)
+    if err?
+      return me.error()
+    /if
+  /if
 
   # if the type has no name, than it has to be wholly dumped
 
@@ -151,47 +154,64 @@ method io:Stream.dumpType(type ptr ast:Type, force bool) ptr err:Error
 /method
 
 
-method io:Stream.dumpAliasTable(aliases ptr kv:KVList) ptr err:Error
-  mut len = aliases.len()
-  mut i uintptr = 0
+func collectAliases(pmod ptr ast:PModule) ptr hash:Hash
+  mut ret = hash:strnew(10)
 
-  while i < len
-    mut {key,value} = val aliases.getAt(i)
-
-    # dump the name, then the type of the alias
-    mut err = me.dumpString(<ptr uint8>(key))
-    if err?
-      return err
-    /if
-
-    mut dinfo = <ptr ast:DeclInfo>(value)
-
-    err = me.dumpType(dinfo'type, true)
-    if err?
-      return err
-    /if
-
-    i++
-  /while
-
-  return null
-/method
-
-
-method io:Stream.dumpAliases(pmod ptr ast:PModule) ptr err:Error
   mut i uintptr = 0
   mut len = pmod'roots.len()
 
   while i < len
     mut aliases = <ptr ast:PRoot>(val pmod'roots.get(i))'aliases'syms
 
-    mut err = me.dumpAliasTable(aliases)
+    mut aLen = aliases.len()
+    mut j uintptr = 0
+
+    while j < aLen
+      mut {key,value} = val aliases.getAt(j)
+
+      ret.put(key, value)
+
+      j++
+    /while
+
+    i++
+  /while
+
+  return ret
+/func
+
+
+method io:Stream.dumpAliases(pmod ptr ast:PModule) ptr err:Error
+  mut aliases = collectAliases(pmod)
+
+  # dump the length of the decls list, then the single decls.
+  mut len = <uint32>(aliases.len())
+  if me.write(ptr len, size(uint32)) == 0
+    return me.error()
+  /if
+
+  mut iter = aliases.iter()
+  mut pair ptr pair:Pair = null
+
+  while (pair = iter.next())?
+    mut name = <ptr uint8>(pair'key)
+    mut dinfo = <ptr ast:DeclInfo>(pair'value)
+
+    mut err = me.dumpString(name)
     if err?
       return err
     /if
 
-    i++
+    err = me.dumpType(dinfo'type, true)
+    if err?
+      return err
+    /if
+
+    pair:pairFree(pair)
   /while
+
+  hash:iterFree(iter)
+  hash:free(aliases)
 
   return null
 /method
@@ -209,49 +229,69 @@ method io:Stream.dumpDeclInfo(dinfo ptr ast:DeclInfo) ptr err:Error
 /method
 
 
-method io:Stream.dumpDeclTable(decls ptr kv:KVList) ptr err:Error
-  mut len = decls.len()
-  mut i uintptr = 0
+func collectDecls(pmod ptr ast:PModule) ptr hash:Hash
+  mut ret = hash:strnew(10)
 
-  while i < len
-    mut {key,value} = val decls.getAt(i)
-    mut dinfo = <ptr ast:DeclInfo>(value)
-
-    # Ignore "decl"s - they are not meaningful in a ford
-    if not dinfo'declOnly
-      # dump the name, then the declaration info
-      mut err = me.dumpString(<ptr uint8>(key))
-      if err?
-        return err
-      /if
-
-
-      err = me.dumpDeclInfo(dinfo)
-      if err?
-        return err
-      /if
-    /if
-    i++
-  /while
-
-  return null
-/method
-
-
-method io:Stream.dumpDecls(pmod ptr ast:PModule) ptr err:Error
   mut i uintptr = 0
   mut len = pmod'roots.len()
 
   while i < len
-    mut syms = <ptr ast:PBlock>(val pmod'roots.get(i))'syms'syms
+    mut decls = <ptr ast:PBlock>(val pmod'roots.get(i))'syms'syms
 
-    mut err = me.dumpDeclTable(syms)
+    mut dLen = decls.len()
+    mut j uintptr = 0
+
+    while j < dLen
+      mut {key,value} = val decls.getAt(j)
+      mut dinfo = <ptr ast:DeclInfo>(value)
+
+      # Ignore "decl"s - they are not meaningful in a ford
+      if not dinfo'declOnly
+        # dump the name, then the declaration info
+        ret.put(key, dinfo)
+      /if
+
+      j++
+    /while
+
+    i++
+  /while
+
+  return ret
+/func
+
+
+method io:Stream.dumpDecls(pmod ptr ast:PModule) ptr err:Error
+  mut decls = collectDecls(pmod)
+
+  # dump the length of the decls list, then the single decls.
+  mut len = <uint32>(decls.len())
+  if me.write(ptr len, size(uint32)) == 0
+    return me.error()
+  /if
+
+  mut iter = decls.iter()
+  mut pair ptr pair:Pair = null
+
+  while (pair = iter.next())?
+    mut key = <ptr uint8>(pair'key)
+    mut dinfo = <ptr ast:DeclInfo>(pair'value)
+
+    mut err = me.dumpString(key)
     if err?
       return err
     /if
 
-    i++
+    err = me.dumpDeclInfo(dinfo)
+    if err?
+      return err
+    /if
+
+    pair:pairFree(pair)
   /while
+
+  hash:iterFree(iter)
+  hash:free(decls)
 
   return null
 /method
@@ -288,8 +328,8 @@ method io:Stream.dumpImports(pmod ptr ast:PModule) ptr err:Error
   mut imports = collectImports(pmod)
 
   # dump the length of the import list, then the single imports.
-  mut len = imports.len()
-  if me.write(ptr len, size(uintptr)) == 0
+  mut len = <uint16>(imports.len())
+  if me.write(ptr len, size(uint16)) == 0
     return me.error()
   /if
 
@@ -303,12 +343,22 @@ method io:Stream.dumpImports(pmod ptr ast:PModule) ptr err:Error
     /if
   /while
 
+  set:iterFree(iter)
+  set:free(imports)
+
   return null
 /method
 
 
 method io:Stream.dumpFord(pmod ptr ast:PModule) ptr err:Error
-  # first, dump the module's name - len (32 bit), then the string.
+  # init: first thing should be libfork version.
+
+  mut rel = libfork:RELEASE
+  if me.write(ptr rel, size(uint16)) == 0
+    return me.error()
+  /if
+
+  # then, dump the module name.
 
   mut err = me.dumpString(pmod'name)
   if err?

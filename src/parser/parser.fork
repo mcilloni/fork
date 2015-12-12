@@ -12,6 +12,8 @@ module parser
 
 
 import ast
+import cs
+import err
 import fs
 import list
 import map
@@ -56,10 +58,21 @@ func new() ptr parser:Parser
 
 # Parser methods
 
-method parser:Parser.findImport(importName ptr ast:StringDef) {ast ptr ast:PNode,
-                                                                issues ptr ast:Issues}
+method parser:Parser.getImport(name ptr uint8) ptr parser:Ford
+  return <ptr parser:Ford>(me'imports.get(name))
+/method
 
-  mut fordName = txt:strappend(importName'name, ".ford")
+
+method parser:Parser.findFord(name ptr uint8) {ford ptr parser:Ford,
+                                                err ptr err:Error}
+
+  mut ford = <ptr parser:Ford>(me'imports.get(name))
+
+  if ford?
+    return {ford,null}
+  /if
+
+  mut fordName = txt:strappend(name, ".ford")
 
   mut len = me'fordPaths.len()
 
@@ -71,11 +84,31 @@ method parser:Parser.findImport(importName ptr ast:StringDef) {ast ptr ast:PNode
 
     if fs:pathExists(joinedPath)
 
-      mut {ast,issues} = me.parseFile(joinedPath)
+      mut {ford,err} = me.loadFord(joinedPath)
 
       mem:free(joinedPath)
       mem:free(fordName)
-      return {ast,issues}
+
+      if err?
+        mut cs = cs:new(20)
+        cs.add("can't load ")
+        cs.add(joinedPath)
+        cs.add(": ")
+        cs.add(err.msg())
+
+        mut msg = cs:unwrap(cs)
+
+        err:free(err)
+
+        mut newErr = err:new(msg)
+
+        mem:free(msg)
+
+        return {null,newErr}
+      /if
+
+      me'imports.put(txt:strclone(name), ford)
+      return {ford,null}
     /if
 
     mem:free(joinedPath)
@@ -83,66 +116,58 @@ method parser:Parser.findImport(importName ptr ast:StringDef) {ast ptr ast:PNode
     i++
   /while
 
-  mut issues = ast:issuesNew()
 
   mut toGlue [4] ptr uint8
 
   toGlue[0] = "Can't find "
-  toGlue[1] = importName'name
+  toGlue[1] = name
   toGlue[2] = " in the given FORDPATHS"
   toGlue[3] = null
 
   mut glued = txt:strglue(ptr toGlue[0])
 
-  issues.error(importName'begin, me'currentFile, glued)
+  mut err = err:new(glued)
 
   mem:free(fordName)
   mem:free(glued)
 
-  return {null,issues}
+  return {null, err}
 /method
 
 
-method parser:Parser.getImport(name ptr uint8) ptr ast:PRoot
-  return <ptr ast:PRoot>(me'imports.get(name))
-/method
+method parser:Parser.importMod(importName ptr ast:StringDef) ptr ast:Issue
+  mut {ford,err} = me.findFord(importName'name)
+  if err?
+    mut issue = ast:issueNew(ast:ISSUE_ERR, importName'begin, me'currentFile, \
+    err.msg())
 
+    err:free(err)
 
-method parser:Parser.importMod(importName ptr ast:StringDef) {ast ptr ast:PNode,
-                                                               issues ptr ast:Issues}
-
-  mut ast = <ptr ast:PNode>(me'imports.get(importName))
-
-  if not ast?
-    mut {ast,errors} = me.findImport(importName)
-    if errors.len() == 0
-      me'imports.put(txt:strclone(importName'name), ast)
-    /if
-
-    return {ast,errors}
-  else
-    return {null,ast:issuesNew()}
+    return issue
   /if
 
+  return null
 /method
 
 
 method parser:Parser.importAll(imports ptr list:List) ptr ast:Issues
+  mut ret = ast:issuesNew()
+
   mut len = imports.len()
   mut i uintptr = 0
 
   while i < len
     mut importName = <ptr ast:StringDef>(val imports.get(i))
-    mut {ast,errs} = me.importMod(importName)
+    mut issue = me.importMod(importName)
 
-    if errs.len() != 0
-      return errs
+    if issue?
+      ret.add(issue)
     /if
 
     i++
   /while
 
-  return ast:issuesNew()
+  return ret
 /method
 
 
