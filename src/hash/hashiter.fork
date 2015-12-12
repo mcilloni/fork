@@ -22,7 +22,12 @@ method hash:Hash.iter() ptr hash:Iter
   mut iter = <ptr hash:Iter>(mem:zalloc(size(hash:Iter)))
 
   iter'hash = me
-  iter'curBucket = <ptr list:List>(val me'buckets.get(0))
+
+  if me'buckets.len() > 0
+    iter'curBucket = <ptr list:List>(val me'buckets.get(0))
+  else
+    iter'end = true
+  /if
 
   return iter
 /method
@@ -35,7 +40,7 @@ method hash:Iter.loadNextBucket()
     me'buckIndex++
 
     # if we've reached the last bucket, return null and stop
-    if me'buckIndex == me'hash'buckets.len()
+    if me'buckIndex >= me'hash'buckets.len()
       me'end = true
       break
     /if
