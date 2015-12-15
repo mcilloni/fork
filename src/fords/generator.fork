@@ -53,11 +53,16 @@ method io:Stream.dumpTypeList(kv ptr kv:KVList) ptr err:Error
     return null
   /if
 
-  # then write the types, one by one.
+  # then the length of the list,
+  mut len = <uint32>(kv.len())
+
+  if me.write(ptr len, size(uint32)) == 0
+    return me.error()
+  /if
 
   mut i uintptr = 0
-  mut len = kv.len()
 
+  # then the types, one by one.
   while i < len
     mut {key,value} = val kv.getAt(i)
 
@@ -95,7 +100,7 @@ method io:Stream.dumpType(type ptr ast:Type, force bool) ptr err:Error
     return me.error()
   /if
 
-  err = me.dumpString(type'name)
+  mut err = me.dumpString(type'name)
   if err?
     return me.error()
   /if
@@ -116,19 +121,10 @@ method io:Stream.dumpType(type ptr ast:Type, force bool) ptr err:Error
   /if
 
   if fullDump
-    if me.write(ptr type'isSigned, size(bool)) == 0
-      return me.error()
-    /if
+    # isSigned, align, size.. Are all inferrable.
 
-    if me.write(ptr type'typeSize, size(intptr)) == 0
-      return me.error()
-    /if
-
-    if me.write(ptr type'typeAlign, size(intptr)) == 0
-      return me.error()
-    /if
-
-    if me.write(ptr type'itemCount, size(uintptr)) == 0
+    mut itemCount uint64 = type'itemCount
+    if me.write(ptr itemCount, size(uint64)) == 0
       return me.error()
     /if
 

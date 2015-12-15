@@ -12,9 +12,12 @@ module parser
 
 
 import ast
+import cs
 import err
 import fs
+import hash
 import io
+import list
 import mem
 import parser
 import txt
@@ -85,6 +88,15 @@ method Importer.loadUInt32() {n uint32, err ptr err:Error}
 /method
 
 
+method Importer.loadUInt64() {n uint64, err ptr err:Error}
+  mut ret uint64 = 0
+
+  mut err = me'in.ensureRead(ptr ret, size(uint64))
+
+  return {ret,err}
+/method
+
+
 method Importer.loadString() {str ptr uint8, err ptr err:Error}
   mut {len,err} = me.loadUInt16()
   if err?
@@ -133,7 +145,7 @@ method Importer.inferPTypeType(type uint16) {type uint16, err ptr err:Error}
     return {ast:PTYPE_STRUCT,null}
   /if
 
-  mut cs = cs:new()
+  mut cs = cs:new(20)
   cs.add("malformed ford '")
   cs.add(me'path)
   cs.add("': ")
@@ -146,7 +158,48 @@ method Importer.inferPTypeType(type uint16) {type uint16, err ptr err:Error}
 
   mem:free(msg)
 
-  return {null,err}
+  return {0,err}
+/method
+
+
+method Importer.loadTypeList() {members ptr list:List, err ptr err:Error}
+  mut {ok,err} = me.loadBool()
+  if err?
+    return {null,null}
+  /if
+
+  mut {len,err} = me.loadUInt32()
+  if err?
+    return {null,err}
+  /if
+
+  mut ret = list:new()
+  mut i uint32 = 0
+
+  while i < len
+    mut {name,err} = me.loadString()
+    if err?
+      list:freeAll(ret, ptr mem:decRef)
+      return {null,err}
+    /if
+
+    mut {ptype,err} = me.loadType()
+    if err?
+      mem:free(name)
+      list:freeAll(ret, ptr mem:decRef)
+      return {null,err}
+    /if
+
+    if ptype?
+      ret.append(ast:psymbolNew(name, ptype))
+    else
+      mem:free(name)
+    /if
+
+    i++
+  /while
+
+  return {ret,null}
 /method
 
 
@@ -161,7 +214,7 @@ method Importer.loadType() {ptype ptr ast:PType, err ptr err:Error}
     return {null,err}
   /if
 
-  mut {ptType,err} = inferPTypeType(type)
+  mut {ptType,err} = me.inferPTypeType(type)
   if err?
     return {null,err}
   /if
@@ -180,8 +233,56 @@ method Importer.loadType() {ptype ptr ast:PType, err ptr err:Error}
       mem:free(name)
       return {null,err}
     /if
+
+    # also, if there's a name, assume PTYPE_ID
+    ptType = ast:PTYPE_ID
   /if
 
+  mut {fullDump,err} = me.loadBool()
+  if err?
+    mem:free(name)
+    mem:free(modName)
+    return {null,err}
+  /if
+
+  mut itemCount uintptr = 0
+  mut retType ptr ast:PType = null
+  mut members ptr list:List = null
+
+  if fullDump
+    {itemCount,err} = me.loadUInt64()
+    if err?
+      mem:free(name)
+      mem:free(modName)
+      return {null,err}
+    /if
+
+    {retType,err} = me.loadType()
+    if err?
+      mem:free(name)
+      mem:free(modName)
+      return {null,err}
+    /if
+
+    {members,err} = me.loadTypeList()
+    if err?
+      mem:decRef(retType)
+      mem:free(name)
+      mem:free(modName)
+      return {null,err}
+    /if
+  /if
+
+  mut pdescr = (ptType != ast:PTYPE_LOC) \
+                => ast:ptypeDescrNew(ptType, retType, members) \
+                || ast:ptypeDescrNewLoc(retType, itemCount)
+
+  return {ast:ptypeNew(name, modName, pdescr),null}
+/method
+
+
+method Importer.solveTypes(aliasPtypes ptr hash:Hash) ptr ast:Symtable
+  
 /method
 
 
@@ -194,7 +295,7 @@ method Importer.loadAliases() {aliases ptr ast:Symtable, err ptr err:Error}
   mut i uint32 = 0
 
   mut aliasPtypes = hash:strnew(len)
-  aliasPtypes.setFreeFuncs(ptr mem:free, ptr mem:unref)
+  aliasPtypes.setFreeFuncs(ptr mem:free, ptr mem:decRef)
 
   while i < len
     mut {name,err} = me.loadString()
