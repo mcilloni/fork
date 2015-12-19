@@ -35,7 +35,7 @@ method set:Iter.next() data
 
   mut ret = pair'key
 
-  pair:pairFree(pair)
+  pair:free(pair)
 
   return ret
 /method

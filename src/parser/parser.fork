@@ -28,13 +28,9 @@ import utils
 
 func free(prs ptr parser:Parser)
   if prs?
-    if prs'imports?
-      map:free(prs'imports)
-    /if
-
-    if prs'fordPaths?
-      list:freeAll(prs'fordPaths, ptr mem:free)
-    /if
+    map:free(prs'imports)
+    mem:fpFree(prs'importsTPool)
+    list:freeAll(prs'fordPaths, ptr mem:free)
 
     map:free(prs'builtins)
 
@@ -47,6 +43,7 @@ func free(prs ptr parser:Parser)
 func new() ptr parser:Parser
   mut prs = <ptr parser:Parser>(mem:zalloc(size(parser:Parser)))
   prs'imports = map:strnew()
+  prs'importsTPool = mem:fpNew(<ptr func(item data)>(ptr ast:typeFree))
 
   prs'imports.setFreeFuncs(ptr mem:free, <ptr func(item data)>(ptr ast:pnodeFree))
 

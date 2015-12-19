@@ -62,7 +62,7 @@ entry
     tty:out("Imported ")
     tty:outln(<ptr uint8>(pair'key))
 
-    pair:pairFree(pair)
+    pair:free(pair)
   /while
 
   map:iterFree(iter)

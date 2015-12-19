@@ -32,7 +32,7 @@ func deinit(kv ptr kv:KVList)
   kv.freeContents()
 
   hash:deinit(ptr kv'hash)
-  list:deinitAll(ptr kv'list, ptr pair:pairFree)
+  list:deinitAll(ptr kv'list, ptr pair:free)
 /func
 
 
@@ -195,10 +195,10 @@ method kv:KVList.put(key data, value data)
   # if no key matches, then create a new element in list and hash
   # The index of this element will be the current length of the list (obviously).
   if not indexValue?
-    indexValue = pair:pairNew(<data>(me'list.len()), value)
+    indexValue = pair:new(<data>(me'list.len()), value)
 
     me'hash.put(key, indexValue)
-    me'list.append(pair:pairNew(key, value))
+    me'list.append(pair:new(key, value))
   else
     mut index = <uintptr>(indexValue'key)
     mut pair = <ptr pair:Pair>(val me'list.get(index))
@@ -222,7 +222,7 @@ method kv:KVList.remove(key data) bool
 
     me.freePairContents(pair)
 
-    me'list.remove(pos, ptr pair:pairFree)
+    me'list.remove(pos, ptr pair:free)
 
     me'hash.remove(key)
 
@@ -244,5 +244,5 @@ method kv:KVList.setFreeFuncs(freeKey,freeVal ptr func(item data))
 func hashFreePairs(pairV data)
   mut pair = <ptr pair:Pair>(pairV)
 
-  pair:pairFree(pair)
+  pair:free(pair)
 /func

@@ -64,7 +64,7 @@ method hash:Iter.next() ptr pair:Pair
   mut ent = <ptr hash:Entry>(val me'curBucket.get(me'pos))
   me'pos++
 
-  return pair:pairNew(ent'key, ent'value)
+  return pair:new(ent'key, ent'value)
 /method
 
 

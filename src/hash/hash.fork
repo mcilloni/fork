@@ -111,7 +111,7 @@ method hash:Hash.clone() ptr hash:Hash
   while (pair = hiter.next())?
     newHash.put(pair'key, pair'value)
 
-    pair:pairFree(pair)
+    pair:free(pair)
   /while
 
   hash:iterFree(hiter)
@@ -211,7 +211,7 @@ method hash:Hash.print()
     tty:out(": ")
     tty:out(<ptr uint8>(pair'value))
 
-    pair:pairFree(pair)
+    pair:free(pair)
   /while
 
   hash:iterFree(hiter)

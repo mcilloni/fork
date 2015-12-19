@@ -203,7 +203,7 @@ method io:Stream.dumpAliases(pmod ptr ast:PModule) ptr err:Error
       return err
     /if
 
-    pair:pairFree(pair)
+    pair:free(pair)
   /while
 
   hash:iterFree(iter)
@@ -283,7 +283,7 @@ method io:Stream.dumpDecls(pmod ptr ast:PModule) ptr err:Error
       return err
     /if
 
-    pair:pairFree(pair)
+    pair:free(pair)
   /while
 
   hash:iterFree(iter)

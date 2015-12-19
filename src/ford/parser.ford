@@ -17,6 +17,7 @@ import fs
 import kv
 import list
 import map
+import mem
 
 
 alias Ford struct(
@@ -28,6 +29,7 @@ alias Ford struct(
 alias Parser struct (
   fordPaths ptr list:List,
   imports ptr map:Map,
+  importsTPool ptr mem:FreePool,
   currentFile ptr uint8,
   builtins ptr map:Map
 )

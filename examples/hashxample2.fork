@@ -36,7 +36,7 @@ func hashIntDump(hash ptr hash:Hash)
     tty:out(": ")
     tty:outint(<uintptr>(pair'value))
 
-    pair:pairFree(pair)
+    pair:free(pair)
   /while
 
   hash:iterFree(iter)

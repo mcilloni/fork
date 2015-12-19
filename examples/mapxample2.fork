@@ -39,7 +39,7 @@ func mapIntDump(map ptr map:Map)
     tty:out(": ")
     tty:outint(<uintptr>(pair'value))
 
-    pair:pairFree(pair)
+    pair:free(pair)
   /while
 
   map:iterFree(iter)

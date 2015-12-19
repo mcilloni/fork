@@ -15,7 +15,7 @@ import mem
 import pair
 
 
-func pairNew(first,second data) ptr pair:Pair
+func new(first,second data) ptr pair:Pair
   mut pair = <ptr pair:Pair>(mem:zalloc(size(pair:Pair)))
   pair'key = first
   pair'value = second
@@ -24,6 +24,6 @@ func pairNew(first,second data) ptr pair:Pair
 /func
 
 
-func pairFree(pair ptr pair:Pair)
+func free(pair ptr pair:Pair)
   mem:free(pair)
 /func
