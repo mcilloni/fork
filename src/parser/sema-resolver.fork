@@ -16,6 +16,7 @@ import cs
 import kv
 import list
 import mem
+import memutils
 import parser
 import proc
 import tty
@@ -182,7 +183,7 @@ method parser:Resolver.collect(prs ptr parser:Parser,
     mut root = <ptr ast:PRoot>(val pmod'roots.get(i))
 
     # init the root file with type pool and aliases/decls symtable
-    root'typePool = mem:fpNew(<ptr func(item data)>(ptr ast:typeFree))
+    root'typePool = memutils:fpNew(<ptr func(item data)>(ptr ast:typeFree))
     root'aliases = ast:stabNew()
     root'node'syms = ast:stabNew()
 

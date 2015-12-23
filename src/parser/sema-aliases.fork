@@ -16,6 +16,7 @@ import cs
 import kv
 import list
 import mem
+import memutils
 import parser
 import proc
 import tty
@@ -424,7 +425,7 @@ method parser:Resolver.resolveTypeName(name ptr uint8) ptr ast:Type
 
   mut ret = me.resolveType(ptype)
 
-  mem:decRef(ptype)
+  memutils:decRef(ptype)
 
   return ret
 /method

@@ -694,8 +694,8 @@ method parser:Resolver.normalizeEmptyType(type ptr ast:Type) ptr ast:Type
 
 
 method parser:Resolver.validateFunctionCallExpr(pexpr ptr ast:PExpr,
-                                              ltype ptr ast:Type,
-                                              recList ptr list:List) ptr ast:Type
+                                                ltype ptr ast:Type,
+                                                recList ptr list:List) ptr ast:Type
 
   mut accType = ltype
 

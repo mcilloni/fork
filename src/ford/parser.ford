@@ -18,18 +18,13 @@ import kv
 import list
 import map
 import mem
-
-
-alias Ford struct(
-  name ptr uint8,
-  aliases,decls ptr ast:Symtable
-)
+import memutils
 
 
 alias Parser struct (
   fordPaths ptr list:List,
   imports ptr map:Map,
-  importsTPool ptr mem:FreePool,
+  importsTPool ptr memutils:FreePool,
   currentFile ptr uint8,
   builtins ptr map:Map
 )
@@ -57,14 +52,19 @@ decl method Parser.parseFile(fileName ptr uint8) {root ptr ast:PNode,
 decl method Parser.setCurrentFile(filename ptr uint8)
 
 
+# Ford methods (creation and member)
+decl method Parser.findFord(name ptr uint8) {imp ptr Ford, err ptr err:Error}
+
+decl method Parser.loadFord(path ptr uint8) {imp ptr Ford, err ptr err:Error}
+
+
+alias Ford struct(
+  name ptr uint8,
+  aliases,decls ptr ast:Symtable
+)
+
+# Ford functions
 decl func fordFree(ford ptr Ford)
-
-
-decl method Parser.findFord(name ptr uint8) {imp ptr Ford,
-                                              err ptr err:Error}
-
-decl method Parser.loadFord(path ptr uint8) {imp ptr Ford,
-                                              err ptr err:Error}
 
 ### synt
 

@@ -52,6 +52,7 @@ all:
 	$(MAKE) -C proc
 	$(MAKE) -C dyn
 	$(MAKE) -C utils
+	$(MAKE) -C memutils
 	$(MAKE) -C ast
 	$(MAKE) -C fords
 	$(MAKE) -C parser

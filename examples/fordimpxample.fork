@@ -8,17 +8,17 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
+module parser
+
+
 import ast
 import cs
-import kv
-import list
 import map
 import mem
 import pair
 import parser
 import proc
 import tty
-import utils
 
 
 entry
@@ -29,26 +29,16 @@ entry
   /if
 
   mut prs = parser:new()
-  mut {ast,issues} = prs.parseFile(argv'args[0])
+  mut {ford,err} = prs.loadFord(argv'args[0])
 
-  mut issLen = issues.len()
-
-  if issLen > 0
-    mut i uintptr = 0
-
-    while i < issLen
-      mut issue = issues.get(i)
-
-      issue.writeOut(ptr tty:out)
-
-      i++
-    /while
-
-    ast:issuesFree(issues)
-    proc:exit(1)
+  if err?
+    tty:err("error: ")
+    tty:failln(err.msg())
   /if
 
-  mut root = <ptr ast:PRoot>(ast)
+  tty:out("=== MODULE ")
+  tty:outln(ford'name)
+  tty:out("\n\n\n")
 
   tty:out("== IMPORTS: ")
   tty:outint(prs'imports.len())
@@ -67,7 +57,7 @@ entry
 
   map:iterFree(iter)
 
-  mut aliases = <ptr ast:PRoot>(ast)'aliases'syms
+  mut aliases = ford'aliases'syms
 
   tty:out("\n\n== ALIASES: ")
   tty:outint(aliases.len())
@@ -79,12 +69,23 @@ entry
   while i < len
     pair = aliases.getAt(i)
     tty:out("alias ")
-    tty:outln(<ptr uint8>(pair'key))
+    tty:out(<ptr uint8>(pair'key))
 
+    tty:out(" ")
+
+    mut cs = cs:new(20)
+
+    <ptr ast:DeclInfo>(pair'value)'type.dump(cs)
+
+    mut txt = cs:unwrap(cs)
+
+    tty:outln(txt)
+
+    mem:free(txt)
     i++
   /while
 
-  mut decls = <ptr ast:PRoot>(ast)'node'syms'syms
+  mut decls = ford'decls'syms
 
   tty:out("\n\n== DECLS: ")
   tty:outint(decls.len())
@@ -105,14 +106,10 @@ entry
     if dinfo'declType == ast:PFUNCTION
       typeStr = "func   "
     else
-      if dinfo'declType == ast:PENTRY
-        typeStr = "entry  "
+      if dinfo'declType == ast:PMETHOD
+        typeStr = "method "
       else
-        if dinfo'declType == ast:PMETHOD
-          typeStr = "method "
-        else
-          typeStr = "mut    "
-        /if
+        typeStr = "mut    "
       /if
     /if
 
@@ -133,11 +130,7 @@ entry
     i++
   /while
 
-  tty:out("\n\n==> Has entry? ")
-
-  tty:outln(root'entryNode? => "yes" || "no")
-
   parser:free(prs)
 
-  ast:pnodeFree(ast)
+  parser:fordFree(ford)
 /entry

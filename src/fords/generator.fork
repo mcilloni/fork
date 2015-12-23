@@ -83,7 +83,47 @@ method io:Stream.dumpTypeList(kv ptr kv:KVList) ptr err:Error
 /method
 
 
-method io:Stream.dumpType(type ptr ast:Type, force bool) ptr err:Error
+# unalias() : an alias is an association between a string and a composite type
+# or a named builtin type. It we're in the latter case AND we're aliasing,
+# we don't want to dump the type name: instead, we want to dump the builtin type
+# name.
+method io:Stream.unalias(type ptr ast:Type, aliasing bool) {unaliased bool,
+                                                             err ptr err:Error}
+  mut ttype = type'type
+
+  if aliasing
+    if ttype == ast:TYPE_BOOL
+      return {true,me.dumpString("bool")}
+    /if
+
+    if ttype == ast:TYPE_INT
+      mut str [15] uint8
+      mut cur = ptr str[0]
+
+      if not type'isSigned
+        val cur = "u"[0]
+        cur++
+      /if
+
+      mem:copy(cur, "int", 3)
+
+      cur = cur + 3
+
+      txt:numtostr(type'typeSize * 8, cur, 10)
+
+      return {true,me.dumpString(ptr str[0])}
+    /if
+
+    if ttype == ast:TYPE_DATA
+      return {true,me.dumpString("data")}
+    /if
+  /if
+
+  return {false,me.dumpString(type'name)}
+/method
+
+
+method io:Stream.dumpType(type ptr ast:Type, aliasing bool) ptr err:Error
   # first, write a boolean, indicating if this type is null or not.
   mut ok = type?
   if me.write(ptr ok, size(bool)) == 0
@@ -100,13 +140,13 @@ method io:Stream.dumpType(type ptr ast:Type, force bool) ptr err:Error
     return me.error()
   /if
 
-  mut err = me.dumpString(type'name)
+  mut {unaliased,err} = me.unalias(type, aliasing)
   if err?
     return me.error()
   /if
 
   if type'name?
-    mut err = me.dumpString(type'moduleName)
+    mut err = me.dumpString(unaliased => null || type'moduleName)
     if err?
       return me.error()
     /if
@@ -114,7 +154,7 @@ method io:Stream.dumpType(type ptr ast:Type, force bool) ptr err:Error
 
   # if the type has no name, than it has to be wholly dumped
 
-  mut fullDump = force or not type'name?
+  mut fullDump = aliasing or not type'name?
 
   if me.write(ptr fullDump, size(bool)) == 0
     return me.error()
@@ -135,10 +175,6 @@ method io:Stream.dumpType(type ptr ast:Type, force bool) ptr err:Error
 
     err = me.dumpTypeList(type'members)
     if err?
-      return me.error()
-    /if
-
-    if me.write(ptr type'builtin, size(bool)) == 0
       return me.error()
     /if
   /if

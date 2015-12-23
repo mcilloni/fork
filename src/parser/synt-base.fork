@@ -16,6 +16,7 @@ import err
 import fs
 import list
 import mem
+import memutils
 import parser
 import txt
 import utils
@@ -286,19 +287,19 @@ method parser:ParseState.parseStructBody(end ptr txt:Line,
     /if
 
     if not me.expectDiscard(ast:COMMA)
-      list:freeAll(strBody, <ptr func(item data)>(ptr mem:decRef))
+      list:freeAll(strBody, <ptr func(item data)>(ptr memutils:decRef))
       return null
     /if
   /while
 
   if me.theresError()
-    list:freeAll(strBody, <ptr func(item data)>(ptr mem:decRef))
+    list:freeAll(strBody, <ptr func(item data)>(ptr memutils:decRef))
     return null
   /if
 
   mut endTok = me.expect(closeTok)
   if not endTok?
-    list:freeAll(strBody, <ptr func(item data)>(ptr mem:decRef))
+    list:freeAll(strBody, <ptr func(item data)>(ptr memutils:decRef))
     return null
   /if
 
@@ -488,7 +489,7 @@ method parser:ParseState.parseMutExp() {pnode ptr ast:PNode, needsAssign bool}
     mut {id,ptype,end} = me.parseMutId()
 
     if not id?
-      list:freeAll(syms, <ptr func(item data)>(ptr mem:decRef))
+      list:freeAll(syms, <ptr func(item data)>(ptr memutils:decRef))
       return {null, false}
     /if
 
@@ -500,7 +501,7 @@ method parser:ParseState.parseMutExp() {pnode ptr ast:PNode, needsAssign bool}
         or (me'next'type != ast:CCURLY and me'next'type != ast:COMMA)
 
       me'err = ast:errorMism(me'last, "`,` or `}`", ast:tokenStr(me'next))
-      list:freeAll(syms, <ptr func(item data)>(ptr mem:decRef))
+      list:freeAll(syms, <ptr func(item data)>(ptr memutils:decRef))
       return {null, false}
     /if
 

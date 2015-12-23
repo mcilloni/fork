@@ -20,6 +20,7 @@ import kv
 import list
 import map
 import mem
+import memutils
 import txt
 import vect
 
@@ -29,7 +30,7 @@ import vect
 # an identifier at parsing time, while being really very different (a struct and an integer).
 
 alias PType struct (
-  refc mem:Ref,
+  refc memutils:Ref,
   name, moduleName ptr uint8,
   descr ptr PTypeDescr,
   begin, end txt:Line
@@ -39,7 +40,7 @@ decl method PType.dump()
 
 
 alias PTypeDescr struct (
-  refc mem:Ref,
+  refc memutils:Ref,
   type uint16,
   # if type is PTYPE_PTR or PTYPE_LOC, this is the type returned by dereferencing.
   # if type is PTYPE_FUNC, this is the return type of the function
@@ -55,7 +56,7 @@ decl method PTypeDescr.dump()
 
 
 alias PSymbol struct(
-  refc mem:Ref,
+  refc memutils:Ref,
   name ptr uint8,
   type ptr PType
 )
@@ -229,7 +230,7 @@ alias PRoot struct(
   fileName ptr uint8,
   imports ptr list:List,
   aliases ptr Symtable,
-  typePool ptr mem:FreePool,
+  typePool ptr memutils:FreePool,
   entryNode ptr PDecl,
   pmodule ptr PModule
 )
@@ -351,12 +352,12 @@ decl func symbolNew(name ptr uint8, type ptr Type) ptr Symbol
 
 decl func builtinSetNew() ptr map:Map
 
-decl func typeClone(pool ptr mem:FreePool, type ptr Type) ptr Type
-decl func typeNewFunc(pool ptr mem:FreePool, moduleName, name ptr uint8, retVal ptr Type, members ptr kv:KVList) ptr Type
-decl func typeNewLoc(pool ptr mem:FreePool, moduleName, name ptr uint8, itemCount uintptr, retVal ptr Type) ptr Type
-decl func typeNewPtr(pool ptr mem:FreePool, moduleName, name ptr uint8, retVal ptr Type) ptr Type
-decl func typeNewRecursiveAlias(pool ptr mem:FreePool, moduleName, name ptr uint8) ptr Type
-decl func typeNewStruct(pool ptr mem:FreePool, moduleName, name ptr uint8, members ptr kv:KVList) ptr Type
+decl func typeClone(pool ptr memutils:FreePool, type ptr Type) ptr Type
+decl func typeNewFunc(pool ptr memutils:FreePool, moduleName, name ptr uint8, retVal ptr Type, members ptr kv:KVList) ptr Type
+decl func typeNewLoc(pool ptr memutils:FreePool, moduleName, name ptr uint8, itemCount uintptr, retVal ptr Type) ptr Type
+decl func typeNewPtr(pool ptr memutils:FreePool, moduleName, name ptr uint8, retVal ptr Type) ptr Type
+decl func typeNewRecursiveAlias(pool ptr memutils:FreePool, moduleName, name ptr uint8) ptr Type
+decl func typeNewStruct(pool ptr memutils:FreePool, moduleName, name ptr uint8, members ptr kv:KVList) ptr Type
 decl func typeSetAlias(type ptr Type, moduleName, name ptr uint8)
 decl func typeSetBoundaries(type ptr Type, begin,end txt:Line)
 

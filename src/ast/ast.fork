@@ -16,6 +16,7 @@ import cs
 import hash
 import list
 import mem
+import memutils
 import txt
 import utils
 import vect
@@ -243,13 +244,13 @@ func pnodeFree(pnode ptr ast:PNode)
       list:freeAll(proot'imports, <ptr func(inst data)>(ptr ast:strdefFree))
       ast:stabFree(proot'aliases)
 
-      mem:fpFree(proot'typePool)
+      memutils:fpFree(proot'typePool)
     /if
 
     if pnode.isDecl()
 
       mut pdecl = <ptr ast:PDecl>(pnode)
-      mem:decRef(pdecl'sym)
+      memutils:decRef(pdecl'sym)
 
       mem:free(pdecl'methodTypeModule)
       mem:free(pdecl'methodType)

@@ -8,26 +8,26 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-module mem
+module memutils
 
 
 import err
 import list
-import mem
+import memutils
 import txt
 import utils
 
 
 func incRef(refc data)
   if refc?
-    <ptr mem:Ref>(refc)'count++
+    <ptr memutils:Ref>(refc)'count++
   /if
 /func
 
 
 func decRef(refc data)
   if refc?
-    mut ref = <ptr mem:Ref>(refc)
+    mut ref = <ptr memutils:Ref>(refc)
     ref'count--
     if ref'count < 1
       ref'freeFunc(refc)

@@ -20,14 +20,17 @@ import io
 import kv
 import list
 import mem
+import memutils
 import pair
 import parser
 import proc
 import set
+import tty
 import txt
 
 
 mut MIN_VER = 12
+mut IMPORTER_VERBOSE_DEBUG = true
 
 
 func fordFree(ford ptr parser:Ford)
@@ -48,6 +51,49 @@ alias Importer struct(
 )
 
 
+func debug(str ptr uint8)
+  if IMPORTER_VERBOSE_DEBUG
+    tty:out(str)
+  /if
+/func
+
+
+func debugLine(str ptr uint8)
+  if IMPORTER_VERBOSE_DEBUG
+    tty:outln(str)
+  /if
+/func
+
+
+func debugPType(ptype ptr ast:PType)
+  if IMPORTER_VERBOSE_DEBUG
+    tty:out("### LOADED PTYPE ")
+    ptype.dump()
+    tty:outln("")
+  /if
+/func
+
+
+func dumpBytes(bytes ptr uint8, len uintptr)
+  if IMPORTER_VERBOSE_DEBUG
+    tty:out("## READ ")
+    tty:outint(len)
+    tty:out(" bytes: ")
+
+    mut i uintptr = 0
+
+    while i < len
+      tty:outint(bytes[i])
+      tty:out(" ")
+
+      i++
+    /while
+
+    tty:outln("")
+  /if
+/func
+
+
 method io:Stream.ensureRead(buf data, len uintptr) ptr err:Error
   mut read uintptr = 0
 
@@ -55,12 +101,19 @@ method io:Stream.ensureRead(buf data, len uintptr) ptr err:Error
     mut nowRead = me.read(buf + read, len - read)
 
     if nowRead == 0
-      return me.error()
+      mut err = me.error()
+
+      if err?
+        return err
+      else
+        break
+      /if
     /if
 
     read = read + nowRead
   /while
 
+  dumpBytes(<ptr uint8>(buf), len)
   return null
 /method
 
@@ -123,8 +176,55 @@ method Importer.loadString() {str ptr uint8, err ptr err:Error}
 /method
 
 
-method Importer.loadDecls() {decls ptr ast:Symtable, err ptr err:Error}
+method Importer.loadDecls(aliases ptr ast:Symtable) {decls ptr ast:Symtable,
+                                                      err ptr err:Error}
 
+  debugLine("### READ decls len")
+  mut {len,err} = me.loadUInt32()
+  if err?
+    return {null,err}
+  /if
+
+  mut typeScope Scope = {me, null, aliases, null}
+
+  mut i uint32 = 0
+
+  mut ret = ast:stabNew()
+  while i < len
+    debugLine("### READ decl name")
+    mut {name,err} = me.loadString()
+    if err?
+      ast:stabFree(ret)
+      return {null,err}
+    /if
+
+    debugLine("### READ decl declType")
+    mut {declType,err} = me.loadUInt16()
+    if err?
+      mem:free(name)
+      ast:stabFree(ret)
+      return {null,err}
+    /if
+
+    debugLine("### READ decl type")
+    mut {ptype,err} = me.loadType()
+    if err?
+      mem:free(name)
+      ast:stabFree(ret)
+      return {null,err}
+    /if
+
+    mut type = typeScope.solveType(ptype, null)
+    memutils:decRef(ptype)
+
+    debug("### FINISHED decl ")
+    debugLine(name)
+    ret.add(name, true, false, type, declType)
+
+    i++
+  /while
+
+  return {ret,null}
 /method
 
 
@@ -141,7 +241,8 @@ method Importer.inferPTypeType(type uint16) {type uint16, err ptr err:Error}
     return {ast:PTYPE_LOC,null}
   /if
 
-  if type == ast:TYPE_BOOL or type == ast:TYPE_INT or type == ast:TYPE_RECALIAS
+  if    type == ast:TYPE_BOOL or type == ast:TYPE_INT \
+     or type == ast:TYPE_RECALIAS or type == ast:TYPE_DATA
     return {ast:PTYPE_ID,null}
   /if
 
@@ -169,9 +270,14 @@ method Importer.inferPTypeType(type uint16) {type uint16, err ptr err:Error}
 method Importer.loadTypeList() {members ptr list:List, err ptr err:Error}
   mut {ok,err} = me.loadBool()
   if err?
+    return {null,err}
+  /if
+
+  if not ok
     return {null,null}
   /if
 
+  debugLine("### Loading typelist len")
   mut {len,err} = me.loadUInt32()
   if err?
     return {null,err}
@@ -181,16 +287,18 @@ method Importer.loadTypeList() {members ptr list:List, err ptr err:Error}
   mut i uint32 = 0
 
   while i < len
+    debugLine("### Loading typelist member name")
     mut {name,err} = me.loadString()
     if err?
-      list:freeAll(ret, ptr mem:decRef)
+      list:freeAll(ret, ptr memutils:decRef)
       return {null,err}
     /if
 
+    debugLine("### Loading typelist member ptype")
     mut {ptype,err} = me.loadType()
     if err?
       mem:free(name)
-      list:freeAll(ret, ptr mem:decRef)
+      list:freeAll(ret, ptr memutils:decRef)
       return {null,err}
     /if
 
@@ -208,11 +316,17 @@ method Importer.loadTypeList() {members ptr list:List, err ptr err:Error}
 
 
 method Importer.loadType() {ptype ptr ast:PType, err ptr err:Error}
+  debugLine("### Loading type ok bool")
   mut {ok,err} = me.loadBool()
   if err?
+    return {null,err}
+  /if
+
+  if not ok
     return {null,null}
   /if
 
+  debugLine("### Loading type id")
   mut {type,err} = me.loadUInt16()
   if err?
     return {null,err}
@@ -225,6 +339,7 @@ method Importer.loadType() {ptype ptr ast:PType, err ptr err:Error}
 
   mut modName ptr uint8 = null
 
+  debugLine("### Loading type name")
   mut {name,err} = me.loadString()
   if err?
     return {null,err}
@@ -232,16 +347,15 @@ method Importer.loadType() {ptype ptr ast:PType, err ptr err:Error}
 
   # if there's a name, read a possible moduleName
   if name?
+    debugLine("### Loading type module name")
     {modName,err} = me.loadString()
     if err?
       mem:free(name)
       return {null,err}
     /if
-
-    # also, if there's a name, assume PTYPE_ID
-    ptType = ast:PTYPE_ID
   /if
 
+  debugLine("### Loading fullDump bool")
   mut {fullDump,err} = me.loadBool()
   if err?
     mem:free(name)
@@ -249,11 +363,17 @@ method Importer.loadType() {ptype ptr ast:PType, err ptr err:Error}
     return {null,err}
   /if
 
+  if name? and not fullDump
+    # also, if there's a name, assume PTYPE_ID
+    ptType = ast:PTYPE_ID
+  /if
+
   mut itemCount uintptr = 0
   mut retType ptr ast:PType = null
   mut members ptr list:List = null
 
   if fullDump
+    debugLine("### Loading type itemCount")
     {itemCount,err} = me.loadUInt64()
     if err?
       mem:free(name)
@@ -261,6 +381,7 @@ method Importer.loadType() {ptype ptr ast:PType, err ptr err:Error}
       return {null,err}
     /if
 
+    debugLine("### Loading type retType")
     {retType,err} = me.loadType()
     if err?
       mem:free(name)
@@ -268,9 +389,10 @@ method Importer.loadType() {ptype ptr ast:PType, err ptr err:Error}
       return {null,err}
     /if
 
+    debugLine("### Loading type members")
     {members,err} = me.loadTypeList()
     if err?
-      mem:decRef(retType)
+      memutils:decRef(retType)
       mem:free(name)
       mem:free(modName)
       return {null,err}
@@ -281,7 +403,11 @@ method Importer.loadType() {ptype ptr ast:PType, err ptr err:Error}
                 => ast:ptypeDescrNew(ptType, retType, members) \
                 || ast:ptypeDescrNewLoc(retType, itemCount)
 
-  return {ast:ptypeNew(name, modName, pdescr),null}
+  mut ptype = ast:ptypeNew(name, modName, pdescr)
+
+  debugPType(ptype)
+
+  return {ptype,null}
 /method
 
 
@@ -293,6 +419,14 @@ alias Scope struct(
 )
 
 
+method Scope.addAlias(name ptr uint8, type ptr ast:Type)
+  type'moduleName = txt:strclone(me'imp'name)
+  type'name = txt:strclone(name)
+
+  me'stab.add(name, false, false, type, ast:PALIAS)
+/method
+
+
 method Scope.solveRetType(retPType ptr ast:PType,
                                     recs ptr set:Set,
                                     isLoc bool) ptr ast:Type
@@ -301,7 +435,7 @@ method Scope.solveRetType(retPType ptr ast:PType,
 
   # if this condition evaluates to true, than we're in the case of a recursive alias.
   if     not isLoc and not retPType'moduleName? and retPType'name? \
-     and recs.contains(retPType'name)
+     and recs? and recs.contains(retPType'name)
 
     res = ast:typeNewRecursiveAlias(me'imp'prs'importsTPool, me'imp'name, \
                                      retPType'name)
@@ -335,8 +469,8 @@ method Scope.solveSymbolList(pargs ptr list:List,
 
     # functions can refer to recursive types, because their arguments and their
     # return types do not affect the size of the function (a function is always sizeless)
-    if funcArgs and not ptype'moduleName? and ptype'name? \
-       and recs.contains(ptype'name)
+    if     funcArgs and not ptype'moduleName? and ptype'name? \
+       and recs? and recs.contains(ptype'name)
 
       type = ast:typeNewRecursiveAlias(me'imp'prs'importsTPool, me'imp'name, \
                                         ptype'name)
@@ -362,7 +496,7 @@ method Scope.solveFuncType(ptype ptr ast:PType,
 
   mut retVal ptr ast:Type = null
   if ptdes'retType?
-    return me.solveRetType(ptdes'retType, recs, false)
+    retVal = me.solveRetType(ptdes'retType, recs, false)
   /if
 
   mut members = me.solveSymbolList(ptdes'arguments, recs, true)
@@ -420,14 +554,33 @@ method Scope.solveIdType(ptype ptr ast:PType,
     return ast:typeClone(me'imp'prs'importsTPool, imported)
   /if
 
-  if recs.contains(ptype'name)
-    return ast:typeNewRecursiveAlias(me'imp'prs'importsTPool, \
-                                      me'imp'name, ptype'name)
+  mut ret = me'stab.typeof(ptype'name)
+  if ret?
+    return ret
   /if
 
-  mut missingPType = <ptr ast:PType>(me'aliasPtypes.get(ptype'name))
+  # if we reach this point, it means we're in an alias validation.
+  # otherwise, the ford is messed up and we should abort.
+  # TODO: maybe aborting is a bit too excessive?
+  if recs?
+    if recs.contains(ptype'name)
+      return ast:typeNewRecursiveAlias(me'imp'prs'importsTPool, \
+                                        me'imp'name, ptype'name)
+    /if
 
-  return me.solveType(missingPType, recs)
+    mut missingPType = <ptr ast:PType>(me'aliasPtypes.get(ptype'name))
+
+    recs.put(ptype'name)
+
+    ret = me.solveType(missingPType, recs)
+    me.addAlias(ptype'name, ret)
+
+    recs.remove(ptype'name)
+  else
+    proc:panic(txt:strappend("Corrupted ford ", me'imp'name))
+  /if
+
+  return ret
 /method
 
 
@@ -438,8 +591,6 @@ method Scope.solveType(ptype ptr ast:PType,
 
   mut ptdes = ptype'descr
   mut type ptr ast:Type = null
-
-  recs.put(ptype'name)
 
   # if we've found an id, it can be 1. an id type 2. builtin 3. an invalid type
   if ptdes'type == ast:PTYPE_ID
@@ -459,10 +610,6 @@ method Scope.solveType(ptype ptr ast:PType,
       /if
     /if
   /if
-
-  me'stab.add(ptype'name, false, false, type, ast:PALIAS)
-
-  recs.remove(ptype'name)
 
   return type
 /method
@@ -492,7 +639,12 @@ method Importer.solveTypes(aliasPtypes ptr hash:Hash) ptr ast:Symtable
 
     set:strinit(ptr recs, 1)
 
-    scope.solveType(ptype, ptr recs)
+    recs.put(name)
+
+    mut type = scope.solveType(ptype, ptr recs)
+    scope.addAlias(name, type)
+
+    recs.remove(name)
 
     set:deinit(ptr recs)
   /while
@@ -504,6 +656,7 @@ method Importer.solveTypes(aliasPtypes ptr hash:Hash) ptr ast:Symtable
 
 
 method Importer.loadAliases() {aliases ptr ast:Symtable, err ptr err:Error}
+  debugLine("### Loading alias length")
   mut {len,err} = me.loadUInt32()
   if err?
     return {null,err}
@@ -512,15 +665,17 @@ method Importer.loadAliases() {aliases ptr ast:Symtable, err ptr err:Error}
   mut i uint32 = 0
 
   mut aliasPtypes = hash:strnew(len)
-  aliasPtypes.setFreeFuncs(ptr mem:free, ptr mem:decRef)
+  aliasPtypes.setFreeFuncs(ptr mem:free, ptr memutils:decRef)
 
   while i < len
+    debugLine("### Loading alias name")
     mut {name,err} = me.loadString()
     if err?
       hash:free(aliasPtypes)
       return {null,err}
     /if
 
+    debugLine("### Loading alias ptype")
     mut {ptype,err} = me.loadType()
     if err?
       hash:free(aliasPtypes)
@@ -529,6 +684,11 @@ method Importer.loadAliases() {aliases ptr ast:Symtable, err ptr err:Error}
 
     if ptype?
       aliasPtypes.put(name, ptype)
+    /if
+
+    if name?
+      debug("### FINISHED TYPE ")
+      debugLine(name)
     /if
 
     i++
@@ -560,6 +720,7 @@ method Importer.loadImports() ptr err:Error
     i++
   /while
 
+  return null
 /method
 
 
@@ -608,7 +769,7 @@ method Importer.loadFord() {ford ptr parser:Ford,err ptr err:Error}
     return {null,err}
   /if
 
-  mut {decls,err} = me.loadDecls()
+  mut {decls,err} = me.loadDecls(aliases)
   if err?
     return {null,err}
   /if

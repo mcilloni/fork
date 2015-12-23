@@ -18,6 +18,7 @@ import fs
 import list
 import map
 import mem
+import memutils
 import parser
 import proc
 import txt
@@ -29,7 +30,7 @@ import utils
 func free(prs ptr parser:Parser)
   if prs?
     map:free(prs'imports)
-    mem:fpFree(prs'importsTPool)
+    memutils:fpFree(prs'importsTPool)
     list:freeAll(prs'fordPaths, ptr mem:free)
 
     map:free(prs'builtins)
@@ -43,9 +44,10 @@ func free(prs ptr parser:Parser)
 func new() ptr parser:Parser
   mut prs = <ptr parser:Parser>(mem:zalloc(size(parser:Parser)))
   prs'imports = map:strnew()
-  prs'importsTPool = mem:fpNew(<ptr func(item data)>(ptr ast:typeFree))
+  prs'importsTPool = memutils:fpNew(<ptr func(item data)>(ptr ast:typeFree))
 
-  prs'imports.setFreeFuncs(ptr mem:free, <ptr func(item data)>(ptr ast:pnodeFree))
+  prs'imports.setFreeFuncs(ptr mem:free, \
+                            <ptr func(item data)>(ptr parser:fordFree))
 
   prs'fordPaths = envExtractFordPaths()
   prs'builtins = ast:builtinSetNew()

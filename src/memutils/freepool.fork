@@ -8,39 +8,41 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-module mem
+module memutils
 
 
 import list
 import mem
+import memutils
 import utils
 
-
-func fpAlloc(fp ptr mem:FreePool, len uintptr) data
-  mut ret = mem:alloc(len)
-  fp'ptrs.append(ret)
-
-  return ret
-/func
-
-func fpFree(fp ptr mem:FreePool)
+func fpFree(fp ptr memutils:FreePool)
   if fp?
     list:freeAll(fp'ptrs, fp'freeFunc)
     mem:free(fp)
   /if
 /func
 
-func fpNew(freeFunc ptr func(item data)) ptr mem:FreePool
-  mut ret = <ptr mem:FreePool>(mem:alloc(size(mem:FreePool)))
+func fpNew(freeFunc ptr func(item data)) ptr memutils:FreePool
+  mut ret = <ptr memutils:FreePool>(mem:alloc(size(memutils:FreePool)))
   ret'ptrs = list:new()
   ret'freeFunc = freeFunc
 
   return ret
 /func
 
-func fpZAlloc(fp ptr mem:FreePool, len uintptr) data
-  mut ret = mem:zalloc(len)
-  fp'ptrs.append(ret)
+
+method memutils:FreePool.alloc(len uintptr) data
+  mut ret = mem:alloc(len)
+  me'ptrs.append(ret)
 
   return ret
-/func
+/method
+
+
+method memutils:FreePool.zalloc(len uintptr) data
+  mut ret = mem:zalloc(len)
+  me'ptrs.append(ret)
+
+  return ret
+/method

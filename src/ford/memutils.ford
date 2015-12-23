@@ -8,13 +8,30 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-module mem
+module memutils
 
 
-decl func alloc(bytes uintptr) data
-decl func free(location data)
-decl func copy(dest data, src data, len uintptr) data
-decl func move(dest data, src data, len uintptr) data
-decl func set(dest data, value uintptr, len uintptr) data
-decl func zalloc(bytes uintptr) data
-decl func zero(dest data, len uintptr) data
+import list
+
+
+alias Ref struct (
+  count uintptr,
+  freeFunc ptr func(item data)
+)
+
+
+decl func incRef(item data)
+decl func decRef(item data)
+
+
+alias FreePool struct(
+  ptrs ptr list:List,
+  freeFunc ptr func(item data)
+)
+
+
+decl func fpFree(fp ptr FreePool)
+decl func fpNew(freeFunc ptr func(item data)) ptr FreePool
+
+decl method FreePool.alloc(len uintptr) data
+decl method FreePool.zalloc(len uintptr) data

@@ -14,6 +14,7 @@ module parser
 import ast
 import fs
 import mem
+import memutils
 import parser
 import utils
 
@@ -108,20 +109,20 @@ method parser:ParseState.parseCastTag() ptr ast:PExpr
 
   if not me.expectDiscard(ast:MAJOR) or not me.expectDiscard(ast:OPAR)
     ast:tokenFree(castTok)
-    mem:decRef(type)
+    memutils:decRef(type)
     return null
   /if
 
   mut expr = me.parseExpr()
   if not expr?
     ast:tokenFree(castTok)
-    mem:decRef(type)
+    memutils:decRef(type)
   /if
 
   mut cpar = me.expect(ast:CPAR)
   if not cpar?
     ast:tokenFree(castTok)
-    mem:decRef(type)
+    memutils:decRef(type)
     return null
   /if
 
