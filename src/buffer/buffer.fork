@@ -1,0 +1,131 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module buffer
+
+
+import buffer
+import mem
+
+
+# buffer init/deinit functions
+
+
+func deinit(buf ptr buffer:Buffer)
+  mem:free(buf'base)
+/func
+
+
+func free(buf ptr buffer:Buffer)
+  if buf?
+    deinit(buf)
+    mem:free(buf)
+  /if
+/func
+
+
+func init(buf ptr buffer:Buffer, cap uintptr) ptr buffer:Buffer
+  buf'work = buf'base = <ptr uint8>(mem:alloc(cap))
+  buf'cap = cap
+
+  return buf
+/func
+
+
+func new(cap uintptr) ptr buffer:Buffer
+  mut buf = <ptr buffer:Buffer>(mem:zalloc(size(buffer:Buffer)))
+
+  return init(buf, cap)
+/func
+
+
+func unwrap(buf ptr buffer:Buffer) {bytes ptr uint8, len uintptr}
+  mut ret = buf'base
+  mut len = buf.len()
+  mem:free(buf)
+
+  return {ret,len}
+/func
+
+
+# buffer methods
+
+method buffer:Buffer.add(bytes data, len uintptr) ptr buffer:Buffer
+  mut req = me.len() + len
+
+  me.ensure(req, 0)
+
+  mem:copy(me'work, bytes, len)
+
+  me'len = req
+  me'work = me'base + req
+
+  return me
+/method
+
+
+method buffer:Buffer.addByte(b uint8) ptr buffer:Buffer
+  me.ensure(me.len() + 1, 0)
+
+  val me'work = b
+  me'len++
+  me'work++
+
+  return me
+/method
+
+
+method buffer:Buffer.prepend(bytes data, len uintptr) ptr buffer:Buffer
+  mut req = me.len() + len
+
+  me.ensure(req, len)
+
+  me'len = me'len + len
+  me'work = me'base + me'len
+
+  mem:copy(me'base, bytes, len)
+
+  return me
+/method
+
+
+method buffer:Buffer.prependByte(b uint8) ptr buffer:Buffer
+  me.prepend(ptr b, 1)
+
+  return me
+/method
+
+
+method buffer:Buffer.ensure(newcap,offset uintptr)
+  # If we already have the needed capacity, just shift stuff of the required
+  # offset
+  if me'cap >= newcap
+    if offset > 0
+      mem:move(me'base + offset, me'base, me.len())
+    /if
+
+    return
+  /if
+
+  while me'cap < newcap
+    me'cap = (3 * me'cap) / 2 # 1.5x increase steps
+  /while
+
+  mut new = <ptr uint8>(mem:alloc(me'cap))
+  mem:copy(new + offset, me'base, me'len)
+  mem:free(me'base)
+  me'base = new
+  me'work = me'base + me'len
+/method
+
+
+method buffer:Buffer.len() uintptr
+  return me'len
+/method

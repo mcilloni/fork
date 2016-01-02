@@ -10,7 +10,7 @@
 
 import ast
 import cs
-import fords
+import fs
 import kv
 import list
 import map
@@ -49,7 +49,9 @@ entry
     proc:exit(1)
   /if
 
-  mut err = fords:generate(pmod, "/tmp")
+  mut genFord = parser:makeFord(pmod)
+
+  mut err = parser:writeFord(pmod'name, "/tmp", genFord, null, 0)
   if err?
     tty:failln(err.msg())
   /if

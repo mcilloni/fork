@@ -12,6 +12,7 @@ module parser
 
 
 import ast
+import buffer
 import err
 import fs
 import kv
@@ -52,7 +53,17 @@ decl method Parser.parseFile(fileName ptr uint8) {root ptr ast:PNode,
 decl method Parser.setCurrentFile(filename ptr uint8)
 
 
+# .ford generation
+
+decl func makeFord(pmod ptr ast:PModule) ptr buffer:Buffer
+decl func writeFord(name,path ptr uint8,
+                    genData ptr buffer:Buffer,
+                    extra ptr uint8,
+                    extraLen uintptr) ptr err:Error
+
+
 # Ford methods (creation and member)
+
 decl method Parser.findFord(name ptr uint8) {imp ptr Ford, err ptr err:Error}
 
 decl method Parser.loadFord(path ptr uint8) {imp ptr Ford, err ptr err:Error}

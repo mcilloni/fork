@@ -11,6 +11,7 @@
 module cs
 
 
+import buffer
 import cs
 import mem
 import txt
@@ -20,7 +21,7 @@ import txt
 
 func free(cs ptr cs:Charstash)
   if cs?
-    mem:free(cs'base)
+    buffer:deinit(ptr cs'buf)
     mem:free(cs)
   /if
 /func
@@ -29,8 +30,7 @@ func free(cs ptr cs:Charstash)
 func new(cap uintptr) ptr cs:Charstash
   mut cs = <ptr cs:Charstash>(mem:zalloc(size(cs:Charstash)))
 
-  cs'work = cs'base = <ptr uint8>(mem:alloc(cap))
-  cs'cap = cap
+  buffer:init(ptr cs'buf, cap)
 
   return cs
 /func
@@ -39,7 +39,7 @@ func new(cap uintptr) ptr cs:Charstash
 func unwrap(cs ptr cs:Charstash) ptr uint8
   cs.addChar(0)
 
-  mut ret = cs'base
+  mut ret = cs'buf'base
   mem:free(cs)
 
   return ret
@@ -49,23 +49,14 @@ func unwrap(cs ptr cs:Charstash) ptr uint8
 # charstash methods
 
 method cs:Charstash.add(str ptr uint8) ptr cs:Charstash
-  while val str != 0
-    me.addChar(val str)
-    str++
-  /while
+  me'buf.add(str, txt:strlen(str))
 
   return me
 /method
 
 
 method cs:Charstash.addChar(ch uint8) ptr cs:Charstash
-  if me.len() == me'cap
-    me.enlarge(0, 10)
-  /if
-
-  val me'work = ch
-  me'len++
-  me'work++
+  me'buf.addByte(ch)
 
   return me
 /method
@@ -98,45 +89,20 @@ method cs:Charstash.addWord(str ptr uint8) ptr cs:Charstash
 /method
 
 
-method cs:Charstash.enlarge(offset,inc uintptr)
-  me'cap = me'cap + inc
-  mut new = <ptr uint8>(mem:alloc(me'cap))
-  mem:move(new + offset, me'base, me'len)
-  mem:free(me'base)
-  me'base = new
-  me'work = me'base + me'len + offset
-/method
-
-
 method cs:Charstash.len() uintptr
-  return me'len
+  return me'buf.len()
 /method
 
 
 method cs:Charstash.prepend(str ptr uint8) ptr cs:Charstash
-  mut slen = txt:strlen(str)
-
-  if me'len + slen >= me'cap
-    me.enlarge(slen, slen > 10 => slen || 10)
-    me'len = me'len + slen
-  else
-    mem:move(me'base + slen, me'base, me'len)
-    me'len = me'len + slen
-    me'work = me'base + me'len
-  /if
-
-  mem:copy(me'base, str, slen)
+  me'buf.prepend(str, txt:strlen(str))
 
   return me
 /method
 
 
 method cs:Charstash.prependChar(ch uint8) ptr cs:Charstash
-  mut buf [2] uint8
-  buf[0] = ch
-  buf[1] = 0
-
-  me.prepend(ptr buf[0])
+  me'buf.prependByte(ch)
 
   return me
 /method

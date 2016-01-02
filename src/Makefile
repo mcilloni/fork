@@ -35,12 +35,14 @@ all:
 
 	$(MAKE) -C c
 	$(MAKE) -C math
-	$(MAKE) -C err
+	$(MAKE) -C proc
 	$(MAKE) -C mem
+	$(MAKE) -C err
 	$(MAKE) -C io
 	$(MAKE) -C fs
 	$(MAKE) -C txt
 	$(MAKE) -C tty
+	$(MAKE) -C buffer
 	$(MAKE) -C cs
 	$(MAKE) -C pair
 	$(MAKE) -C vect
@@ -49,12 +51,10 @@ all:
 	$(MAKE) -C map
 	$(MAKE) -C hash
 	$(MAKE) -C set
-	$(MAKE) -C proc
 	$(MAKE) -C dyn
 	$(MAKE) -C utils
 	$(MAKE) -C memutils
 	$(MAKE) -C ast
-	$(MAKE) -C fords
 	$(MAKE) -C parser
 	$(MAKE) -C libfork
 

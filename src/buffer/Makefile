@@ -1,4 +1,4 @@
-BUILDPATH = ../../build/fords/
+BUILDPATH = ../../build/buffer/
 INCLUDES = $(shell pwd)/../../build/include/
 
 ifndef FORKC

@@ -8,10 +8,11 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-module fords
+module parser
 
 
 import ast
+import buffer
 import err
 import fs
 import hash
@@ -20,45 +21,36 @@ import kv
 import libfork
 import mem
 import pair
+import parser
 import set
 import txt
 
 
 # dumps len (32bit) and then the string into the Stream.
-method io:Stream.dumpString(str ptr uint8) ptr err:Error
+method buffer:Buffer.addString(str ptr uint8)
   mut len uint16 = <uint16>(str? => txt:strlen(str) || 0)
 
-  if me.write(ptr len, size(uint16)) == 0
-    return me.error()
-  /if
+  me.add(ptr len, size(uint16))
 
   if len > 0
-    if me.write(str, len) == 0
-      return me.error()
-    /if
+    me.add(str, len)
   /if
-
-  return null
 /method
 
 
-method io:Stream.dumpTypeList(kv ptr kv:KVList) ptr err:Error
+method buffer:Buffer.addTypeList(kv ptr kv:KVList)
   # first, write a boolean, indicating if this kv is null or not.
   mut ok = kv?
-  if me.write(ptr ok, size(bool)) == 0
-    return me.error()
-  /if
+  me.add(ptr ok, size(bool))
 
   if not ok
-    return null
+    return
   /if
 
   # then the length of the list,
   mut len = <uint32>(kv.len())
 
-  if me.write(ptr len, size(uint32)) == 0
-    return me.error()
-  /if
+  me.add(ptr len, size(uint32))
 
   mut i uintptr = 0
 
@@ -66,20 +58,12 @@ method io:Stream.dumpTypeList(kv ptr kv:KVList) ptr err:Error
   while i < len
     mut {key,value} = val kv.getAt(i)
 
-    mut err = me.dumpString(<ptr uint8>(key))
-    if err?
-      return err
-    /if
+    me.addString(<ptr uint8>(key))
 
-    err = me.dumpType(<ptr ast:Type>(value), false)
-    if err?
-      return err
-    /if
+    me.addType(<ptr ast:Type>(value), false)
 
     i++
   /while
-
-  return null
 /method
 
 
@@ -87,13 +71,14 @@ method io:Stream.dumpTypeList(kv ptr kv:KVList) ptr err:Error
 # or a named builtin type. It we're in the latter case AND we're aliasing,
 # we don't want to dump the type name: instead, we want to dump the builtin type
 # name.
-method io:Stream.unalias(type ptr ast:Type, aliasing bool) {unaliased bool,
-                                                             err ptr err:Error}
+method buffer:Buffer.unalias(type ptr ast:Type, aliasing bool) bool
   mut ttype = type'type
 
   if aliasing
     if ttype == ast:TYPE_BOOL
-      return {true,me.dumpString("bool")}
+      me.addString("bool")
+
+      return true
     /if
 
     if ttype == ast:TYPE_INT
@@ -111,78 +96,62 @@ method io:Stream.unalias(type ptr ast:Type, aliasing bool) {unaliased bool,
 
       txt:numtostr(type'typeSize * 8, cur, 10)
 
-      return {true,me.dumpString(ptr str[0])}
+      me.addString(ptr str[0])
+
+      return true
     /if
 
     if ttype == ast:TYPE_DATA
-      return {true,me.dumpString("data")}
+      me.addString("data")
+
+      return true
     /if
   /if
 
-  return {false,me.dumpString(type'name)}
+  me.addString(type'name)
+
+  return false
 /method
 
 
-method io:Stream.dumpType(type ptr ast:Type, aliasing bool) ptr err:Error
+method buffer:Buffer.addType(type ptr ast:Type, aliasing bool)
   # first, write a boolean, indicating if this type is null or not.
   mut ok = type?
-  if me.write(ptr ok, size(bool)) == 0
-    return me.error()
-  /if
+  me.add(ptr ok, size(bool))
 
   if not ok
-    return null
+    return
   /if
 
   # then write the type of this type (uint16)
 
-  if me.write(ptr type'type, size(uint16)) == 0
-    return me.error()
-  /if
+  me.add(ptr type'type, size(uint16))
 
-  mut {unaliased,err} = me.unalias(type, aliasing)
-  if err?
-    return me.error()
-  /if
+  mut unaliased = me.unalias(type, aliasing)
 
   if type'name?
-    mut err = me.dumpString(unaliased => null || type'moduleName)
-    if err?
-      return me.error()
-    /if
+    me.addString(unaliased => null || type'moduleName)
   /if
 
   # if the type has no name, than it has to be wholly dumped
 
   mut fullDump = aliasing or not type'name?
 
-  if me.write(ptr fullDump, size(bool)) == 0
-    return me.error()
-  /if
+  me.add(ptr fullDump, size(bool))
 
   if fullDump
     # isSigned, align, size.. Are all inferrable.
 
     mut itemCount uint64 = type'itemCount
-    if me.write(ptr itemCount, size(uint64)) == 0
-      return me.error()
-    /if
+    me.add(ptr itemCount, size(uint64))
 
-    err = me.dumpType(type'retType, false)
-    if err?
-      return me.error()
-    /if
+    me.addType(type'retType, false)
 
-    err = me.dumpTypeList(type'members)
-    if err?
-      return me.error()
-    /if
+    me.addTypeList(type'members)
   /if
 
   # do not write begin and end, because they have no sense without their
   # files.
-
-  return null
 /method
 
 
@@ -213,14 +182,12 @@ func collectAliases(pmod ptr ast:PModule) ptr hash:Hash
 /func
 
 
-method io:Stream.dumpAliases(pmod ptr ast:PModule) ptr err:Error
+method buffer:Buffer.addAliases(pmod ptr ast:PModule)
   mut aliases = collectAliases(pmod)
 
   # dump the length of the decls list, then the single decls.
   mut len = <uint32>(aliases.len())
-  if me.write(ptr len, size(uint32)) == 0
-    return me.error()
-  /if
+  me.add(ptr len, size(uint32))
 
   mut iter = aliases.iter()
   mut pair ptr pair:Pair = null
@@ -229,35 +196,25 @@ method io:Stream.dumpAliases(pmod ptr ast:PModule) ptr err:Error
     mut name = <ptr uint8>(pair'key)
     mut dinfo = <ptr ast:DeclInfo>(pair'value)
 
-    mut err = me.dumpString(name)
-    if err?
-      return err
-    /if
+    me.addString(name)
 
-    err = me.dumpType(dinfo'type, true)
-    if err?
-      return err
-    /if
+    me.addType(dinfo'type, true)
 
     pair:free(pair)
   /while
 
   hash:iterFree(iter)
   hash:free(aliases)
-
-  return null
 /method
 
 
-method io:Stream.dumpDeclInfo(dinfo ptr ast:DeclInfo) ptr err:Error
-  if me.write(ptr dinfo'declType, size(uint16)) == 0
-    return me.error()
-  /if
+method buffer:Buffer.addDeclInfo(dinfo ptr ast:DeclInfo)
+  me.add(ptr dinfo'declType, size(uint16))
 
   # declOnly declarations are skipped
   # funcParam is only meaningful inside functions, not in the global scopeName
 
-  return me.dumpType(dinfo'type, false)
+  me.addType(dinfo'type, false)
 /method
 
 
@@ -293,14 +250,12 @@ func collectDecls(pmod ptr ast:PModule) ptr hash:Hash
 /func
 
 
-method io:Stream.dumpDecls(pmod ptr ast:PModule) ptr err:Error
+method buffer:Buffer.addDecls(pmod ptr ast:PModule)
   mut decls = collectDecls(pmod)
 
   # dump the length of the decls list, then the single decls.
   mut len = <uint32>(decls.len())
-  if me.write(ptr len, size(uint32)) == 0
-    return me.error()
-  /if
+  me.add(ptr len, size(uint32))
 
   mut iter = decls.iter()
   mut pair ptr pair:Pair = null
@@ -309,23 +264,15 @@ method io:Stream.dumpDecls(pmod ptr ast:PModule) ptr err:Error
     mut key = <ptr uint8>(pair'key)
     mut dinfo = <ptr ast:DeclInfo>(pair'value)
 
-    mut err = me.dumpString(key)
-    if err?
-      return err
-    /if
+    me.addString(key)
 
-    err = me.dumpDeclInfo(dinfo)
-    if err?
-      return err
-    /if
+    me.addDeclInfo(dinfo)
 
     pair:free(pair)
   /while
 
   hash:iterFree(iter)
   hash:free(decls)
-
-  return null
 /method
 
 
@@ -356,84 +303,89 @@ func collectImports(pmod ptr ast:PModule) ptr set:Set
 /func
 
 
-method io:Stream.dumpImports(pmod ptr ast:PModule) ptr err:Error
+method buffer:Buffer.addImports(pmod ptr ast:PModule)
   mut imports = collectImports(pmod)
 
   # dump the length of the import list, then the single imports.
   mut len = <uint16>(imports.len())
-  if me.write(ptr len, size(uint16)) == 0
-    return me.error()
-  /if
+  me.add(ptr len, size(uint16))
 
   mut iter = imports.iter()
   mut elem data = null
 
   while (elem = iter.next())?
-    mut err = me.dumpString(<ptr uint8>(elem))
-    if err?
-      return err
-    /if
+    me.addString(<ptr uint8>(elem))
   /while
 
   set:iterFree(iter)
   set:free(imports)
-
-  return null
 /method
 
 
-method io:Stream.dumpFord(pmod ptr ast:PModule) ptr err:Error
+func makeFord(pmod ptr ast:PModule) ptr buffer:Buffer
+  mut buf = buffer:new(30)
+
   # init: first thing should be libfork version.
 
   mut rel = libfork:RELEASE
-  if me.write(ptr rel, size(uint16)) == 0
-    return me.error()
-  /if
+  buf.add(ptr rel, size(uint16))
 
   # then, dump the module name.
 
-  mut err = me.dumpString(pmod'name)
-  if err?
-    return err
-  /if
-
-  err = me.dumpImports(pmod)
-  if err?
-    return err
-  /if
-
-  err = me.dumpAliases(pmod)
-  if err?
-    return err
-  /if
-
-  err = me.dumpDecls(pmod)
-  if err?
-    return err
-  /if
-
-  return null
-/method
+  buf.addString(pmod'name)
 
 
-func generate(pmod ptr ast:PModule, path ptr uint8) ptr err:Error
-  if not pmod'name?
+  buf.addImports(pmod)
+
+
+  buf.addAliases(pmod)
+
+
+  buf.addDecls(pmod)
+
+  return buf
+/func
+
+
+func writeFord(name,path ptr uint8,
+               genData ptr buffer:Buffer,
+               extra ptr uint8,
+               extraLen uintptr) ptr err:Error
+
+  if not name?
     return err:new("can't generate ford for <main> module")
   /if
 
-  mut fName = txt:strappend(pmod'name, ".ford")
+  mut fName = txt:strappend(name, ".ford")
   mut filePath = fs:pathJoin(path, fName)
+  mem:free(fName)
 
   mut {outstr,err} = fs:fileCreate(filePath)
+  mem:free(filePath)
+
   if err?
     return err
   /if
 
-  err = outstr.dumpFord(pmod)
+  mut {fordData,dataLen} = buffer:unwrap(genData)
+  outstr.write(fordData, dataLen)
 
-  mem:free(fName)
-  mem:free(filePath)
+  mem:free(fordData)
+
+  if (err = outstr.error())?
+    io:streamClose(outstr)
+    return err
+  /if
+
+  if extra?
+    outstr.write(extra, extraLen)
+    if (err = outstr.error())?
+      io:streamClose(outstr)
+      return err
+    /if
+  /if
+
   io:streamClose(outstr)
 
-  return err
+  return null
 /func
