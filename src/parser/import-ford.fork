@@ -38,6 +38,7 @@ func fordFree(ford ptr parser:Ford)
     mem:free(ford'name)
     ast:stabFree(ford'aliases)
     ast:stabFree(ford'decls)
+    mem:free(ford'extra)
 
     mem:free(ford)
   /if
@@ -173,6 +174,28 @@ method Importer.loadString() {str ptr uint8, err ptr err:Error}
   /if
 
   return {ret,null}
+/method
+
+
+method Importer.loadExtra() {extra ptr uint8, extraLen uint32, err ptr err:Error}
+  mut {extraLen, err} = me.loadUInt32()
+  if err?
+    return {null,0,err}
+  /if
+
+  if extraLen == 0
+    return {null,0,null}
+  /if
+
+  mut extra = cast<ptr uint8>(mem:alloc(extraLen))
+
+  err = me'in.ensureRead(extra, extraLen)
+  if err?
+    mem:free(extra)
+    return {null,0,err}
+  /if
+
+  return {extra,extraLen,null}
 /method
 
 
@@ -771,12 +794,20 @@ method Importer.loadFord() {ford ptr parser:Ford,err ptr err:Error}
 
   mut {decls,err} = me.loadDecls(aliases)
   if err?
+    ast:stabFree(aliases)
+    return {null,err}
+  /if
+
+  mut {extra,extraLen,err} = me.loadExtra()
+  if err?
+    ast:stabFree(aliases)
+    ast:stabFree(decls)
     return {null,err}
   /if
 
   mut ret = <ptr parser:Ford>(mem:alloc(size(parser:Ford)))
 
-  val ret = {me'name, aliases, decls}
+  val ret = {me'name, aliases, decls, extra, extraLen}
 
   return {ret,null}
 /method

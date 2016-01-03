@@ -377,6 +377,9 @@ func writeFord(name,path ptr uint8,
     return err
   /if
 
+  mut writeLen = <uint32>(extra? => extraLen || 0)
+  outstr.write(ptr writeLen, size(uint32))
+
   if extra?
     outstr.write(extra, extraLen)
     if (err = outstr.error())?

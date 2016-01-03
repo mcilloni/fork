@@ -71,7 +71,9 @@ decl method Parser.loadFord(path ptr uint8) {imp ptr Ford, err ptr err:Error}
 
 alias Ford struct(
   name ptr uint8,
-  aliases,decls ptr ast:Symtable
+  aliases,decls ptr ast:Symtable,
+  extra ptr uint8,
+  extraLen uint32
 )
 
 # Ford functions
