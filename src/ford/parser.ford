@@ -20,6 +20,7 @@ import list
 import map
 import mem
 import memutils
+import vect
 
 
 alias Parser struct (
@@ -71,6 +72,7 @@ decl method Parser.loadFord(path ptr uint8) {imp ptr Ford, err ptr err:Error}
 
 alias Ford struct(
   name ptr uint8,
+  imports ptr vect:Vect,
   aliases,decls ptr ast:Symtable,
   extra ptr uint8,
   extraLen uint32

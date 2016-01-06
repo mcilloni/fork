@@ -27,6 +27,7 @@ import proc
 import set
 import tty
 import txt
+import vect
 
 
 mut MIN_VER = 12
@@ -39,6 +40,7 @@ func fordFree(ford ptr parser:Ford)
     ast:stabFree(ford'aliases)
     ast:stabFree(ford'decls)
     mem:free(ford'extra)
+    vect:free(ford'imports)
 
     mem:free(ford)
   /if
@@ -721,29 +723,35 @@ method Importer.loadAliases() {aliases ptr ast:Symtable, err ptr err:Error}
 /method
 
 
-method Importer.loadImports() ptr err:Error
+method Importer.loadImports() {imps ptr vect:Vect, err ptr err:Error}
   mut {len,err} = me.loadUInt16()
   if err?
-    return err
+    return {null,err}
   /if
+
+  mut ret = vect:new(len)
 
   mut i uint16 = 0
 
   while i < len
     mut {impName,err} = me.loadString()
     if err?
-      return err
+      vect:free(ret)
+      return {null,err}
     /if
+
+    ret.append(impName)
 
     mut {ford,err} = me'prs.findFord(impName)
     if err?
-      return err
+      vect:free(ret)
+      return {null,err}
     /if
 
     i++
   /while
 
-  return null
+  return {ret,null}
 /method
 
 
@@ -782,24 +790,27 @@ method Importer.loadFord() {ford ptr parser:Ford,err ptr err:Error}
     return {null,err}
   /if
 
-  err = me.loadImports()
+  mut {imps,err} = me.loadImports()
   if err?
     return {null,err}
   /if
 
   mut {aliases,err} = me.loadAliases()
   if err?
+    vect:free(imps)
     return {null,err}
   /if
 
   mut {decls,err} = me.loadDecls(aliases)
   if err?
+    vect:free(imps)
     ast:stabFree(aliases)
     return {null,err}
   /if
 
   mut {extra,extraLen,err} = me.loadExtra()
   if err?
+    vect:free(imps)
     ast:stabFree(aliases)
     ast:stabFree(decls)
     return {null,err}
@@ -807,7 +818,7 @@ method Importer.loadFord() {ford ptr parser:Ford,err ptr err:Error}
 
   mut ret = <ptr parser:Ford>(mem:alloc(size(parser:Ford)))
 
-  val ret = {me'name, aliases, decls, extra, extraLen}
+  val ret = {me'name, imps, aliases, decls, extra, extraLen}
 
   return {ret,null}
 /method
