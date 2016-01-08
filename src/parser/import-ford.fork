@@ -189,7 +189,7 @@ method Importer.loadExtra() {extra ptr uint8, extraLen uint32, err ptr err:Error
     return {null,0,null}
   /if
 
-  mut extra = cast<ptr uint8>(mem:alloc(extraLen))
+  mut extra = cast<ptr uint8>(mem:zalloc(extraLen + 1))
 
   err = me'in.ensureRead(extra, extraLen)
   if err?
