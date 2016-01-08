@@ -26,7 +26,7 @@ all:
 
 	@printf "FORKL\t\tforkc1.o\n"
 
-	@ $(CC) -o $(BUILDPATH)/forkc1 $(BUILDPATH)/*.o $(LIBFORK)/build/rt.o $(LIBFORK)/build/libfork.a 
+	@ $(CC) -o $(BUILDPATH)/forkc1 $(BUILDPATH)/*.o $(LIBFORK)/build/rt.o $(LIBFORK)/build/libfork.a
 
 	cp -f header.txt "$(BUILDPATH)/forkc"
 	cat forkc.py >> "$(BUILDPATH)/forkc"
@@ -34,9 +34,6 @@ all:
 	cp -f header.txt "$(BUILDPATH)/forkl"
 	cat forkl.py >> "$(BUILDPATH)/forkl"
 	chmod +x "$(BUILDPATH)/forkl"
-	cp -f header.txt "$(BUILDPATH)/fordc"
-	cat fordc.py >> "$(BUILDPATH)/fordc"
-	chmod +x "$(BUILDPATH)/fordc"
 
 
 clean:

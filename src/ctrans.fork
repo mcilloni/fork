@@ -21,17 +21,24 @@ import libfork
 import list
 import mem
 import pair
+import parser
 import proc
+import set
 import txt
 import tty
 
 
-func init(tr ptr ctrans:Transl, header bool, name ptr uint8)
+func init(tr ptr ctrans:Transl,
+          header bool,
+          name ptr uint8,
+          parser ptr parser:Parser)
+
   tr'includes = cs:new(40)
   tr'typedefs = cs:new(300)
   tr'externs = cs:new(300)
   tr'vars = cs:new(300)
   tr'funcs = cs:new(300)
+  tr'parser = parser
   tr'cnt = 0
 
   tr'header = header
@@ -179,10 +186,33 @@ method ctrans:Transl.dump(stream ptr io:Stream) ptr err:Error
 /method
 
 
-method ctrans:Transl.includeFord(fordName ptr uint8)
-  me'includes.add("#include <ford$$")
-  me'includes.add(fordName)
-  me'includes.addLine(".h>")
+# Include a ford.
+method ctrans:Transl.includeFord(fordName ptr uint8, done ptr set:Set)
+  if done.contains(fordName)
+    return
+  /if
+
+  # Find ford for this include in parser.
+
+  mut ford = me'parser.getImport(fordName)
+
+  if ford'extra?
+    mut impLen = ford'imports.len()
+    mut i uintptr = 0
+
+    while i < impLen
+      mut upImp = cast<ptr uint8>(val ford'imports.get(i))
+
+      me.includeFord(upImp, done)
+
+      i++
+    /while
+
+    me'includes.add("\n// module ")
+    me'includes.add(fordName)
+    me'includes.add("\n\n\n")
+    me'includes.addLine(ford'extra)
+  /if
 /method
 
 
@@ -235,10 +265,29 @@ method ctrans:Transl.genImports(root ptr ast:PRoot)
   mut i uintptr = 0
   mut len = root'imports.len()
 
+  mut done set:Set
+
+  set:strinit(ptr done, 10)
+
   while i < len
     mut impdef = <ptr ast:StringDef>(val root'imports.get(i))
 
-    me.includeFord(impdef'name)
+    me.includeFord(impdef'name, ptr done)
+
+    i++
+  /while
+
+  set:deinit(ptr done)
+/method
+
+
+method set:Set.gatherImports(root ptr ast:PRoot)
+  mut impLen = root'imports.len()
+
+  mut i uintptr = 0
+  while i < impLen
+    mut impdef = <ptr ast:StringDef>(val root'imports.get(i))
+    me.put(impdef'name)
 
     i++
   /while
@@ -264,7 +313,6 @@ method ctrans:Transl.genTypedefs(root ptr ast:PRoot)
 /method
 
 
-# if ford is true, than emit include guards.
 method ctrans:Transl.translate(root ptr ast:PRoot)
 
   me.genImports(root)
@@ -273,5 +321,44 @@ method ctrans:Transl.translate(root ptr ast:PRoot)
 
   if root'entryNode?
     me.forkmain(root)
+  /if
+/method
+
+
+method ctrans:Transl.translateModule(pmod ptr ast:PModule)
+  mut set set:Set
+  set:strinit(ptr set, 10)
+
+  mut len = pmod'roots.len()
+
+  mut i uintptr = 0
+  while i < len
+    mut root = <ptr ast:PRoot>(val pmod'roots.get(i))
+
+    set.gatherImports(root)
+
+    me.genTypedefs(root)
+    me.genDecls(root)
+
+    i++
+  /while
+
+  mut done set:Set
+  set:strinit(ptr done, set.len())
+
+  mut iter = set.iter()
+
+  mut imp ptr uint8
+
+  while (imp = <ptr uint8>(iter.next()))?
+    me.includeFord(imp, ptr done)
+  /while
+
+  set:iterFree(iter)
+
+  set:deinit(ptr set)
+
+  if pmod'entryNode?
+    me.forkmain(pmod'entryNode.findPRoot())
   /if
 /method
