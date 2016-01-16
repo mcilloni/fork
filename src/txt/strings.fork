@@ -162,6 +162,13 @@ func strcompare(s1 data, s2 data) int8
 /func
 
 
+func strBeginsWith(str, begin ptr uint8) bool
+  decl func strncmp(s1,s2 ptr uint8, n uintptr) uint32
+
+  return strncmp(str, begin, txt:strlen(begin))
+/func
+
+
 func strEndsWith(str, end ptr uint8) bool
   mut strLen = txt:strlen(str)
   mut endLen = txt:strlen(end)
