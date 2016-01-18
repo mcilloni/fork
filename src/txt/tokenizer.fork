@@ -33,25 +33,25 @@ func tokenizerNew(str ptr uint8, ch uint8) ptr txt:Tokenizer
 /func
 
 
-func tokenizerNext(tkz ptr txt:Tokenizer) ptr uint8
-  if tkz'begin == tkz'strlen
+method txt:Tokenizer.next() ptr uint8
+  if me'begin == me'strlen
     return null
   /if
 
-  mut initialBegin = tkz'begin
+  mut initialBegin = me'begin
 
-  while tkz'str[tkz'begin] != tkz'splitChar and tkz'begin < tkz'strlen
-    tkz'begin++
+  while me'str[tkz'begin] != mesplitChar and me'begin < me'strlen
+    me'begin++
   /while
 
-  mut nextLen = tkz'begin - initialBegin
-  mut ret = <ptr uint8>(mem:zalloc(nextLen + 1)) # + 1 is for the null end. God I hate C
+  mut nextLen = me'begin - initialBegin
+  mut ret = <ptr uint8>(mem:zalloc(nextLen + 1)) # + 1 is for the null end.
 
-  txt:strncpy(ret, tkz'str + initialBegin, nextLen)
+  txt:strncpy(ret, me'str + initialBegin, nextLen)
 
-  if tkz'str[tkz'begin] == tkz'splitChar
-    tkz'begin++
+  if me'str[me'begin] == me'splitChar
+    me'begin++
   /if
 
   return ret
-/func
+/method

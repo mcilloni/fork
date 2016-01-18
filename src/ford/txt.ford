@@ -47,4 +47,5 @@ decl func strtonum(str ptr uint8) intptr
 #tokenizer functions
 decl func tokenizerFree(tkz ptr Tokenizer)
 decl func tokenizerNew(str ptr uint8, ch uint8) ptr Tokenizer
-decl func tokenizerNext(tkz ptr Tokenizer) ptr uint8
+
+decl method Tokenizer.next() ptr uint8

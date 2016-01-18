@@ -220,7 +220,7 @@ func envExtractFordPaths() ptr list:List
     mut tkz = txt:tokenizerNew(paths, 58) #`:`
     mut path ptr uint8
 
-    while (path = txt:tokenizerNext(tkz))?
+    while (path = tkz.next())?
       list.append(path)
     /while
 
