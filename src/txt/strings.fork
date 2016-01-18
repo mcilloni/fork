@@ -165,7 +165,7 @@ func strcompare(s1 data, s2 data) int8
 func strBeginsWith(str, begin ptr uint8) bool
   decl func strncmp(s1,s2 ptr uint8, n uintptr) uint32
 
-  return strncmp(str, begin, txt:strlen(begin))
+  return strncmp(str, begin, txt:strlen(begin)) == 0
 /func
 
 

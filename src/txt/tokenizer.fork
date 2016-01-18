@@ -40,7 +40,7 @@ method txt:Tokenizer.next() ptr uint8
 
   mut initialBegin = me'begin
 
-  while me'str[tkz'begin] != mesplitChar and me'begin < me'strlen
+  while me'str[me'begin] != me'splitChar and me'begin < me'strlen
     me'begin++
   /while
 
