@@ -1,0 +1,304 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module args
+
+
+import args
+import cs
+import err
+import hash
+import kv
+import list
+import mem
+import proc
+import set
+import txt
+import tty
+
+
+func free(args ptr args:Args)
+  if args?
+    hash:deinit(ptr args'args)
+    hash:deinit(ptr args'lopt)
+    hash:deinit(ptr args'opts)
+    hash:deinit(ptr args'sopt)
+
+    set:deinit(ptr args'mandatory)
+
+    list:deinit(ptr args'unbounds)
+
+    mem:free(args)
+  /if
+/func
+
+
+func new(appdes ptr uint8) ptr args:Args
+  mut ret = cast<ptr args:Args>(mem:zalloc(size(args:Args)))
+
+  ret'appdes = appdes
+
+  hash:strinit(ptr ret'opts, 10)
+  hash:strinit(ptr ret'lopt, 10)
+  hash:strinit(ptr ret'sopt, 10)
+  hash:strinit(ptr ret'args, 10)
+
+  set:strinit(ptr ret'mandatory, 10)
+
+  list:init(ptr ret'unbounds)
+
+  ret'opts.setFreeFuncs(null, ptr mem:free)
+
+  return ret
+/func
+
+
+# Returns a list of strings, and only strings - that must be separated by commas
+method args:Args.getList(name ptr uint8) {ok bool, list ptr list:List}
+  mut list = cast<ptr list:List>(me'args.get(name))
+
+  return {list? , list}
+/method
+
+
+method args:Args.getStr(name ptr uint8) {ok bool, str ptr uint8}
+  mut str = cast<ptr uint8>(me'args.get(name))
+
+  return {str? , str}
+/method
+
+
+method args:Args.getUnbounds() ptr list:List
+  return ptr me'unbounds
+/method
+
+
+method args:Args.help(toStdout bool) bool
+  if not me'help or not me'parsed
+    return false
+  /if
+
+  mut p = toStdout => ptr tty:out || ptr tty:err
+  mut pln = toStdout => ptr tty:outln || ptr tty:errln
+
+  pln("Help support is not available.")
+  pln("It will be finished as soon as a printf-like function is implemented.")
+  pln("Meanwhile, look at this program's documentation to find more info.")
+
+
+  return true
+/method
+
+
+method args:Args.isSet(flag ptr uint8) bool
+  return me'args.contains(flag)
+/method
+
+
+alias Opt struct(
+  type uint8,
+  name,descr,argdes ptr uint8,
+  multiple,mandatory bool,
+  lopt,sopt ptr uint8
+)
+
+
+method args:Args.newFlag(type uint8,
+                         name,descr,argdes ptr uint8,
+                         multiple,mandatory,mandArg bool,
+                         lopt,sopt ptr uint8)
+
+  mut opt = cast<ptr Opt>(mem:alloc(size(Opt)))
+
+  val opt = {type, name, descr, argdes, multiple, mandatory, lopt, sopt}
+
+  if lopt?
+    me'lopt.put(lopt, name)
+  /if
+
+  if sopt?
+    me'sopt.put(sopt, name)
+  /if
+
+  if mandatory
+    me'mandatory.put(name)
+  /if
+
+  me'opts.put(name, opt)
+/method
+
+
+method args:Args.parseList(name,param ptr uint8)
+  mut tkz = txt:tokenizerNew(param, 44) # `,`
+  mut list = list:new()
+
+  mut nxt ptr uint8 = null
+
+  while (nxt = tkz.next())?
+    list.append(nxt)
+  /while
+
+  txt:tokenizerFree(tkz)
+
+  me'args.put(name, list)
+/method
+
+
+method args:Args.parseMultiple(name ptr uint8,
+                               opt ptr Opt,
+                               param ptr uint8)
+
+  mut list = cast<ptr list:List>(me'args.get(name))
+
+  if not list?
+    list = list:new()
+    me'args.put(name, list)
+  /if
+
+  list.append(param)
+/method
+
+
+method args:Args.parse() ptr err:Error
+  mut args = proc:args()
+  me'appname = args'progname
+
+  mut i uintptr = 0
+  while i < args'len
+    mut arg = args'args[i]
+
+    if txt:strBeginsWith(arg, "-")
+      if txt:strequals(arg, "--help") or txt:strequals(arg, "-h")
+        me'help = true
+      else
+        mut name = cast<ptr int8>((txt:strBeginsWith(arg, "--") => \
+                                    ptr me'lopt || ptr me'sopt).get(arg))
+
+        if not name?
+          mut msg = txt:strappend("unrecognized option ", arg)
+          mut ret = err:new(msg)
+          mem:free(msg)
+
+          return ret
+        /if
+
+        mut opt = cast<ptr Opt>(me'opts.get(name))
+
+        if me'args.contains(name) and not opt'multiple
+          mut msg = txt:strappend(arg, " set multiple times")
+          mut ret = err:new(msg)
+          mem:free(msg)
+
+          return ret
+        /if
+
+        me'mandatory.remove(name)
+
+        if opt'type == BOOL
+          me'args.put(name, null)
+        else
+          # There must be another item after this. Only BOOL has no argument
+          if i >= args'len - 1
+            mut msg = txt:strappend("no parameter for argument ", arg)
+            mut ret = err:new(msg)
+            mem:free(msg)
+
+            return ret
+          /if
+
+          i++
+
+          mut param = args'args[i]
+
+          if opt'multiple
+            me.parseMultiple(name, opt, param)
+          else
+            if opt'type == LIST
+              me.parseList(name, param)
+            else
+              if opt'type == STRING
+                me'args.put(name, param)
+              else
+                proc:panic("unknow argument type")
+              /if
+            /if
+          /if
+        /if
+      /if
+
+    else
+      if me'unboundsOpts'single and me'unbounds.len() > 0
+        mut msg = txt:strappend("too many parameters - only one allowed for ", \
+                                 me'unboundsOpts'name)
+
+        mut ret = err:new(msg)
+        mem:free(msg)
+
+        return ret
+      /if
+
+      me'unbounds.append(arg)
+    /if
+
+    i++
+  /while
+
+  if me'unboundsOpts'mandatory and me'unbounds.len() == 0
+    mut msg = txt:strappend(me'unboundsOpts'name, " is required")
+    mut ret = err:new(msg)
+    mem:free(msg)
+
+    return ret
+  /if
+
+  if me'mandatory.len() != 0
+    mut iter = me'mandatory.iter()
+
+    mut next ptr uint8 = null
+    mut first = true
+    mut cs = cs:new(30)
+
+    while (next = cast<ptr uint8>(iter.next()))?
+      if not first
+        cs.add(", ")
+      /if
+
+      cs.add(next)
+    /while
+
+    set:iterFree(iter)
+
+    cs.add(" are mandatory and should be set")
+
+    mut msg = cs:unwrap(cs)
+
+    mut ret = err:new(msg)
+    mem:free(msg)
+
+    return ret
+  /if
+
+  return null
+/method
+
+
+method args:Args.ready() bool
+  return me'parsed
+/method
+
+
+method args:Args.unboundsOpts(name ptr uint8, single,mandatory bool)
+  me'unboundsOpts = {name, single, mandatory}
+/method
+
+
+mut BOOL uint8 = 0
+mut LIST uint8 = 20
+mut STRING uint8 = 30

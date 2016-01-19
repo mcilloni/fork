@@ -54,6 +54,7 @@ all:
 	$(MAKE) -C dyn
 	$(MAKE) -C utils
 	$(MAKE) -C memutils
+	$(MAKE) -C args
 	$(MAKE) -C ast
 	$(MAKE) -C parser
 	$(MAKE) -C libfork
