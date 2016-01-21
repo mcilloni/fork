@@ -56,6 +56,9 @@ func new(appdes ptr uint8) ptr args:Args
 
   ret'opts.setFreeFuncs(null, ptr mem:free)
 
+  ret.newFlag(BOOL, "help", "prints this help", \
+                null, false, false, "--help", "-h")
+
   return ret
 /func
 
@@ -112,7 +115,7 @@ alias Opt struct(
 
 method args:Args.newFlag(type uint8,
                          name,descr,argdes ptr uint8,
-                         multiple,mandatory,mandArg bool,
+                         multiple,mandatory bool,
                          lopt,sopt ptr uint8)
 
   mut opt = cast<ptr Opt>(mem:alloc(size(Opt)))
@@ -166,6 +169,77 @@ method args:Args.parseMultiple(name ptr uint8,
 /method
 
 
+method args:Args.parseLong(arg ptr uint8) {name,param ptr uint8, opt ptr Opt,
+                                            err ptr err:Error}
+
+  # Find the '=' (if there is one).
+
+  mut len = txt:strlen(arg)
+  mut eqPos uintptr = 0
+
+  while eqPos < len and arg[eqPos] != 61 # `=`
+    eqPos++
+  /while
+
+  # Copy the base arg into a new string to make a lookup into long opts hash.
+
+  mut barg = mem:zalloc(eqPos + 1)
+  mem:copy(barg, arg, eqPos)
+
+  mut name = cast<ptr uint8>(me'lopt.get(barg))
+
+  mem:free(barg)
+
+  if not name?
+    mut msg = txt:strappend("unrecognized option ", arg)
+    mut ret = err:new(msg)
+    mem:free(msg)
+
+    return {null,null,null,ret}
+  /if
+
+  mut opt = cast<ptr Opt>(me'opts.get(name))
+  mut hasParam = (eqPos < len - 1) # "'--hello=' without anything is empty"
+
+  if hasParam and opt'type == BOOL
+    mut msg = txt:strappend(arg, " is invalid, option has no parameter")
+    mut ret = err:new(msg)
+    mem:free(msg)
+
+    return {null,null,null,ret}
+  /if
+
+  if not hasParam and opt'type != BOOL
+    mut msg = txt:strappend(arg, " is invalid, option needs a parameter")
+    mut ret = err:new(msg)
+    mem:free(msg)
+
+    return {null,null,null,ret}
+  /if
+
+  mut param = hasParam => ptr arg[eqPos] || null
+
+  return {name, param, opt, null}
+/method
+
+
+method args:Args.parseShort(arg ptr uint8) {name ptr uint8, opt ptr Opt, err ptr err:Error}
+  mut name = cast<ptr uint8>(me'sopt.get(arg))
+
+  if not name?
+    mut msg = txt:strappend("unrecognized option ", arg)
+    mut ret = err:new(msg)
+    mem:free(msg)
+
+    return {null,null,ret}
+  /if
+
+  mut opt = cast<ptr Opt>(me'opts.get(name))
+
+  return {name, opt, null}
+/method
+
+
 method args:Args.parse() ptr err:Error
   mut args = proc:args()
   me'appname = args'progname
@@ -175,35 +249,24 @@ method args:Args.parse() ptr err:Error
     mut arg = args'args[i]
 
     if txt:strBeginsWith(arg, "-")
-      if txt:strequals(arg, "--help") or txt:strequals(arg, "-h")
-        me'help = true
+      mut name ptr uint8 = null
+      mut param ptr uint8 = null
+      mut opt ptr Opt = null
+
+      if txt:strBeginsWith(arg, "--")
+        mut {name,param,opt,err} = me.parseLong(arg)
+
+        if err?
+          return err
+        /if
       else
-        mut name = cast<ptr int8>((txt:strBeginsWith(arg, "--") => \
-                                    ptr me'lopt || ptr me'sopt).get(arg))
+        mut {name,opt,err} = me.parseShort(arg)
 
-        if not name?
-          mut msg = txt:strappend("unrecognized option ", arg)
-          mut ret = err:new(msg)
-          mem:free(msg)
-
-          return ret
+        if err?
+          return err
         /if
 
-        mut opt = cast<ptr Opt>(me'opts.get(name))
-
-        if me'args.contains(name) and not opt'multiple
-          mut msg = txt:strappend(arg, " set multiple times")
-          mut ret = err:new(msg)
-          mem:free(msg)
-
-          return ret
-        /if
-
-        me'mandatory.remove(name)
-
-        if opt'type == BOOL
-          me'args.put(name, null)
-        else
+        if opt'type != BOOL
           # There must be another item after this. Only BOOL has no argument
           if i >= args'len - 1
             mut msg = txt:strappend("no parameter for argument ", arg)
@@ -215,24 +278,38 @@ method args:Args.parse() ptr err:Error
 
           i++
 
-          mut param = args'args[i]
+          param = args'args[i]
+        /if
+      /if
 
-          if opt'multiple
-            me.parseMultiple(name, opt, param)
+      if me'args.contains(name) and not opt'multiple
+        mut msg = txt:strappend(arg, " set multiple times")
+        mut ret = err:new(msg)
+        mem:free(msg)
+
+        return ret
+      /if
+
+      me'mandatory.remove(name)
+
+      if opt'type == BOOL
+        me'args.put(name, null)
+      else
+
+        if opt'multiple
+          me.parseMultiple(name, opt, param)
+        else
+          if opt'type == LIST
+            me.parseList(name, param)
           else
-            if opt'type == LIST
-              me.parseList(name, param)
+            if opt'type == STRING
+              me'args.put(name, param)
             else
-              if opt'type == STRING
-                me'args.put(name, param)
-              else
-                proc:panic("unknow argument type")
-              /if
+              proc:panic("unknow argument type")
             /if
           /if
         /if
       /if
-
     else
       if me'unboundsOpts'single and me'unbounds.len() > 0
         mut msg = txt:strappend("too many parameters - only one allowed for ", \
@@ -284,6 +361,8 @@ method args:Args.parse() ptr err:Error
 
     return ret
   /if
+
+  me'help = me.isSet("help")
 
   return null
 /method

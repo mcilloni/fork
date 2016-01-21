@@ -44,7 +44,12 @@ decl method Args.help(toStdout bool) bool
 
 decl method Args.newFlag(type uint8,
                          name,descr,argdes ptr uint8,
-                         multiple,mandatory,mandArg bool,
+                         multiple,mandatory bool,
                          lopt,sopt ptr uint8)
 
 decl method Args.parse() ptr err:Error
+
+
+decl mut BOOL uint8
+decl mut LIST uint8
+decl mut STRING uint8
