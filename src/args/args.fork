@@ -217,7 +217,7 @@ method args:Args.parseLong(arg ptr uint8) {name,param ptr uint8, opt ptr Opt,
     return {null,null,null,ret}
   /if
 
-  mut param = hasParam => ptr arg[eqPos] || null
+  mut param = hasParam => ptr arg[eqPos + 1] || null
 
   return {name, param, opt, null}
 /method
@@ -342,17 +342,32 @@ method args:Args.parse() ptr err:Error
     mut first = true
     mut cs = cs:new(30)
 
+    cs.add("argument not set: ")
+
     while (next = cast<ptr uint8>(iter.next()))?
       if not first
         cs.add(", ")
       /if
 
+      mut opt = cast<ptr Opt>(me'opts.get(next))
       cs.add(next)
+      cs.add(" (")
+
+      if opt'lopt?
+        cs.add(opt'lopt)
+      /if
+
+      if opt'lopt? and opt'sopt?
+        cs.add(", ")
+      /if
+
+      if opt'sopt?
+        cs.add(opt'sopt)
+      /if
+      cs.add(")")
     /while
 
     set:iterFree(iter)
-
-    cs.add(" are mandatory and should be set")
 
     mut msg = cs:unwrap(cs)
 

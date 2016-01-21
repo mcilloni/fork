@@ -41,6 +41,7 @@ decl method Args.getList(name ptr uint8) {ok bool, list ptr list:List}
 decl method Args.getStr(name ptr uint8) {ok bool, str ptr uint8}
 decl method Args.getUnbounds() ptr list:List
 decl method Args.help(toStdout bool) bool
+decl method Args.isSet(flag ptr uint8) bool
 
 decl method Args.newFlag(type uint8,
                          name,descr,argdes ptr uint8,
@@ -48,6 +49,7 @@ decl method Args.newFlag(type uint8,
                          lopt,sopt ptr uint8)
 
 decl method Args.parse() ptr err:Error
+decl method Args.unboundsOpts(name ptr uint8, single,mandatory bool)
 
 
 decl mut BOOL uint8
