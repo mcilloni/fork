@@ -90,7 +90,7 @@ entry
     mut len = aliases.len()
 
     while j < len
-      pair = aliases.getAt(i)
+      pair = aliases.getAt(j)
       tty:out("alias ")
       tty:outln(<ptr uint8>(pair'key))
 
