@@ -88,7 +88,8 @@ method parser:Resolver.convertRetType(retPType ptr ast:PType,
 
   # if this condition evaluates to true, than we're in the case of a recursive alias.
   if not isLoc and not retPType'moduleName? and retPType'name? and recList? and utils:listContains(recList, retPType'name)
-    res = ast:typeNewRecursiveAlias(me'curRoot'typePool, me'curRoot'moduleName'name, retPType'name)
+    mut modName = me'curRoot'moduleName? => me'curRoot'moduleName'name || null
+    res = ast:typeNewRecursiveAlias(me'curRoot'typePool, modName, retPType'name)
   else
     # otherwise, this is a normal type. Validate it with validateAlias.
     res = me.resolveTypeReal(retPType, recList, isPtr)
