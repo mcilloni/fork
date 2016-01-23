@@ -347,6 +347,35 @@ func makeFord(pmod ptr ast:PModule) ptr buffer:Buffer
 /func
 
 
+func writeFordStream(stream ptr io:Stream,
+                     genData ptr buffer:Buffer,
+                     extra ptr uint8,
+                     extraLen uintptr) ptr err:Error
+
+  mut {fordData,dataLen} = buffer:unwrap(genData)
+  stream.write(fordData, dataLen)
+
+  mem:free(fordData)
+
+  if (err = outstr.error())?
+    io:streamClose(stream)
+    return err
+  /if
+
+  mut writeLen = <uint32>(extra? => extraLen || 0)
+  stream.write(ptr writeLen, size(uint32))
+
+  if extra?
+    stream.write(extra, extraLen)
+    if (err = stream.error())?
+      return err
+    /if
+  /if
+
+  return null
+/func
+
+
 func writeFord(name,path ptr uint8,
                genData ptr buffer:Buffer,
                extra ptr uint8,
@@ -367,28 +396,9 @@ func writeFord(name,path ptr uint8,
     return err
   /if
 
-  mut {fordData,dataLen} = buffer:unwrap(genData)
-  outstr.write(fordData, dataLen)
-
-  mem:free(fordData)
-
-  if (err = outstr.error())?
-    io:streamClose(outstr)
-    return err
-  /if
-
-  mut writeLen = <uint32>(extra? => extraLen || 0)
-  outstr.write(ptr writeLen, size(uint32))
-
-  if extra?
-    outstr.write(extra, extraLen)
-    if (err = outstr.error())?
-      io:streamClose(outstr)
-      return err
-    /if
-  /if
+  err = writeFordStream(outstr, genData, extra, extraLen)
 
   io:streamClose(outstr)
 
-  return null
+  return err
 /func

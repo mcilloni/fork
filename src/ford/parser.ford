@@ -15,6 +15,7 @@ import ast
 import buffer
 import err
 import fs
+import io
 import kv
 import list
 import map
@@ -57,10 +58,16 @@ decl method Parser.setCurrentFile(filename ptr uint8)
 # .ford generation
 
 decl func makeFord(pmod ptr ast:PModule) ptr buffer:Buffer
+
 decl func writeFord(name,path ptr uint8,
                     genData ptr buffer:Buffer,
                     extra ptr uint8,
                     extraLen uintptr) ptr err:Error
+
+decl func writeFordStream(stream ptr io:Stream,
+                          genData ptr buffer:Buffer,
+                          extra ptr uint8,
+                          extraLen uintptr) ptr err:Error
 
 
 # Ford methods (creation and member)
