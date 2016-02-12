@@ -24,19 +24,18 @@ import txt
 alias Transl struct(
   includes,typedefs,externs,vars,funcs ptr cs:Charstash,
   modName ptr uint8,
-  header,debug bool,
+  debug bool,
   parser ptr parser:Parser,
   cnt uintptr
 )
 
 
 decl func init(tr ptr Transl,
-               header bool,
                name ptr uint8,
                parser ptr parser:Parser)
 
 
-decl method Transl.dump(stream ptr io:Stream) ptr err:Error
+decl method Transl.dump() {headers,cfile ptr uint8}
 decl method Transl.extern(sym ptr uint8)
 decl method Transl.forkmain(root ptr ast:PRoot)
 
@@ -55,6 +54,7 @@ decl method Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
 decl method Transl.globVar(sym ptr uint8, root ptr ast:PRoot, expr ptr ast:PExpr)
 decl method Transl.includeFord(fordName ptr uint8, done ptr set:Set)
 decl method Transl.translate(root ptr ast:PRoot)
+decl method Transl.translateModule(pmod ptr ast:PModule)
 
 decl method Transl.translSym(moduleName ptr uint8,
                              pdecl ptr ast:PDecl,

@@ -21,20 +21,12 @@ endif
 .PHONY: all clean
 
 all:
-	@printf "FORKC\t\tforkc1.fork\n"
-	@ FORDPATHS="$(LIBFORK)/build/ford/:$(shell pwd)/../../build/ford/" $(FORKC) -I $(INCLUDES) -I $(LFINCL) -o $(BUILDPATH)/forkc1.o forkc1.fork
+	mkdir -p $(BUILDPATH)/tools/
 
-	@printf "FORKL\t\tforkc1.o\n"
-
-	@ $(CC) -o $(BUILDPATH)/forkc1 $(BUILDPATH)/*.o $(LIBFORK)/build/rt.o $(LIBFORK)/build/libfork.a
-
-	cp -f header.txt "$(BUILDPATH)/forkc"
-	cat forkc.py >> "$(BUILDPATH)/forkc"
-	chmod +x "$(BUILDPATH)/forkc"
-	cp -f header.txt "$(BUILDPATH)/forkl"
-	cat forkl.py >> "$(BUILDPATH)/forkl"
-	chmod +x "$(BUILDPATH)/forkl"
-
+	@printf "FORKC\t\ttransmod.fork\n"
+	@ FORDPATHS="$(LIBFORK)/build/ford/:$(shell pwd)/../../build/ford/" $(FORKC) -I $(INCLUDES) -I $(LFINCL) -o $(BUILDPATH)/tools/transmod.o transmod.fork
+	@printf "FORKL\t\ttransmod.o\n"
+	@ $(CC) -o $(BUILDPATH)/transmod $(BUILDPATH)/tools/transmod.o $(BUILDPATH)/*.o $(LIBFORK)/build/rt.o $(LIBFORK)/build/libfork.a
 
 clean:
 	rm -rf $(BUILDPATH)

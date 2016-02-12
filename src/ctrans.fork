@@ -29,7 +29,6 @@ import tty
 
 
 func init(tr ptr ctrans:Transl,
-          header bool,
           name ptr uint8,
           parser ptr parser:Parser)
 
@@ -41,7 +40,6 @@ func init(tr ptr ctrans:Transl,
   tr'parser = parser
   tr'cnt = 0
 
-  tr'header = header
   tr'modName = name
 /func
 
@@ -122,67 +120,58 @@ method ctrans:Transl.typedef(name ptr uint8, type ptr ast:Type, ssa bool)
 /method
 
 
-method ctrans:Transl.dump(stream ptr io:Stream) ptr err:Error
-  stream.writeStr("// generated with ctrans v")
-  stream.writeStr(ctrans:VERSION)
-  stream.writeStr(" (")
+method ctrans:Transl.dump() {headers,cfile ptr uint8}
+  mut cs = cs:new(200)
 
-  stream.writeStr("libfork v")
-  stream.writeStr(libfork:VERSION)
-  stream.writeStr(")\n\n\n")
+  cs.add("// generated with ctrans v")
+  cs.add(ctrans:VERSION)
+  cs.add(" (")
 
-  if me'header
-    stream.writeStr("#ifndef ford$$")
-    stream.writeStr(me'modName )
-    stream.writeStr("_h\n")
+  cs.add("libfork v")
+  cs.add(libfork:VERSION)
+  cs.add(")\n\n\n")
 
-    stream.writeStr("#define ford$$")
-    stream.writeStr(me'modName)
-    stream.writeStr("_h\n\n\n")
-  /if
-
-  stream.writeStr("#include <stdint.h>\n\n")
+  cs.add("#include <stdint.h>\n\n")
 
   #just in case, you know.
-  stream.writeStr("#undef NULL\n\n")
+  cs.add("#undef NULL\n\n")
 
   mut includes = cs:unwrap(me'includes)
-  stream.writeStr(includes)
+  cs.add(includes)
   mem:free(includes)
 
-  stream.writeStr("\n\n")
+  cs.add("\n\n")
 
   mut typedefs = cs:unwrap(me'typedefs)
-  stream.writeStr(typedefs)
+  cs.add(typedefs)
   mem:free(typedefs)
 
-  stream.writeStr("\n\n")
+  cs.add("\n\n")
+
+  mut headers = cs:new(200)
 
   mut externs = cs:unwrap(me'externs)
-  stream.writeStr(externs)
+  headers.add(externs)
   mem:free(externs)
 
-  stream.writeStr("\n\n")
+  headers.add("\n\n")
 
   mut vars = cs:unwrap(me'vars)
-  stream.writeStr(vars)
+  headers.add(vars)
   mem:free(vars)
 
-  stream.writeStr("\n\n")
+  mut headRet = cs:unwrap(headers)
+
+  cs.add(headRet)
+  cs.add("\n\n")
 
   mut funcs = cs:unwrap(me'funcs)
-  stream.writeStr(funcs)
+  cs.add(funcs)
   mem:free(funcs)
 
-  stream.writeStr("\n\n")
+  cs.add("\n\n")
 
-  if me'header
-    stream.writeStr("\n\n#endif //ford$$")
-    stream.writeStr(me'modName)
-    stream.writeStr("_h\n\n")
-  /if
-
-  return stream.error()
+  return {headRet,cs:unwrap(cs)}
 /method
 
 
@@ -233,7 +222,7 @@ method ctrans:Transl.genDecls(root ptr ast:PRoot)
 
       mem:free(key)
 
-      mut wantsModName = me'header or not child'isDecl
+      mut wantsModName = me'modName? or not child'isDecl
 
       mut sym = me.translSym(wantsModName => moduleName || null, child, dinfo)
 
