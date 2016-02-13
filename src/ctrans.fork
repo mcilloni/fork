@@ -142,13 +142,13 @@ method ctrans:Transl.dump() {headers,cfile ptr uint8}
 
   cs.add("\n\n")
 
+  mut headers = cs:new(200)
+
   mut typedefs = cs:unwrap(me'typedefs)
-  cs.add(typedefs)
+  headers.add(typedefs)
   mem:free(typedefs)
 
   cs.add("\n\n")
-
-  mut headers = cs:new(200)
 
   mut externs = cs:unwrap(me'externs)
   headers.add(externs)
@@ -201,6 +201,8 @@ method ctrans:Transl.includeFord(fordName ptr uint8, done ptr set:Set)
     me'includes.add(fordName)
     me'includes.add("\n\n\n")
     me'includes.addLine(ford'extra)
+
+    done.put(fordName)
   /if
 /method
 

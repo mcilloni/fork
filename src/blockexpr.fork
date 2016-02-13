@@ -1095,7 +1095,8 @@ method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
 
     mut name = <ptr uint8>(value)
     mut modName ptr uint8 = root'moduleName? => root'moduleName'name || null
-    mut fDecl = root'node'syms.get(name)
+    mut fDecl = root'node'syms.get(name) \
+                ?? (root'pmodule? => root'pmodule.findDecl(name) || null)
 
     if     fDecl? \
        and modName? \
