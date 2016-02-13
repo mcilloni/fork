@@ -122,26 +122,7 @@ method ast:PNode.findSym(name ptr uint8) ptr ast:Type
   # try to search into the rest of the module for a global declaration.
   if curRoot? and curRoot'node'node.isRoot()
     if curRoot'pmodule?
-      mut roots = curRoot'pmodule'roots
-      mut i uintptr = 0
-      mut len = roots.len()
-
-      # If len = 1, then the module is made by just one element - this root.
-      # Skip the check.
-      if len > 1
-        while i < len
-          mut root = <ptr ast:PRoot>(val roots.get(i))
-
-          if root'node'syms?
-            mut modSym = root'node'syms.typeof(name)
-            if modSym?
-              return modSym
-            /if
-          /if
-
-          i++
-        /while
-      /if
+      return curRoot'pmodule.findSym(name)
     /if
   /if
 
@@ -221,6 +202,27 @@ method ast:PRoot.hasImported(name ptr uint8) bool
   /while
 
   return false
+/method
+
+
+method ast:PModule.findSym(name ptr uint8) ptr ast:Type
+  mut i uintptr = 0
+  mut len = me'roots.len()
+
+  while i < len
+    mut root = <ptr ast:PRoot>(val me'roots.get(i))
+
+    if root'node'syms?
+      mut modSym = root'node'syms.typeof(name)
+      if modSym?
+        return modSym
+      /if
+    /if
+
+    i++
+  /while
+
+  return null
 /method
 
 
