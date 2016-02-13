@@ -251,6 +251,7 @@ alias PModule struct(
   entryNode ptr PNode
 )
 
+decl method PModule.findDecl(name ptr uint8) ptr DeclInfo
 decl method PModule.findSym(name ptr uint8) ptr Type
 decl method PModule.dump()
 

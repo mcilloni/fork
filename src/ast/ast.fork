@@ -205,6 +205,27 @@ method ast:PRoot.hasImported(name ptr uint8) bool
 /method
 
 
+method ast:PModule.findDecl(name ptr uint8) ptr ast:DeclInfo
+  mut i uintptr = 0
+  mut len = me'roots.len()
+
+  while i < len
+    mut root = <ptr ast:PRoot>(val me'roots.get(i))
+
+    if root'node'syms?
+      mut declInfo = root'node'syms.get(name)
+      if declInfo?
+        return declInfo
+      /if
+    /if
+
+    i++
+  /while
+
+  return null
+/method
+
+
 method ast:PModule.findSym(name ptr uint8) ptr ast:Type
   mut i uintptr = 0
   mut len = me'roots.len()
