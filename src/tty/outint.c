@@ -14,6 +14,6 @@
 #include <stdio.h>
 
 
-void tty$outint(uint64_t n) {
+void outint(uint64_t n) {
   printf("%" PRIu64, n);
 }

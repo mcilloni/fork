@@ -8,11 +8,17 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-module libfork
+module about
 
-decl mut RELEASE uint16
 
-decl mut VER_MAJ uint8
-decl mut VER_MIN uint8
-decl mut VER_PATCH uint8
-decl mut VERSION ptr uint8
+mut RELEASE uint16 = 12
+
+mut VER_MAJ uint8 = 0
+mut VER_MIN uint8 = 7
+mut VER_PATCH uint8 = 0
+
+mut VERSION = "0.7.0"
+
+
+#mut ptrSize uint8 = 4
+mut ptrSize uint8 = 8

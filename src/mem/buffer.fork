@@ -8,48 +8,51 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-module buffer
+module mem
 
 
-import buffer
-import mem
+# buffer structure
+alias Buffer struct (
+  base, work ptr uint8,
+  len, cap uintptr
+)
 
 
 # buffer init/deinit functions
 
 
-func deinit(buf ptr buffer:Buffer)
-  mem:free(buf'base)
+func deinitBuffer(buf ptr Buffer)
+  free(buf'base)
 /func
 
 
-func free(buf ptr buffer:Buffer)
+func freeBuffer(buf ptr Buffer)
   if buf?
-    deinit(buf)
-    mem:free(buf)
+    deinitBuffer(buf)
+    free(buf)
   /if
 /func
 
 
-func init(buf ptr buffer:Buffer, cap uintptr) ptr buffer:Buffer
-  buf'work = buf'base = <ptr uint8>(mem:alloc(cap))
+func initBuffer(buf ptr Buffer, cap uintptr) ptr Buffer
+  buf'work = buf'base = <ptr uint8>(alloc(cap))
   buf'cap = cap
 
   return buf
 /func
 
 
-func new(cap uintptr) ptr buffer:Buffer
-  mut buf = <ptr buffer:Buffer>(mem:zalloc(size(buffer:Buffer)))
+func newBuffer(cap uintptr) ptr Buffer
+  mut buf = <ptr Buffer>(zalloc(size(Buffer)))
 
-  return init(buf, cap)
+  return initBuffer(buf, cap)
 /func
 
 
-func unwrap(buf ptr buffer:Buffer) {bytes ptr uint8, len uintptr}
+func unwrapBuffer(buf ptr Buffer) {bytes ptr uint8, len uintptr}
   mut ret = buf'base
   mut len = buf.len()
-  mem:free(buf)
+  free(buf)
 
   return {ret,len}
 /func
@@ -57,12 +60,12 @@ func unwrap(buf ptr buffer:Buffer) {bytes ptr uint8, len uintptr}
 
 # buffer methods
 
-method buffer:Buffer.add(bytes data, len uintptr) ptr buffer:Buffer
+method Buffer.add(bytes data, len uintptr) ptr Buffer
   mut req = me.len() + len
 
   me.ensure(req, 0)
 
-  mem:copy(me'work, bytes, len)
+  copy(me'work, bytes, len)
 
   me'len = req
   me'work = me'base + req
@@ -71,7 +74,7 @@ method buffer:Buffer.add(bytes data, len uintptr) ptr buffer:Buffer
 /method
 
 
-method buffer:Buffer.addByte(b uint8) ptr buffer:Buffer
+method Buffer.addByte(b uint8) ptr Buffer
   me.ensure(me.len() + 1, 0)
 
   val me'work = b
@@ -82,7 +85,7 @@ method buffer:Buffer.addByte(b uint8) ptr buffer:Buffer
 /method
 
 
-method buffer:Buffer.prepend(bytes data, len uintptr) ptr buffer:Buffer
+method Buffer.prepend(bytes data, len uintptr) ptr Buffer
   mut req = me.len() + len
 
   me.ensure(req, len)
@@ -90,25 +93,25 @@ method buffer:Buffer.prepend(bytes data, len uintptr) ptr buffer:Buffer
   me'len = me'len + len
   me'work = me'base + me'len
 
-  mem:copy(me'base, bytes, len)
+  copy(me'base, bytes, len)
 
   return me
 /method
 
 
-method buffer:Buffer.prependByte(b uint8) ptr buffer:Buffer
+method Buffer.prependByte(b uint8) ptr Buffer
   me.prepend(ptr b, 1)
 
   return me
 /method
 
 
-method buffer:Buffer.ensure(newcap,offset uintptr)
+method Buffer.ensure(newcap,offset uintptr)
   # If we already have the needed capacity, just shift stuff of the required
   # offset
   if me'cap >= newcap
     if offset > 0
-      mem:move(me'base + offset, me'base, me.len())
+      move(me'base + offset, me'base, me.len())
     /if
 
     return
@@ -118,14 +121,14 @@ method buffer:Buffer.ensure(newcap,offset uintptr)
     me'cap = (3 * me'cap) / 2 # 1.5x increase steps
   /while
 
-  mut new = <ptr uint8>(mem:alloc(me'cap))
-  mem:copy(new + offset, me'base, me'len)
-  mem:free(me'base)
+  mut new = <ptr uint8>(alloc(me'cap))
+  copy(new + offset, me'base, me'len)
+  free(me'base)
   me'base = new
   me'work = me'base + me'len
 /method
 
 
-method buffer:Buffer.len() uintptr
+method Buffer.len() uintptr
   return me'len
 /method

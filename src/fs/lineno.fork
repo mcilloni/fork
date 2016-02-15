@@ -11,17 +11,22 @@
 module fs
 
 
-import fs
 import mem
 import txt
 
 
-func linenoClone(lineno ptr fs:Lineno) ptr fs:Lineno
+alias Lineno struct(
+  filename ptr uint8,
+  lineno,pos uintptr
+)
+
+
+func linenoClone(lineno ptr Lineno) ptr Lineno
   return linenoNew(txt:strclone(lineno'filename), lineno'lineno, lineno'pos)
 /func
 
 
-func linenoFree(lineno ptr fs:Lineno)
+func linenoFree(lineno ptr Lineno)
   if lineno?
     mem:free(lineno'filename)
     mem:free(lineno)
@@ -29,8 +34,8 @@ func linenoFree(lineno ptr fs:Lineno)
 /func
 
 
-func linenoNew(filename ptr uint8, lineno, pos uintptr) ptr fs:Lineno
-  mut ret = <ptr fs:Lineno>(mem:alloc(size(fs:Lineno)))
+func linenoNew(filename ptr uint8, lineno, pos uintptr) ptr Lineno
+  mut ret = <ptr Lineno>(mem:alloc(size(Lineno)))
 
   ret'filename = filename
   ret'lineno = lineno

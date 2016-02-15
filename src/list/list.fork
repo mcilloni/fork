@@ -11,15 +11,31 @@
 module list
 
 
-import list
 import mem
 import tty
+
+
+# list structures
+alias Lnode struct(
+  prec, next ptr Lnode,
+  value uintptr
+)
+
+
+alias List struct(
+  start, end ptr Lnode,
+  len uintptr,
+
+  current ptr Lnode,
+  pos uintptr
+)
+
 
 
 # lnode init/deinit functions
 
 
-func lnodeFree(lnode ptr list:Lnode)
+func lnodeFree(lnode ptr Lnode)
   while lnode?
     mut next = lnode'next
     mem:free(lnode)
@@ -28,7 +44,7 @@ func lnodeFree(lnode ptr list:Lnode)
 /func
 
 
-func lnodeFreeAll(lnode ptr list:Lnode, freefunc ptr func(item data))
+func lnodeFreeAll(lnode ptr Lnode, freefunc ptr func(item data))
   while lnode?
     mut next = lnode'next
     freefunc(<data>(lnode'value))
@@ -38,7 +54,7 @@ func lnodeFreeAll(lnode ptr list:Lnode, freefunc ptr func(item data))
 /func
 
 
-func lnodeFreeContents(lnode ptr list:Lnode, freefunc ptr func(item data))
+func lnodeFreeContents(lnode ptr Lnode, freefunc ptr func(item data))
   while lnode?
     mut next = lnode'next
     freefunc(<data>(lnode'value))
@@ -50,46 +66,46 @@ func lnodeFreeContents(lnode ptr list:Lnode, freefunc ptr func(item data))
 # list init/deinit functions
 
 
-func deinit(list ptr list:List)
+func deinit(list ptr List)
   lnodeFree(list'start)
 /func
 
 
-func deinitAll(list ptr list:List, freefunc ptr func(item data))
+func deinitAll(list ptr List, freefunc ptr func(item data))
   lnodeFreeAll(list'start, freefunc)
 /func
 
 
-func free(list ptr list:List)
+func free(list ptr List)
   if list?
-    list:deinit(list)
+    deinit(list)
 
     mem:free(list)
   /if
 /func
 
 
-func freeAll(list ptr list:List, freefunc ptr func(item data))
-  list:deinitAll(list, freefunc)
+func freeAll(list ptr List, freefunc ptr func(item data))
+  deinitAll(list, freefunc)
   mem:free(list)
 /func
 
 
-func init(list ptr list:List) ptr list:List
-  mem:set(list, 0, size(list:List))
+func init(list ptr List) ptr List
+  mem:set(list, 0, size(List))
   return list
 /func
 
 
-func new() ptr list:List
-  return list:init(<ptr list:List>(mem:alloc(size(list:List))))
+func new() ptr List
+  return init(<ptr List>(mem:alloc(size(List))))
 /func
 
 
 # list methods
 
 
-method list:List.addInt(pos uintptr, value uintptr) intptr
+method List.addInt(pos uintptr, value uintptr) intptr
   if pos > me'len
     return -1
   /if
@@ -100,7 +116,7 @@ method list:List.addInt(pos uintptr, value uintptr) intptr
 
   me.seek(pos)
 
-  mut new = <ptr list:Lnode>(mem:zalloc(size(list:Lnode)))
+  mut new = <ptr Lnode>(mem:zalloc(size(Lnode)))
   mut prec = me'current'prec
 
   if prec?
@@ -112,7 +128,7 @@ method list:List.addInt(pos uintptr, value uintptr) intptr
   new'next = me'current
   me'current'prec = new
 
-  me'current = <ptr list:Lnode>(me'pos = 0)
+  me'current = <ptr Lnode>(me'pos = 0)
 
   me'len++
 
@@ -120,18 +136,18 @@ method list:List.addInt(pos uintptr, value uintptr) intptr
 /method
 
 
-method list:List.add(index uintptr, item data) intptr
+method List.add(index uintptr, item data) intptr
   return me.addInt(index, <uintptr>(item))
 /method
 
 
-method list:List.appendInt(value uintptr) intptr
+method List.appendInt(value uintptr) intptr
   if not me'start?
     me.pushInt(value)
     return 1
   /if
 
-  mut new = <ptr list:Lnode>(mem:zalloc(size(list:Lnode)))
+  mut new = <ptr Lnode>(mem:zalloc(size(Lnode)))
 
   new'value = value
   new'prec = me'end
@@ -143,12 +159,12 @@ method list:List.appendInt(value uintptr) intptr
 /method
 
 
-method list:List.append(item data) intptr
+method List.append(item data) intptr
   return me.appendInt(<uintptr>(item))
 /method
 
 
-method List.appendList(list ptr list:List) intptr
+method List.appendList(list ptr List) intptr
   if not list?
     return -1
   /if
@@ -170,8 +186,8 @@ method List.appendList(list ptr list:List) intptr
 /method
 
 
-method list:List.extract(start uintptr, len intptr) ptr list:List
-  mut extract = list:new()
+method List.extract(start uintptr, len intptr) ptr List
+  mut extract = new()
 
   if start < me'len
     if len > me'len
@@ -185,7 +201,7 @@ method list:List.extract(start uintptr, len intptr) ptr list:List
     me.seek(start)
 
     mut prec = me'current'prec
-    mut link1 ptr ptr list:Lnode
+    mut link1 ptr ptr Lnode
     if prec?
       link1 = ptr prec'next
     else
@@ -197,7 +213,7 @@ method list:List.extract(start uintptr, len intptr) ptr list:List
     me.seek(start + len - 1)
 
     mut next = me'current'next
-    mut link2 ptr ptr list:Lnode
+    mut link2 ptr ptr Lnode
     if next?
       link2 = ptr next'prec
     else
@@ -223,12 +239,12 @@ method list:List.extract(start uintptr, len intptr) ptr list:List
 /method
 
 
-method list:List.freeContents(freeFunc ptr func(item data))
+method List.freeContents(freeFunc ptr func(item data))
   lnodeFreeContents(me'start, freeFunc)
 /method
 
 
-method list:List.getInt(pos uintptr) ptr uintptr
+method List.getInt(pos uintptr) ptr uintptr
   if pos >= me'len
     return null
   /if
@@ -243,12 +259,12 @@ method list:List.getInt(pos uintptr) ptr uintptr
 /method
 
 
-method list:List.get(pos uintptr) ptr data
+method List.get(pos uintptr) ptr data
   return <ptr data>(me.getInt(pos))
 /method
 
 
-method list:List.insertInt(pos uintptr, value uintptr) intptr
+method List.insertInt(pos uintptr, value uintptr) intptr
   mut len = me.len()
 
   if pos > len
@@ -267,17 +283,17 @@ method list:List.insertInt(pos uintptr, value uintptr) intptr
 /method
 
 
-method list:List.insert(index uintptr, item data) intptr
+method List.insert(index uintptr, item data) intptr
   return me.insertInt(index, <uintptr>(item))
 /method
 
 
-method list:List.len() uintptr
+method List.len() uintptr
   return me'len
 /method
 
 
-method list:List.popInt() uintptr
+method List.popInt() uintptr
   if not me'start?
     return 0
   /if
@@ -292,7 +308,7 @@ method list:List.popInt() uintptr
   /if
 
   if me'start == me'end
-    mem:set(me, 0, size(list:List))
+    mem:set(me, 0, size(List))
   else
     me'start = next
     me'len--
@@ -302,12 +318,12 @@ method list:List.popInt() uintptr
 /method
 
 
-method list:List.pop() data
+method List.pop() data
   return <data>(me.popInt())
 /method
 
 
-method list:List.print()
+method List.print()
   mut inside = false
   tty:out("[ ")
   mut len = me.len()
@@ -327,14 +343,14 @@ method list:List.print()
 /method
 
 
-method list:List.prune()
+method List.prune()
   lnodeFree(me'start)
-  mem:set(me, 0, size(list:List))
+  mem:set(me, 0, size(List))
 /method
 
 
-method list:List.pushInt(value uintptr)
-  mut new = <ptr list:Lnode>(mem:zalloc(size(list:Lnode)))
+method List.pushInt(value uintptr)
+  mut new = <ptr Lnode>(mem:zalloc(size(Lnode)))
 
   new'next = me'start
   if me'start?
@@ -355,12 +371,12 @@ method list:List.pushInt(value uintptr)
 /method
 
 
-method list:List.push(item data)
+method List.push(item data)
   me.pushInt(<uintptr>(item))
 /method
 
 
-method list:List.remove(item uintptr, freefunc ptr func(item data)) bool
+method List.remove(item uintptr, freefunc ptr func(item data)) bool
   mut len = me.len()
 
   if item >= len
@@ -407,7 +423,7 @@ method list:List.remove(item uintptr, freefunc ptr func(item data)) bool
 /method
 
 
-method list:List.seek(pos uintptr)
+method List.seek(pos uintptr)
   if not me'current? and (pos == 0)
      me.seekZero()
   /if
@@ -422,7 +438,7 @@ method list:List.seek(pos uintptr)
 /method
 
 
-method list:List.seekAhead(pos uintptr)
+method List.seekAhead(pos uintptr)
 
   if not me'current? or (pos == 0)
     me'current = me'start
@@ -437,7 +453,7 @@ method list:List.seekAhead(pos uintptr)
 /method
 
 
-method list:List.seekBehind(pos uintptr)
+method List.seekBehind(pos uintptr)
   mut len = me.len()
 
   if not me'current? or ((len - 1) == pos)
@@ -453,21 +469,21 @@ method list:List.seekBehind(pos uintptr)
 /method
 
 
-method list:List.seekZero()
+method List.seekZero()
   me'current = me'start
   me'pos = 0
 /method
 
 
-method list:List.shallowCopy() ptr list:List
-  mut new = list:new()
+method List.shallowCopy() ptr List
+  mut newList = new()
   mut len = me.len()
   mut i uintptr = 0
 
   while i < len
-    new.appendInt(val me.getInt(i))
+    newList.appendInt(val me.getInt(i))
     i++
   /while
 
-  return new
+  return newList
 /method

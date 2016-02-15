@@ -11,10 +11,12 @@
 module txt
 
 
-import cs
 import mem
-import txt
 
+
+alias Line struct(
+  line, pos uintptr
+)
 
 
 decl func strcmp(str1,str2 data) int32
@@ -25,9 +27,9 @@ func strclone(orig ptr uint8) ptr uint8
     return null
   /if
 
-  mut len = txt:strlen(orig)
+  mut len = strlen(orig)
   mut new = <ptr uint8>(mem:zalloc(len + 1))
-  txt:strncpy(new, orig, len)
+  strncpy(new, orig, len)
   return new
 /func
 
@@ -98,19 +100,19 @@ func numtostr(num uintptr, buf ptr uint8, len uintptr) ptr uint8
 
 
 func strglue(strs ptr ptr uint8) ptr uint8
-  mut cs = cs:new(10)
+  mut cs = newCs(10)
   while (val strs)?
     cs.add(val strs)
     strs++
   /while
 
-  return cs:unwrap(cs)
+  return unwrapCs(cs)
 /func
 
 
 func strappend(str1 ptr uint8, str2 ptr uint8) ptr uint8
-  mut len1 = txt:strlen(str1)
-  mut len2 = txt:strlen(str2)
+  mut len1 = strlen(str1)
+  mut len2 = strlen(str2)
   mut ret = <ptr uint8>(mem:zalloc(len1 + len2 + 1))
 
   mem:move(ret, str1, len1)
@@ -124,7 +126,7 @@ func strappend(str1 ptr uint8, str2 ptr uint8) ptr uint8
 func strtonum(str ptr uint8) intptr
   mut ret uintptr = 0
   mut sign int8 = 1
-  mut len = txt:strlen(str)
+  mut len = strlen(str)
 
   if len == 0
     return 0
@@ -165,19 +167,19 @@ func strcompare(s1 data, s2 data) int8
 func strBeginsWith(str, begin ptr uint8) bool
   decl func strncmp(s1,s2 ptr uint8, n uintptr) uint32
 
-  return strncmp(str, begin, txt:strlen(begin)) == 0
+  return strncmp(str, begin, strlen(begin)) == 0
 /func
 
 
 func strEndsWith(str, end ptr uint8) bool
-  mut strLen = txt:strlen(str)
-  mut endLen = txt:strlen(end)
+  mut strLen = strlen(str)
+  mut endLen = strlen(end)
 
   if endLen > strLen
     return false
   /if
 
-  return txt:strequals(str + (strLen - endLen), end)
+  return strequals(str + (strLen - endLen), end)
 /func
 
 

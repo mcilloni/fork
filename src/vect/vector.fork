@@ -13,23 +13,30 @@ module vect
 
 import mem
 import tty
-import vect
+
+
+# vector structure
+alias Vect struct (
+  arr ptr uintptr,
+  cap,len uintptr,
+  isSlice bool
+)
 
 
 # vector init/deinit functions
 
 
-func deinit(vect ptr vect:Vect)
+func deinit(vect ptr Vect)
   if not vect'isSlice
     mem:free(vect'arr)
   /if
 /func
 
 
-func free(vect ptr vect:Vect)
+func free(vect ptr Vect)
 
   if vect?
-    vect:deinit(vect)
+    deinit(vect)
 
     mem:free(vect)
   /if
@@ -37,16 +44,16 @@ func free(vect ptr vect:Vect)
 /func
 
 
-func freeAll(vect ptr vect:Vect,  freefunc ptr func(item data))
+func freeAll(vect ptr Vect,  freefunc ptr func(item data))
   if vect?
     vect.freeContents(freefunc)
-    vect:free(vect)
+    free(vect)
   /if
 /func
 
 
-func init(arr ptr vect:Vect, cap uintptr) ptr vect:Vect
-  mem:set(arr, 0, size(vect:Vect))
+func init(arr ptr Vect, cap uintptr) ptr Vect
+  mem:set(arr, 0, size(Vect))
 
   if cap != 0
     arr'arr = <ptr uintptr>(mem:zalloc(cap * size(uintptr)))
@@ -57,29 +64,29 @@ func init(arr ptr vect:Vect, cap uintptr) ptr vect:Vect
 /func
 
 
-func new(cap uintptr) ptr vect:Vect
-  return vect:init(<ptr vect:Vect>(mem:alloc(size(vect:Vect))), cap)
+func new(cap uintptr) ptr Vect
+  return init(<ptr Vect>(mem:alloc(size(Vect))), cap)
 /func
 
 
 # vector methods
 
-method vect:Vect.appendInt(value uintptr) bool
+method Vect.appendInt(value uintptr) bool
   return me.putInt(me.len(), value)
 /method
 
 
-method vect:Vect.append(item data) bool
+method Vect.append(item data) bool
   return me.appendInt(<uintptr>(item))
 /method
 
 
-method vect:Vect.cap() uintptr
+method Vect.cap() uintptr
   return me'cap
 /method
 
 
-method vect:Vect.ensureCap(newMinCap uintptr)
+method Vect.ensureCap(newMinCap uintptr)
   if newMinCap > me'cap
     # prevent overflows
     mut oldCap = me'cap
@@ -95,7 +102,7 @@ method vect:Vect.ensureCap(newMinCap uintptr)
 /method
 
 
-method vect:Vect.freeContents(freefunc ptr func(item data))
+method Vect.freeContents(freefunc ptr func(item data))
   if me'isSlice
     return
   /if
@@ -114,7 +121,7 @@ method vect:Vect.freeContents(freefunc ptr func(item data))
 /method
 
 
-method vect:Vect.getInt(index uintptr) ptr uintptr
+method Vect.getInt(index uintptr) ptr uintptr
   if me.len() <= index
     return null
   /if
@@ -123,17 +130,17 @@ method vect:Vect.getInt(index uintptr) ptr uintptr
 /method
 
 
-method vect:Vect.get(index uintptr) ptr data
+method Vect.get(index uintptr) ptr data
   return <ptr data>(me.getInt(index))
 /method
 
 
-method vect:Vect.len() uintptr
+method Vect.len() uintptr
   return me'len
 /method
 
 
-method vect:Vect.newCap(newcap uintptr)
+method Vect.newCap(newcap uintptr)
   mut lowercap uintptr
 
   if me.cap() > newcap
@@ -158,7 +165,7 @@ method vect:Vect.newCap(newcap uintptr)
 /method
 
 
-method vect:Vect.print()
+method Vect.print()
   mut inside = false
 
   tty:out("[ ")
@@ -180,13 +187,13 @@ method vect:Vect.print()
 /method
 
 
-method vect:Vect.prune()
+method Vect.prune()
   mem:set(me'arr, 0, me.cap())
   me'len = 0
 /method
 
 
-method vect:Vect.putInt(index uintptr, value uintptr) bool
+method Vect.putInt(index uintptr, value uintptr) bool
   mut newalloc = false
   if me.cap() <= index
     newalloc = true
@@ -206,13 +213,13 @@ method vect:Vect.putInt(index uintptr, value uintptr) bool
 /method
 
 
-method vect:Vect.put(index uintptr, value data) bool
+method Vect.put(index uintptr, value data) bool
   return me.putInt(index, <uintptr>(value))
 /method
 
 
-method vect:Vect.slice(start uintptr, len intptr) ptr vect:Vect
-  mut ret = vect:new(0)
+method Vect.slice(start uintptr, len intptr) ptr Vect
+  mut ret = new(0)
 
   ret'isSlice = true
 

@@ -12,10 +12,18 @@ module txt
 
 
 import mem
-import txt
 
 
-func tokenizerFree(tkz ptr txt:Tokenizer)
+alias Tokenizer struct (
+  str ptr uint8,
+  strlen uintptr,
+  begin intptr,
+  splitChar uint8
+)
+
+
+
+func tokenizerFree(tkz ptr Tokenizer)
   if tkz?
     mem:free(tkz'str)
     mem:free(tkz)
@@ -23,17 +31,17 @@ func tokenizerFree(tkz ptr txt:Tokenizer)
 /func
 
 
-func tokenizerNew(str ptr uint8, ch uint8) ptr txt:Tokenizer
-  mut tkz = <ptr txt:Tokenizer>(mem:zalloc(size(txt:Tokenizer)))
-  tkz'str = txt:strclone(str)
-  tkz'strlen = txt:strlen(str)
+func tokenizerNew(str ptr uint8, ch uint8) ptr Tokenizer
+  mut tkz = <ptr Tokenizer>(mem:zalloc(size(Tokenizer)))
+  tkz'str = strclone(str)
+  tkz'strlen = strlen(str)
   tkz'splitChar = ch
 
   return tkz
 /func
 
 
-method txt:Tokenizer.next() ptr uint8
+method Tokenizer.next() ptr uint8
   if me'begin == me'strlen
     return null
   /if
@@ -47,7 +55,7 @@ method txt:Tokenizer.next() ptr uint8
   mut nextLen = me'begin - initialBegin
   mut ret = <ptr uint8>(mem:zalloc(nextLen + 1)) # + 1 is for the null end.
 
-  txt:strncpy(ret, me'str + initialBegin, nextLen)
+  strncpy(ret, me'str + initialBegin, nextLen)
 
   if me'str[me'begin] == me'splitChar
     me'begin++

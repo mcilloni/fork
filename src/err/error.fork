@@ -11,12 +11,17 @@
 module err
 
 
-import err
 import mem
 import txt
 
 
-func free(err ptr err:Error)
+# error structure
+alias Error struct (
+  msg ptr uint8
+)
+
+
+func free(err ptr Error)
   if err?
     mem:free(err'msg)
     mem:free(err)
@@ -24,20 +29,20 @@ func free(err ptr err:Error)
 /func
 
 
-func glue(strs ptr ptr uint8) ptr err:Error
-  mut err = <ptr err:Error>(mem:alloc(size(err:Error)))
+func glue(strs ptr ptr uint8) ptr Error
+  mut err = <ptr Error>(mem:alloc(size(Error)))
   err'msg = txt:strglue(strs)
   return err
 /func
 
 
-func new(str ptr uint8) ptr err:Error
-  mut err = <ptr err:Error>(mem:alloc(size(err:Error)))
+func new(str ptr uint8) ptr Error
+  mut err = <ptr Error>(mem:alloc(size(Error)))
   err'msg = txt:strclone(str)
   return err
 /func
 
 
-method err:Error.msg() ptr uint8
+method Error.msg() ptr uint8
   return me'msg
 /method

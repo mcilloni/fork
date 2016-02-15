@@ -1,10 +1,8 @@
 INCLUDES = $(shell pwd)/../build/include/
 
-ifndef FORKC
-	FORKC = forkc
+ifndef TRNS
+	TRNS = transmod
 endif
-
-FORKC += --no-libfork
 
 CCLD = $(CC)
 
@@ -28,36 +26,33 @@ ARNAME = 'libfork.a'
 all:
 	mkdir -p ../build/
 
-	$(MAKE) -C ford
-
 	@printf "FORKC\t\t%s\n" rt.fork
 	@ FORDPATHS="$(shell pwd)/ford/internal/:$(shell pwd)/ford/" $(FORKC) -I $(INCLUDES) -o ../build/rt.o rt.fork
 
+	$(MAKE) -C about
 	$(MAKE) -C c
 	$(MAKE) -C math
 	$(MAKE) -C proc
 	$(MAKE) -C mem
+	$(MAKE) -C tty
+	$(MAKE) -C txt
 	$(MAKE) -C err
 	$(MAKE) -C io
-	$(MAKE) -C fs
-	$(MAKE) -C txt
-	$(MAKE) -C tty
-	$(MAKE) -C buffer
-	$(MAKE) -C cs
 	$(MAKE) -C pair
 	$(MAKE) -C vect
+
 	$(MAKE) -C list
-	$(MAKE) -C kv
 	$(MAKE) -C map
 	$(MAKE) -C hash
 	$(MAKE) -C set
+	$(MAKE) -C kv
+	$(MAKE) -C fs
 	$(MAKE) -C dyn
-	$(MAKE) -C utils
+	$(MAKE) -C misc
 	$(MAKE) -C memutils
 	$(MAKE) -C args
 	$(MAKE) -C ast
 	$(MAKE) -C parser
-	$(MAKE) -C libfork
 
 	@printf "AR\t\t%s\n" $(ARNAME)
 	@ $(AR) rc ../build/$(ARNAME) ../build/*/*.o

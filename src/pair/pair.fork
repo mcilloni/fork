@@ -12,11 +12,16 @@ module pair
 
 
 import mem
-import pair
 
 
-func new(first,second data) ptr pair:Pair
-  mut pair = <ptr pair:Pair>(mem:zalloc(size(pair:Pair)))
+# pair structure
+alias Pair struct (
+  key, value data
+)
+
+
+func new(first,second data) ptr Pair
+  mut pair = <ptr Pair>(mem:zalloc(size(Pair)))
   pair'key = first
   pair'value = second
 
@@ -24,6 +29,6 @@ func new(first,second data) ptr pair:Pair
 /func
 
 
-func free(pair ptr pair:Pair)
+func free(pair ptr Pair)
   mem:free(pair)
 /func

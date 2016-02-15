@@ -12,9 +12,33 @@ module io
 
 
 import err
-import io
 import mem
 import txt
+
+
+# cookie structure
+
+alias closefunc func(handl data, err ptr ptr err:Error) bool
+alias readfunc func(handl data, buf ptr uint8, bufSize intptr, err ptr ptr err:Error, eof ptr bool) uintptr
+alias writefunc func(handl data, buf ptr uint8, bufSize intptr, err ptr ptr err:Error) uintptr
+
+
+alias Cookie struct (
+  priv8 data,
+  cfn ptr closefunc,
+  rfn ptr readfunc,
+  wfn ptr writefunc
+)
+
+
+# stream structure
+
+alias Stream struct (
+  cookie Cookie,
+  eof bool,
+  error ptr err:Error,
+  inout uint8
+)
 
 
 mut STREAM_IN uint8 = 1
@@ -22,9 +46,9 @@ mut STREAM_OUT uint8 = 2
 mut STREAM_INOUT uint8 = 3
 
 
-# io:Stream functions
+# Stream functions
 
-func streamClose(stream ptr io:Stream) bool
+func streamClose(stream ptr Stream) bool
   mut ret = stream'cookie'cfn(stream'cookie'priv8, ptr stream'error)
 
   mem:free(stream)
@@ -33,11 +57,11 @@ func streamClose(stream ptr io:Stream) bool
 
 
 func streamNew(priv8 data,
-               rfn ptr io:readfunc,
-               wfn ptr io:writefunc,
-               cfn ptr io:closefunc) ptr io:Stream
+               rfn ptr readfunc,
+               wfn ptr writefunc,
+               cfn ptr closefunc) ptr Stream
 
-  mut ret = <ptr io:Stream>(mem:zalloc(size(io:Stream)))
+  mut ret = <ptr Stream>(mem:zalloc(size(Stream)))
   ret'cookie'priv8 = priv8
 
   if wfn?
@@ -55,19 +79,19 @@ func streamNew(priv8 data,
 /func
 
 
-# io:Stream methods
+# Stream methods
 
-method io:Stream.ended() bool
+method Stream.ended() bool
   return me'eof
 /method
 
 
-method io:Stream.error() ptr err:Error
+method Stream.error() ptr err:Error
   return me'error
 /method
 
 
-method io:Stream.read(buf data, len intptr) uintptr
+method Stream.read(buf data, len intptr) uintptr
   if (me'inout & STREAM_IN) == 0
     me'error = err:new("stream opened write-only")
     return 0
@@ -77,12 +101,12 @@ method io:Stream.read(buf data, len intptr) uintptr
 /method
 
 
-method io:Stream.readStr(str ptr uint8, len intptr) uintptr
+method Stream.readStr(str ptr uint8, len intptr) uintptr
   me.read(str, len)
 /method
 
 
-method io:Stream.write(buf data, len intptr) uintptr
+method Stream.write(buf data, len intptr) uintptr
   if (me'inout & STREAM_OUT) == 0
     me'error = err:new("stream opened read-only")
     return 0
@@ -92,6 +116,6 @@ method io:Stream.write(buf data, len intptr) uintptr
 /method
 
 
-method io:Stream.writeStr(string ptr uint8) uintptr
+method Stream.writeStr(string ptr uint8) uintptr
   me.write(string, <intptr>(txt:strlen(string)))
 /method

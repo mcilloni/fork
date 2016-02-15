@@ -8,11 +8,10 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-module tty
+module io
 
 
 import err
-import io
 import tty
 import txt
 
@@ -33,14 +32,14 @@ func ttyCookieCloseFake(handl data, err ptr ptr err:Error) bool
 /func
 
 
-func ttyStream() io:Stream
-  mut ret io:Stream
+func ttyStream() Stream
+  mut ret Stream
 
   ret'cookie'cfn = ptr ttyCookieCloseFake
   ret'cookie'wfn = ptr ttyCookieOut
   ret'eof = false
   ret'error = null
-  ret'inout = io:STREAM_OUT
+  ret'inout = STREAM_OUT
 
   return ret
 /func

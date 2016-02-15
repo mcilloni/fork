@@ -12,9 +12,15 @@ module fs
 
 
 import err
-import fs
 import io
 import mem
+
+
+alias File struct(
+  name,path ptr uint8,
+  isDir bool,
+  length uint64
+)
 
 
 func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err:Error, eof ptr bool) uintptr
@@ -70,7 +76,7 @@ func filecloseInternal(camoFd data, err ptr ptr err:Error) bool
 /func
 
 
-func fileFree(fi ptr fs:File)
+func fileFree(fi ptr File)
   if fi?
     mem:free(fi'path)
     mem:free(fi)
@@ -78,8 +84,8 @@ func fileFree(fi ptr fs:File)
 /func
 
 
-func stat(filename ptr uint8) {file ptr fs:File, err ptr err:Error}
-  decl func file_populate(filename,error ptr uint8, errl uintptr) ptr fs:File
+func stat(filename ptr uint8) {file ptr File, err ptr err:Error}
+  decl func file_populate(filename,error ptr uint8, errl uintptr) ptr File
 
   mut buf [512] uint8
 
@@ -92,27 +98,27 @@ func stat(filename ptr uint8) {file ptr fs:File, err ptr err:Error}
 /func
 
 
-method fs:File.isDir() bool
+method File.isDir() bool
   return me'isDir
 /method
 
 
-method fs:File.len() uint64
+method File.len() uint64
   return me'length
 /method
 
 
-method fs:File.open() {stream ptr io:Stream, err ptr err:Error}
-  return fs:fileOpen(me'path)
+method File.open() {stream ptr io:Stream, err ptr err:Error}
+  return fileOpen(me'path)
 /method
 
 
-method fs:File.openDir() {dir ptr fs:Dir, err ptr err:Error}
-  return fs:dir(me'path)
+method File.openDir() {dir ptr Dir, err ptr err:Error}
+  return dir(me'path)
 /method
 
 
-method fs:File.path() ptr uint8
+method File.path() ptr uint8
   return me'path
 /method
 

@@ -11,12 +11,6 @@
 module err
 
 
-# error structure
-
-alias Error struct (
-  msg ptr uint8
-)
-
 
 # Error functions
 

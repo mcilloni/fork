@@ -13,14 +13,14 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-FILE* c$stderr_file(void) {
+FILE* stderr_file(void) {
   return stderr;
 }
 
-FILE* c$stdin_file(void) {
+FILE* stdin_file(void) {
   return stdin;
 }
 
-FILE* c$stdout_file(void) {
+FILE* stdout_file(void) {
   return stdout;
 }

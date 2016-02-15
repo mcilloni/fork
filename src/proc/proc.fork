@@ -11,13 +11,19 @@
 module proc
 
 
-import proc
-import tty
+import c
 
 
-mut __forkprogArgs proc:Args
+alias Args struct (
+  len uintptr,
+  progname ptr uint8,
+  args ptr ptr uint8
+)
 
-func args() ptr proc:Args
+
+mut __forkprogArgs Args
+
+func args() ptr Args
   return ptr __forkprogArgs
 /func
 
@@ -44,8 +50,11 @@ func getenv(variable ptr uint8) ptr uint8
 
 
 func panic(msg ptr uint8)
-  tty:err("panic: ")
-  tty:errln(msg)
+  decl func fputs(str ptr uint8, file c:CFILE)
+  mut stderr = c:stderr_file()
+  fputs("panic: ", stderr)
+  fputs(msg, stderr)
+  fputs("\n", stderr)
 
   abort()
 /func

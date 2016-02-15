@@ -61,3 +61,10 @@ func outln(str ptr uint8)
   decl func puts(str ptr uint8)
   puts(str)
 /func
+
+
+func outint(n uint64)
+  decl func outint(n uint64)
+
+  outint(n)
+/func
