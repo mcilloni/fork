@@ -32,10 +32,12 @@ func check(err ptr err:Error)
 entry
   mut args = args:new("translates a module")
 
-  args.newFlag(args:STRING, "fpath", "directory to output ford (defaults to $PWD)", \
-                         "PATH", false, false, "--ford", "-fO")
-  args.newFlag(args:STRING, "cpath", "directory to output C file (defaults to $PWD)", \
-                         "PATH", false, false, "--cfile", "-cO")
+  args.newFlag(args:STRING, "fpath", "directory to output ford (default: $PWD)", \
+                         "PATH", false, false, "--ford", "-fo")
+  args.newFlag(args:STRING, "cpath", "directory to output C file (default: $PWD)", \
+                         "PATH", false, false, "--cfile", "-co")
+  args.newFlag(args:STRING, "outname", "name to use for output files (default: inferred)", \
+                         "NAME", false, false, "--outname", "-n")
 
   args.unboundsOpts("MODULEDIR", true, true)
 
@@ -73,8 +75,9 @@ entry
   mut {head,cfile} = tr.dump()
 
   mut {ok,cpath} = args.getStr("cpath")
+  mut {ok,outname} = args.getStr("outname")
 
-  mut cname = txt:strappend(pmod'name ?? "main", ".c")
+  mut cname = txt:strappend(outname ?? pmod'name ?? "main", ".c")
   mut pwd = proc:getenv("PWD")
 
   mut cfilePath = fs:pathJoin(cpath ?? pwd, cname)
@@ -97,7 +100,7 @@ entry
 
     mut {ok,fpath} = args.getStr("fpath")
 
-    check(parser:writeFord(pmod'name, fpath ?? pwd, fordBuf, head, txt:strlen(head)))
+    check(parser:writeFord(outname ?? pmod'name, fpath ?? pwd, fordBuf, head, txt:strlen(head)))
   /if
 
   ast:pmoduleFree(pmod)

@@ -185,10 +185,19 @@ method LRStr.syntetizeStructType(type ptr ast:Type)
 
   me'unit'cnt++
 
-  mut name = <ptr uint8>(mem:zalloc(28))
+  mut len = txt:strlen(me'unit'modName ?? "")
+
+  mut name = <ptr uint8>(mem:zalloc(29 + len))
   mem:copy(name, "_struct", 7)
 
   txt:numtostr(cnt, name + 7, 21)
+
+  mut newLen = txt:strlen(name)
+
+  if me'unit'modName?
+    mem:copy(name + newLen, "_", 1)
+    mem:copy(name + newLen + 1, me'unit'modName, len)
+  /if
 
   me'unit.typedef(name, type, true)
 
