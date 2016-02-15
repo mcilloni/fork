@@ -25,7 +25,7 @@ import utils
 
 
 method parser:Resolver.findAlias(moduleName,name ptr uint8) ptr ast:Type
-  mut curModule = me'curRoot'moduleName? => me'curRoot'moduleName'name || null
+  mut curModule = me'curRoot'moduleName? => me'curRoot'moduleName'name || ""
 
   if moduleName? and not txt:strequals(curModule,moduleName)
     return me.findAliasImport(moduleName, name)
