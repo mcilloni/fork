@@ -40,22 +40,28 @@ method ast:Symtable.addFuncParams(syms ptr kv:KVList)
 /method
 
 
+method parser:Resolver.isCurrentModule(modName ptr uint8) bool
+  mut curMod = me'curRoot'moduleName? => me'curRoot'moduleName'name || null
+
+  if modName == curMod
+    return true
+  /if
+
+  return (modName == curMod) \
+         or (curMod? and modName? and txt:strequals(curMod, modName))
+/method
+
+
 method parser:Resolver.ensureMethodCorrectness(pdecl ptr ast:PDecl,
-                                             funcType ptr ast:Type) bool
+                                               funcType ptr ast:Type) bool
 
   mut type ptr ast:Type = null
 
   # the method's type is either defined in the given module, or not defined at all.
-  if pdecl'methodTypeModule?
+  # If it's not present, then it may be possibile that it belongs to the current scope
+  # if this file is in the same module of this type.
+  if pdecl'methodTypeModule? and not me.isCurrentModule(pdecl'methodTypeModule)
     type = me.findAliasImport(pdecl'methodTypeModule, pdecl'methodType)
-
-    # if it's not present, then it may be possibile that it belongs to the current scope
-    # if this file is in the same module of this type.
-    if not type?
-      if me'curRoot'moduleName? and txt:strequals(me'curRoot'moduleName'name, pdecl'methodTypeModule)
-        type = <ptr ast:PNode>(pdecl).findAliasLocal(pdecl'methodType)
-      /if
-    /if
 
     if not type?
       mut cs = cs:new(20)
