@@ -134,6 +134,7 @@ decl method Resolver.collect(prs ptr Parser,
                              pmod ptr ast:PModule,
                              issues ptr ast:Issues) ptr kv:KVList
 
+decl method Resolver.findAlias(moduleName,name ptr uint8) ptr ast:Type
 decl method Resolver.findAliasImport(moduleName,name ptr uint8) ptr ast:Type
 
 decl method Resolver.findMethod(node ptr ast:PNode,

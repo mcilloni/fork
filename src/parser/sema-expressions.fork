@@ -609,16 +609,11 @@ method parser:Resolver.validateModuleAccessExpr(pexpr ptr ast:PExpr) ptr ast:Typ
 
 
 method parser:Resolver.resolveRecType(type ptr ast:Type) ptr ast:Type
-
   if type'type != ast:TYPE_RECALIAS
     return type
   /if
 
-  if type'moduleName?
-    return me.findAliasImport(type'moduleName, type'name)
-  /if
-
-  return <ptr ast:PNode>(me'curRoot).findAliasLocal(type'name)
+  return me.findAlias(type'moduleName, type'name)
 /method
 
 

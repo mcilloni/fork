@@ -24,6 +24,27 @@ import txt
 import utils
 
 
+method parser:Resolver.findAlias(moduleName,name ptr uint8) ptr ast:Type
+  mut curModule = me'curRoot'moduleName? => me'curRoot'moduleName'name || null
+
+  if moduleName? and not txt:strequals(curModule,moduleName)
+    return me.findAliasImport(moduleName, name)
+  /if
+
+  return <ptr ast:PNode>(me'curRoot).findAliasLocal(name)
+/method
+
+
+method parser:Resolver.findAliasImport(moduleName,name ptr uint8) ptr ast:Type
+  mut imp = me'prs.getImport(moduleName)
+  if not imp?
+    return null
+  /if
+
+  return imp'aliases.typeof(name)
+/method
+
+
 # searches the current PRoot first, then the rest of the module.
 method ast:PNode.findAliasLocal(name ptr uint8) ptr ast:Type
   mut curRoot = me.findPRoot()
@@ -215,16 +236,6 @@ method parser:Resolver.convertFuncType(ptype ptr ast:PType,
   /if
 
   return ast:typeNewFunc(me'curRoot'typePool, null, null, retVal, members)
-/method
-
-
-method parser:Resolver.findAliasImport(moduleName,name ptr uint8) ptr ast:Type
-  mut imp = me'prs.getImport(moduleName)
-  if not imp?
-    return null
-  /if
-
-  return imp'aliases.typeof(name)
 /method
 
 
