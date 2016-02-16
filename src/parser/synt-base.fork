@@ -493,7 +493,7 @@ method parser:ParseState.parseMutExp() {pnode ptr ast:PNode, needsAssign bool}
       return {null, false}
     /if
 
-    mut needsAssign = needsAssign or not ptype?
+    needsAssign = needsAssign or not ptype?
 
     syms.append(ast:psymbolNew(id, ptype))
 
