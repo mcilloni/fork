@@ -27,14 +27,17 @@ method parser:Parser.dumpImports()
   mut first = true
 
   while (pair = iter.next())?
-    if not first
+    if first
+      first = false
+    else
       tty:out(", ")
     /if
 
     tty:out(cast<ptr uint8>(pair'key))
+
   /while
 
-  tty:out("]")
+  tty:outln("]")
 
   map:iterFree(iter)
 /method
