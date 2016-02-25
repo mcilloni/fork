@@ -21,6 +21,8 @@ import mem
 import memutils
 import parser
 import proc
+import set
+import tty
 import txt
 import utils
 
@@ -107,6 +109,7 @@ method parser:Parser.findFord(name ptr uint8) {ford ptr parser:Ford,
       /if
 
       me'imports.put(txt:strclone(name), ford)
+
       return {ford,null}
     /if
 
@@ -134,11 +137,11 @@ method parser:Parser.findFord(name ptr uint8) {ford ptr parser:Ford,
 /method
 
 
-method parser:Parser.importMod(importName ptr ast:StringDef) ptr ast:Issue
-  mut {ford,err} = me.findFord(importName'name)
+method parser:Parser.importMod(importName ptr parser:StringDefFile) ptr ast:Issue
+  mut {ford,err} = me.findFord(importName'text)
   if err?
-    mut issue = ast:issueNew(ast:ISSUE_ERR, importName'begin, me'currentFile, \
-    err.msg())
+    mut issue = ast:issueNew(ast:ISSUE_ERR, importName'begin, \
+                              importName'fileName, err.msg())
 
     err:free(err)
 
@@ -149,21 +152,19 @@ method parser:Parser.importMod(importName ptr ast:StringDef) ptr ast:Issue
 /method
 
 
-method parser:Parser.importAll(imports ptr list:List) ptr ast:Issues
+method parser:Parser.importAll(imports ptr set:Set) ptr ast:Issues
   mut ret = ast:issuesNew()
 
-  mut len = imports.len()
-  mut i uintptr = 0
+  mut iter = imports.iter()
+  mut el data
 
-  while i < len
-    mut importName = <ptr ast:StringDef>(val imports.get(i))
+  while (el = iter.next())?
+    mut importName = <ptr parser:StringDefFile>(el)
     mut issue = me.importMod(importName)
 
     if issue?
       ret.add(issue)
     /if
-
-    i++
   /while
 
   return ret

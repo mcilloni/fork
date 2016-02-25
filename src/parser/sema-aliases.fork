@@ -254,8 +254,10 @@ method parser:Resolver.resolveModuleAlias(ptype ptr ast:PType) ptr ast:Type
     return ast:typeClone(me'curRoot'typePool, type)
   /if
 
+
   # we could not find the type anywhere in the module.
   # Signal the error to the caller.
+  
   mut cs = cs:new(20)
   cs.add("no alias called ")
   cs.add(ptype'name)

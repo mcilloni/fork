@@ -31,7 +31,7 @@ import vect
 
 
 mut MIN_VER = 12
-mut IMPORTER_VERBOSE_DEBUG = true
+mut IMPORTER_VERBOSE_DEBUG = false
 
 
 func fordFree(ford ptr parser:Ford)

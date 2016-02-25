@@ -93,20 +93,7 @@ method parser:Resolver.validateFile(root ptr ast:PRoot) bool
 
 method parser:Resolver.validateModuleFile(root ptr ast:PRoot)
   mut proot = <ptr ast:PRoot>(root)
-
   me'prs.setCurrentFile(proot'fileName)
-
-  mut importIssues = me'prs.importAll(proot'imports)
-  mut importErrorsLen = importIssues.errLen()
-
-  me'issues.addAll(importIssues)
-  ast:issuesFree(importIssues)
-
-  me'prs.setCurrentFile(proot'fileName)
-
-  if importErrorsLen != 0
-    return
-  /if
 
   me.validateFile(proot)
 /method
@@ -122,19 +109,27 @@ func validateModuleAst(prs ptr parser:Parser, pmod ptr ast:PModule) ptr ast:Issu
     return iss
   /if
 
-  mut i uintptr = 0
-  mut len = pmod'roots.len()
+  mut importIssues = prs.importAll(rsv'imports)
+  mut importErrorsLen = importIssues.errLen()
 
-  while i < len
+  iss.addAll(importIssues)
+  ast:issuesFree(importIssues)
+
+  if importErrorsLen < 1
+    mut i uintptr = 0
+    mut len = pmod'roots.len()
+
+    while i < len
     mut root = <ptr ast:PRoot>(val pmod'roots.get(i))
 
     rsv.validateModuleFile(root)
 
     i++
-  /while
+    /while
 
-  kv:free(decls)
-  parser:resolverDeinit(ptr rsv)
+    kv:free(decls)
+    parser:resolverDeinit(ptr rsv)
+  /if
 
   return iss
 /func

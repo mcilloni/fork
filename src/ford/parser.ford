@@ -21,6 +21,8 @@ import list
 import map
 import mem
 import memutils
+import set
+import txt
 import vect
 
 
@@ -41,9 +43,11 @@ decl func new() ptr Parser
 
 # Parser methods
 
+decl method Parser.dumpImports()
+
 decl method Parser.getImport(name ptr uint8) ptr Ford
 
-decl method Parser.importAll(imports ptr list:List) ptr ast:Issues
+decl method Parser.importAll(imports ptr set:Set) ptr ast:Issues
 decl method Parser.matchBuiltin(name ptr uint8) ptr ast:Type
 
 decl method Parser.parseDirectory(dirName ptr uint8) {pmod ptr ast:PModule,
@@ -119,9 +123,17 @@ decl func isUnary(tok ptr ast:Token) bool
 
 ### sema
 
-alias Resolver struct (
+
+alias StringDefFile struct(
+  text,fileName ptr uint8,
+  begin,end txt:Line
+)
+
+
+alias Resolver struct(
   prs ptr Parser,
   curRoot ptr ast:PRoot,
+  imports ptr set:Set,
   aliases,decls ptr kv:KVList,
   issues ptr ast:Issues
 )
