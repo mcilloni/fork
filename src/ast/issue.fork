@@ -11,15 +11,26 @@
 module ast
 
 
-import ast
 import err
 import list
 import mem
-import parser
 import txt
 
 
-func issueFree(issue ptr ast:Issue)
+alias Issue struct (
+  gravity uint8,
+  where txt:Line,
+  filename,message ptr uint8
+)
+
+
+alias Issues struct (
+  list list:List,
+  errLen uintptr
+)
+
+
+func issueFree(issue ptr Issue)
   if issue?
     mem:free(issue'filename)
     mem:free(issue'message)
@@ -27,8 +38,8 @@ func issueFree(issue ptr ast:Issue)
 /func
 
 
-func issueNew(gravity uint8, where txt:Line, filename, message ptr uint8)  ptr ast:Issue
-  mut issue = <ptr ast:Issue>(mem:zalloc(size(ast:Issue)))
+func issueNew(gravity uint8, where txt:Line, filename, message ptr uint8)  ptr Issue
+  mut issue = <ptr Issue>(mem:zalloc(size(Issue)))
 
   issue'gravity = gravity
   issue'where = where
@@ -40,15 +51,15 @@ func issueNew(gravity uint8, where txt:Line, filename, message ptr uint8)  ptr a
 
 
 func issueGravityToStr(issueGravity uint8) ptr uint8
-  if issueGravity == ast:ISSUE_ERR
+  if issueGravity == ISSUE_ERR
     return "error"
   /if
 
-  if issueGravity == ast:ISSUE_WARN
+  if issueGravity == ISSUE_WARN
     return "warning"
   /if
 
-  if issueGravity == ast:ISSUE_INFO
+  if issueGravity == ISSUE_INFO
     return "info"
   /if
 
@@ -56,7 +67,7 @@ func issueGravityToStr(issueGravity uint8) ptr uint8
 /func
 
 
-func issueToError(issue ptr ast:Issue) ptr err:Error
+func issueToError(issue ptr Issue) ptr err:Error
   mut lineno [21] uint8
   mut pos [21] uint8
 
@@ -77,13 +88,13 @@ func issueToError(issue ptr ast:Issue) ptr err:Error
 
   mut ret = err:glue(ptr toglue[0])
 
-  ast:issueFree(issue)
+  issueFree(issue)
 
   return ret
 /func
 
 
-method ast:Issue.writeOut(outFn ptr func(err ptr uint8))
+method Issue.writeOut(outFn ptr func(err ptr uint8))
   outFn(me'filename)
   outFn(":")
 
@@ -106,9 +117,9 @@ method ast:Issue.writeOut(outFn ptr func(err ptr uint8))
 /method
 
 
-# ast:Issues container
+# Issues container
 
-func issuesFree(iss ptr ast:Issues)
+func issuesFree(iss ptr Issues)
   if iss?
     list:deinitAll(ptr iss'list, ptr issueFree)
     mem:free(iss)
@@ -116,15 +127,15 @@ func issuesFree(iss ptr ast:Issues)
 /func
 
 
-func issuesNew() ptr ast:Issues
-  mut iss = <ptr ast:Issues>(mem:zalloc(size(ast:Issues)))
+func issuesNew() ptr Issues
+  mut iss = <ptr Issues>(mem:zalloc(size(Issues)))
   list:init(ptr iss'list)
 
   return iss
 /func
 
 
-method ast:Issues.add(issue ptr ast:Issue)
+method Issues.add(issue ptr Issue)
   if issue?
     me'list.append(issue)
 
@@ -135,7 +146,7 @@ method ast:Issues.add(issue ptr ast:Issue)
 /method
 
 
-method ast:Issues.addAll(i2 ptr ast:Issues)
+method Issues.addAll(i2 ptr Issues)
   me'list.appendList(ptr i2'list)
 
   me'errLen = me'errLen + i2'errLen
@@ -144,24 +155,24 @@ method ast:Issues.addAll(i2 ptr ast:Issues)
 /method
 
 
-method ast:Issues.errLen() uintptr
+method Issues.errLen() uintptr
   return me'errLen
 /method
 
 
-method ast:Issues.error(where txt:Line, filename, message ptr uint8)
+method Issues.error(where txt:Line, filename, message ptr uint8)
   me'list.append(issueNew(ISSUE_ERR, where, filename, message))
 
   me'errLen++
 /method
 
 
-method ast:Issues.get(i uintptr) ptr ast:Issue
-  return <ptr ast:Issue>(val me'list.get(i))
+method Issues.get(i uintptr) ptr Issue
+  return <ptr Issue>(val me'list.get(i))
 /method
 
 
-method ast:Issues.len() uintptr
+method Issues.len() uintptr
   return me'list.len()
 /method
 

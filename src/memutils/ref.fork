@@ -13,21 +13,25 @@ module memutils
 
 import err
 import list
-import memutils
 import txt
-import utils
+
+
+alias Ref struct (
+  count uintptr,
+  freeFunc ptr func(item data)
+)
 
 
 func incRef(refc data)
   if refc?
-    <ptr memutils:Ref>(refc)'count++
+    <ptr Ref>(refc)'count++
   /if
 /func
 
 
 func decRef(refc data)
   if refc?
-    mut ref = <ptr memutils:Ref>(refc)
+    mut ref = <ptr Ref>(refc)
     ref'count--
     if ref'count < 1
       ref'freeFunc(refc)

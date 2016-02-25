@@ -11,13 +11,19 @@
 module map
 
 
-import map
 import mem
 import pair
 
 
-method map:Map.iter() ptr map:Iter
-  mut iter = <ptr map:Iter>(mem:alloc(size(map:Iter)))
+alias Iter struct (
+  map ptr Map,
+  lastKey data,
+  begin bool
+)
+
+
+method Map.iter() ptr Iter
+  mut iter = <ptr Iter>(mem:alloc(size(Iter)))
   iter'map = me
   iter'lastKey = null
   iter'begin = true
@@ -25,7 +31,7 @@ method map:Map.iter() ptr map:Iter
 /method
 
 
-method map:Iter.intNext(node ptr map:Node) ptr pair:Pair
+method Iter.intNext(node ptr Node) ptr pair:Pair
 
   if not node?
     return null
@@ -40,14 +46,14 @@ method map:Iter.intNext(node ptr map:Node) ptr pair:Pair
       return pair
     /if
 
-    return map:nodeMkpair(node)
+    return nodeMkpair(node)
   /if
 
   return me.intNext(node'right)
 /method
 
 
-method map:Iter.next() ptr pair:Pair
+method Iter.next() ptr pair:Pair
   mut root = me'map'root
 
   if not root?
@@ -56,7 +62,7 @@ method map:Iter.next() ptr pair:Pair
 
   if me'begin
     me'begin = false
-    mut pair = map:nodeMinpair(root)
+    mut pair = nodeMinpair(root)
     me'lastKey = pair'key
     return pair
   /if
@@ -72,6 +78,6 @@ method map:Iter.next() ptr pair:Pair
 /method
 
 
-func iterFree(iter ptr map:Iter)
+func iterFree(iter ptr Iter)
   mem:free(iter)
 /func

@@ -11,15 +11,22 @@
 module hash
 
 
-import hash
 import list
 import mem
 import pair
 import vect
 
 
-method hash:Hash.iter() ptr hash:Iter
-  mut iter = <ptr hash:Iter>(mem:zalloc(size(hash:Iter)))
+alias Iter struct (
+  hash ptr Hash,
+  curBucket ptr list:List,
+  buckIndex,pos uintptr,
+  end bool
+)
+
+
+method Hash.iter() ptr Iter
+  mut iter = <ptr Iter>(mem:zalloc(size(Iter)))
 
   iter'hash = me
 
@@ -33,7 +40,7 @@ method hash:Hash.iter() ptr hash:Iter
 /method
 
 
-method hash:Iter.loadNextBucket()
+method Iter.loadNextBucket()
   me'curBucket = null
 
   while (not me'curBucket?) or me'curBucket.len() == 0
@@ -51,7 +58,7 @@ method hash:Iter.loadNextBucket()
 /method
 
 
-method hash:Iter.next() ptr pair:Pair
+method Iter.next() ptr pair:Pair
   # load next bucket
   if not me'curBucket? or me'curBucket.len() == 0 or me'pos == me'curBucket.len()
     me.loadNextBucket()
@@ -61,13 +68,13 @@ method hash:Iter.next() ptr pair:Pair
     return null
   /if
 
-  mut ent = <ptr hash:Entry>(val me'curBucket.get(me'pos))
+  mut ent = <ptr Entry>(val me'curBucket.get(me'pos))
   me'pos++
 
   return pair:new(ent'key, ent'value)
 /method
 
 
-func iterFree(iter ptr hash:Iter)
+func iterFree(iter ptr Iter)
   mem:free(iter)
 /func

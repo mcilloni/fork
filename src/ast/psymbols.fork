@@ -11,10 +11,42 @@
 module ast
 
 
-import ast
 import list
-import mem
-import utils
+import memutils
+import txt
+
+
+# PType and PTypeDescr do not represent a type, but its parse-time representation.
+# Per example, uint16 and PType are bot "id-types", because they are syntactically presented by
+# an identifier at parsing time, while being really very different (a struct and an integer).
+
+alias PType struct (
+  refc memutils:Ref,
+  name, moduleName ptr uint8,
+  descr ptr PTypeDescr,
+  begin, end txt:Line
+)
+
+
+alias PTypeDescr struct (
+  refc memutils:Ref,
+  type uint16,
+  # if type is PTYPE_PTR or PTYPE_LOC, this is the type returned by dereferencing.
+  # if type is PTYPE_FUNC, this is the return type of the function
+  retType ptr PType,
+  # if type is PTYPE_FUNC, this is the arguments list
+  # if type is PTYPE_STRUCT, this is the fields list
+  arguments ptr list:List,
+  #if type is PTYPE_LOC, this is the number of items allocated
+  length uintptr
+)
+
+
+alias PSymbol struct(
+  refc memutils:Ref,
+  name ptr uint8,
+  type ptr PType
+)
 
 
 mut PTYPE_FUNC   uint16 = 10

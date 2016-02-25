@@ -26,21 +26,19 @@ ARNAME = 'libfork.a'
 all:
 	mkdir -p ../build/
 
-	@printf "FORKC\t\t%s\n" rt.fork
-	@ FORDPATHS="$(shell pwd)/ford/internal/:$(shell pwd)/ford/" $(FORKC) -I $(INCLUDES) -o ../build/rt.o rt.fork
-
 	$(MAKE) -C about
 	$(MAKE) -C c
 	$(MAKE) -C math
 	$(MAKE) -C proc
+	$(MAKE) -C rt
 	$(MAKE) -C mem
 	$(MAKE) -C tty
 	$(MAKE) -C txt
+	$(MAKE) -C sort
 	$(MAKE) -C err
 	$(MAKE) -C io
 	$(MAKE) -C pair
 	$(MAKE) -C vect
-
 	$(MAKE) -C list
 	$(MAKE) -C map
 	$(MAKE) -C hash
@@ -52,6 +50,7 @@ all:
 	$(MAKE) -C memutils
 	$(MAKE) -C args
 	$(MAKE) -C ast
+
 	$(MAKE) -C parser
 
 	@printf "AR\t\t%s\n" $(ARNAME)

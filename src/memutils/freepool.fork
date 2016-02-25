@@ -13,18 +13,23 @@ module memutils
 
 import list
 import mem
-import memutils
-import utils
 
-func fpFree(fp ptr memutils:FreePool)
+
+alias FreePool struct(
+  ptrs ptr list:List,
+  freeFunc ptr func(item data)
+)
+
+
+func fpFree(fp ptr FreePool)
   if fp?
     list:freeAll(fp'ptrs, fp'freeFunc)
     mem:free(fp)
   /if
 /func
 
-func fpNew(freeFunc ptr func(item data)) ptr memutils:FreePool
-  mut ret = <ptr memutils:FreePool>(mem:alloc(size(memutils:FreePool)))
+func fpNew(freeFunc ptr func(item data)) ptr FreePool
+  mut ret = <ptr FreePool>(mem:alloc(size(FreePool)))
   ret'ptrs = list:new()
   ret'freeFunc = freeFunc
 
@@ -32,7 +37,7 @@ func fpNew(freeFunc ptr func(item data)) ptr memutils:FreePool
 /func
 
 
-method memutils:FreePool.alloc(len uintptr) data
+method FreePool.alloc(len uintptr) data
   mut ret = mem:alloc(len)
   me'ptrs.append(ret)
 
@@ -40,7 +45,7 @@ method memutils:FreePool.alloc(len uintptr) data
 /method
 
 
-method memutils:FreePool.zalloc(len uintptr) data
+method FreePool.zalloc(len uintptr) data
   mut ret = mem:zalloc(len)
   me'ptrs.append(ret)
 

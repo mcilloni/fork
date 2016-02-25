@@ -14,11 +14,15 @@ module set
 import hash
 import mem
 import pair
-import set
 
 
-method set:Set.iter() ptr set:Iter
-  mut iter = <ptr set:Iter>(mem:zalloc(size(set:Iter)))
+alias Iter struct (
+  iter ptr hash:Iter
+)
+
+
+method Set.iter() ptr Iter
+  mut iter = <ptr Iter>(mem:zalloc(size(Iter)))
 
   iter'iter = me'hash.iter()
 
@@ -26,7 +30,7 @@ method set:Set.iter() ptr set:Iter
 /method
 
 
-method set:Iter.next() data
+method Iter.next() data
   mut pair = me'iter.next()
 
   if not pair?
@@ -41,7 +45,7 @@ method set:Iter.next() data
 /method
 
 
-func iterFree(iter ptr set:Iter)
+func iterFree(iter ptr Iter)
   hash:iterFree(iter'iter)
   mem:free(iter)
 /func

@@ -8,11 +8,11 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-module txt
+module misc
 
-import cs
 import mem
 import tty
+import txt
 
 
 func low(n uint32) ptr uint8
@@ -137,7 +137,7 @@ func tens(n uint32) ptr uint8
 /func
 
 
-func twociphers(cs ptr cs:Charstash, n uint32)
+func twociphers(cs ptr txt:Charstash, n uint32)
   cs.add(tens(n))
 
   mut units = n mod 10
@@ -148,7 +148,7 @@ func twociphers(cs ptr cs:Charstash, n uint32)
 /func
 
 
-func repr(cs ptr cs:Charstash, n uint32)
+func repr(cs ptr txt:Charstash, n uint32)
   if n < 20
     cs.add(low(n))
     return
@@ -189,7 +189,7 @@ func repr(cs ptr cs:Charstash, n uint32)
 
 
 func representNum(n int32) ptr uint8
-  mut cs = cs:new(20)
+  mut cs = txt:newCs(20)
 
   if n < 0
     cs.add("minus")
@@ -199,5 +199,5 @@ func representNum(n int32) ptr uint8
 
   repr(cs, <uint32>(n))
 
-  return cs:unwrap(cs)
+  return txt:unwrapCs(cs)
 /func

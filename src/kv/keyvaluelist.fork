@@ -16,19 +16,24 @@ module kv
 
 
 import hash
-import kv
 import list
 import mem
 import pair
 import sort
 import tty
 import txt
-import utils
+
+
+alias KVList struct(
+    hash hash:Hash,
+    list list:List,
+    freeKey,freeVal ptr func(item data)
+)
 
 
 # KVList init/deinit functions
 
-func deinit(kv ptr kv:KVList)
+func deinit(kv ptr KVList)
   kv.freeContents()
 
   hash:deinit(ptr kv'hash)
@@ -36,16 +41,16 @@ func deinit(kv ptr kv:KVList)
 /func
 
 
-func free(kv ptr kv:KVList)
+func free(kv ptr KVList)
   if kv?
-    kv:deinit(kv)
+    deinit(kv)
     mem:free(kv)
   /if
 /func
 
 
-func init(kv ptr kv:KVList, cap uintptr, hf hash:hashfn) ptr kv:KVList
-  mem:set(kv, 0, size(kv:KVList))
+func init(kv ptr KVList, cap uintptr, hf hash:hashfn) ptr KVList
+  mem:set(kv, 0, size(KVList))
 
   hash:init(ptr kv'hash, cap, hf)
 
@@ -57,25 +62,25 @@ func init(kv ptr kv:KVList, cap uintptr, hf hash:hashfn) ptr kv:KVList
 /func
 
 
-func new(cap uintptr, hf hash:hashfn) ptr kv:KVList
-  return kv:init(<ptr kv:KVList>(mem:alloc(size(kv:KVList))), cap, hf)
+func new(cap uintptr, hf hash:hashfn) ptr KVList
+  return init(<ptr KVList>(mem:alloc(size(KVList))), cap, hf)
 /func
 
 
-func strinit(kv ptr kv:KVList, cap uintptr) ptr kv:KVList
-  return kv:init(kv, cap, ptr txt:strhash)
+func strinit(kv ptr KVList, cap uintptr) ptr KVList
+  return init(kv, cap, ptr txt:strhash)
 /func
 
 
-func strnew(cap uintptr) ptr kv:KVList
-  return kv:new(cap, ptr txt:strhash)
+func strnew(cap uintptr) ptr KVList
+  return new(cap, ptr txt:strhash)
 /func
 
 
 # KVList methods
 
-method kv:KVList.clone() ptr kv:KVList
-  mut ret = kv:new(me'hash'buckets'cap, me'hash'hf)
+method KVList.clone() ptr KVList
+  mut ret = new(me'hash'buckets'cap, me'hash'hf)
 
   mut len = me.len()
   mut i uintptr = 0
@@ -91,17 +96,17 @@ method kv:KVList.clone() ptr kv:KVList
 /method
 
 
-method kv:KVList.contains(key data) bool
+method KVList.contains(key data) bool
   return me'hash.contains(key)
 /method
 
 
-method kv:KVList.first() ptr pair:Pair
+method KVList.first() ptr pair:Pair
   return me'list.len() > 0 => <ptr pair:Pair>(val me'list.get(0)) || null
 /method
 
 
-method kv:KVList.fixIndices(pos uintptr)
+method KVList.fixIndices(pos uintptr)
   mut len = me'list.len()
 
   while pos < len
@@ -115,7 +120,7 @@ method kv:KVList.fixIndices(pos uintptr)
 /method
 
 
-method kv:KVList.freePairContents(pair ptr pair:Pair)
+method KVList.freePairContents(pair ptr pair:Pair)
   if me'freeKey?
     me'freeKey(pair'key)
   /if
@@ -126,7 +131,7 @@ method kv:KVList.freePairContents(pair ptr pair:Pair)
 /method
 
 
-method kv:KVList.freeContents()
+method KVList.freeContents()
   mut len = me.len()
   mut i uintptr = 0
 
@@ -138,32 +143,32 @@ method kv:KVList.freeContents()
 /method
 
 
-method kv:KVList.get(key data) data
+method KVList.get(key data) data
   mut indexValue = <ptr pair:Pair>(me'hash.get(key))
 
   return indexValue? => indexValue'value || null
 /method
 
 
-method kv:KVList.getAt(index uintptr) ptr pair:Pair
+method KVList.getAt(index uintptr) ptr pair:Pair
   mut ret = me'list.get(index)
   return ret? => <ptr pair:Pair>(val ret) || null
 /method
 
 
-method kv:KVList.getPos(key data) intptr
+method KVList.getPos(key data) intptr
   mut indexValue = <ptr pair:Pair>(me'hash.get(key))
 
   return indexValue? => <intptr>(indexValue'key) || -1
 /method
 
 
-method kv:KVList.len() uintptr
+method KVList.len() uintptr
   return me'list.len()
 /method
 
 
-method kv:KVList.print()
+method KVList.print()
 
   tty:out("[ ")
 
@@ -189,7 +194,7 @@ method kv:KVList.print()
 /method
 
 
-method kv:KVList.put(key data, value data)
+method KVList.put(key data, value data)
   mut indexValue = <ptr pair:Pair>(me'hash.get(key))
 
   # if no key matches, then create a new element in list and hash
@@ -212,7 +217,7 @@ method kv:KVList.put(key data, value data)
 /method
 
 
-method kv:KVList.remove(key data) bool
+method KVList.remove(key data) bool
 
   # pair value will be discarded.
   mut pos = me.getPos(key)
@@ -235,7 +240,7 @@ method kv:KVList.remove(key data) bool
 /method
 
 
-method kv:KVList.setFreeFuncs(freeKey,freeVal ptr func(item data))
+method KVList.setFreeFuncs(freeKey,freeVal ptr func(item data))
   me'freeKey = freeKey
   me'freeVal = freeVal
 /method

@@ -11,10 +11,15 @@
 module dyn
 
 
-import dyn
 import err
 import mem
 import txt
+
+
+alias SObj struct(
+    handl data,
+    name ptr uint8
+)
 
 
 decl func load_lib(name ptr uint8, err ptr uint8, len uintptr) data
@@ -22,7 +27,7 @@ decl func load_sym(handl data, name ptr uint8, err ptr uint8, len uintptr) data
 decl func free_lib(handl data, err ptr uint8, len uintptr) bool
 
 
-func close(sobj ptr dyn:SObj)
+func close(sobj ptr SObj)
   mut buf [1024] uint8 # ignore the error, though, I don't care about it right now
 
   free_lib(sobj'handl, ptr buf[0], 1024)
@@ -30,8 +35,8 @@ func close(sobj ptr dyn:SObj)
 /func
 
 
-func open(name ptr uint8, err ptr ptr err:Error) ptr dyn:SObj
-  mut ret = <ptr dyn:SObj>(mem:alloc(size(dyn:SObj)))
+func open(name ptr uint8, err ptr ptr err:Error) ptr SObj
+  mut ret = <ptr SObj>(mem:alloc(size(SObj)))
 
   if not sobjInit(ret, name, err)
     mem:free(ret)
@@ -43,7 +48,7 @@ func open(name ptr uint8, err ptr ptr err:Error) ptr dyn:SObj
 /func
 
 
-func sobjInit(sobj ptr dyn:SObj, name ptr uint8, err ptr ptr err:Error) bool
+func sobjInit(sobj ptr SObj, name ptr uint8, err ptr ptr err:Error) bool
   mut buf [1024] uint8
   sobj'handl = load_lib(name, ptr buf[0], 1024)
 
@@ -59,7 +64,7 @@ func sobjInit(sobj ptr dyn:SObj, name ptr uint8, err ptr ptr err:Error) bool
 /func
 
 
-method dyn:SObj.sym(name ptr uint8, err ptr ptr err:Error) data
+method SObj.sym(name ptr uint8, err ptr ptr err:Error) data
   mut buf [1024] uint8
 
   mut sym = load_sym(me'handl, name, ptr buf[0], 1024)

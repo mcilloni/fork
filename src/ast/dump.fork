@@ -11,14 +11,11 @@
 module ast
 
 
-import ast
-import cs
 import kv
 import list
 import mem
 import tty
 import txt
-import utils
 
 
 func printPadding(depth uintptr)
@@ -38,6 +35,7 @@ method txt:Line.dump()
   tty:outint(me'pos)
 /method
 
+
 func linesDump(begin,end txt:Line)
   tty:out("(at ")
   begin.dump()
@@ -51,7 +49,7 @@ func linesDump(begin,end txt:Line)
 /func
 
 
-func psymbolDump(psym ptr ast:PSymbol)
+func psymbolDump(psym ptr PSymbol)
   if not psym?
     return
   /if
@@ -85,7 +83,7 @@ func ptypeDescrDumpStructuredDataArgs(args ptr list:List)
       tty:out(", ")
     /if
 
-    mut sym = <ptr ast:PSymbol>(val args.get(i))
+    mut sym = <ptr PSymbol>(val args.get(i))
     psymbolDump(sym)
 
     i++
@@ -97,63 +95,63 @@ func ptypeDescrDumpStructuredDataArgs(args ptr list:List)
 
 func pnodeTypeToString(ptype uint16) ptr uint8
 
-  if ptype == ast:PROOT
+  if ptype == PROOT
     return "Root"
   /if
 
-  if ptype == ast:PENTRY
+  if ptype == PENTRY
     return "Entry"
   /if
 
-  if ptype == ast:PEXPR
+  if ptype == PEXPR
     return "Expression"
   /if
 
-  if ptype == ast:PFUNCTION
+  if ptype == PFUNCTION
     return "Function"
   /if
 
-  if ptype == ast:PALIAS
+  if ptype == PALIAS
     return "Alias"
   /if
 
-  if ptype == ast:PMETHOD
+  if ptype == PMETHOD
     return "Method"
   /if
 
-  if ptype == ast:PMUT
+  if ptype == PMUT
     return "Mut"
   /if
 
-  if ptype == ast:PMUTEXP
+  if ptype == PMUTEXP
     return "Mut expansion"
   /if
 
-  if ptype == ast:PBREAK
+  if ptype == PBREAK
     return "Break"
   /if
 
-  if ptype == ast:PCONTINUE
+  if ptype == PCONTINUE
     return "Continue"
   /if
 
-  if ptype == ast:PRETURN
+  if ptype == PRETURN
     return "Return"
   /if
 
-  if ptype == ast:PIF
+  if ptype == PIF
     return "If"
   /if
 
-  if ptype == ast:PIFELSE
+  if ptype == PIFELSE
     return "IfElse"
   /if
 
-  if ptype == ast:PWHILE
+  if ptype == PWHILE
     return "While"
   /if
 
-  if ptype == ast:PBLOCK
+  if ptype == PBLOCK
     return "Block"
   /if
 
@@ -161,7 +159,7 @@ func pnodeTypeToString(ptype uint16) ptr uint8
 /func
 
 
-func prootDumpInfo(proot ptr ast:PRoot, depth uintptr)
+func prootDumpInfo(proot ptr PRoot, depth uintptr)
   if proot'moduleName?
     tty:out(" [module: ")
     tty:out(proot'moduleName'name)
@@ -181,7 +179,7 @@ func prootDumpInfo(proot ptr ast:PRoot, depth uintptr)
 
     while i < len
       printPadding(depth + 1)
-      mut imp = <ptr ast:StringDef>(val proot'imports.get(i))
+      mut imp = <ptr StringDef>(val proot'imports.get(i))
 
       tty:out(imp'name)
       tty:outch(32)
@@ -194,7 +192,7 @@ func prootDumpInfo(proot ptr ast:PRoot, depth uintptr)
 /func
 
 
-func pdeclDumpInfo(pdecl ptr ast:PDecl, depth uintptr)
+func pdeclDumpInfo(pdecl ptr PDecl, depth uintptr)
   tty:outch(10)
   printPadding(depth + 1)
 
@@ -221,7 +219,7 @@ func pdeclDumpInfo(pdecl ptr ast:PDecl, depth uintptr)
 /func
 
 
-func pmuldeclDumpInfo(pmuldecl ptr ast:PMulDecl, depth uintptr)
+func pmuldeclDumpInfo(pmuldecl ptr PMulDecl, depth uintptr)
   mut len = pmuldecl'syms.len()
   mut i uintptr = 0
 
@@ -229,47 +227,47 @@ func pmuldeclDumpInfo(pmuldecl ptr ast:PMulDecl, depth uintptr)
     tty:outch(10)
     printPadding(depth + 1)
 
-    psymbolDump(<ptr ast:PSymbol>(val pmuldecl'syms.get(i)))
+    psymbolDump(<ptr PSymbol>(val pmuldecl'syms.get(i)))
 
     i++
   /while
 /func
 
 
-func pexprDumpInfo(pexpr ptr ast:PExpr, depth uintptr)
-  mut tok ast:Token
+func pexprDumpInfo(pexpr ptr PExpr, depth uintptr)
+  mut tok Token
   tok'type = pexpr'opType
 
   tty:out(": ")
 
-  if pexpr'opType == ast:ID
+  if pexpr'opType == ID
     tty:out("an id - \"")
     tty:out(<ptr uint8>(pexpr'node'value))
     tty:out("\"")
   else
-    if pexpr'opType == ast:NUMBER
+    if pexpr'opType == NUMBER
       tty:outint(pexpr'node'value)
     else
-      if pexpr'opType == ast:STRING
+      if pexpr'opType == STRING
         tty:out("a string - \"")
         tty:out(<ptr uint8>(pexpr'node'value))
         tty:out("\"")
       else
-        if pexpr'opType == ast:OPAR
+        if pexpr'opType == OPAR
           tty:out("a function call")
         else
-          if pexpr'opType == ast:OBRAC
+          if pexpr'opType == OBRAC
             tty:out("an array access")
           else
-            if pexpr'opType == ast:OCURLY
+            if pexpr'opType == OCURLY
               tty:out("a struct literal")
             else
-              tty:out(ast:tokenStr(ptr tok))
+              tty:out(tokenStr(ptr tok))
 
-              if pexpr'opType == ast:CAST or pexpr'opType == ast:SIZE
+              if pexpr'opType == CAST or pexpr'opType == SIZE
                 tty:out(" to ")
 
-                <ptr ast:PType>(pexpr'node'value).dump()
+                <ptr PType>(pexpr'node'value).dump()
               /if
             /if
           /if
@@ -280,7 +278,7 @@ func pexprDumpInfo(pexpr ptr ast:PExpr, depth uintptr)
 /func
 
 
-func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
+func pnodeDumpRec(pnode ptr PNode, depth uintptr)
 
   printPadding(depth)
 
@@ -291,19 +289,19 @@ func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
   linesDump(pnode'begin, pnode'end)
 
   if pnode.isRoot()
-    prootDumpInfo(<ptr ast:PRoot>(pnode), depth)
+    prootDumpInfo(<ptr PRoot>(pnode), depth)
   /if
 
   if pnode.isDecl()
-    pdeclDumpInfo(<ptr ast:PDecl>(pnode), depth)
+    pdeclDumpInfo(<ptr PDecl>(pnode), depth)
   /if
 
   if pnode.isExpr()
-    pexprDumpInfo(<ptr ast:PExpr>(pnode), depth)
+    pexprDumpInfo(<ptr PExpr>(pnode), depth)
   /if
 
   if pnode.isMulDecl()
-    pmuldeclDumpInfo(<ptr ast:PMulDecl>(pnode), depth)
+    pmuldeclDumpInfo(<ptr PMulDecl>(pnode), depth)
   /if
 
   tty:outch(10)
@@ -312,7 +310,7 @@ func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
   mut i uintptr = 0
 
   while i < len
-    mut child = <ptr ast:PNode>(val pnode'leaves.get(i))
+    mut child = <ptr PNode>(val pnode'leaves.get(i))
 
     pnodeDumpRec(child, depth + 1)
 
@@ -322,12 +320,12 @@ func pnodeDumpRec(pnode ptr ast:PNode, depth uintptr)
 /func
 
 
-method ast:PNode.dump()
+method PNode.dump()
   pnodeDumpRec(me, 0)
 /method
 
 
-method ast:PModule.dump()
+method PModule.dump()
   tty:out("Module ")
 
   tty:outln(me'name ?? "<main>")
@@ -338,7 +336,7 @@ method ast:PModule.dump()
   mut len = me'roots.len()
 
   while i < len
-    mut root = <ptr ast:PRoot>(val me'roots.get(i))
+    mut root = <ptr PRoot>(val me'roots.get(i))
 
     tty:out("\nfile ")
     tty:out(root'fileName)
@@ -351,14 +349,14 @@ method ast:PModule.dump()
 /method
 
 
-method ast:Symbol.dump(cs ptr cs:Charstash)
+method Symbol.dump(cs ptr txt:Charstash)
   cs.add(me'name)
   cs.addChar(32)
   me'type.dump(cs)
 /method
 
 
-func symlistDump(cs ptr cs:Charstash, symlist ptr kv:KVList)
+func symlistDump(cs ptr txt:Charstash, symlist ptr kv:KVList)
 
   if symlist?
     mut len = symlist.len()
@@ -366,10 +364,10 @@ func symlistDump(cs ptr cs:Charstash, symlist ptr kv:KVList)
 
     while i < len
       mut pair = symlist.getAt(i)
-      mut sym ast:Symbol
+      mut sym Symbol
 
       sym'name = <ptr uint8>(pair'key)
-      sym'type = <ptr ast:Type>(pair'value)
+      sym'type = <ptr Type>(pair'value)
 
       sym.dump(cs)
 
@@ -383,7 +381,7 @@ func symlistDump(cs ptr cs:Charstash, symlist ptr kv:KVList)
 /func
 
 
-func typeDumpName(cs ptr cs:Charstash, type ptr ast:Type)
+func typeDumpName(cs ptr txt:Charstash, type ptr Type)
   if type'name?
     cs.add("{ ")
 
@@ -398,10 +396,10 @@ func typeDumpName(cs ptr cs:Charstash, type ptr ast:Type)
 /func
 
 
-method ast:Type.dump(cs ptr cs:Charstash)
+method Type.dump(cs ptr txt:Charstash)
   typeDumpName(cs, me)
 
-  if me'type == ast:TYPE_FUNC
+  if me'type == TYPE_FUNC
     typeDumpName(cs, me)
 
     cs.add("func (")
@@ -416,27 +414,27 @@ method ast:Type.dump(cs ptr cs:Charstash)
       me'retType.dump(cs)
     /if
   else
-    if me'type == ast:TYPE_PTR
+    if me'type == TYPE_PTR
       cs.add("ptr ")
 
       me'retType.dump(cs)
     else
-      if me'type == ast:TYPE_STRUCT
+      if me'type == TYPE_STRUCT
         cs.add("{")
         symlistDump(cs, me'members)
         cs.add("}")
       else
-        if me'type == ast:TYPE_LOC
+        if me'type == TYPE_LOC
           cs.add("[")
           cs.addInt(me'itemCount)
           cs.add("] ")
 
           me'retType.dump(cs)
         else
-          if me'type == ast:TYPE_BOOL
+          if me'type == TYPE_BOOL
             cs.add("bool")
           else
-            if me'type == ast:TYPE_INT
+            if me'type == TYPE_INT
               if not me'isSigned
                 cs.add("u")
               /if
@@ -445,18 +443,18 @@ method ast:Type.dump(cs ptr cs:Charstash)
               cs.addInt(me'typeSize * 8)
 
             else
-              if me'type == ast:TYPE_DATA
+              if me'type == TYPE_DATA
                 cs.add("data")
               else
-                if me'type == ast:TYPE_RECALIAS
+                if me'type == TYPE_RECALIAS
                   cs.add("<< alias to ")
                   cs.add(me'name)
                   cs.add(" >>")
                 else
-                  if me'type == ast:TYPE_NULL
+                  if me'type == TYPE_NULL
                     cs.add("null")
                   else
-                    if me'type == ast:TYPE_EMPTY
+                    if me'type == TYPE_EMPTY
                       cs.add("<<empty type>>")
                     /if
                   /if
@@ -472,11 +470,11 @@ method ast:Type.dump(cs ptr cs:Charstash)
 /method
 
 
-method ast:Type.ttydump()
-  mut cs = cs:new(20)
+method Type.ttydump()
+  mut cs = txt:newCs(20)
 
   me.dump(cs)
-  mut str = cs:unwrap(cs)
+  mut str = txt:unwrapCs(cs)
 
   tty:outln(str)
 
@@ -484,14 +482,14 @@ method ast:Type.ttydump()
 /method
 
 
-method ast:Symbol.summarize(cs ptr cs:Charstash)
+method Symbol.summarize(cs ptr txt:Charstash)
   cs.add(me'name)
   cs.addChar(32)
   me'type.summarize(cs)
 /method
 
 
-func symlistSummarize(cs ptr cs:Charstash, symlist ptr kv:KVList)
+func symlistSummarize(cs ptr txt:Charstash, symlist ptr kv:KVList)
 
   if symlist?
     mut len = symlist.len()
@@ -499,10 +497,10 @@ func symlistSummarize(cs ptr cs:Charstash, symlist ptr kv:KVList)
 
     while i < len
       mut pair = symlist.getAt(i)
-      mut sym ast:Symbol
+      mut sym Symbol
 
       sym'name = <ptr uint8>(pair'key)
-      sym'type = <ptr ast:Type>(pair'value)
+      sym'type = <ptr Type>(pair'value)
 
       sym.summarize(cs)
 
@@ -516,7 +514,7 @@ func symlistSummarize(cs ptr cs:Charstash, symlist ptr kv:KVList)
 /func
 
 
-method ast:Type.summarize(cs ptr cs:Charstash)
+method Type.summarize(cs ptr txt:Charstash)
   if me'name?
     if me'moduleName?
       cs.add(me'moduleName)
@@ -567,16 +565,16 @@ method ast:Type.summarize(cs ptr cs:Charstash)
 /method
 
 
-func declDump(prefix,name ptr uint8, type ptr ast:Type)
+func declDump(prefix,name ptr uint8, type ptr Type)
   tty:out(prefix)
   tty:outch(32)
 
   tty:out(name)
   tty:outch(32)
 
-  mut cs = cs:new(40)
+  mut cs = txt:newCs(40)
   type.dump(cs)
-  mut str = cs:unwrap(cs)
+  mut str = txt:unwrapCs(cs)
 
   tty:out(str)
 
@@ -594,10 +592,10 @@ func declDump(prefix,name ptr uint8, type ptr ast:Type)
 /func
 
 
-method ast:PTypeDescr.dump()
+method PTypeDescr.dump()
   mut ptype = me'type
 
-  if ptype == ast:PTYPE_FUNC
+  if ptype == PTYPE_FUNC
     tty:out("func")
 
     if me'arguments?
@@ -613,30 +611,30 @@ method ast:PTypeDescr.dump()
     /if
   /if
 
-  if ptype == ast:PTYPE_ID
+  if ptype == PTYPE_ID
     return
   /if
 
-  if ptype == ast:PTYPE_LOC
+  if ptype == PTYPE_LOC
     tty:out("[")
     tty:outint(me'length)
     tty:out("] ")
     me'retType.dump()
   /if
 
-  if ptype == ast:PTYPE_PTR
+  if ptype == PTYPE_PTR
     tty:out("ptr ")
     me'retType.dump()
   /if
 
-  if ptype == ast:PTYPE_STRUCT
+  if ptype == PTYPE_STRUCT
     tty:out("struct ")
     ptypeDescrDumpStructuredDataArgs(me'arguments)
   /if
 /method
 
 
-method ast:PType.dump()
+method PType.dump()
   if me'name?
     if me'moduleName?
       tty:out(me'moduleName)

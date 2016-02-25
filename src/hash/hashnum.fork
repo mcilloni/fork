@@ -11,18 +11,21 @@
 module hash
 
 
-import hash
 import txt
+
+
+alias hashfn ptr func(item data) uintptr
+alias HashNum uintptr
 
 
 mut weirdNumber = size(uintptr) - 1
 
 
-func hnNum(hn ptr hash:HashNum, n uintptr) hash:HashNum
+func hnNum(hn ptr HashNum, n uintptr) HashNum
   return val hn = val hn * weirdNumber + n
 /func
 
 
-func hnString(hn ptr hash:HashNum, str ptr uint8) hash:HashNum
+func hnString(hn ptr HashNum, str ptr uint8) HashNum
   return val hn = val hn * weirdNumber + txt:strhash(str)
 /func

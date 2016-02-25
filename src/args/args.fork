@@ -11,8 +11,6 @@
 module args
 
 
-import args
-import cs
 import err
 import hash
 import kv
@@ -24,7 +22,23 @@ import txt
 import tty
 
 
-func free(args ptr args:Args)
+alias UnboundsOpts struct(
+  name ptr uint8,
+  single,mandatory bool
+)
+
+
+alias Args struct(
+  appname,appdes ptr uint8,
+  lopt,sopt,opts,args hash:Hash,
+  mandatory set:Set,
+  unbounds list:List,
+  unboundsOpts UnboundsOpts,
+  parsed,help bool
+)
+
+
+func free(args ptr Args)
   if args?
     hash:deinit(ptr args'args)
     hash:deinit(ptr args'lopt)
@@ -40,8 +54,8 @@ func free(args ptr args:Args)
 /func
 
 
-func new(appdes ptr uint8) ptr args:Args
-  mut ret = cast<ptr args:Args>(mem:zalloc(size(args:Args)))
+func new(appdes ptr uint8) ptr Args
+  mut ret = cast<ptr Args>(mem:zalloc(size(Args)))
 
   ret'appdes = appdes
 
@@ -64,26 +78,26 @@ func new(appdes ptr uint8) ptr args:Args
 
 
 # Returns a list of strings, and only strings - that must be separated by commas
-method args:Args.getList(name ptr uint8) {ok bool, list ptr list:List}
+method Args.getList(name ptr uint8) {ok bool, list ptr list:List}
   mut list = cast<ptr list:List>(me'args.get(name))
 
   return {list? , list}
 /method
 
 
-method args:Args.getStr(name ptr uint8) {ok bool, str ptr uint8}
+method Args.getStr(name ptr uint8) {ok bool, str ptr uint8}
   mut str = cast<ptr uint8>(me'args.get(name))
 
   return {str? , str}
 /method
 
 
-method args:Args.getUnbounds() ptr list:List
+method Args.getUnbounds() ptr list:List
   return ptr me'unbounds
 /method
 
 
-method args:Args.help(toStdout bool) bool
+method Args.help(toStdout bool) bool
   if not me'help or not me'parsed
     return false
   /if
@@ -100,7 +114,7 @@ method args:Args.help(toStdout bool) bool
 /method
 
 
-method args:Args.isSet(flag ptr uint8) bool
+method Args.isSet(flag ptr uint8) bool
   return me'args.contains(flag)
 /method
 
@@ -113,7 +127,7 @@ alias Opt struct(
 )
 
 
-method args:Args.newFlag(type uint8,
+method Args.newFlag(type uint8,
                          name,descr,argdes ptr uint8,
                          multiple,mandatory bool,
                          lopt,sopt ptr uint8)
@@ -138,7 +152,7 @@ method args:Args.newFlag(type uint8,
 /method
 
 
-method args:Args.parseList(name,param ptr uint8)
+method Args.parseList(name,param ptr uint8)
   mut tkz = txt:tokenizerNew(param, 44) # `,`
   mut list = list:new()
 
@@ -154,7 +168,7 @@ method args:Args.parseList(name,param ptr uint8)
 /method
 
 
-method args:Args.parseMultiple(name ptr uint8,
+method Args.parseMultiple(name ptr uint8,
                                opt ptr Opt,
                                param ptr uint8)
 
@@ -169,7 +183,7 @@ method args:Args.parseMultiple(name ptr uint8,
 /method
 
 
-method args:Args.parseLong(arg ptr uint8) {name,param ptr uint8, opt ptr Opt,
+method Args.parseLong(arg ptr uint8) {name,param ptr uint8, opt ptr Opt,
                                             err ptr err:Error}
 
   # Find the '=' (if there is one).
@@ -223,7 +237,7 @@ method args:Args.parseLong(arg ptr uint8) {name,param ptr uint8, opt ptr Opt,
 /method
 
 
-method args:Args.parseShort(arg ptr uint8) {name ptr uint8, opt ptr Opt, err ptr err:Error}
+method Args.parseShort(arg ptr uint8) {name ptr uint8, opt ptr Opt, err ptr err:Error}
   mut name = cast<ptr uint8>(me'sopt.get(arg))
 
   if not name?
@@ -240,7 +254,7 @@ method args:Args.parseShort(arg ptr uint8) {name ptr uint8, opt ptr Opt, err ptr
 /method
 
 
-method args:Args.parse() ptr err:Error
+method Args.parse() ptr err:Error
   mut args = proc:args()
   me'appname = args'progname
 
@@ -340,7 +354,7 @@ method args:Args.parse() ptr err:Error
 
     mut next ptr uint8 = null
     mut first = true
-    mut cs = cs:new(30)
+    mut cs = txt:newCs(30)
 
     cs.add("argument not set: ")
 
@@ -369,7 +383,7 @@ method args:Args.parse() ptr err:Error
 
     set:iterFree(iter)
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     mut ret = err:new(msg)
     mem:free(msg)
@@ -383,12 +397,12 @@ method args:Args.parse() ptr err:Error
 /method
 
 
-method args:Args.ready() bool
+method Args.ready() bool
   return me'parsed
 /method
 
 
-method args:Args.unboundsOpts(name ptr uint8, single,mandatory bool)
+method Args.unboundsOpts(name ptr uint8, single,mandatory bool)
   me'unboundsOpts = {name, single, mandatory}
 /method
 

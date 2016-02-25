@@ -11,7 +11,6 @@
 module map
 
 
-import map
 import mem
 import pair
 import proc
@@ -24,10 +23,27 @@ mut BLACK = false
 mut RED = true
 
 
+# map structures
+alias Node struct (
+  left, right ptr Node,
+  key, value data,
+  color bool,
+  cmp sort:comparator
+)
+
+
+alias Map struct (
+  root ptr Node,
+  len uintptr,
+  cmp sort:comparator,
+  freeKey,freeVal ptr func(item data)
+)
+
+
 # node init/deinit functions
 
 
-func nodeFree(node ptr map:Node, freeKey,freeVal ptr func(item data))
+func nodeFree(node ptr Node, freeKey,freeVal ptr func(item data))
 
   if not node?
     return
@@ -49,8 +65,8 @@ func nodeFree(node ptr map:Node, freeKey,freeVal ptr func(item data))
 /func
 
 
-func nodeNew(key data, value data, cmp sort:comparator) ptr map:Node
-  mut ret = <ptr map:Node>(mem:zalloc(size(map:Node)))
+func nodeNew(key data, value data, cmp sort:comparator) ptr Node
+  mut ret = <ptr Node>(mem:zalloc(size(Node)))
   ret'key = key
   ret'value = value
   ret'color = RED
@@ -61,7 +77,7 @@ func nodeNew(key data, value data, cmp sort:comparator) ptr map:Node
 
 # node functions
 
-func nodeDelete(node ptr map:Node, keyV data, found ptr bool) ptr map:Node
+func nodeDelete(node ptr Node, keyV data, found ptr bool) ptr Node
   if not node?
     val found = false
     return null
@@ -108,7 +124,7 @@ func nodeDelete(node ptr map:Node, keyV data, found ptr bool) ptr map:Node
 /func
 
 
-func nodeRotateLeft(node ptr map:Node) ptr map:Node
+func nodeRotateLeft(node ptr Node) ptr Node
   mut ret = node'right
 
   if ret'color == BLACK
@@ -125,7 +141,7 @@ func nodeRotateLeft(node ptr map:Node) ptr map:Node
 /func
 
 
-func nodeRotateRight(node ptr map:Node) ptr map:Node
+func nodeRotateRight(node ptr Node) ptr Node
   mut ret = node'left
 
   if ret'color == BLACK
@@ -142,24 +158,24 @@ func nodeRotateRight(node ptr map:Node) ptr map:Node
 /func
 
 
-func nodeColorFlip(node ptr map:Node)
+func nodeColorFlip(node ptr Node)
   node'color = not node'color
   node'left'color = not node'left'color
   node'right'color = not node'right'color
 /func
 
 
-func nodeIsRed(node ptr map:Node) bool
+func nodeIsRed(node ptr Node) bool
   return node? and (node'color == RED)
 /func
 
 
-func nodeIsBlack(node ptr map:Node) bool
+func nodeIsBlack(node ptr Node) bool
   return (not node?) or (node'color == BLACK)
 /func
 
 
-func nodeFixUp(node ptr map:Node) ptr map:Node
+func nodeFixUp(node ptr Node) ptr Node
   if nodeIsRed(node'right)
 	  node = nodeRotateLeft(node)
   /if
@@ -176,7 +192,7 @@ func nodeFixUp(node ptr map:Node) ptr map:Node
 /func
 
 
-func nodeAdd(node ptr map:Node, keyV data, value data, cmp sort:comparator, oldvalue ptr data) ptr map:Node
+func nodeAdd(node ptr Node, keyV data, value data, cmp sort:comparator, oldvalue ptr data) ptr Node
 
   if not node?
     val oldvalue = null
@@ -200,7 +216,7 @@ func nodeAdd(node ptr map:Node, keyV data, value data, cmp sort:comparator, oldv
 /func
 
 
-func nodeMoveRedLeft(node ptr map:Node) ptr map:Node
+func nodeMoveRedLeft(node ptr Node) ptr Node
 
   nodeColorFlip(node)
 
@@ -215,7 +231,7 @@ func nodeMoveRedLeft(node ptr map:Node) ptr map:Node
 /func
 
 
-func nodeMoveRedRight(node ptr map:Node) ptr map:Node
+func nodeMoveRedRight(node ptr Node) ptr Node
 
   nodeColorFlip(node)
 
@@ -229,7 +245,7 @@ func nodeMoveRedRight(node ptr map:Node) ptr map:Node
 /func
 
 
-func nodeGetnode(node ptr map:Node, keyV data) ptr map:Node
+func nodeGetnode(node ptr Node, keyV data) ptr Node
   if not node?
     return null
   /if
@@ -247,7 +263,7 @@ func nodeGetnode(node ptr map:Node, keyV data) ptr map:Node
 /func
 
 
-func nodeGet(node ptr map:Node, keyV data, valueV ptr data) bool
+func nodeGet(node ptr Node, keyV data, valueV ptr data) bool
   mut found = nodeGetnode(node, keyV)
 
   if not found?
@@ -259,7 +275,7 @@ func nodeGet(node ptr map:Node, keyV data, valueV ptr data) bool
 /func
 
 
-func nodeDeleteMin(node ptr map:Node) ptr map:Node
+func nodeDeleteMin(node ptr Node) ptr Node
   if not node'left?
     return null
   /if
@@ -273,7 +289,7 @@ func nodeDeleteMin(node ptr map:Node) ptr map:Node
 /func
 
 
-func nodeMkpair(node ptr map:Node) ptr pair:Pair
+func nodeMkpair(node ptr Node) ptr pair:Pair
   if not node?
     return null
   /if
@@ -285,7 +301,7 @@ func nodeMkpair(node ptr map:Node) ptr pair:Pair
 /func
 
 
-func nodeMinpair(node ptr map:Node) ptr pair:Pair
+func nodeMinpair(node ptr Node) ptr pair:Pair
   if not node'left?
     return nodeMkpair(node)
   else
@@ -294,7 +310,7 @@ func nodeMinpair(node ptr map:Node) ptr pair:Pair
 /func
 
 
-func nodeMin(node ptr map:Node) data
+func nodeMin(node ptr Node) data
   if not node'left?
     return node'key
   else
@@ -305,7 +321,7 @@ func nodeMin(node ptr map:Node) data
 
 # map init/deinit functions
 
-func deinit(map ptr map:Map)
+func deinit(map ptr Map)
   if not map?
     return
   /if
@@ -314,49 +330,49 @@ func deinit(map ptr map:Map)
 /func
 
 
-func free(map ptr map:Map)
-  map:deinit(map)
+func free(map ptr Map)
+  deinit(map)
   mem:free(map)
 /func
 
 
-func init(map ptr map:Map, cmp sort:comparator) ptr map:Map
+func init(map ptr Map, cmp sort:comparator) ptr Map
   map'cmp = cmp
   return map
 /func
 
 
-func new(cmp sort:comparator) ptr map:Map
-  mut map = <ptr map:Map>(mem:zalloc(size(map:Map)))
+func new(cmp sort:comparator) ptr Map
+  mut map = <ptr Map>(mem:zalloc(size(Map)))
 
-  return map:init(map, cmp)
+  return init(map, cmp)
 /func
 
 
-func strinit(map ptr map:Map) ptr map:Map
-  return map:init(map, ptr txt:strcompare)
+func strinit(map ptr Map) ptr Map
+  return init(map, ptr txt:strcompare)
 /func
 
 
-func strnew() ptr map:Map
-  return map:new(ptr txt:strcompare)
+func strnew() ptr Map
+  return new(ptr txt:strcompare)
 /func
 
 
 # map methods
 
-method map:Map.contains(key data) bool
+method Map.contains(key data) bool
   mut value data #ignored - will be discarded
   return me.getInternal(key, ptr value)
 /method
 
 
-method map:Map.first() ptr pair:Pair
+method Map.first() ptr pair:Pair
   return me'root? => nodeMinpair(me'root) || null
 /method
 
 
-method map:Map.get(key data) data
+method Map.get(key data) data
   mut value data = null
 
   me.getInternal(key, ptr value)
@@ -365,7 +381,7 @@ method map:Map.get(key data) data
 /method
 
 
-method map:Map.getInternal(key data, value ptr data) bool
+method Map.getInternal(key data, value ptr data) bool
   if not me'root?
     return false
   /if
@@ -374,12 +390,12 @@ method map:Map.getInternal(key data, value ptr data) bool
 /method
 
 
-method map:Map.len() uintptr
+method Map.len() uintptr
   return me'len
 /method
 
 
-method map:Map.put(key data, value data) data
+method Map.put(key data, value data) data
   mut oldvalue data = null
   me'root = nodeAdd(me'root, key, value, me'cmp, ptr oldvalue)
   me'root'color = BLACK
@@ -392,7 +408,7 @@ method map:Map.put(key data, value data) data
 /method
 
 
-method map:Map.remove(key data) bool
+method Map.remove(key data) bool
 	mut ret = false
 	mut newVal = nodeDelete(me'root, key, ptr ret)
 
@@ -412,7 +428,7 @@ method map:Map.remove(key data) bool
 /method
 
 
-method map:Map.setFreeFuncs(freeKey,freeVal ptr func(item data))
+method Map.setFreeFuncs(freeKey,freeVal ptr func(item data))
   me'freeKey = freeKey
   me'freeVal = freeVal
 /method

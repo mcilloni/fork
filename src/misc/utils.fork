@@ -8,16 +8,13 @@
 #  licenses expressed under Section 1.12 of the MPL v2.
 
 
-module utils
+module misc
 
 
-import ast
-import cs
 import err
 import list
 import mem
 import txt
-import utils
 
 
 func charIsIdVal(ch uint8) bool
@@ -115,7 +112,7 @@ func listContains(list ptr list:List, value ptr uint8) bool
 /func
 
 
-func listDumpHierarchyIntoCS(list ptr list:List, cs ptr cs:Charstash)
+func listDumpHierarchyIntoCS(list ptr list:List, cs ptr txt:Charstash)
   mut len = list.len()
 
   cs.add("(")
