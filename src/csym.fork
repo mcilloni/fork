@@ -131,15 +131,9 @@ method LRStr.addPtrType(type ptr ast:Type)
 /method
 
 
-method LRStr.addStructType(type ptr ast:Type)
+method LRStr.addStructBody(type ptr ast:Type)
   mut doPad = me'pad > 0
   mut cs = me'left
-
-  cs.addWord("struct")
-
-  if type'name?
-    cs.addSymName(type'moduleName, type'name)
-  /if
 
   cs.add("{")
 
@@ -156,7 +150,7 @@ method LRStr.addStructType(type ptr ast:Type)
     if doPad
       cs.addPad(me'pad + 2)
     else
-      cs.add("  ")
+      cs.add(" ")
     /if
 
     me'unit.genCsym(cs, null, null, <ptr uint8>(pair'key), \
@@ -176,7 +170,22 @@ method LRStr.addStructType(type ptr ast:Type)
     cs.addPad(me'pad)
   /if
 
-  cs.add("} ")
+  cs.add(" }")
+/method
+
+
+method LRStr.addStructType(type ptr ast:Type)
+  me'left.addWord("struct")
+
+  if type'name?
+    me'left.addSymName(type'moduleName, type'name)
+  /if
+
+  me'left.add(" ")
+
+  me.addStructBody(type)
+
+  me'left.add(" ")
 /method
 
 
@@ -199,7 +208,15 @@ method LRStr.syntetizeStructType(type ptr ast:Type)
     mem:copy(name + newLen + 1, me'unit'modName, len)
   /if
 
-  me'unit.typedef(name, type, true)
+  mut typeBodyCs = cs:new(30)
+
+  me'unit.genCsym(typeBodyCs, null, null, name, type, -1, true)
+
+  mut typeBody = cs:unwrap(typeBodyCs)
+
+  me'unit.typedef(name, typeBody, true)
+
+  mem:free(typeBody)
 
   me'left.add(name)
   me'left.add(" ")
@@ -208,14 +225,14 @@ method LRStr.syntetizeStructType(type ptr ast:Type)
 /method
 
 
-method LRStr.addType(type ptr ast:Type, methTarget ptr uint8, full bool)
+method LRStr.addType(type ptr ast:Type, methTarget ptr uint8, tdef bool)
 
   if not type? or type'type == ast:TYPE_EMPTY
     me'left.add("void ")
     return
   /if
 
-  if     not full \
+  if not tdef \
      and type'name? \
      and (type'type == ast:TYPE_STRUCT or type'type == ast:TYPE_FUNC)
 
@@ -250,7 +267,7 @@ method LRStr.addType(type ptr ast:Type, methTarget ptr uint8, full bool)
               me'left.addSymName(type'moduleName, type'name)
               me'left.add(" ")
             else
-              if full
+              if tdef
                 me.addStructType(type)
               else
                 me.syntetizeStructType(type)
@@ -265,8 +282,8 @@ method LRStr.addType(type ptr ast:Type, methTarget ptr uint8, full bool)
 
 
 method LRStr.addSymName(typeName,moduleName,name ptr uint8,
-                    type ptr ast:Type,
-                    tdf bool)
+                        type ptr ast:Type,
+                        tdf bool)
 
   me.addType(type, typeName, tdf)
 

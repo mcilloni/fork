@@ -15,6 +15,7 @@ import ast
 import cs
 import ctrans
 import err
+import hash
 import io
 import kv
 import libfork
@@ -34,6 +35,7 @@ func init(tr ptr ctrans:Transl,
 
   tr'includes = cs:new(40)
   tr'typedefs = cs:new(300)
+  tr'ssastructs = cs:new(300)
   tr'externs = cs:new(300)
   tr'vars = cs:new(300)
   tr'funcs = cs:new(300)
@@ -111,12 +113,16 @@ method ctrans:Transl.globVar(sym ptr uint8, root ptr ast:PRoot, expr ptr ast:PEx
 /method
 
 
-method ctrans:Transl.typedef(name ptr uint8, type ptr ast:Type, ssa bool)
-  me'typedefs.addWord("typedef")
+method ctrans:Transl.typedef(name,body ptr uint8, ssa bool)
+  mut cs = ssa => me'ssastructs || me'typedefs
 
-  me.genCsym(me'typedefs, null, ssa => null || me'modName, name, type, -1, true)
+  cs.addWord("typedef")
 
-  me'typedefs.addLine(";\n")
+  mut modName = ssa => null || me'modName
+
+  cs.add(body)
+
+  cs.addLine(";\n")
 /method
 
 
@@ -147,6 +153,12 @@ method ctrans:Transl.dump() {headers,cfile ptr uint8}
   mut typedefs = cs:unwrap(me'typedefs)
   headers.add(typedefs)
   mem:free(typedefs)
+
+  cs.add("\n\n")
+
+  mut ssastructs = cs:unwrap(me'ssastructs)
+  headers.add(ssastructs)
+  mem:free(ssastructs)
 
   cs.add("\n\n")
 
@@ -285,40 +297,133 @@ method set:Set.gatherImports(root ptr ast:PRoot)
 /method
 
 
-method ctrans:Transl.genTypedefs(root ptr ast:PRoot)
+method ctrans:Transl.genTypedef(kv ptr kv:KVList,
+                                name,body ptr uint8,
+                                deps,done ptr set:Set)
 
-  mut als = root'aliases'syms
+  mut iter = deps.iter()
+  mut dep ptr uint8 = null
+
+  while (dep = cast<ptr uint8>(iter.next()))?
+    if not done.contains(dep)
+      mut idep = cast<ptr {body ptr uint8, deps ptr set:Set} >(kv.get(dep))
+
+      if idep?
+        me.genTypedef(kv, dep, idep'body, idep'deps, done)
+      /if
+    /if
+  /while
+
+  me.typedef(name, body, false)
+
+  done.put(name)
+/method
+
+
+method ctrans:Transl.genTypedefs(kv ptr kv:KVList)
+  mut done = set:strnew(10)
+  mut len = kv.len()
 
   mut i uintptr = 0
-  mut len = als.len()
 
   while i < len
-    mut pair = als.getAt(i)
-    mut name = <ptr uint8>(pair'key)
-    mut type = <ptr ast:DeclInfo>(pair'value)'type
+    mut pair = kv.getAt(i)
+    mut name = cast<ptr uint8>(pair'key)
+    mut {body,deps} = val cast<ptr {body ptr uint8, deps ptr set:Set} >(pair'value)
 
-    me.typedef(name, type, false)
+    if not done.contains(name)
+      me.genTypedef(kv, name, body, deps, done)
+    /if
 
     i++
   /while
 /method
 
 
-method ctrans:Transl.translate(root ptr ast:PRoot)
+func typeGatherMembersDepSet(set ptr set:Set,
+                             curMod,aliasName ptr uint8,
+                             members ptr kv:KVList)
 
-  me.genImports(root)
-  me.genTypedefs(root)
-  me.genDecls(root)
+  mut len = members.len()
+  mut i uintptr = 0
 
-  if root'entryNode?
-    me.forkmain(root)
+  while i < len
+    mut pair = members.getAt(i)
+    mut type = cast<ptr ast:Type>(pair'value)
+
+    typeGatherDepSet(set, curMod, aliasName, type)
+
+    i++
+  /while
+/func
+
+
+func typeGatherDepSet(set ptr set:Set,
+                      curMod,aliasName ptr uint8,
+                      type ptr ast:Type)
+
+  if not type'builtin and type'type != ast:TYPE_RECALIAS
+    if type'name? and not txt:strequals(type'name, aliasName)
+      if not type'moduleName? or txt:strequals(type'moduleName, curMod)
+        set.put(type'name)
+      /if
+    else
+      if type'retType?
+        typeGatherDepSet(set, curMod, aliasName, type'retType)
+      /if
+
+      if type'members?
+        typeGatherMembersDepSet(set, curMod, aliasName, type'members)
+      /if
+    /if
   /if
+/func
+
+
+func genDepSet(curMod,aliasName ptr uint8, type ptr ast:Type) ptr set:Set
+  mut set = set:strnew(10)
+
+  typeGatherDepSet(set, curMod, aliasName, type)
+
+  return set
+/func
+
+
+method ctrans:Transl.gatherAliases(aliases ptr kv:KVList, root ptr ast:PRoot)
+  mut modName = root'moduleName? => root'moduleName'name || null
+  mut kv = root'aliases'syms
+
+  mut len = kv.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut pair = kv.getAt(i)
+    mut name = cast<ptr uint8>(pair'key)
+    mut type = cast<ptr ast:DeclInfo>(pair'value)'type
+
+    mut typeBodyCs = cs:new(30)
+
+    me.genCsym(typeBodyCs, null, modName, name, type, -1, true)
+
+    mut typeDeps = genDepSet(me'modName, name, type)
+    mut typeBody = cs:unwrap(typeBodyCs)
+
+    mut its = cast<ptr {body ptr uint8, deps ptr set:Set} >(mem:alloc(size({body ptr uint8, deps ptr set:Set})))
+
+    val its = {typeBody, typeDeps}
+
+    aliases.put(name, its)
+
+    i++
+  /while
 /method
 
 
 method ctrans:Transl.translateModule(pmod ptr ast:PModule)
-  mut set set:Set
-  set:strinit(ptr set, 10)
+  mut importSet set:Set
+  mut typedefKV kv:KVList
+  set:strinit(ptr importSet, 10)
+  kv:strinit(ptr typedefKV, 10)
 
   mut len = pmod'roots.len()
 
@@ -326,18 +431,18 @@ method ctrans:Transl.translateModule(pmod ptr ast:PModule)
   while i < len
     mut root = <ptr ast:PRoot>(val pmod'roots.get(i))
 
-    set.gatherImports(root)
+    importSet.gatherImports(root)
+    me.gatherAliases(ptr typedefKV, root)
 
-    me.genTypedefs(root)
     me.genDecls(root)
 
     i++
   /while
 
   mut done set:Set
-  set:strinit(ptr done, set.len())
+  set:strinit(ptr done, importSet.len())
 
-  mut iter = set.iter()
+  mut iter = importSet.iter()
 
   mut imp ptr uint8
 
@@ -347,7 +452,11 @@ method ctrans:Transl.translateModule(pmod ptr ast:PModule)
 
   set:iterFree(iter)
 
-  set:deinit(ptr set)
+  set:deinit(ptr importSet)
+
+  me.genTypedefs(ptr typedefKV)
+
+  kv:deinit(ptr typedefKV)
 
   if pmod'entryNode?
     me.forkmain(pmod'entryNode.findPRoot())

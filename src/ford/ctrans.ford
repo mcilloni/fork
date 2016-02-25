@@ -22,7 +22,7 @@ import txt
 
 
 alias Transl struct(
-  includes,typedefs,externs,vars,funcs ptr cs:Charstash,
+  includes,typedefs,ssastructs,externs,vars,funcs ptr cs:Charstash,
   modName ptr uint8,
   debug bool,
   parser ptr parser:Parser,
@@ -53,14 +53,13 @@ decl method Transl.genCsym(cs ptr cs:Charstash,
 decl method Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
 decl method Transl.globVar(sym ptr uint8, root ptr ast:PRoot, expr ptr ast:PExpr)
 decl method Transl.includeFord(fordName ptr uint8, done ptr set:Set)
-decl method Transl.translate(root ptr ast:PRoot)
 decl method Transl.translateModule(pmod ptr ast:PModule)
 
 decl method Transl.translSym(moduleName ptr uint8,
                              pdecl ptr ast:PDecl,
                              dinfo ptr ast:DeclInfo) ptr uint8
 
-decl method Transl.typedef(name ptr uint8, type ptr ast:Type, ssa bool)
+decl method Transl.typedef(name,body ptr uint8, ssa bool)
 decl method Transl.wrapType(cs ptr cs:Charstash,
                             type ptr ast:Type,
                             pad intptr)
