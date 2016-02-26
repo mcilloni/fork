@@ -7,19 +7,19 @@
 
 I=0
 SUCCESS=0
-TOTAL=$(find src/ -name '*.fork' -or -name '*.ford' | wc -l)
+TOTAL=$(find src -type d ! -path src | wc -l)
 GREEN="\033[01;32m"
 RED="\033[01;31m"
 NORMAL="\033[00m"
 BEGIN=$(date +%s)
 
-for FILE in $(find src/ -name '*.fork' -or -name '*.ford')
+for MODULE in $(find src -type d ! -path src)
 do
   let I=I+1
 
-  printf "%-40s: " "$FILE"
+  printf "%-40s: " "$MODULE"
 
-  if ./examples/ex semxample $FILE > /dev/null
+  if env FORDPATHS=$PWD/build/ford ./examples/parsedir $MODULE > /dev/null
   then
     let SUCCESS=SUCCESS+1
     echo -e "$GREEN success $NORMAL"
@@ -29,4 +29,4 @@ do
 
 done
 
-printf "Success: [%d/%d] files in %d seconds\n" $SUCCESS $TOTAL "$(expr $(date +%s) - $BEGIN)"
+printf "Success: [%d/%d] modules in %d seconds\n" $SUCCESS $TOTAL "$(expr $(date +%s) - $BEGIN)"
