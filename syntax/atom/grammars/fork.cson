@@ -1,7 +1,6 @@
 'scopeName': 'source.fork'
 'fileTypes': [
-  'fork',
-  'ford'
+  'fork'
 ]
 'name': 'Fork',
 'patterns': [
