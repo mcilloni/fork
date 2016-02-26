@@ -12,24 +12,36 @@ module parser
 
 
 import ast
-import cs
 import err
 import fs
 import list
 import map
 import mem
 import memutils
-import parser
 import proc
 import set
 import tty
 import txt
-import utils
+
+
+alias StringDefFile struct(
+  text,fileName ptr uint8,
+  begin,end txt:Line
+)
+
+
+alias Parser struct (
+  fordPaths ptr list:List,
+  imports ptr map:Map,
+  importsTPool ptr memutils:FreePool,
+  currentFile ptr uint8,
+  builtins ptr map:Map
+)
 
 
 # Parser init/deinit funcs
 
-func free(prs ptr parser:Parser)
+func free(prs ptr Parser)
   if prs?
     map:free(prs'imports)
     memutils:fpFree(prs'importsTPool)
@@ -43,13 +55,13 @@ func free(prs ptr parser:Parser)
 /func
 
 
-func new() ptr parser:Parser
-  mut prs = <ptr parser:Parser>(mem:zalloc(size(parser:Parser)))
+func new() ptr Parser
+  mut prs = <ptr Parser>(mem:zalloc(size(Parser)))
   prs'imports = map:strnew()
   prs'importsTPool = memutils:fpNew(<ptr func(item data)>(ptr ast:typeFree))
 
   prs'imports.setFreeFuncs(ptr mem:free, \
-                            <ptr func(item data)>(ptr parser:fordFree))
+                            <ptr func(item data)>(ptr fordFree))
 
   prs'fordPaths = envExtractFordPaths()
   prs'builtins = ast:builtinSetNew()
@@ -59,15 +71,15 @@ func new() ptr parser:Parser
 
 # Parser methods
 
-method parser:Parser.getImport(name ptr uint8) ptr parser:Ford
-  return <ptr parser:Ford>(me'imports.get(name))
+method Parser.getImport(name ptr uint8) ptr Ford
+  return <ptr Ford>(me'imports.get(name))
 /method
 
 
-method parser:Parser.findFord(name ptr uint8) {ford ptr parser:Ford,
+method Parser.findFord(name ptr uint8) {ford ptr Ford,
                                                 err ptr err:Error}
 
-  mut ford = <ptr parser:Ford>(me'imports.get(name))
+  mut ford = <ptr Ford>(me'imports.get(name))
 
   if ford?
     return {ford,null}
@@ -91,13 +103,13 @@ method parser:Parser.findFord(name ptr uint8) {ford ptr parser:Ford,
       mem:free(fordName)
 
       if err?
-        mut cs = cs:new(20)
+        mut cs = txt:newCs(20)
         cs.add("can't load ")
         cs.add(joinedPath)
         cs.add(": ")
         cs.add(err.msg())
 
-        mut msg = cs:unwrap(cs)
+        mut msg = txt:unwrapCs(cs)
 
         err:free(err)
 
@@ -137,7 +149,7 @@ method parser:Parser.findFord(name ptr uint8) {ford ptr parser:Ford,
 /method
 
 
-method parser:Parser.importMod(importName ptr parser:StringDefFile) ptr ast:Issue
+method Parser.importMod(importName ptr StringDefFile) ptr ast:Issue
   mut {ford,err} = me.findFord(importName'text)
   if err?
     mut issue = ast:issueNew(ast:ISSUE_ERR, importName'begin, \
@@ -152,14 +164,14 @@ method parser:Parser.importMod(importName ptr parser:StringDefFile) ptr ast:Issu
 /method
 
 
-method parser:Parser.importAll(imports ptr set:Set) ptr ast:Issues
+method Parser.importAll(imports ptr set:Set) ptr ast:Issues
   mut ret = ast:issuesNew()
 
   mut iter = imports.iter()
   mut el data
 
   while (el = iter.next())?
-    mut importName = <ptr parser:StringDefFile>(el)
+    mut importName = <ptr StringDefFile>(el)
     mut issue = me.importMod(importName)
 
     if issue?
@@ -171,29 +183,29 @@ method parser:Parser.importAll(imports ptr set:Set) ptr ast:Issues
 /method
 
 
-method parser:Parser.matchBuiltin(name ptr uint8) ptr ast:Type
+method Parser.matchBuiltin(name ptr uint8) ptr ast:Type
   return <ptr ast:Type>(me'builtins.get(name))
 /method
 
 
-method parser:Parser.parseDirectory(dirName ptr uint8) {pmod ptr ast:PModule,
+method Parser.parseDirectory(dirName ptr uint8) {pmod ptr ast:PModule,
                                                          issues ptr ast:Issues}
 
-  mut {pmod,issues} = parser:parseModule(dirName)
+  mut {pmod,issues} = parseModule(dirName)
 
   if issues.errLen() > 0
     return {null, issues}
   /if
 
-  return {pmod, parser:validateModuleAst(me, pmod)}
+  return {pmod, validateModuleAst(me, pmod)}
 
 /method
 
 
-method parser:Parser.parseFile(fileName ptr uint8) {root ptr ast:PNode,
+method Parser.parseFile(fileName ptr uint8) {root ptr ast:PNode,
                                                      issues ptr ast:Issues}
 
-  mut {proot,err} = parser:parse(fileName)
+  mut {proot,err} = parse(fileName)
 
   if err?
     mut issues = ast:issuesNew()
@@ -202,11 +214,11 @@ method parser:Parser.parseFile(fileName ptr uint8) {root ptr ast:PNode,
     return {null, issues}
   /if
 
-  return {proot, parser:validateAst(me, proot)}
+  return {proot, validateAst(me, proot)}
 /method
 
 
-method parser:Parser.setCurrentFile(filename ptr uint8)
+method Parser.setCurrentFile(filename ptr uint8)
   mem:free(me'currentFile)
 
   me'currentFile = txt:strclone(filename)

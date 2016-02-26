@@ -13,11 +13,10 @@ module parser
 
 import map
 import pair
-import parser
 import tty
 
 
-method parser:Parser.dumpImports()
+method Parser.dumpImports()
   mut iter = me'imports.iter()
 
   mut pair ptr pair:Pair

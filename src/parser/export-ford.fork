@@ -11,23 +11,31 @@
 module parser
 
 
+import about
 import ast
-import buffer
 import err
 import fs
 import hash
 import io
 import kv
-import libfork
 import mem
 import pair
-import parser
 import set
 import txt
+import vect
+
+
+alias Ford struct(
+  name ptr uint8,
+  imports ptr vect:Vect,
+  aliases,decls ptr ast:Symtable,
+  extra ptr uint8,
+  extraLen uint32
+)
 
 
 # dumps len (32bit) and then the string into the Stream.
-method buffer:Buffer.addString(str ptr uint8)
+method mem:Buffer.addString(str ptr uint8)
   mut len uint16 = <uint16>(str? => txt:strlen(str) || 0)
 
   me.add(ptr len, size(uint16))
@@ -38,7 +46,7 @@ method buffer:Buffer.addString(str ptr uint8)
 /method
 
 
-method buffer:Buffer.addTypeList(kv ptr kv:KVList)
+method mem:Buffer.addTypeList(kv ptr kv:KVList)
   # first, write a boolean, indicating if this kv is null or not.
   mut ok = kv?
   me.add(ptr ok, size(bool))
@@ -71,7 +79,7 @@ method buffer:Buffer.addTypeList(kv ptr kv:KVList)
 # or a named builtin type. It we're in the latter case AND we're aliasing,
 # we don't want to dump the type name: instead, we want to dump the builtin type
 # name.
-method buffer:Buffer.unalias(type ptr ast:Type, aliasing bool) bool
+method mem:Buffer.unalias(type ptr ast:Type, aliasing bool) bool
   mut ttype = type'type
 
   if aliasing
@@ -114,7 +122,7 @@ method buffer:Buffer.unalias(type ptr ast:Type, aliasing bool) bool
 /method
 
 
-method buffer:Buffer.addType(type ptr ast:Type, aliasing bool)
+method mem:Buffer.addType(type ptr ast:Type, aliasing bool)
   # first, write a boolean, indicating if this type is null or not.
   mut ok = type?
   me.add(ptr ok, size(bool))
@@ -182,7 +190,7 @@ func collectAliases(pmod ptr ast:PModule) ptr hash:Hash
 /func
 
 
-method buffer:Buffer.addAliases(pmod ptr ast:PModule)
+method mem:Buffer.addAliases(pmod ptr ast:PModule)
   mut aliases = collectAliases(pmod)
 
   # dump the length of the decls list, then the single decls.
@@ -208,7 +216,7 @@ method buffer:Buffer.addAliases(pmod ptr ast:PModule)
 /method
 
 
-method buffer:Buffer.addDeclInfo(dinfo ptr ast:DeclInfo)
+method mem:Buffer.addDeclInfo(dinfo ptr ast:DeclInfo)
   me.add(ptr dinfo'declType, size(uint16))
 
   # declOnly declarations are skipped
@@ -250,7 +258,7 @@ func collectDecls(pmod ptr ast:PModule) ptr hash:Hash
 /func
 
 
-method buffer:Buffer.addDecls(pmod ptr ast:PModule)
+method mem:Buffer.addDecls(pmod ptr ast:PModule)
   mut decls = collectDecls(pmod)
 
   # dump the length of the decls list, then the single decls.
@@ -303,7 +311,7 @@ func collectImports(pmod ptr ast:PModule) ptr set:Set
 /func
 
 
-method buffer:Buffer.addImports(pmod ptr ast:PModule)
+method mem:Buffer.addImports(pmod ptr ast:PModule)
   mut imports = collectImports(pmod)
 
   # dump the length of the import list, then the single imports.
@@ -322,12 +330,12 @@ method buffer:Buffer.addImports(pmod ptr ast:PModule)
 /method
 
 
-func makeFord(pmod ptr ast:PModule) ptr buffer:Buffer
-  mut buf = buffer:new(30)
+func makeFord(pmod ptr ast:PModule) ptr mem:Buffer
+  mut buf = mem:newBuffer(30)
 
   # init: first thing should be libfork version.
 
-  mut rel = libfork:RELEASE
+  mut rel = about:RELEASE
   buf.add(ptr rel, size(uint16))
 
   # then, dump the module name.
@@ -348,11 +356,11 @@ func makeFord(pmod ptr ast:PModule) ptr buffer:Buffer
 
 
 func writeFordStream(stream ptr io:Stream,
-                     genData ptr buffer:Buffer,
+                     genData ptr mem:Buffer,
                      extra ptr uint8,
                      extraLen uintptr) ptr err:Error
 
-  mut {fordData,dataLen} = buffer:unwrap(genData)
+  mut {fordData,dataLen} = mem:unwrapBuffer(genData)
   stream.write(fordData, dataLen)
 
   mem:free(fordData)
@@ -378,7 +386,7 @@ func writeFordStream(stream ptr io:Stream,
 
 
 func writeFord(name,path ptr uint8,
-               genData ptr buffer:Buffer,
+               genData ptr mem:Buffer,
                extra ptr uint8,
                extraLen uintptr) ptr err:Error
 

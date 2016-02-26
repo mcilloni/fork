@@ -1,14 +1,10 @@
-INCLUDES = $(shell pwd)/../build/include/
+BUILD = $(shell pwd)/../build/
+FORDS = $(BUILD)/ford/
 
-ifndef FORKC
-	FORKC = forkc
+ifndef TRNS
+	TRNS = env FORDPATHS=$(FORDS) transmod
 endif
 
-FORKC += --no-libfork
-
-ifndef FORKL
-	FORKL = forkl
-endif
 
 ifndef NODL
 ifeq ($(shell uname), Linux)
@@ -16,24 +12,23 @@ ifeq ($(shell uname), Linux)
 endif
 endif
 
-SRCS = $(wildcard *.fork)
-OBJS = $(patsubst %.fork,%.o,$(SRCS))
-BINS = $(patsubst %.fork,%.elf,$(SRCS))
+CCLD = $(CC)
+
+MACHINE = $(shell uname -m)
+
+ifeq ($(MACHINE), amd64)
+	AMD64 = yes
+endif
+
+ifdef AMD64
+ifeq (,$(findstring CYGWIN,$(UNAME)))
+	FPIC = -fPIC
+endif
+endif
 
 .PHONY: all clean
 
-all: $(BINS)
-
-%.elf: %.o
-
-	@printf "FORKL\t\t%s\n" $<
-
-	@ $(CC) -o $@ $< $(shell pwd)/../build/rt.o $(shell pwd)/../build/libfork.a $(LDFLAGS)
-
-%.o: %.fork
-	@printf "FORKC\t\t%s\n" $<
-	@ FORDPATHS="$(shell pwd)/../src/ford/internal/:$(shell pwd)/../src/ford/" $(FORKC) -I $(INCLUDES) -o $@ $<
-
-clean:
-	rm -f $(BINS)
-	rm -f $(OBJS)
+all:
+	$(TRNS) -n parsedir ex-parsedir
+	$(CCLD) -w -g -std=c99 -D_POSIX_C_SOURCE=200112L -o parsedir parsedir.c $(BUILD)/rt.o $(BUILD)/libfork.a
+	rm -f parsedir.c

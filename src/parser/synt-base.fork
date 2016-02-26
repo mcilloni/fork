@@ -17,17 +17,26 @@ import fs
 import list
 import mem
 import memutils
-import parser
 import txt
-import utils
 
 
-method parser:ParseState.theresError() bool
+alias ParseState struct(
+  filename ptr uint8,
+  err ptr ast:Issue,
+  prs ptr Parser,
+  lex ptr ast:Lexer,
+  next ptr ast:Token,
+  last ptr fs:Lineno,
+  moduleName ptr uint8
+)
+
+
+method ParseState.theresError() bool
   return me'err?
 /method
 
 
-method parser:ParseState.next() ptr ast:Token
+method ParseState.next() ptr ast:Token
   mut tok = me'next
 
   if me'last?
@@ -50,19 +59,19 @@ method parser:ParseState.next() ptr ast:Token
 /method
 
 
-method parser:ParseState.discardNext()
+method ParseState.discardNext()
   ast:tokenFree(me.next())
 /method
 
 
 # if the expected token is not given, then the ParseState gets its error set
-method parser:ParseState.expectedError(expected, got ptr ast:Token)
+method ParseState.expectedError(expected, got ptr ast:Token)
   me'err = ast:errorMism(me'last, ast:tokenStr(expected), ast:tokenStr(got))
 /method
 
 
 # get the expected token or null for error.
-method parser:ParseState.expect(ttype uint16) ptr ast:Token
+method ParseState.expect(ttype uint16) ptr ast:Token
   mut got = me.next()
   if me.theresError()
     return null
@@ -79,7 +88,7 @@ method parser:ParseState.expect(ttype uint16) ptr ast:Token
 /method
 
 
-method parser:ParseState.expectDiscard(ttype uint16) bool
+method ParseState.expectDiscard(ttype uint16) bool
   mut tok = me.expect(ttype)
   ast:tokenFree(tok)
 
@@ -88,7 +97,7 @@ method parser:ParseState.expectDiscard(ttype uint16) bool
 
 
 # parses, if present, the module name. Returns null if none or error
-method parser:ParseState.parseModuleName() ptr ast:StringDef
+method ParseState.parseModuleName() ptr ast:StringDef
   if me'next'type == ast:MODULE
     mut begin = ast:tokDiscardBegin(me.next()) # discard 'module'
 
@@ -109,7 +118,7 @@ method parser:ParseState.parseModuleName() ptr ast:StringDef
 /method
 
 
-method parser:ParseState.parseImport() ptr ast:StringDef
+method ParseState.parseImport() ptr ast:StringDef
   if me'next? and me'next'type == ast:IMPORT
     mut begin = ast:tokDiscardBegin(me.next()) # discard 'import'
 
@@ -131,7 +140,7 @@ method parser:ParseState.parseImport() ptr ast:StringDef
 
 
 # parses the 'import' statements
-method parser:ParseState.parseImports() ptr list:List
+method ParseState.parseImports() ptr list:List
   mut ret = list:new()
   mut importLine ptr ast:StringDef
 
@@ -143,7 +152,7 @@ method parser:ParseState.parseImports() ptr list:List
 /method
 
 
-method parser:ParseState.parseIdType(name ptr uint8) ptr ast:PType
+method ParseState.parseIdType(name ptr uint8) ptr ast:PType
   mut moduleName ptr uint8 = null
 
   if me'next? and me'next'type == ast:COLON
@@ -178,13 +187,13 @@ func tokenIsTypeStart(tok ptr ast:Token) bool
 
 
 # if the next token exists and it's a ast:NEWLINE, then discards it
-method parser:ParseState.discardNewLine()
+method ParseState.discardNewLine()
   if me'next? and me'next'type == ast:NEWLINE
     me.discardNext()
   /if
 /method
 
-method parser:ParseState.parseIdList() ptr list:List
+method ParseState.parseIdList() ptr list:List
   mut tok ptr ast:Token
   mut ret = list:new()
   while true
@@ -231,7 +240,7 @@ func makeSymsAndInsertInList(syms ptr list:List, ids ptr list:List, type ptr ast
 /func
 
 
-method parser:ParseState.parseStructBodyVars(syms ptr list:List) bool
+method ParseState.parseStructBodyVars(syms ptr list:List) bool
 
   # allow multiline struct/methodtion header declarations
   me.discardNewLine()
@@ -262,7 +271,7 @@ method parser:ParseState.parseStructBodyVars(syms ptr list:List) bool
 /method
 
 
-method parser:ParseState.parseStructBody(end ptr txt:Line,
+method ParseState.parseStructBody(end ptr txt:Line,
                                    newStruct bool) ptr list:List
 
   mut openTok = newStruct => ast:OCURLY || ast:OPAR
@@ -310,7 +319,7 @@ method parser:ParseState.parseStructBody(end ptr txt:Line,
 /method
 
 
-method parser:ParseState.parseFunctionType() ptr ast:PType
+method ParseState.parseFunctionType() ptr ast:PType
   mut end txt:Line
   mut args = me.parseStructBody(ptr end, false)
   if not args?
@@ -330,7 +339,7 @@ method parser:ParseState.parseFunctionType() ptr ast:PType
 /method
 
 
-method parser:ParseState.parseLocType() ptr ast:PType
+method ParseState.parseLocType() ptr ast:PType
   mut locLengthTok = me.expect(ast:NUMBER)
   if not locLengthTok?
     return null
@@ -356,7 +365,7 @@ method parser:ParseState.parseLocType() ptr ast:PType
 /method
 
 
-method parser:ParseState.parseStructType(newStruct bool) ptr ast:PType
+method ParseState.parseStructType(newStruct bool) ptr ast:PType
   mut end txt:Line
 
   mut args = me.parseStructBody(ptr end, newStruct)
@@ -371,7 +380,7 @@ method parser:ParseState.parseStructType(newStruct bool) ptr ast:PType
 /method
 
 
-method parser:ParseState.parseType() ptr ast:PType
+method ParseState.parseType() ptr ast:PType
   if not me'next?
     me'err = ast:errorMism(me'last, "a valid type", "end of file")
     return null
@@ -438,7 +447,7 @@ method parser:ParseState.parseType() ptr ast:PType
 /method
 
 
-method parser:ParseState.parseMutId() {id ptr uint8, ptype ptr ast:PType, end txt:Line}
+method ParseState.parseMutId() {id ptr uint8, ptype ptr ast:PType, end txt:Line}
   mut end txt:Line
 
   mut idTok = me.expect(ast:ID)
@@ -472,7 +481,7 @@ method parser:ParseState.parseMutId() {id ptr uint8, ptype ptr ast:PType, end tx
 /method
 
 
-method parser:ParseState.parseMutExp() {pnode ptr ast:PNode, needsAssign bool}
+method ParseState.parseMutExp() {pnode ptr ast:PNode, needsAssign bool}
   me.discardNext() # discard `{`
 
   # check this here, because otherwise if we just rely on the loop, things like
@@ -521,7 +530,7 @@ method parser:ParseState.parseMutExp() {pnode ptr ast:PNode, needsAssign bool}
 /method
 
 
-method parser:ParseState.parseMut(external bool) ptr ast:PNode
+method ParseState.parseMut(external bool) ptr ast:PNode
   mut end txt:Line
   # discard 'mut'
   mut begin = ast:tokDiscardBegin(me.next())
@@ -588,7 +597,7 @@ method parser:ParseState.parseMut(external bool) ptr ast:PNode
 /method
 
 
-method parser:ParseState.parseDecl() ptr ast:PNode
+method ParseState.parseDecl() ptr ast:PNode
 
   # discard 'decl'
   mut begin = ast:tokDiscardBegin(me.next())
@@ -655,7 +664,7 @@ method parser:ParseState.parseDecl() ptr ast:PNode
 /method
 
 
-method parser:ParseState.parseAlias() ptr ast:PNode
+method ParseState.parseAlias() ptr ast:PNode
   # discard 'alias'
   mut begin = ast:tokDiscardBegin(me.next())
 
@@ -686,7 +695,7 @@ func matchWhileEndTok(tok ptr ast:Token) bool
 /func
 
 
-method parser:ParseState.parseWhile() ptr ast:PNode
+method ParseState.parseWhile() ptr ast:PNode
   mut begin = ast:tokDiscardBegin(me.next()) #discard while token
 
   mut expr = <ptr ast:PNode>(me.parseExpr())
@@ -726,7 +735,7 @@ func matchIfEndTok(tok ptr ast:Token) bool
 /func
 
 
-method parser:ParseState.parseIf() ptr ast:PNode
+method ParseState.parseIf() ptr ast:PNode
   mut begin = ast:tokDiscardBegin(me.next()) #discard if token
 
   mut expr = <ptr ast:PNode>(me.parseExpr())
@@ -777,7 +786,7 @@ method parser:ParseState.parseIf() ptr ast:PNode
 /method
 
 
-method parser:ParseState.parseReturn() ptr ast:PNode
+method ParseState.parseReturn() ptr ast:PNode
   mut returnTok = me.next()
 
   mut begin = ast:tokExtractBegin(returnTok) # discard "return"
@@ -802,7 +811,7 @@ method parser:ParseState.parseReturn() ptr ast:PNode
 /method
 
 
-method parser:ParseState.parseBreakCont(ptype uint16) ptr ast:PNode
+method ParseState.parseBreakCont(ptype uint16) ptr ast:PNode
   mut breakTok = me.next()
 
   mut begin = ast:tokExtractBegin(breakTok) # discard "break" or "continue"
@@ -816,7 +825,7 @@ method parser:ParseState.parseBreakCont(ptype uint16) ptr ast:PNode
 /method
 
 
-method parser:ParseState.parseStatement() ptr ast:PNode
+method ParseState.parseStatement() ptr ast:PNode
 
   if not me'next?
     me'err = ast:errorMism(me'last, "a statement or an expression", "EOF")
@@ -854,7 +863,7 @@ method parser:ParseState.parseStatement() ptr ast:PNode
 /method
 
 
-method parser:ParseState.parseBody(isEndToken ptr func(tok ptr ast:Token) bool) ptr ast:PBlock
+method ParseState.parseBody(isEndToken ptr func(tok ptr ast:Token) bool) ptr ast:PBlock
   mut begin txt:Line
 
   # If this block is empty, then begin will remain unset.
@@ -905,7 +914,7 @@ method parser:ParseState.parseBody(isEndToken ptr func(tok ptr ast:Token) bool) 
 /method
 
 
-method parser:ParseState.makeFunction(pType uint16,
+method ParseState.makeFunction(pType uint16,
                                 name ptr uint8,
                                 type ptr ast:PType,
                                 endTType uint16,
@@ -948,7 +957,7 @@ func matchEntryEndTok(tok ptr ast:Token) bool
 /func
 
 
-method parser:ParseState.parseEntry() ptr ast:PNode
+method ParseState.parseEntry() ptr ast:PNode
   mut begin = ast:tokDiscardBegin(me.next())  #discard "entry"
 
   mut entryNode = me.makeFunction(ast:PENTRY, txt:strclone("_fork_entry"), makeEntryType(), ast:ENDENTRY, ptr matchEntryEndTok)
@@ -963,7 +972,7 @@ method parser:ParseState.parseEntry() ptr ast:PNode
 /method
 
 
-method parser:ParseState.parseIdentifier() ptr uint8
+method ParseState.parseIdentifier() ptr uint8
   mut nameTok = me.expect(ast:ID)
   if not nameTok?
     return null
@@ -983,7 +992,7 @@ func matchFuncEndTok(tok ptr ast:Token) bool
 /func
 
 
-method parser:ParseState.parseFuncHead(name ptr ptr uint8, type ptr ptr ast:PType) bool
+method ParseState.parseFuncHead(name ptr ptr uint8, type ptr ptr ast:PType) bool
 
   val name = me.parseIdentifier()
   if not (val name)?
@@ -1001,7 +1010,7 @@ method parser:ParseState.parseFuncHead(name ptr ptr uint8, type ptr ptr ast:PTyp
 /method
 
 
-method parser:ParseState.parseFunc() ptr ast:PNode
+method ParseState.parseFunc() ptr ast:PNode
   mut begin = ast:tokDiscardBegin(me.next()) #discard "func"
 
   mut name ptr uint8
@@ -1027,7 +1036,7 @@ func matchMethodEndTok(tok ptr ast:Token) bool
 /func
 
 
-method parser:ParseState.parseMethodHead(typeModule,typeName,name ptr ptr uint8, type ptr ptr ast:PType) bool
+method ParseState.parseMethodHead(typeModule,typeName,name ptr ptr uint8, type ptr ptr ast:PType) bool
   mut firstId = me.parseIdentifier()
   if not firstId?
     return false
@@ -1075,7 +1084,7 @@ method parser:ParseState.parseMethodHead(typeModule,typeName,name ptr ptr uint8,
 /method
 
 
-method parser:ParseState.makeMethod(typeModule,typeName,name ptr uint8, ptype ptr ast:PType) ptr ast:PNode
+method ParseState.makeMethod(typeModule,typeName,name ptr uint8, ptype ptr ast:PType) ptr ast:PNode
   mut pnode = me.makeFunction(ast:PMETHOD, name, ptype, ast:ENDMETHOD, ptr matchMethodEndTok)
 
   if not pnode?
@@ -1090,7 +1099,7 @@ method parser:ParseState.makeMethod(typeModule,typeName,name ptr uint8, ptype pt
 /method
 
 
-method parser:ParseState.parseMethod() ptr ast:PNode
+method ParseState.parseMethod() ptr ast:PNode
   mut begin = ast:tokDiscardBegin(me.next()) #discard "method"
 
   mut typeModule ptr uint8
@@ -1113,7 +1122,7 @@ method parser:ParseState.parseMethod() ptr ast:PNode
 /method
 
 
-method parser:ParseState.parseDefinition() ptr ast:PNode
+method ParseState.parseDefinition() ptr ast:PNode
 
   if not me'next?
     return null
@@ -1150,7 +1159,7 @@ method parser:ParseState.parseDefinition() ptr ast:PNode
 /method
 
 # parses the root node
-method parser:ParseState.parseProgram() ptr ast:PNode
+method ParseState.parseProgram() ptr ast:PNode
 
   if not me'next?
     me'err = ast:error(me'last, "empty input")
@@ -1217,8 +1226,8 @@ func parse(filename ptr uint8) {file ptr ast:PNode, err ptr ast:Issue}
 
   mut lex = result'lex
 
-  # init parser:ParseState
-  mut pst parser:ParseState
+  # init ParseState
+  mut pst ParseState
   pst'err = null
   pst'lex = lex
   pst'next = ast:lexerNext(lex)

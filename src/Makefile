@@ -1,10 +1,10 @@
-INCLUDES = $(shell pwd)/../build/include/
+BUILD = $(shell pwd)/../build/
+CFILES = $(BUILD)/cfiles/
+FORDS = $(BUILD)/ford/
 
 ifndef TRNS
-	TRNS = transmod
+	TRNS = env FORDPATHS=$(FORDS) transmod -fo $(FORDS) -co $(CFILES)
 endif
-
-CCLD = $(CC)
 
 ifndef AR
 	AR=ar
@@ -14,8 +14,16 @@ ifndef RANLIB
 	RANLIB=ranlib
 endif
 
-ifeq ($(shell uname), Linux)
-	LDFLAGS=-ldl
+MACHINE = $(shell uname -m)
+
+ifeq ($(MACHINE), amd64)
+	AMD64 = yes
+endif
+
+ifdef AMD64
+ifeq (,$(findstring CYGWIN,$(UNAME)))
+	FPIC = -fPIC
+endif
 endif
 
 SONAME = 'libfork.so'
@@ -24,65 +32,40 @@ ARNAME = 'libfork.a'
 .PHONY: all clean
 
 all:
-	mkdir -p ../build/
-
-	$(MAKE) -C about
-	$(MAKE) -C c
-	$(MAKE) -C math
-	$(MAKE) -C proc
-	$(MAKE) -C rt
-	$(MAKE) -C mem
-	$(MAKE) -C tty
-	$(MAKE) -C txt
-	$(MAKE) -C sort
-	$(MAKE) -C err
-	$(MAKE) -C io
-	$(MAKE) -C pair
-	$(MAKE) -C vect
-	$(MAKE) -C list
-	$(MAKE) -C map
-	$(MAKE) -C hash
-	$(MAKE) -C set
-	$(MAKE) -C kv
-	$(MAKE) -C fs
-	$(MAKE) -C dyn
-	$(MAKE) -C misc
-	$(MAKE) -C memutils
-	$(MAKE) -C args
-	$(MAKE) -C ast
-
-	$(MAKE) -C parser
-
+	mkdir -p $(BUILD)
+	mkdir -p $(FORDS)
+	mkdir -p $(CFILES)
+	find $(shell pwd) -name '*.c' -exec cp {} $(CFILES) \;
+	$(TRNS) about
+	$(TRNS) c
+	$(TRNS) math
+	$(TRNS) proc
+	$(TRNS) -n rt rt
+	$(TRNS) mem
+	$(TRNS) tty
+	$(TRNS) txt
+	$(TRNS) sort
+	$(TRNS) err
+	$(TRNS) io
+	$(TRNS) pair
+	$(TRNS) vect
+	$(TRNS) list
+	$(TRNS) map
+	$(TRNS) hash
+	$(TRNS) set
+	$(TRNS) kv
+	$(TRNS) fs
+	$(TRNS) dyn
+	$(TRNS) misc
+	$(TRNS) memutils
+	$(TRNS) args
+	$(TRNS) ast
+	$(TRNS) parser
+	cd $(CFILES) && $(CC) -w -c -g -std=c99 -D_POSIX_C_SOURCE=200112L $(CFILES)/*.c
+	mv $(CFILES)/rt.o $(BUILD)
 	@printf "AR\t\t%s\n" $(ARNAME)
-	@ $(AR) rc ../build/$(ARNAME) ../build/*/*.o
-	@ $(RANLIB) ../build/$(ARNAME)
-
-	mkdir -p ../build/ford/internal
-	cp -r ford/*.ford ../build/ford/
-	cp -r ford/internal/*.ford ../build/ford/internal/
+	@ $(AR) rc $(BUILD)/$(ARNAME) $(CFILES)/*.o
+	@ $(RANLIB) $(BUILD)/$(ARNAME)
 
 clean:
-	$(MAKE) -C c clean
-	$(MAKE) -C math clean
-	$(MAKE) -C err clean
-	$(MAKE) -C mem clean
-	$(MAKE) -C io clean
-	$(MAKE) -C file clean
-	$(MAKE) -C txt clean
-	$(MAKE) -C tty clean
-	$(MAKE) -C cs clean
-	$(MAKE) -C pair clean
-	$(MAKE) -C vect clean
-	$(MAKE) -C list clean
-	$(MAKE) -C kv clean
-	$(MAKE) -C map clean
-	$(MAKE) -C hash clean
-	$(MAKE) -C set clean
-	$(MAKE) -C proc clean
-	$(MAKE) -C dyn clean
-	$(MAKE) -C utils clean
-	$(MAKE) -C ast clean
-	$(MAKE) -C fords clean
-	$(MAKE) -C parser clean
-	$(MAKE) -C libfork clean
-	rm -rf ../build/ford/
+	rm -rf $(BUILD)

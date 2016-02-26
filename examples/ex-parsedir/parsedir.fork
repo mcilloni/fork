@@ -9,7 +9,6 @@
 
 
 import ast
-import cs
 import kv
 import list
 import map
@@ -18,7 +17,7 @@ import pair
 import parser
 import proc
 import tty
-import utils
+import txt
 
 
 entry
@@ -134,10 +133,10 @@ entry
 
       tty:out(" :: ")
 
-      mut cs = cs:new(10)
+      mut cs = txt:newCs(10)
       dinfo'type.summarize(cs)
 
-      mut des = cs:unwrap(cs)
+      mut des = txt:unwrapCs(cs)
 
       tty:outln(des)
 

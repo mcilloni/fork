@@ -15,8 +15,6 @@ import ast
 import fs
 import mem
 import memutils
-import parser
-import utils
 
 
 mut PTYPE_BINARY uint8 = 0
@@ -74,7 +72,7 @@ func isValidInExpr(tok ptr ast:Token) bool
 /func
 
 
-method parser:ParseState.parseCastTag() ptr ast:PExpr
+method ParseState.parseCastTag() ptr ast:PExpr
 
   mut castTok ptr ast:Token = null
 
@@ -133,7 +131,7 @@ method parser:ParseState.parseCastTag() ptr ast:PExpr
 /method
 
 
-method parser:ParseState.parseSizeOp() ptr ast:PExpr
+method ParseState.parseSizeOp() ptr ast:PExpr
 
   mut sizeTok = me.next()
 
@@ -169,7 +167,7 @@ func tokIsPostfixExpressionSuffixStart(tok ptr ast:Token) bool
 /func
 
 
-method parser:ParseState.parseId() ptr ast:PExpr
+method ParseState.parseId() ptr ast:PExpr
   mut first = me.next()
   mut ret = ast:pexprNewSingle(first)
 
@@ -192,7 +190,7 @@ method parser:ParseState.parseId() ptr ast:PExpr
 /method
 
 
-method parser:ParseState.parseGenParens(cpar uint16) ptr ast:PExpr
+method ParseState.parseGenParens(cpar uint16) ptr ast:PExpr
 
   mut expression = me.parseAssignExpr()
 
@@ -213,7 +211,7 @@ method parser:ParseState.parseGenParens(cpar uint16) ptr ast:PExpr
 /method
 
 
-method parser:ParseState.parseParens() ptr ast:PExpr
+method ParseState.parseParens() ptr ast:PExpr
 
   me.discardNext()
   return me.parseGenParens(ast:CPAR)
@@ -221,7 +219,7 @@ method parser:ParseState.parseParens() ptr ast:PExpr
 /method
 
 
-method parser:ParseState.parseExprList(parent ptr ast:PExpr,
+method ParseState.parseExprList(parent ptr ast:PExpr,
                          endToken uint16) ptr ast:PExpr
 
   mut parentNode = <ptr ast:PNode>(parent)
@@ -264,7 +262,7 @@ method parser:ParseState.parseExprList(parent ptr ast:PExpr,
 /method
 
 
-method parser:ParseState.parseCurly() ptr ast:PExpr
+method ParseState.parseCurly() ptr ast:PExpr
   mut ocurly = me.next()
 
   mut ret = me.parseExprList(ast:pexprNewSingle(ocurly), ast:CCURLY)
@@ -273,7 +271,7 @@ method parser:ParseState.parseCurly() ptr ast:PExpr
 /method
 
 
-method parser:ParseState.parsePrimaryExpr() ptr ast:PExpr
+method ParseState.parsePrimaryExpr() ptr ast:PExpr
 
   if not me'next?
     me'err = ast:error(me'last, "expected a primary expression, got an EOF")
@@ -316,7 +314,7 @@ method parser:ParseState.parsePrimaryExpr() ptr ast:PExpr
 /method
 
 
-method parser:ParseState.parseAccessExpr(lhs ptr ast:PExpr) ptr ast:PExpr
+method ParseState.parseAccessExpr(lhs ptr ast:PExpr) ptr ast:PExpr
 
   mut obrac = me.next()
   mut expression = me.parseGenParens(ast:CBRAC)
@@ -330,7 +328,7 @@ method parser:ParseState.parseAccessExpr(lhs ptr ast:PExpr) ptr ast:PExpr
 /method
 
 
-method parser:ParseState.parseCallExpr(lhs ptr ast:PExpr) ptr ast:PExpr
+method ParseState.parseCallExpr(lhs ptr ast:PExpr) ptr ast:PExpr
 
   mut opar = me.next()
 
@@ -344,7 +342,7 @@ method parser:ParseState.parseCallExpr(lhs ptr ast:PExpr) ptr ast:PExpr
 /method
 
 
-method parser:ParseState.parseFieldDotExpr(lhs ptr ast:PExpr) ptr ast:PExpr
+method ParseState.parseFieldDotExpr(lhs ptr ast:PExpr) ptr ast:PExpr
 
   # APOS or DOT
   mut op = me.next()
@@ -361,7 +359,7 @@ method parser:ParseState.parseFieldDotExpr(lhs ptr ast:PExpr) ptr ast:PExpr
 /method
 
 
-method parser:ParseState.parsePostfixSuffix(primaryLhs ptr ast:PExpr) ptr ast:PExpr
+method ParseState.parsePostfixSuffix(primaryLhs ptr ast:PExpr) ptr ast:PExpr
 
   mut lhs = primaryLhs
 
@@ -398,7 +396,7 @@ method parser:ParseState.parsePostfixSuffix(primaryLhs ptr ast:PExpr) ptr ast:PE
 /method
 
 
-method parser:ParseState.parsePostfixExpr() ptr ast:PExpr
+method ParseState.parsePostfixExpr() ptr ast:PExpr
   mut primary = me.parsePrimaryExpr()
 
   if not primary?
@@ -409,7 +407,7 @@ method parser:ParseState.parsePostfixExpr() ptr ast:PExpr
 /method
 
 
-method parser:ParseState.parseUnaryExprOp() ptr ast:PExpr
+method ParseState.parseUnaryExprOp() ptr ast:PExpr
   mut operator = me.next()
 
   mut result = me.parseUnaryExpr()
@@ -426,7 +424,7 @@ method parser:ParseState.parseUnaryExprOp() ptr ast:PExpr
 /method
 
 
-method parser:ParseState.parseUnaryExpr() ptr ast:PExpr
+method ParseState.parseUnaryExpr() ptr ast:PExpr
   if not me'next?
     me'err = ast:error(me'last, "unexpected EOF")
     return null
@@ -445,7 +443,7 @@ func isConditionalOperator(tok ptr ast:Token) bool
 /func
 
 
-method parser:ParseState.parseBinaryRhs(lhs ptr ast:PExpr, minPri uint16) ptr ast:PExpr
+method ParseState.parseBinaryRhs(lhs ptr ast:PExpr, minPri uint16) ptr ast:PExpr
   mut curOpPrec uint16
   mut rhs ptr ast:PExpr = null
 
@@ -490,13 +488,13 @@ method parser:ParseState.parseBinaryRhs(lhs ptr ast:PExpr, minPri uint16) ptr as
 /method
 
 
-method parser:ParseState.parseAssignExpr() ptr ast:PExpr
+method ParseState.parseAssignExpr() ptr ast:PExpr
   mut lhs = me.parseUnaryExpr()
 
   return lhs? => me.parseBinaryRhs(lhs, tokTypePrec(ast:ASSIGN)) || null
 /method
 
 
-method parser:ParseState.parseExpr() ptr ast:PExpr
+method ParseState.parseExpr() ptr ast:PExpr
   return me.parseAssignExpr()
 /method

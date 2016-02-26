@@ -12,14 +12,12 @@ module parser
 
 
 import ast
-import cs
 import kv
 import list
 import math
 import mem
-import parser
+import misc
 import txt
-import utils
 
 
 method ast:PExpr.isCompileConst() bool
@@ -71,7 +69,7 @@ func ttypeIsBinary(tt uint16) bool
 
   tok'type = tt
 
-  return parser:isBinary(ptr tok) or tt == ast:MINUS
+  return isBinary(ptr tok) or tt == ast:MINUS
 /func
 
 
@@ -129,7 +127,7 @@ func ttypeCanBeAssignTarget(tt uint16, type ptr ast:Type) bool
 /func
 
 
-func assignLhsDump(cs ptr cs:Charstash, pexpr ptr ast:PExpr)
+func assignLhsDump(cs ptr txt:Charstash, pexpr ptr ast:PExpr)
   mut op = pexpr'opType
 
   if op == ast:ID
@@ -177,7 +175,7 @@ func assignLhsDump(cs ptr cs:Charstash, pexpr ptr ast:PExpr)
 /func
 
 
-method parser:Resolver.intForVal(value intptr) ptr ast:Type
+method Resolver.intForVal(value intptr) ptr ast:Type
   mut aval = math:abs(value)
 
   if aval < 2**7
@@ -196,7 +194,7 @@ method parser:Resolver.intForVal(value intptr) ptr ast:Type
 /method
 
 
-method parser:Resolver.intTypesFindLargestCompatible(type1, type2 ptr ast:Type) ptr ast:Type
+method Resolver.intTypesFindLargestCompatible(type1, type2 ptr ast:Type) ptr ast:Type
 
   mut bothSigned = type1'isSigned and type2'isSigned
   mut bothUnsigned = not type1'isSigned and not type2'isSigned
@@ -211,7 +209,7 @@ method parser:Resolver.intTypesFindLargestCompatible(type1, type2 ptr ast:Type) 
 /method
 
 
-method parser:Resolver.typeIsAssignable(scope ptr ast:PNode,
+method Resolver.typeIsAssignable(scope ptr ast:PNode,
                                       dest,src ptr ast:Type) bool
 
   if not dest? or not src?
@@ -301,7 +299,7 @@ method parser:Resolver.typeIsAssignable(scope ptr ast:PNode,
 /method
 
 
-method parser:Resolver.typeIsCastable(scope ptr ast:PNode,
+method Resolver.typeIsCastable(scope ptr ast:PNode,
                                     dest,src ptr ast:Type) bool
 
   if dest'type == ast:TYPE_EMPTY or src'type == ast:TYPE_EMPTY
@@ -320,7 +318,7 @@ method parser:Resolver.typeIsCastable(scope ptr ast:PNode,
 /method
 
 
-method parser:Resolver.validateExprConst(pexpr ptr ast:PExpr) ptr ast:Type
+method Resolver.validateExprConst(pexpr ptr ast:PExpr) ptr ast:Type
 
   mut op = pexpr'opType
 
@@ -344,7 +342,7 @@ method parser:Resolver.validateExprConst(pexpr ptr ast:PExpr) ptr ast:Type
 /method
 
 
-method parser:Resolver.validateExprCast(pexpr ptr ast:PExpr,
+method Resolver.validateExprCast(pexpr ptr ast:PExpr,
                                       recList ptr list:List) ptr ast:Type
 
   mut ptype = <ptr ast:PType>(pexpr'node'value)
@@ -362,14 +360,14 @@ method parser:Resolver.validateExprCast(pexpr ptr ast:PExpr,
   /if
 
   if not me.typeIsCastable(<ptr ast:PNode>(pexpr), pexpr'type, chType)
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
 
     cs.add("can't cast ")
     chType.summarize(cs)
     cs.add(" to ")
     pexpr'type.summarize(cs)
 
-    mut str = cs:unwrap(cs)
+    mut str = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
@@ -381,7 +379,7 @@ method parser:Resolver.validateExprCast(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateSizeExpr(pexpr ptr ast:PExpr) ptr ast:Type
+method Resolver.validateSizeExpr(pexpr ptr ast:PExpr) ptr ast:Type
 
   mut ptype = <ptr ast:PType>(pexpr'node'value)
 
@@ -403,21 +401,21 @@ method parser:Resolver.validateSizeExpr(pexpr ptr ast:PExpr) ptr ast:Type
 /method
 
 
-method parser:Resolver.validateExprId(pexpr ptr ast:PExpr,
+method Resolver.validateExprId(pexpr ptr ast:PExpr,
                                     recList ptr list:List) ptr ast:Type
 
   mut name = <ptr uint8>(pexpr'node'value)
   mut type = <ptr ast:PNode>(pexpr).findSym(name)
 
-  if recList? and utils:listContains(recList, name)
-    mut cs = cs:new(20)
+  if recList? and misc:listContains(recList, name)
+    mut cs = txt:newCs(20)
 
     cs.add("type ")
     cs.add(name)
     cs.add(" causes an init loop ")
-    utils:listDumpHierarchyIntoCS(recList, cs)
+    misc:listDumpHierarchyIntoCS(recList, cs)
 
-    mut str = cs:unwrap(cs)
+    mut str = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
@@ -435,14 +433,14 @@ method parser:Resolver.validateExprId(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateBoolExpr(pexpr ptr ast:PExpr,
+method Resolver.validateBoolExpr(pexpr ptr ast:PExpr,
                                       ltype,rtype ptr ast:Type,
                                       recList ptr list:List) ptr ast:Type
 
   mut op = pexpr'opType
 
   if not ltype.isBool() or not rtype.isBool()
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
 
     cs.add("cannot apply ")
     cs.add(ast:ttypeStr(op))
@@ -451,7 +449,7 @@ method parser:Resolver.validateBoolExpr(pexpr ptr ast:PExpr,
     cs.add(" and ")
     rtype.summarize(cs)
 
-    mut str = cs:unwrap(cs)
+    mut str = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
@@ -464,18 +462,18 @@ method parser:Resolver.validateBoolExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateArithPtrExpr(pexpr ptr ast:PExpr,
+method Resolver.validateArithPtrExpr(pexpr ptr ast:PExpr,
                                           ltype,rtype ptr ast:Type,
                                           recList ptr list:List) ptr ast:Type
 
   if not ttypeOpCanDoPtrArith(pexpr'opType)
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
 
     cs.add("operator ")
     cs.add(ast:ttypeStr(pexpr'opType))
     cs.add(" is not appliable to pointers")
 
-    mut str = cs:unwrap(cs)
+    mut str = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
@@ -487,7 +485,7 @@ method parser:Resolver.validateArithPtrExpr(pexpr ptr ast:PExpr,
   if ltype.isPtr() and rtype.isPtr()
     if pexpr'opType == ast:MINUS
       if not me.typeIsAssignable(<ptr ast:PNode>(pexpr), ltype, rtype)
-        mut cs = cs:new(20)
+        mut cs = txt:newCs(20)
 
         cs.add("types ")
         ltype.summarize(cs)
@@ -495,7 +493,7 @@ method parser:Resolver.validateArithPtrExpr(pexpr ptr ast:PExpr,
         rtype.summarize(cs)
         cs.add(" are not compatible")
 
-        mut str = cs:unwrap(cs)
+        mut str = txt:unwrapCs(cs)
 
         me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
@@ -519,7 +517,7 @@ method parser:Resolver.validateArithPtrExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateArithExpr(pexpr ptr ast:PExpr,
+method Resolver.validateArithExpr(pexpr ptr ast:PExpr,
                                        ltype,rtype ptr ast:Type,
                                        recList ptr list:List) ptr ast:Type
 
@@ -547,7 +545,7 @@ method parser:Resolver.validateArithExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateEqDiffExpr(pexpr ptr ast:PExpr,
+method Resolver.validateEqDiffExpr(pexpr ptr ast:PExpr,
                                         ltype,rtype ptr ast:Type) ptr ast:Type
 
   mut success = true
@@ -573,7 +571,7 @@ method parser:Resolver.validateEqDiffExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateModuleAccessExpr(pexpr ptr ast:PExpr) ptr ast:Type
+method Resolver.validateModuleAccessExpr(pexpr ptr ast:PExpr) ptr ast:Type
 
   mut modName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
   if not me'curRoot.hasImported(modName)
@@ -588,14 +586,14 @@ method parser:Resolver.validateModuleAccessExpr(pexpr ptr ast:PExpr) ptr ast:Typ
   mut type = me.findSymModule(modName, symName)
 
   if not type?
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("'")
     cs.add(symName)
     cs.add("' is not defined in module '")
     cs.add(modName)
     cs.add("'")
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
@@ -608,7 +606,7 @@ method parser:Resolver.validateModuleAccessExpr(pexpr ptr ast:PExpr) ptr ast:Typ
 /method
 
 
-method parser:Resolver.resolveRecType(type ptr ast:Type) ptr ast:Type
+method Resolver.resolveRecType(type ptr ast:Type) ptr ast:Type
   if type'type != ast:TYPE_RECALIAS
     return type
   /if
@@ -617,7 +615,7 @@ method parser:Resolver.resolveRecType(type ptr ast:Type) ptr ast:Type
 /method
 
 
-method parser:Resolver.validateStructureAccessExpr(pexpr ptr ast:PExpr,
+method Resolver.validateStructureAccessExpr(pexpr ptr ast:PExpr,
                                                  ltype ptr ast:Type) ptr ast:Type
 
   mut accType = ltype
@@ -627,12 +625,12 @@ method parser:Resolver.validateStructureAccessExpr(pexpr ptr ast:PExpr,
   /if
 
   if not accType.isStruct()
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("'")
     accType.summarize(cs)
     cs.add("' is neither a structure nor a pointer to a structure")
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
@@ -646,13 +644,13 @@ method parser:Resolver.validateStructureAccessExpr(pexpr ptr ast:PExpr,
   mut type = <ptr ast:Type>(accType'members.get(field))
 
   if not type?
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("no field called '")
     cs.add(field)
     cs.add("' in type ")
     accType.summarize(cs)
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
@@ -665,7 +663,7 @@ method parser:Resolver.validateStructureAccessExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateArrayAccess(pexpr ptr ast:PExpr,
+method Resolver.validateArrayAccess(pexpr ptr ast:PExpr,
                          ltype,rtype ptr ast:Type) ptr ast:Type
 
   if ltype'type != ast:TYPE_PTR and not ltype.isLoc()
@@ -683,12 +681,12 @@ method parser:Resolver.validateArrayAccess(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.normalizeEmptyType(type ptr ast:Type) ptr ast:Type
+method Resolver.normalizeEmptyType(type ptr ast:Type) ptr ast:Type
   return type ?? me'prs.matchBuiltin("\0")
 /method
 
 
-method parser:Resolver.validateFunctionCallExpr(pexpr ptr ast:PExpr,
+method Resolver.validateFunctionCallExpr(pexpr ptr ast:PExpr,
                                                 ltype ptr ast:Type,
                                                 recList ptr list:List) ptr ast:Type
 
@@ -712,7 +710,7 @@ method parser:Resolver.validateFunctionCallExpr(pexpr ptr ast:PExpr,
   mut argsLen = pexpr'node'leaves.len()
 
   if argsLen != expLen + 1
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("can't call function ")
 
     if ltype'name?
@@ -734,7 +732,7 @@ method parser:Resolver.validateFunctionCallExpr(pexpr ptr ast:PExpr,
     cs.add(" parameters, got ")
     cs.addInt(argsLen - 1)
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
@@ -758,7 +756,7 @@ method parser:Resolver.validateFunctionCallExpr(pexpr ptr ast:PExpr,
     /if
 
     if not me.typeIsAssignable(scope, expType, gotType)
-      mut cs = cs:new(20)
+      mut cs = txt:newCs(20)
       cs.add("passing '")
 
       gotType.summarize(cs)
@@ -771,7 +769,7 @@ method parser:Resolver.validateFunctionCallExpr(pexpr ptr ast:PExpr,
 
       cs.add("'")
 
-      mut msg = cs:unwrap(cs)
+      mut msg = txt:unwrapCs(cs)
 
       me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
@@ -787,7 +785,7 @@ method parser:Resolver.validateFunctionCallExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateAssignExpr(pexpr,left ptr ast:PExpr,
+method Resolver.validateAssignExpr(pexpr,left ptr ast:PExpr,
                                         ltype,rtype ptr ast:Type) ptr ast:Type
 
   if not ttypeCanBeAssignTarget(left'opType, ltype)
@@ -802,7 +800,7 @@ method parser:Resolver.validateAssignExpr(pexpr,left ptr ast:PExpr,
   /if
 
   if not me.typeIsAssignable(<ptr ast:PNode>(pexpr), ltype, rtype)
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
 
     cs.add("cannot assign expression of type '")
     rtype.summarize(cs)
@@ -810,7 +808,7 @@ method parser:Resolver.validateAssignExpr(pexpr,left ptr ast:PExpr,
     ltype.summarize(cs)
     cs.add("'")
 
-    mut str = cs:unwrap(cs)
+    mut str = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
@@ -828,13 +826,13 @@ method parser:Resolver.validateAssignExpr(pexpr,left ptr ast:PExpr,
       mut member = <ptr ast:PExpr>(val left'node'leaves.get(i))
 
       if not ttypeCanBeAssignTarget(member'opType, member'type)
-        mut cs = cs:new(20)
+        mut cs = txt:newCs(20)
 
         cs.add("the element at position ")
         cs.addInt(i + 1)
         cs.add(" of this struct literal is not assignable")
 
-        mut str = cs:unwrap(cs)
+        mut str = txt:unwrapCs(cs)
 
         me'issues.error(member'node'begin, me'curRoot'fileName, str)
 
@@ -854,17 +852,17 @@ method parser:Resolver.validateAssignExpr(pexpr,left ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateNullCoalescingExpr(pexpr ptr ast:PExpr,
+method Resolver.validateNullCoalescingExpr(pexpr ptr ast:PExpr,
                                 ltype,rtype ptr ast:Type) ptr ast:Type
 
   if not ltype.isPtr()
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
 
     cs.add("cannot coalesce non pointer type '")
     ltype.summarize(cs)
     cs.add("'")
 
-    mut str = cs:unwrap(cs)
+    mut str = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
@@ -874,7 +872,7 @@ method parser:Resolver.validateNullCoalescingExpr(pexpr ptr ast:PExpr,
   /if
 
   if not me.typeIsAssignable(<ptr ast:PNode>(pexpr), ltype, rtype)
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
 
     cs.add("cannot coalesce type '")
     ltype.summarize(cs)
@@ -882,7 +880,7 @@ method parser:Resolver.validateNullCoalescingExpr(pexpr ptr ast:PExpr,
     rtype.summarize(cs)
     cs.add("'")
 
-    mut str = cs:unwrap(cs)
+    mut str = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, str)
 
@@ -902,7 +900,7 @@ func pnodeAllowedToUseDot(node ptr ast:PNode) bool
 /func
 
 
-method parser:Resolver.resolveMethod(pexpr ptr ast:PExpr,
+method Resolver.resolveMethod(pexpr ptr ast:PExpr,
                                    typeModule,typeName,methodName ptr uint8,
                                    recList ptr list:List) ptr ast:Type
 
@@ -923,7 +921,7 @@ method parser:Resolver.resolveMethod(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateMethodExpr(pexpr ptr ast:PExpr,
+method Resolver.validateMethodExpr(pexpr ptr ast:PExpr,
                                         ltype ptr ast:Type,
                                         recList ptr list:List) ptr ast:Type
 
@@ -941,12 +939,12 @@ method parser:Resolver.validateMethodExpr(pexpr ptr ast:PExpr,
   /if
 
   if not accType'name?
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("'")
     accType.summarize(cs)
     cs.add("' is not a named type. Raw struct, pointer or function types can't have methods")
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
@@ -961,7 +959,7 @@ method parser:Resolver.validateMethodExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateBinaryExpr(pexpr ptr ast:PExpr,
+method Resolver.validateBinaryExpr(pexpr ptr ast:PExpr,
                                         recList ptr list:List) ptr ast:Type
 
   mut op = pexpr'opType
@@ -1027,7 +1025,7 @@ method parser:Resolver.validateBinaryExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateNotExpr(pexpr ptr ast:PExpr,
+method Resolver.validateNotExpr(pexpr ptr ast:PExpr,
                                      atype ptr ast:Type) ptr ast:Type
 
   if not atype.isBool()
@@ -1042,16 +1040,16 @@ method parser:Resolver.validateNotExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateValExpr(pexpr ptr ast:PExpr,
+method Resolver.validateValExpr(pexpr ptr ast:PExpr,
                                      atype ptr ast:Type) ptr ast:Type
 
   if atype'type != ast:TYPE_PTR
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("type '")
     atype.summarize(cs)
     cs.add("' is not dereferenceable")
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
@@ -1064,7 +1062,7 @@ method parser:Resolver.validateValExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validatePtrExpr(pexpr ptr ast:PExpr,
+method Resolver.validatePtrExpr(pexpr ptr ast:PExpr,
                                      atype ptr ast:Type) ptr ast:Type
 
   if atype.isNull()
@@ -1078,16 +1076,16 @@ method parser:Resolver.validatePtrExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateUMinusExpr(pexpr ptr ast:PExpr,
+method Resolver.validateUMinusExpr(pexpr ptr ast:PExpr,
                                         atype ptr ast:Type) ptr ast:Type
 
   if not atype.isInt()
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("cannot apply unary '-' to type '")
     atype.summarize(cs)
     cs.add("'")
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
@@ -1097,12 +1095,12 @@ method parser:Resolver.validateUMinusExpr(pexpr ptr ast:PExpr,
   /if
 
   if not atype'isSigned
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("cannot apply unary '-' to unsigned type '")
     atype.summarize(cs)
     cs.add("'")
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
@@ -1115,16 +1113,16 @@ method parser:Resolver.validateUMinusExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateIncDecExpr(pexpr,atarget ptr ast:PExpr,
+method Resolver.validateIncDecExpr(pexpr,atarget ptr ast:PExpr,
                                         atype ptr ast:Type) ptr ast:Type
 
   if not atype.isInt() and not atype.isPtr()
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("type '")
     atype.summarize(cs)
     cs.add("' is not an integer or pointer type")
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
@@ -1144,16 +1142,16 @@ method parser:Resolver.validateIncDecExpr(pexpr,atarget ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateQuestExpr(pexpr ptr ast:PExpr,
+method Resolver.validateQuestExpr(pexpr ptr ast:PExpr,
                                        atype ptr ast:Type) ptr ast:Type
 
   if not atype.isPtr()
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("cannot apply '?' to type '")
     atype.summarize(cs)
     cs.add("'")
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
@@ -1166,8 +1164,8 @@ method parser:Resolver.validateQuestExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateUnaryExpr(pexpr ptr ast:PExpr,
-                                       recList ptr list:List) ptr ast:Type
+method Resolver.validateUnaryExpr(pexpr ptr ast:PExpr,
+                                  recList ptr list:List) ptr ast:Type
 
   mut op = pexpr'opType
 
@@ -1204,8 +1202,8 @@ method parser:Resolver.validateUnaryExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateTernaryExpr(pexpr ptr ast:PExpr,
-                                         recList ptr list:List) ptr ast:Type
+method Resolver.validateTernaryExpr(pexpr ptr ast:PExpr,
+                                    recList ptr list:List) ptr ast:Type
 
   mut condition = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
   mut condType = me.validateExprRecl(condition, recList)
@@ -1235,14 +1233,14 @@ method parser:Resolver.validateTernaryExpr(pexpr ptr ast:PExpr,
   if     not me.typeIsAssignable(<ptr ast:PNode>(pexpr), leftType, rightType) \
      and not me.typeIsAssignable(<ptr ast:PNode>(pexpr), rightType, leftType)
 
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("ternary expression arguments have incompatible types '")
     leftType.summarize(cs)
     cs.add("' and '")
     rightType.summarize(cs)
     cs.add("'")
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
@@ -1272,7 +1270,7 @@ method parser:Resolver.validateTernaryExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateMeExpr(pexpr ptr ast:PExpr) ptr ast:Type
+method Resolver.validateMeExpr(pexpr ptr ast:PExpr) ptr ast:Type
 
   mut meType = <ptr ast:PNode>(pexpr).findSym("me")
   if not meType?
@@ -1284,8 +1282,8 @@ method parser:Resolver.validateMeExpr(pexpr ptr ast:PExpr) ptr ast:Type
 /method
 
 
-method parser:Resolver.validateStructLiteralExpr(pexpr ptr ast:PExpr,
-                                               recList ptr list:List) ptr ast:Type
+method Resolver.validateStructLiteralExpr(pexpr ptr ast:PExpr,
+                                          recList ptr list:List) ptr ast:Type
 
   mut scope = <ptr ast:PNode>(pexpr)
   mut leavesLen = scope'leaves.len()
@@ -1295,8 +1293,8 @@ method parser:Resolver.validateStructLiteralExpr(pexpr ptr ast:PExpr,
   members.setFreeFuncs(ptr mem:free, null)
 
   while i < leavesLen
-    mut param = <ptr ast:PExpr>(val scope'leaves.get(i))
-    mut type = me.validateExprRecl(param, recList)
+    mut eparam = <ptr ast:PExpr>(val scope'leaves.get(i))
+    mut type = me.validateExprRecl(eparam, recList)
 
     if not type?
       kv:free(members)
@@ -1304,7 +1302,7 @@ method parser:Resolver.validateStructLiteralExpr(pexpr ptr ast:PExpr,
       return null
     /if
 
-    members.put(txt:representNum(i), type)
+    members.put(misc:representNum(i), type)
 
     i++
   /while
@@ -1314,7 +1312,7 @@ method parser:Resolver.validateStructLiteralExpr(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateExprRecl(pexpr ptr ast:PExpr,
+method Resolver.validateExprRecl(pexpr ptr ast:PExpr,
                                       recList ptr list:List) ptr ast:Type
 
 
@@ -1367,7 +1365,7 @@ method parser:Resolver.validateExprRecl(pexpr ptr ast:PExpr,
 /method
 
 
-method parser:Resolver.validateExpr(pexpr ptr ast:PExpr) ptr ast:Type
+method Resolver.validateExpr(pexpr ptr ast:PExpr) ptr ast:Type
 
   return me.validateExprRecl(pexpr, null)
 /method

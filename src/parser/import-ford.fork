@@ -12,7 +12,6 @@ module parser
 
 
 import ast
-import cs
 import err
 import fs
 import hash
@@ -22,7 +21,6 @@ import list
 import mem
 import memutils
 import pair
-import parser
 import proc
 import set
 import tty
@@ -34,7 +32,7 @@ mut MIN_VER = 12
 mut IMPORTER_VERBOSE_DEBUG = false
 
 
-func fordFree(ford ptr parser:Ford)
+func fordFree(ford ptr Ford)
   if ford?
     mem:free(ford'name)
     ast:stabFree(ford'aliases)
@@ -48,7 +46,7 @@ func fordFree(ford ptr parser:Ford)
 
 
 alias Importer struct(
-  prs ptr parser:Parser,
+  prs ptr Parser,
   in ptr io:Stream,
   name,path ptr uint8
 )
@@ -275,14 +273,14 @@ method Importer.inferPTypeType(type uint16) {type uint16, err ptr err:Error}
     return {ast:PTYPE_STRUCT,null}
   /if
 
-  mut cs = cs:new(20)
+  mut cs = txt:newCs(20)
   cs.add("malformed ford '")
   cs.add(me'path)
   cs.add("': ")
   cs.addInt(type)
   cs.add(" is not a dumpable type identifier")
 
-  mut msg = cs:unwrap(cs)
+  mut msg = txt:unwrapCs(cs)
 
   mut err = err:new(msg)
 
@@ -762,12 +760,12 @@ method Importer.checkVersion() ptr err:Error
   /if
 
   if release < MIN_VER
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("module '")
     cs.add(me'path)
     cs.add("' has been built for an incompatible version and should be rebuilt")
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
     mut err = err:new(msg)
     mem:free(msg)
 
@@ -778,7 +776,7 @@ method Importer.checkVersion() ptr err:Error
 /method
 
 
-method Importer.loadFord() {ford ptr parser:Ford,err ptr err:Error}
+method Importer.loadFord() {ford ptr Ford,err ptr err:Error}
 
   mut err = me.checkVersion()
   if err?
@@ -816,7 +814,7 @@ method Importer.loadFord() {ford ptr parser:Ford,err ptr err:Error}
     return {null,err}
   /if
 
-  mut ret = <ptr parser:Ford>(mem:alloc(size(parser:Ford)))
+  mut ret = <ptr Ford>(mem:alloc(size(Ford)))
 
   val ret = {me'name, imps, aliases, decls, extra, extraLen}
 
@@ -824,7 +822,7 @@ method Importer.loadFord() {ford ptr parser:Ford,err ptr err:Error}
 /method
 
 
-method parser:Parser.loadFord(path ptr uint8) {ford ptr parser:Ford,
+method Parser.loadFord(path ptr uint8) {ford ptr Ford,
                                                 err ptr err:Error}
 
   mut {instr,err} = fs:fileOpen(path)

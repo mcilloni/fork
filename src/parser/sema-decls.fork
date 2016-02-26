@@ -12,18 +12,15 @@ module parser
 
 
 import ast
-import cs
 import hash
 import kv
 import list
 import mem
-import parser
 import txt
-import utils
 
 
-method parser:Resolver.findRecAlias(scope ptr ast:PNode,
-                                    ralias ptr ast:Type) ptr ast:Type
+method Resolver.findRecAlias(scope ptr ast:PNode,
+                             ralias ptr ast:Type) ptr ast:Type
 
   if ralias'type != ast:TYPE_RECALIAS
     return ralias
@@ -37,7 +34,7 @@ method parser:Resolver.findRecAlias(scope ptr ast:PNode,
 /method
 
 
-method parser:Resolver.findSymModule(moduleName, name ptr uint8) ptr ast:Type
+method Resolver.findSymModule(moduleName, name ptr uint8) ptr ast:Type
   mut imp = me'prs.getImport(moduleName)
   if not imp?
     return null
@@ -51,7 +48,7 @@ method parser:Resolver.findSymModule(moduleName, name ptr uint8) ptr ast:Type
 # module, with this precedence order.
 # Otherwise, it's pretty complicated to handle conflicts, and, most important,
 # you don't really know who calls what.
-method parser:Resolver.findMethod(node ptr ast:PNode,
+method Resolver.findMethod(node ptr ast:PNode,
                 typeModule,typeName,methodName ptr uint8) ptr ast:Type
 
   mut name = ast:methodKey(typeModule, typeName,methodName)
@@ -82,7 +79,7 @@ method parser:Resolver.findMethod(node ptr ast:PNode,
 /method
 
 
-method parser:Resolver.rootDeclsRegister(name ptr uint8, isDecl bool, type ptr ast:Type, declType uint16)
+method Resolver.rootDeclsRegister(name ptr uint8, isDecl bool, type ptr ast:Type, declType uint16)
   me'curRoot'node'syms.add(name, isDecl, false, type, declType)
 
   me'decls.remove(name)
@@ -93,7 +90,7 @@ method parser:Resolver.rootDeclsRegister(name ptr uint8, isDecl bool, type ptr a
 # we only need its type (if possible).
 # Otherwise, if inherited from an expression, we must validate it to extract the
 # actual type.
-method parser:Resolver.registerDeclReal(pdecl ptr ast:PDecl,
+method Resolver.registerDeclReal(pdecl ptr ast:PDecl,
                                       recursive bool,
                                       recList ptr list:List) ptr ast:Type
 
@@ -175,14 +172,14 @@ method parser:Resolver.registerDeclReal(pdecl ptr ast:PDecl,
 
           if typeResolved
             if not me.typeIsAssignable(<ptr ast:PNode>(pdecl), realType, valType)
-              mut cs = cs:new(20)
+              mut cs = txt:newCs(20)
               cs.add("cannot assign an expression of type '")
               valType.summarize(cs)
               cs.add("' to a variable declared as '")
               realType.summarize(cs)
               cs.add("'")
 
-              mut msg = cs:unwrap(cs)
+              mut msg = txt:unwrapCs(cs)
 
               me'issues.error(ptype'begin, me'curRoot'fileName, msg)
 
@@ -223,7 +220,7 @@ method parser:Resolver.registerDeclReal(pdecl ptr ast:PDecl,
 /method
 
 
-method parser:Resolver.registerTopDeclReal(pdecl ptr ast:PDecl,
+method Resolver.registerTopDeclReal(pdecl ptr ast:PDecl,
                                           recList ptr list:List) ptr ast:Type
 
   recList.push(ast:declKey(pdecl))
@@ -236,7 +233,7 @@ method parser:Resolver.registerTopDeclReal(pdecl ptr ast:PDecl,
 /method
 
 
-method parser:Resolver.registerTopDecl(pdecl ptr ast:PDecl) ptr ast:Type
+method Resolver.registerTopDecl(pdecl ptr ast:PDecl) ptr ast:Type
 
   mut recList list:List
   list:init(ptr recList)
@@ -249,7 +246,7 @@ method parser:Resolver.registerTopDecl(pdecl ptr ast:PDecl) ptr ast:Type
 /method
 
 
-method parser:Resolver.resolveDeclType(name ptr uint8,
+method Resolver.resolveDeclType(name ptr uint8,
                                        node ptr ast:PNode,
                                        recList ptr list:List) ptr ast:Type
 
@@ -279,7 +276,7 @@ method parser:Resolver.resolveDeclType(name ptr uint8,
 /method
 
 
-method parser:Resolver.registerDecl(pdecl ptr ast:PDecl,
+method Resolver.registerDecl(pdecl ptr ast:PDecl,
                                     name ptr uint8,
                                     type ptr ast:Type,
                                     declType uint16) ptr ast:Type
@@ -288,12 +285,12 @@ method parser:Resolver.registerDecl(pdecl ptr ast:PDecl,
 
   mut stab = declNode.findStab()
   if stab.typeof(name)?
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("symbol '")
     cs.add(name)
     cs.add("' is already defined")
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(declNode'begin, me'curRoot'fileName, msg)
 

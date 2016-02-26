@@ -12,15 +12,12 @@ module parser
 
 
 import ast
-import cs
 import kv
 import list
 import mem
-import parser
 import proc
 import tty
 import txt
-import utils
 
 
 method ast:Symtable.addFuncParams(syms ptr kv:KVList)
@@ -40,7 +37,7 @@ method ast:Symtable.addFuncParams(syms ptr kv:KVList)
 /method
 
 
-method parser:Resolver.isCurrentModule(modName ptr uint8) bool
+method Resolver.isCurrentModule(modName ptr uint8) bool
   mut curMod = me'curRoot'moduleName? => me'curRoot'moduleName'name || null
 
   if modName == curMod
@@ -52,7 +49,7 @@ method parser:Resolver.isCurrentModule(modName ptr uint8) bool
 /method
 
 
-method parser:Resolver.ensureMethodCorrectness(pdecl ptr ast:PDecl,
+method Resolver.ensureMethodCorrectness(pdecl ptr ast:PDecl,
                                                funcType ptr ast:Type) bool
 
   mut type ptr ast:Type = null
@@ -64,7 +61,7 @@ method parser:Resolver.ensureMethodCorrectness(pdecl ptr ast:PDecl,
     type = me.findAliasImport(pdecl'methodTypeModule, pdecl'methodType)
 
     if not type?
-      mut cs = cs:new(20)
+      mut cs = txt:newCs(20)
 
       cs.add("type ")
 
@@ -76,7 +73,7 @@ method parser:Resolver.ensureMethodCorrectness(pdecl ptr ast:PDecl,
       cs.add(pdecl'methodType)
       cs.add(" is undefined")
 
-      mut msg = cs:unwrap(cs)
+      mut msg = txt:unwrapCs(cs)
 
       me'issues.error(pdecl'node'begin, me'curRoot'fileName, msg)
 
@@ -99,7 +96,7 @@ method parser:Resolver.ensureMethodCorrectness(pdecl ptr ast:PDecl,
 /method
 
 
-method parser:Resolver.validateBreakContinue(stmt ptr ast:PNode, inLoop bool) bool
+method Resolver.validateBreakContinue(stmt ptr ast:PNode, inLoop bool) bool
 
   if not inLoop
     me'issues.error(stmt'begin, me'curRoot'fileName, "break or continue outside of a loop")
@@ -111,7 +108,7 @@ method parser:Resolver.validateBreakContinue(stmt ptr ast:PNode, inLoop bool) bo
 /method
 
 
-method parser:Resolver.validateDecl(pdecl ptr ast:PDecl) bool
+method Resolver.validateDecl(pdecl ptr ast:PDecl) bool
 
   mut isDecl = pdecl'isDecl
 
@@ -151,14 +148,14 @@ method parser:Resolver.validateDecl(pdecl ptr ast:PDecl) bool
 
     if type?
       if not me.typeIsAssignable(<ptr ast:PNode>(pdecl), type, exprType)
-        mut cs = cs:new(20)
+        mut cs = txt:newCs(20)
         cs.add("cannot assign an expression of type '")
         exprType.summarize(cs)
         cs.add("' to a variable declared as '")
         type.summarize(cs)
         cs.add("'")
 
-        mut msg = cs:unwrap(cs)
+        mut msg = txt:unwrapCs(cs)
 
         me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
 
@@ -189,7 +186,7 @@ method parser:Resolver.validateDecl(pdecl ptr ast:PDecl) bool
 /method
 
 
-method parser:Resolver.validateMulDecl(pmuldecl ptr ast:PMulDecl) bool
+method Resolver.validateMulDecl(pmuldecl ptr ast:PMulDecl) bool
 
   mut pnode = <ptr ast:PNode>(pmuldecl)
   mut exprType ptr ast:Type = null
@@ -205,12 +202,12 @@ method parser:Resolver.validateMulDecl(pmuldecl ptr ast:PMulDecl) bool
     /if
 
     if not exprType.isStruct()
-      mut cs = cs:new(30)
+      mut cs = txt:newCs(30)
       cs.add("trying to expand non-struct type '")
       exprType.summarize(cs)
       cs.add("'")
 
-      mut msg = cs:unwrap(cs)
+      mut msg = txt:unwrapCs(cs)
 
       me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
       mem:free(msg)
@@ -276,7 +273,7 @@ method parser:Resolver.validateMulDecl(pmuldecl ptr ast:PMulDecl) bool
 
     if varType? and initType?
       if not me.typeIsAssignable(pnode, varType, initType)
-        mut cs = cs:new(20)
+        mut cs = txt:newCs(20)
         cs.add("cannot assign an expression of type '")
         initType.summarize(cs)
         cs.add("' to '")
@@ -285,7 +282,7 @@ method parser:Resolver.validateMulDecl(pmuldecl ptr ast:PMulDecl) bool
         varType.summarize(cs)
         cs.add("'")
 
-        mut msg = cs:unwrap(cs)
+        mut msg = txt:unwrapCs(cs)
 
         me'issues.error(pnode'begin, me'curRoot'fileName, msg)
 
@@ -322,7 +319,7 @@ method parser:Resolver.validateMulDecl(pmuldecl ptr ast:PMulDecl) bool
 /method
 
 
-method parser:Resolver.validateIf(stmt ptr ast:PNode,
+method Resolver.validateIf(stmt ptr ast:PNode,
                                 funcInfo ast:Symbol,
                                 inLoop bool) bool
 
@@ -334,12 +331,12 @@ method parser:Resolver.validateIf(stmt ptr ast:PNode,
   /if
 
   if not condType.isBool()
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("expected a boolean expression, got type '")
     condType.summarize(cs)
     cs.add("' instead")
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(cond'node'begin, me'curRoot'fileName, msg)
 
@@ -364,7 +361,7 @@ method parser:Resolver.validateIf(stmt ptr ast:PNode,
 /method
 
 
-method parser:Resolver.validatePBlock(pblock ptr ast:PBlock,
+method Resolver.validatePBlock(pblock ptr ast:PBlock,
                                     funcInfo ast:Symbol,
                                     inLoop bool) bool
 
@@ -389,18 +386,18 @@ method parser:Resolver.validatePBlock(pblock ptr ast:PBlock,
 /method
 
 
-method parser:Resolver.validateReturn(stmt ptr ast:PNode, funcInfo ast:Symbol) bool
+method Resolver.validateReturn(stmt ptr ast:PNode, funcInfo ast:Symbol) bool
 
   mut hasRetExpr = (stmt'leaves.len() == 1)
   mut funcRetTypeEmpty = not funcInfo'type'retType? or funcInfo'type'retType'type == ast:TYPE_EMPTY
 
   if not hasRetExpr and not funcRetTypeEmpty
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("function '")
     cs.add(funcInfo'name)
     cs.add("' has a return value, but no expression is given to return")
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(stmt'begin, me'curRoot'fileName, msg)
 
@@ -410,12 +407,12 @@ method parser:Resolver.validateReturn(stmt ptr ast:PNode, funcInfo ast:Symbol) b
   /if
 
   if hasRetExpr and funcRetTypeEmpty
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("function '")
     cs.add(funcInfo'name)
     cs.add("' has no return value, but an expression is given to return")
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(stmt'begin, me'curRoot'fileName, msg)
 
@@ -434,7 +431,7 @@ method parser:Resolver.validateReturn(stmt ptr ast:PNode, funcInfo ast:Symbol) b
     /if
 
     if not me.typeIsAssignable(stmt, retType, exprType)
-      mut cs = cs:new(20)
+      mut cs = txt:newCs(20)
       cs.add("cannot return type '")
       exprType.summarize(cs)
       cs.add("' from function ")
@@ -443,7 +440,7 @@ method parser:Resolver.validateReturn(stmt ptr ast:PNode, funcInfo ast:Symbol) b
       retType.summarize(cs)
       cs.add("'")
 
-      mut msg = cs:unwrap(cs)
+      mut msg = txt:unwrapCs(cs)
 
       me'issues.error(stmt'begin, me'curRoot'fileName, msg)
 
@@ -457,7 +454,7 @@ method parser:Resolver.validateReturn(stmt ptr ast:PNode, funcInfo ast:Symbol) b
 /method
 
 
-method parser:Resolver.validateStmt(stmt ptr ast:PNode,
+method Resolver.validateStmt(stmt ptr ast:PNode,
                                   funcInfo ast:Symbol,
                                   inLoop bool) bool
 
@@ -495,7 +492,7 @@ method parser:Resolver.validateStmt(stmt ptr ast:PNode,
 /method
 
 
-method parser:Resolver.validateWhile(stmt ptr ast:PNode,
+method Resolver.validateWhile(stmt ptr ast:PNode,
                                    funcInfo ast:Symbol,
                                    inLoop bool) bool
 
@@ -507,12 +504,12 @@ method parser:Resolver.validateWhile(stmt ptr ast:PNode,
   /if
 
   if not condType.isBool()
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("expected a boolean expression, got type '")
     condType.summarize(cs)
     cs.add("' instead")
 
-    mut msg = cs:unwrap(cs)
+    mut msg = txt:unwrapCs(cs)
 
     me'issues.error(cond'node'begin, me'curRoot'fileName, msg)
 
@@ -527,7 +524,7 @@ method parser:Resolver.validateWhile(stmt ptr ast:PNode,
 /method
 
 
-method parser:Resolver.validateFunc(pdecl ptr ast:PDecl,
+method Resolver.validateFunc(pdecl ptr ast:PDecl,
                                   funcType ptr ast:Type) bool
 
   mut sym ast:Symbol

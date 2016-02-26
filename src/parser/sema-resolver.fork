@@ -12,43 +12,40 @@ module parser
 
 
 import ast
-import cs
 import kv
 import list
 import mem
 import memutils
-import parser
 import proc
 import set
 import tty
 import txt
-import utils
 
 
-func resolverDeinit(rsv ptr parser:Resolver)
+func resolverDeinit(rsv ptr Resolver)
   kv:free(rsv'aliases)
   kv:free(rsv'decls)
 /func
 
 
-method parser:Resolver.setCurrentRoot(root ptr ast:PRoot)
+method Resolver.setCurrentRoot(root ptr ast:PRoot)
   me'curRoot = root
 /method
 
 
-method parser:Resolver.collectAlias(pdecl ptr ast:PDecl,
+method Resolver.collectAlias(pdecl ptr ast:PDecl,
                                   root ptr ast:PRoot) bool
 
   mut name = pdecl'sym'name
 
   if me'aliases.contains(name)
 
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("alias ")
     cs.add(name)
     cs.add(" is already defined")
 
-    me'issues.error(pdecl'node'begin, root'fileName, cs:unwrap(cs))
+    me'issues.error(pdecl'node'begin, root'fileName, txt:unwrapCs(cs))
 
     return false
   /if
@@ -59,19 +56,19 @@ method parser:Resolver.collectAlias(pdecl ptr ast:PDecl,
 /method
 
 
-method parser:Resolver.collectDecls(pdecl ptr ast:PDecl,
+method Resolver.collectDecls(pdecl ptr ast:PDecl,
                                     root ptr ast:PRoot) bool
 
   mut name = ast:declKey(pdecl)
   mut existent = <ptr ast:PDecl>(me'decls.get(name))
 
   if existent?
-    mut cs = cs:new(20)
+    mut cs = txt:newCs(20)
     cs.add("symbol ")
     cs.add(name)
     cs.add(" defined twice in current module")
 
-    mut str = cs:unwrap(cs)
+    mut str = txt:unwrapCs(cs)
     me'issues.error(pdecl'node'begin, root'fileName, str)
 
     mem:free(str)
@@ -87,7 +84,7 @@ method parser:Resolver.collectDecls(pdecl ptr ast:PDecl,
 /method
 
 
-method parser:Resolver.collectPDecl(pnode ptr ast:PNode,
+method Resolver.collectPDecl(pnode ptr ast:PNode,
                                     root ptr ast:PRoot,
                                     entryNode ptr ptr ast:PDecl) bool
 
@@ -137,13 +134,13 @@ method parser:Resolver.collectPDecl(pnode ptr ast:PNode,
 /method
 
 
-method parser:Resolver.collectImports(fileName ptr uint8, list ptr list:List)
+method Resolver.collectImports(fileName ptr uint8, list ptr list:List)
   mut len = list.len()
   mut i uintptr = 0
 
   while i < len
     mut imp = cast<ptr ast:StringDef>(val list.get(i))
-    mut sdf = cast<ptr parser:StringDefFile>(mem:alloc(size(parser:StringDefFile)))
+    mut sdf = cast<ptr StringDefFile>(mem:alloc(size(StringDefFile)))
 
     val sdf = {imp'name, fileName, imp'begin, imp'end}
 
@@ -154,7 +151,7 @@ method parser:Resolver.collectImports(fileName ptr uint8, list ptr list:List)
 /method
 
 
-method parser:Resolver.collectFromRoot(root ptr ast:PRoot,
+method Resolver.collectFromRoot(root ptr ast:PRoot,
                                        values ptr kv:KVList,
                                        entryNode ptr ptr ast:PDecl) bool
 
@@ -181,12 +178,12 @@ method parser:Resolver.collectFromRoot(root ptr ast:PRoot,
 /method
 
 
-func sdfhash(sdf ptr parser:StringDefFile) uintptr
+func sdfhash(sdf ptr StringDefFile) uintptr
   return txt:strhash(sdf'text)
 /func
 
 
-method parser:Resolver.collect(prs ptr parser:Parser,
+method Resolver.collect(prs ptr Parser,
                                pmod ptr ast:PModule,
                                issues ptr ast:Issues) ptr kv:KVList
 
