@@ -2,9 +2,10 @@ BUILD = $(shell pwd)/../build/
 FORDS = $(BUILD)/ford/
 
 ifndef TRNS
-	TRNS = env FORDPATHS=$(FORDS) transmod
+	TRNS = transmod
 endif
 
+TRNSCMD = env FORDPATHS=$(FORDS) $(TRNS)
 
 ifndef NODL
 ifeq ($(shell uname), Linux)
@@ -29,7 +30,7 @@ endif
 .PHONY: all clean
 
 all:
-	$(TRNS) -n parsedir -co $(shell pwd) ex-parsedir
+	$(TRNSCMD) -n parsedir -co $(shell pwd) ex-parsedir
 	$(CCLD) -w -g -std=c99 -D_POSIX_C_SOURCE=200112L -o parsedir $(shell pwd)/parsedir.c $(BUILD)/rt.o $(BUILD)/libfork.a
 	rm -f $(shell pwd)/parsedir.c
 
