@@ -5,6 +5,13 @@
 # must be capable to parse itself.
 # All the .fork and .ford files under src/ must parse.
 
+if test ! -d $PWD/build
+then
+  make clean
+  make
+fi
+
+
 I=0
 SUCCESS=0
 TOTAL=$(find src -type d ! -path src | wc -l)
