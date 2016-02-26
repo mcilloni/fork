@@ -167,15 +167,15 @@ method ctrans:Transl.dump() {headers,cfile ptr uint8}
   mem:free(externs)
 
   headers.add("\n\n")
-
-  mut vars = cs:unwrap(me'vars)
-  headers.add(vars)
-  mem:free(vars)
-
+  
   mut headRet = cs:unwrap(headers)
 
   cs.add(headRet)
   cs.add("\n\n")
+
+  mut vars = cs:unwrap(me'vars)
+  cs.add(vars)
+  mem:free(vars)
 
   mut funcs = cs:unwrap(me'funcs)
   cs.add(funcs)
