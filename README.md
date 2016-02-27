@@ -1,7 +1,7 @@
-# ctrans
+# libctrans
 
 
-*Ctrans* is a transpiler that compiles Fork code to C99, and provides an integrated and easy way to then build the generated C code into object code using a C compiler.
+*libctrans* is a library that implements a transpiler for compiling Fork code to C99.
 
 This is largely a WIP project, and it's pretty far away from release, so expect lots of bugs.
 
@@ -20,9 +20,9 @@ entry
 ## Usage
 
 ```
-$ forkc file.fork
-$ forkl file.o
-$ ./file
+$ env FORDPATHS=$MY_FORDS transmod -n helloworld hello_world_dir
+$ cc -w -o helloworld helloworld.c $PATH_TO_LIBFORK/rt.o $PATH_TO_LIBFORK/libfork.a
+$ ./helloworld
 Hello, world!
 ```
 
