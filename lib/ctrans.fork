@@ -11,14 +11,12 @@
 module ctrans
 
 
+import about
 import ast
-import cs
-import ctrans
 import err
 import hash
 import io
 import kv
-import libfork
 import list
 import mem
 import pair
@@ -29,16 +27,25 @@ import txt
 import tty
 
 
-func init(tr ptr ctrans:Transl,
+alias Transl struct(
+  includes,typedefs,ssastructs,externs,vars,funcs ptr txt:Charstash,
+  modName ptr uint8,
+  debug bool,
+  parser ptr parser:Parser,
+  cnt uintptr
+)
+
+
+func init(tr ptr Transl,
           name ptr uint8,
           parser ptr parser:Parser)
 
-  tr'includes = cs:new(40)
-  tr'typedefs = cs:new(300)
-  tr'ssastructs = cs:new(300)
-  tr'externs = cs:new(300)
-  tr'vars = cs:new(300)
-  tr'funcs = cs:new(300)
+  tr'includes = txt:newCs(40)
+  tr'typedefs = txt:newCs(300)
+  tr'ssastructs = txt:newCs(300)
+  tr'externs = txt:newCs(300)
+  tr'vars = txt:newCs(300)
+  tr'funcs = txt:newCs(300)
   tr'parser = parser
   tr'cnt = 0
 
@@ -51,23 +58,23 @@ func nullSafestreq(str1,str2 ptr uint8) bool
 /func
 
 
-method ctrans:Transl.extern(sym ptr uint8)
+method Transl.extern(sym ptr uint8)
   me'externs.addWord("extern")
   me'externs.add(sym)
   me'externs.addLine(";")
 /method
 
 
-method ctrans:Transl.fnblock(root ptr ast:PRoot,
+method Transl.fnblock(root ptr ast:PRoot,
                              block ptr ast:PBlock,
                              rvoType ptr ast:Type,
                              fname ptr uint8)
 
-  ctrans:translBlock(me'funcs, me, root, block, rvoType, fname, 2, true)
+  translBlock(me'funcs, me, root, block, rvoType, fname, 2, true)
 /method
 
 
-method ctrans:Transl.function(root ptr ast:PRoot,
+method Transl.function(root ptr ast:PRoot,
                               fname,sym ptr uint8,
                               type ptr ast:Type,
                               fn ptr ast:PDecl)
@@ -87,7 +94,7 @@ method ctrans:Transl.function(root ptr ast:PRoot,
 /method
 
 
-method ctrans:Transl.forkmain(root ptr ast:PRoot)
+method Transl.forkmain(root ptr ast:PRoot)
   mut entryN = root'entryNode
 
   me'funcs.addDebugLine(root'fileName, entryN'node'begin'line)
@@ -101,7 +108,7 @@ method ctrans:Transl.forkmain(root ptr ast:PRoot)
 /method
 
 
-method ctrans:Transl.globVar(sym ptr uint8, root ptr ast:PRoot, expr ptr ast:PExpr)
+method Transl.globVar(sym ptr uint8, root ptr ast:PRoot, expr ptr ast:PExpr)
   me'vars.add(sym)
 
   if expr?
@@ -113,7 +120,7 @@ method ctrans:Transl.globVar(sym ptr uint8, root ptr ast:PRoot, expr ptr ast:PEx
 /method
 
 
-method ctrans:Transl.typedef(name,body ptr uint8, ssa bool)
+method Transl.typedef(name,body ptr uint8, ssa bool)
   mut cs = ssa => me'ssastructs || me'typedefs
 
   cs.addWord("typedef")
@@ -126,15 +133,15 @@ method ctrans:Transl.typedef(name,body ptr uint8, ssa bool)
 /method
 
 
-method ctrans:Transl.dump() {headers,cfile ptr uint8}
-  mut cs = cs:new(200)
+method Transl.dump() {headers,cfile ptr uint8}
+  mut cs = txt:newCs(200)
 
   cs.add("// generated with ctrans v")
-  cs.add(ctrans:VERSION)
+  cs.add(VERSION)
   cs.add(" (")
 
   cs.add("libfork v")
-  cs.add(libfork:VERSION)
+  cs.add(about:VERSION)
   cs.add(")\n\n\n")
 
   cs.add("#include <stdint.h>\n\n")
@@ -142,53 +149,53 @@ method ctrans:Transl.dump() {headers,cfile ptr uint8}
   #just in case, you know.
   cs.add("#undef NULL\n\n")
 
-  mut includes = cs:unwrap(me'includes)
+  mut includes = txt:unwrapCs(me'includes)
   cs.add(includes)
   mem:free(includes)
 
   cs.add("\n\n")
 
-  mut headers = cs:new(200)
+  mut headers = txt:newCs(200)
 
-  mut typedefs = cs:unwrap(me'typedefs)
+  mut typedefs = txt:unwrapCs(me'typedefs)
   headers.add(typedefs)
   mem:free(typedefs)
 
   cs.add("\n\n")
 
-  mut ssastructs = cs:unwrap(me'ssastructs)
+  mut ssastructs = txt:unwrapCs(me'ssastructs)
   headers.add(ssastructs)
   mem:free(ssastructs)
 
   cs.add("\n\n")
 
-  mut externs = cs:unwrap(me'externs)
+  mut externs = txt:unwrapCs(me'externs)
   headers.add(externs)
   mem:free(externs)
 
   headers.add("\n\n")
-  
-  mut headRet = cs:unwrap(headers)
+
+  mut headRet = txt:unwrapCs(headers)
 
   cs.add(headRet)
   cs.add("\n\n")
 
-  mut vars = cs:unwrap(me'vars)
+  mut vars = txt:unwrapCs(me'vars)
   cs.add(vars)
   mem:free(vars)
 
-  mut funcs = cs:unwrap(me'funcs)
+  mut funcs = txt:unwrapCs(me'funcs)
   cs.add(funcs)
   mem:free(funcs)
 
   cs.add("\n\n")
 
-  return {headRet,cs:unwrap(cs)}
+  return {headRet,txt:unwrapCs(cs)}
 /method
 
 
 # Include a ford.
-method ctrans:Transl.includeFord(fordName ptr uint8, done ptr set:Set)
+method Transl.includeFord(fordName ptr uint8, done ptr set:Set)
   if done.contains(fordName)
     return
   /if
@@ -219,7 +226,7 @@ method ctrans:Transl.includeFord(fordName ptr uint8, done ptr set:Set)
 /method
 
 
-method ctrans:Transl.genDecls(root ptr ast:PRoot)
+method Transl.genDecls(root ptr ast:PRoot)
 
   mut len = root'node'node'leaves.len()
   mut i uintptr = 0
@@ -263,7 +270,7 @@ method ctrans:Transl.genDecls(root ptr ast:PRoot)
 /method
 
 
-method ctrans:Transl.genImports(root ptr ast:PRoot)
+method Transl.genImports(root ptr ast:PRoot)
 
   mut i uintptr = 0
   mut len = root'imports.len()
@@ -297,7 +304,7 @@ method set:Set.gatherImports(root ptr ast:PRoot)
 /method
 
 
-method ctrans:Transl.genTypedef(kv ptr kv:KVList,
+method Transl.genTypedef(kv ptr kv:KVList,
                                 name,body ptr uint8,
                                 deps,done ptr set:Set)
 
@@ -320,7 +327,7 @@ method ctrans:Transl.genTypedef(kv ptr kv:KVList,
 /method
 
 
-method ctrans:Transl.genTypedefs(kv ptr kv:KVList)
+method Transl.genTypedefs(kv ptr kv:KVList)
   mut done = set:strnew(10)
   mut len = kv.len()
 
@@ -389,7 +396,7 @@ func genDepSet(curMod,aliasName ptr uint8, type ptr ast:Type) ptr set:Set
 /func
 
 
-method ctrans:Transl.gatherAliases(aliases ptr kv:KVList, root ptr ast:PRoot)
+method Transl.gatherAliases(aliases ptr kv:KVList, root ptr ast:PRoot)
   mut modName = root'moduleName? => root'moduleName'name || null
   mut kv = root'aliases'syms
 
@@ -401,12 +408,12 @@ method ctrans:Transl.gatherAliases(aliases ptr kv:KVList, root ptr ast:PRoot)
     mut name = cast<ptr uint8>(pair'key)
     mut type = cast<ptr ast:DeclInfo>(pair'value)'type
 
-    mut typeBodyCs = cs:new(30)
+    mut typeBodyCs = txt:newCs(30)
 
     me.genCsym(typeBodyCs, null, modName, name, type, -1, true)
 
     mut typeDeps = genDepSet(me'modName, name, type)
-    mut typeBody = cs:unwrap(typeBodyCs)
+    mut typeBody = txt:unwrapCs(typeBodyCs)
 
     mut its = cast<ptr {body ptr uint8, deps ptr set:Set} >(mem:alloc(size({body ptr uint8, deps ptr set:Set})))
 
@@ -419,7 +426,7 @@ method ctrans:Transl.gatherAliases(aliases ptr kv:KVList, root ptr ast:PRoot)
 /method
 
 
-method ctrans:Transl.translateModule(pmod ptr ast:PModule)
+method Transl.translateModule(pmod ptr ast:PModule)
   mut importSet set:Set
   mut typedefKV kv:KVList
   set:strinit(ptr importSet, 10)

@@ -1,88 +1,109 @@
-.PHONY: all clean stage1 bootstrap copy-libs build
+PWD = $(shell pwd)
+BUILD = $(PWD)/build
+CURSTAGE = $(BUILD)/current
+STAGE1 = $(BUILD)/stage1
+STAGE2 = $(BUILD)/stage2
+STAGE3 = $(BUILD)/stage3
+
+TRANSMODDIR = $(PWD)/transmod
+
+LIBFORK = $(PWD)/libfork/
+LIBFORDS = $(LIBFORK)/build/ford
+
+RELDIRNAME = ctrans-release
+RELDIR = $(PWD)/$(RELDIRNAME)
+
+ifndef TRNS
+	TRNS = transmod
+endif
+
+ifndef TAR
+	TAR=tar
+endif
+
+ifndef AR
+	AR=ar
+endif
+
+ifndef RANLIB
+	RANLIB=ranlib
+endif
+
+MACHINE = $(shell uname -m)
+
+ifeq ($(MACHINE), amd64)
+	AMD64 = yes
+endif
+
+ifdef AMD64
+ifeq (,$(findstring CYGWIN,$(UNAME)))
+	FPIC = -fPIC
+endif
+endif
+
+ifndef PKGNAME
+	PKGNAME=$(RELDIRNAME).txz
+endif
+
+SONAME = libctrans.so
+ARNAME = libctrans.a
+
+.PHONY: all clean package bootstrap stage1 stage2 stage3 libfork stage stage-ctrans stage-libfork stage-transmod
 
 all:
-	@ mkdir -p build/
-	cp -rf src/ford build/ford
-	$(MAKE) -C src
+	$(MAKE) stage-ctrans
+
+package:
+	$(MAKE) bootstrap
+	mkdir -p $(RELDIR)
+	cp -r $(STAGE3)/ford $(RELDIR)
+	cp $(STAGE3)/rt.o $(RELDIR)
+	cp $(STAGE3)/libfork.a $(RELDIR)
+	cp $(STAGE3)/transmod $(RELDIR)
+	cp $(PWD)/LICENSE $(RELDIR)
+	cd $(PWD) && $(TAR) -cJf $(PKGNAME) $(RELDIRNAME)
+	rm -r $(RELDIR)
+
+bootstrap:
+	$(MAKE) stage1
+	$(MAKE) stage2
+	$(MAKE) stage3
+
+stage1:
+	$(MAKE) BUILD=$(STAGE1) stage
+
+stage2:
+	$(MAKE) TRNS=$(STAGE1)/transmod BUILD=$(BUILD)/stage2 stage
+
+stage3:
+	$(MAKE) TRNS=$(STAGE2)/transmod BUILD=$(BUILD)/stage3 stage
+
+stage:
+	$(MAKE) stage-libfork
+	$(MAKE) stage-ctrans
+	$(MAKE) stage-transmod
+
+stage-ctrans:
+	FORDPATHS=$(BUILD)/ford $(TRNS) -n ctrans -fo $(BUILD) -co $(BUILD) lib
+	$(CC) -c -w -g -std=c99 -o $(BUILD)/ctrans.o $(BUILD)/ctrans.c
+	$(AR) rc $(BUILD)/$(ARNAME) $(BUILD)/ctrans.o
+	$(RANLIB) $(BUILD)/$(ARNAME)
+
+stage-libfork:
+	$(MAKE) -C $(LIBFORK) clean
+	$(MAKE) libfork
+
+stage-transmod:
+	FORDPATHS=$(BUILD):$(BUILD)/ford $(TRNS) -n transmod -co $(BUILD) $(TRANSMODDIR)
+	$(CC) -w -g -std=c99 -o $(BUILD)/transmod $(BUILD)/transmod.c $(BUILD)/libctrans.a $(BUILD)/libfork.a $(BUILD)/rt.o
 
 clean:
 	$(MAKE) -C libfork clean
-	rm -rf build
-	rm -rf build.1
-	rm -rf build.2
+	rm -rf $(BUILD)
 	rm -rf ctrans-release
 	rm -rf ctrans-devrel
 	rm -f ctrans-release.txz
 	rm -f ctrans-devrel.txz
 
-
-build:
-	$(MAKE) -C libfork
-	$(MAKE) all
-
-	$(MAKE) copy-libs
-
-stage1:
-	$(MAKE) build
-
-stage2:
-	$(MAKE) stage1
-	rm -rf build.1
-	mv build build.1
-
-	$(MAKE) -C libfork clean
-
-	FORDC="$(shell pwd)/build.1/fordc" FORKC="$(shell pwd)/build.1/forkc" FORKL="$(shell pwd)/build.1/forkl" $(MAKE) build
-
-stage3:
-	$(MAKE) stage2
-	rm -rf build.2
-	mv build build.2
-
-	$(MAKE) -C libfork clean
-
-	FORDC="$(shell pwd)/build.2/fordc" FORKC="$(shell pwd)/build.2/forkc" FORKL="$(shell pwd)/build.2/forkl" $(MAKE) build
-
-bootstrap:
-	$(MAKE) clean
-	$(MAKE) stage3
-	@diff "$(shell pwd)/build/forkc1" "$(shell pwd)/build.2/forkc1" >/dev/null && echo "Compiler works" || echo "Compiler is broken - stage2 and stage3 differ"
-
-copy-libs:
-	mkdir -p build/libfork/ford
-	cp -f libfork/build/ford/*.ford build/libfork/ford
-
-	mkdir -p build/libfork/include
-	cp -f libfork/build/include/*.h build/libfork/include
-
-	cp -f libfork/build/libfork.a build/libfork/
-	cp -f libfork/build/rt.o build/libfork/
-
-tarball: bootstrap
-	rm -f build/*.o
-	rm -rf build/ford
-	rm -rf build/include
-
-	mv build ctrans-release
-
-	tar -cf - ctrans-release | xz -9e -c - > ctrans-release.txz
-
-
-tarball-cross: stage1
-	rm -f build/*.o
-	rm -rf build/ford
-	rm -rf build/include
-
-	mv build ctrans-release
-
-	tar -cf - ctrans-release | xz -9e -c - > ctrans-release.txz
-
-
-tarball-devrel: stage1
-	rm -f build/*.o
-	rm -rf build/ford
-	rm -rf build/include
-
-	mv build ctrans-devrel
-
-	tar -cf - ctrans-devrel | xz -9e -c - > ctrans-devrel.txz
+libfork:
+	$(MAKE) -C $(LIBFORK)

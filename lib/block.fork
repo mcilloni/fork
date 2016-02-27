@@ -12,23 +12,26 @@ module ctrans
 
 
 import ast
-import cs
-import ctrans
 import list
 import mem
 import txt
 
 
+alias LineStr struct(
+  line txt:Line,
+  str ptr uint8
+)
+
 
 # LineStr functions
-func lsFree(ls ptr ctrans:LineStr)
+func lsFree(ls ptr LineStr)
   mem:free(ls'str)
   mem:free(ls)
 /func
 
 
-func lsNew(line txt:Line, str ptr uint8) ptr ctrans:LineStr
-  mut ls = <ptr ctrans:LineStr>(mem:alloc(size(ctrans:LineStr)))
+func lsNew(line txt:Line, str ptr uint8) ptr LineStr
+  mut ls = <ptr LineStr>(mem:alloc(size(LineStr)))
 
   ls'line = line
   ls'str = str
@@ -37,17 +40,26 @@ func lsNew(line txt:Line, str ptr uint8) ptr ctrans:LineStr
 /func
 
 
+alias Block struct(
+  decls,vars,stmts ptr txt:Charstash,
+  unit ptr Transl,
+  pad uintptr,
+  pblock ptr ast:PBlock,
+  rvoType ptr ast:Type
+)
+
+
 # Block functions
-func blNew(unit ptr ctrans:Transl,
+func blNew(unit ptr Transl,
            pblock ptr ast:PBlock,
            pad uintptr,
-           rvoType ptr ast:Type) ctrans:Block
+           rvoType ptr ast:Type) Block
 
-  mut ret ctrans:Block
+  mut ret Block
 
-  ret'decls = cs:new(20)
-  ret'vars = cs:new(20)
-  ret'stmts = cs:new(20)
+  ret'decls = txt:newCs(20)
+  ret'vars = txt:newCs(20)
+  ret'stmts = txt:newCs(20)
   ret'unit = unit
   ret'pblock = pblock
   ret'pad = pad
@@ -57,22 +69,22 @@ func blNew(unit ptr ctrans:Transl,
 /func
 
 
-method ctrans:Block.padDecls()
+method Block.padDecls()
   me'decls.addPad(me'pad)
 /method
 
 
-method ctrans:Block.padStmts()
+method Block.padStmts()
   me'stmts.addPad(me'pad)
 /method
 
 
-method ctrans:Block.padVars()
+method Block.padVars()
   me'vars.addPad(me'pad)
 /method
 
 
-method ctrans:Block.newDecl(ext bool,
+method Block.newDecl(ext bool,
                             name,fname ptr uint8,
                             type ptr ast:Type,
                             line uintptr)
@@ -88,7 +100,7 @@ method ctrans:Block.newDecl(ext bool,
 /method
 
 
-method ctrans:Block.genDecls(stab ptr ast:Symtable, fname ptr uint8, line uintptr)
+method Block.genDecls(stab ptr ast:Symtable, fname ptr uint8, line uintptr)
   mut len = stab'syms.len()
   mut i uintptr = 0
 
@@ -108,33 +120,33 @@ method ctrans:Block.genDecls(stab ptr ast:Symtable, fname ptr uint8, line uintpt
 
 
 # Deinits the block.
-method ctrans:Block.dumpInCs(cs ptr cs:Charstash)
-  mut decls = cs:unwrap(me'decls)
+method Block.dumpInCs(cs ptr txt:Charstash)
+  mut decls = txt:unwrapCs(me'decls)
   cs.addLine(decls)
   mem:free(decls)
 
   cs.add("\n\n")
 
-  mut vars = cs:unwrap(me'vars)
+  mut vars = txt:unwrapCs(me'vars)
   cs.addLine(vars)
   mem:free(vars)
 
   cs.add("\n\n")
 
-  mut stmts = cs:unwrap(me'stmts)
+  mut stmts = txt:unwrapCs(me'stmts)
   cs.addLine(stmts)
   mem:free(stmts)
 /method
 
 
-method ctrans:Block.decPad()
+method Block.decPad()
   if me'pad > 0
     me'pad = me'pad - 2
   /if
 /method
 
 
-method ctrans:Block.ifblock(stmt ptr ast:PNode,
+method Block.ifblock(stmt ptr ast:PNode,
                             root ptr ast:PRoot,
                             fname ptr uint8)
 
@@ -166,12 +178,12 @@ method ctrans:Block.ifblock(stmt ptr ast:PNode,
 /method
 
 
-method ctrans:Block.incPad()
+method Block.incPad()
   me'pad = me'pad + 2
 /method
 
 
-method ctrans:Block.returnstmt(stmt ptr ast:PNode,
+method Block.returnstmt(stmt ptr ast:PNode,
                                root ptr ast:PRoot,
                                fname ptr uint8)
 
@@ -179,7 +191,7 @@ method ctrans:Block.returnstmt(stmt ptr ast:PNode,
 
   mut expr = stmt'leaves.get(0)
 
-  mut elem ctrans:Elem
+  mut elem Elem
 
   if expr?
     me'stmts.addChar(32)
@@ -187,7 +199,7 @@ method ctrans:Block.returnstmt(stmt ptr ast:PNode,
     elem = me.expr(<ptr ast:PExpr>(val expr), root, fname, line)
 
     if me'rvoType?
-      mut rvoOut ctrans:Elem
+      mut rvoOut Elem
 
       rvoOut'str = "(*_rvoOut)"
       rvoOut'type = me'rvoType
@@ -213,7 +225,7 @@ method ctrans:Block.returnstmt(stmt ptr ast:PNode,
 /method
 
 
-method ctrans:Block.statement(stmt ptr ast:PNode,
+method Block.statement(stmt ptr ast:PNode,
                               root ptr ast:PRoot,
                               fname ptr uint8)
 
@@ -264,16 +276,16 @@ method ctrans:Block.statement(stmt ptr ast:PNode,
 /method
 
 
-method ctrans:Block.subblock(root ptr ast:PRoot,
+method Block.subblock(root ptr ast:PRoot,
                              block ptr ast:PBlock,
                              fname ptr uint8)
 
-  ctrans:translBlock(me'stmts, me'unit, root, block, me'rvoType, fname, \
+  translBlock(me'stmts, me'unit, root, block, me'rvoType, fname, \
                       me'pad + 2, false)
 /method
 
 
-method ctrans:Block.whileblock(stmt ptr ast:PNode,
+method Block.whileblock(stmt ptr ast:PNode,
                                root ptr ast:PRoot,
                                fname ptr uint8)
 
@@ -335,8 +347,8 @@ method ctrans:Block.whileblock(stmt ptr ast:PNode,
 /method
 
 
-func translBlock(cs ptr cs:Charstash,
-                 unit ptr ctrans:Transl,
+func translBlock(cs ptr txt:Charstash,
+                 unit ptr Transl,
                  root ptr ast:PRoot,
                  block ptr ast:PBlock,
                  rvoType ptr ast:Type,

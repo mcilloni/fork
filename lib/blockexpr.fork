@@ -12,8 +12,6 @@ module ctrans
 
 
 import ast
-import ctrans
-import cs
 import mem
 import parser
 import proc
@@ -22,12 +20,18 @@ import txt
 import vect
 
 
+alias Elem struct(
+  str ptr uint8,
+  type ptr ast:Type
+)
+
+
 func isShortcircuitOp(op uint16) bool
   return op == ast:AND or op == ast:OR
 /func
 
 
-func freeElem(elem ptr ctrans:Elem)
+func freeElem(elem ptr Elem)
   if elem?
     elem.wipe()
     mem:free(elem)
@@ -40,53 +44,53 @@ func needsStructCopy(to,from ptr ast:Type) bool
 /func
 
 
-method ctrans:Elem.copy() ptr ctrans:Elem
-  mut ret = <ptr ctrans:Elem>(mem:alloc(size(ctrans:Elem)))
+method Elem.copy() ptr Elem
+  mut ret = <ptr Elem>(mem:alloc(size(Elem)))
 
-  mem:copy(ret, me, size(ctrans:Elem))
+  mem:copy(ret, me, size(Elem))
 
   return ret
 /method
 
 
-method ctrans:Elem.value() ptr uint8
+method Elem.value() ptr uint8
   return me'str
 /method
 
 
-method ctrans:Elem.type() ptr ast:Type
+method Elem.type() ptr ast:Type
   return me'type
 /method
 
 
-method ctrans:Elem.wipe()
+method Elem.wipe()
   mem:free(me'str)
   me'str = null
 /method
 
 
-func boolelem(v bool, type ptr ast:Type) ctrans:Elem
+func boolelem(v bool, type ptr ast:Type) Elem
   return elem(v => "1" || "0", type)
 /func
 
 
-func deref(elem ctrans:Elem, ptrType ptr ast:Type) ctrans:Elem
-  mut ret ctrans:Elem
-  mut cs = cs:new(20)
+func deref(elem Elem, ptrType ptr ast:Type) Elem
+  mut ret Elem
+  mut cs = txt:newCs(20)
 
   cs.add("(*")
   cs.add(elem.value())
   cs.add(")")
 
-  ret'str = cs:unwrap(cs)
+  ret'str = txt:unwrapCs(cs)
   ret'type = ptrType'retType
 
   return ret
 /func
 
 
-func elem(name ptr uint8, type ptr ast:Type) ctrans:Elem
-  mut ret ctrans:Elem
+func elem(name ptr uint8, type ptr ast:Type) Elem
+  mut ret Elem
 
   ret'str = txt:strclone(name)
   ret'type = type
@@ -95,8 +99,8 @@ func elem(name ptr uint8, type ptr ast:Type) ctrans:Elem
 /func
 
 
-func intelem(n uintptr, type ptr ast:Type) ctrans:Elem
-  mut ret ctrans:Elem
+func intelem(n uintptr, type ptr ast:Type) Elem
+  mut ret Elem
 
   ret'str = <ptr uint8>(mem:zalloc(21))
   txt:numtostr(n, ret'str, 20)
@@ -106,35 +110,35 @@ func intelem(n uintptr, type ptr ast:Type) ctrans:Elem
 /func
 
 
-func methelem(name ptr uint8, type ptr ast:Type) ctrans:Elem
+func methelem(name ptr uint8, type ptr ast:Type) Elem
 
   if type.isPtr()
     type = type'retType
   /if
 
-  mut cs = cs:new(20)
+  mut cs = txt:newCs(20)
 
   if type.isPtr()
     type = type'retType
   /if
 
-  mut typeName = ctrans:symMod(type'moduleName, type'name)
+  mut typeName = symMod(type'moduleName, type'name)
 
   cs.addMethSym(typeName, name)
 
   mem:free(typeName)
 
-  mut ret ctrans:Elem
+  mut ret Elem
 
-  ret'str = cs:unwrap(cs)
+  ret'str = txt:unwrapCs(cs)
   ret'type = type
 
   return ret
 /func
 
 
-func modelem(modName,name ptr uint8, type ptr ast:Type) ctrans:Elem
-  mut ret ctrans:Elem
+func modelem(modName,name ptr uint8, type ptr ast:Type) Elem
+  mut ret Elem
   mut modLen = txt:strlen(modName)
   mut nameLen = txt:strlen(name)
 
@@ -150,10 +154,10 @@ func modelem(modName,name ptr uint8, type ptr ast:Type) ctrans:Elem
 /func
 
 
-func refhack(el ctrans:Elem, origType ptr ast:Type) ptr uint8
+func refhack(el Elem, origType ptr ast:Type) ptr uint8
   mut isToFn = origType.isFunc()
 
-  mut cs = cs:new(20)
+  mut cs = txt:newCs(20)
 
   if isToFn
     cs.add("(")
@@ -166,17 +170,17 @@ func refhack(el ctrans:Elem, origType ptr ast:Type) ptr uint8
     cs.add(")")
   /if
 
-  return cs:unwrap(cs)
+  return txt:unwrapCs(cs)
 /func
 
 
-func sizeelem(opType,aType ptr ast:Type) ctrans:Elem
+func sizeelem(opType,aType ptr ast:Type) Elem
   return intelem(opType'typeSize, aType)
 /func
 
 
-func structelem(left,field ptr uint8, leftType,fieldType ptr ast:Type) ctrans:Elem
-  mut ret ctrans:Elem
+func structelem(left,field ptr uint8, leftType,fieldType ptr ast:Type) Elem
+  mut ret Elem
   mut accOp = (leftType? and leftType'type == ast:TYPE_PTR) => "->" || "."
   mut leftLen = txt:strlen(left)
   mut accLen = txt:strlen(accOp)
@@ -194,10 +198,10 @@ func structelem(left,field ptr uint8, leftType,fieldType ptr ast:Type) ctrans:El
 /func
 
 
-method ctrans:Block.access(from,index ctrans:Elem,
+method Block.access(from,index Elem,
                            fromType ptr ast:Type,
                            fname ptr uint8,
-                           line uintptr) ctrans:Elem
+                           line uintptr) Elem
 
   mut rightPtr = me.binop(ast:PLUS, fromType, from, index, fname, line)
 
@@ -209,7 +213,7 @@ method ctrans:Block.access(from,index ctrans:Elem,
 /method
 
 
-method ctrans:Block.assign(to,from ctrans:Elem, fname ptr uint8, line uintptr)
+method Block.assign(to,from Elem, fname ptr uint8, line uintptr)
 
   if needsStructCopy(to'type, from'type)
     me.assignAnonStruct(to, from, fname, line)
@@ -226,7 +230,7 @@ method ctrans:Block.assign(to,from ctrans:Elem, fname ptr uint8, line uintptr)
 /method
 
 
-method ctrans:Block.assignAnonStruct(to,from ctrans:Elem,
+method Block.assignAnonStruct(to,from Elem,
                                      fname ptr uint8,
                                      line uintptr)
 
@@ -259,11 +263,11 @@ method ctrans:Block.assignAnonStruct(to,from ctrans:Elem,
 /method
 
 
-method ctrans:Block.binop(op uint16,
+method Block.binop(op uint16,
                           destType ptr ast:Type,
-                          op1,op2 ctrans:Elem,
+                          op1,op2 Elem,
                           fname ptr uint8,
-                          line uintptr) ctrans:Elem
+                          line uintptr) Elem
 
   if op == ast:POW
     return me.pow(op1, op2, destType, fname, line)
@@ -278,7 +282,7 @@ method ctrans:Block.binop(op uint16,
   me'stmts.addWord(ret.value())
   me'stmts.addWord("=")
   me'stmts.addWord(op1.value())
-  me'stmts.addWord(ctrans:opConv(op))
+  me'stmts.addWord(opConv(op))
   me'stmts.add(op2.value())
   me'stmts.addLine(";")
 
@@ -286,10 +290,10 @@ method ctrans:Block.binop(op uint16,
 /method
 
 
-method ctrans:Block.castexpr(expr ctrans:Elem,
+method Block.castexpr(expr Elem,
                              castType ptr ast:Type,
                              fname ptr uint8,
-                             line uintptr) ctrans:Elem
+                             line uintptr) Elem
 
   mut ret = me.nextvar(castType, fname, line)
 
@@ -312,7 +316,7 @@ method ctrans:Block.castexpr(expr ctrans:Elem,
 /method
 
 
-method ctrans:Block.dec(op ctrans:Elem,
+method Block.dec(op Elem,
                         fname ptr uint8,
                         line uintptr)
 
@@ -326,8 +330,8 @@ method ctrans:Block.dec(op ctrans:Elem,
 /method
 
 
-method ctrans:Block.fncall(name ptr uint8,
-                           retval ptr ctrans:Elem,
+method Block.fncall(name ptr uint8,
+                           retval ptr Elem,
                            rettype ptr ast:Type,
                            params ptr vect:Vect,
                            fname ptr uint8,
@@ -354,7 +358,7 @@ method ctrans:Block.fncall(name ptr uint8,
       me'stmts.addWord(",")
     /if
 
-    mut param = <ptr ctrans:Elem>(val params.get(i))
+    mut param = <ptr Elem>(val params.get(i))
 
     me'stmts.add(param.value())
 
@@ -368,7 +372,7 @@ method ctrans:Block.fncall(name ptr uint8,
 /method
 
 
-method ctrans:Block.inc(op ctrans:Elem,
+method Block.inc(op Elem,
                         fname ptr uint8,
                         line uintptr)
 
@@ -382,7 +386,7 @@ method ctrans:Block.inc(op ctrans:Elem,
 /method
 
 
-method ctrans:Block.label(lb ctrans:Elem, empty bool)
+method Block.label(lb Elem, empty bool)
   me'stmts.add(lb.value())
   me'stmts.add(":")
 
@@ -390,8 +394,8 @@ method ctrans:Block.label(lb ctrans:Elem, empty bool)
 /method
 
 
-method Block.mulassign(to ptr ctrans:Elem,
-                       from ctrans:Elem,
+method Block.mulassign(to ptr Elem,
+                       from Elem,
                        fname ptr uint8,
                        line uintptr)
 
@@ -416,8 +420,8 @@ method Block.mulassign(to ptr ctrans:Elem,
 /method
 
 
-method ctrans:Block.nextlabel() ctrans:Elem
-  mut ret ctrans:Elem
+method Block.nextlabel() Elem
+  mut ret Elem
 
   ret'str = <ptr uint8>(mem:zalloc(22))
   ret'str[0] = "_"[0]
@@ -432,9 +436,9 @@ method ctrans:Block.nextlabel() ctrans:Elem
 /method
 
 
-method ctrans:Block.nextvar(type ptr ast:Type,
+method Block.nextvar(type ptr ast:Type,
                             fname ptr uint8,
-                            line uintptr) ctrans:Elem
+                            line uintptr) Elem
 
   mut ret = me.ssavar(type)
 
@@ -452,10 +456,10 @@ method ctrans:Block.nextvar(type ptr ast:Type,
 /method
 
 
-method ctrans:Block.pow(base,exp ctrans:Elem,
+method Block.pow(base,exp Elem,
                         type ptr ast:Type,
                         fname ptr uint8,
-                        line uintptr) ctrans:Elem
+                        line uintptr) Elem
 
   mut ret = me.nextvar(type, fname, line)
 
@@ -476,10 +480,10 @@ method ctrans:Block.pow(base,exp ctrans:Elem,
 /method
 
 
-method ctrans:Block.quest(elem ctrans:Elem,
+method Block.quest(elem Elem,
                           type ptr ast:Type,
                           fname ptr uint8,
-                          line uintptr) ctrans:Elem
+                          line uintptr) Elem
 
   me.padStmts()
   me'stmts.addDebugLine(fname, line)
@@ -496,10 +500,10 @@ method ctrans:Block.quest(elem ctrans:Elem,
 /method
 
 
-method ctrans:Block.ref(elem ctrans:Elem,
+method Block.ref(elem Elem,
                         origType ptr ast:Type,
                         fname ptr uint8,
-                        line uintptr) ctrans:Elem
+                        line uintptr) Elem
 
   mut ret = me.ssavar(null)
   mut hackStr = refhack(ret, origType)
@@ -521,8 +525,8 @@ method ctrans:Block.ref(elem ctrans:Elem,
 /method
 
 
-method ctrans:Block.ssavar(type ptr ast:Type) ctrans:Elem
-  mut ret ctrans:Elem
+method Block.ssavar(type ptr ast:Type) Elem
+  mut ret Elem
 
   ret'str = <ptr uint8>(mem:zalloc(22))
   ret'str[0] = "_"[0]
@@ -537,10 +541,10 @@ method ctrans:Block.ssavar(type ptr ast:Type) ctrans:Elem
 /method
 
 
-method ctrans:Block.str(value ptr uint8,
+method Block.str(value ptr uint8,
                         destType ptr ast:Type,
                         fname ptr uint8,
-                        line uintptr) ctrans:Elem
+                        line uintptr) Elem
 
   mut ret = me.nextvar(destType, fname, line)
 
@@ -557,11 +561,11 @@ method ctrans:Block.str(value ptr uint8,
 /method
 
 
-method ctrans:Block.structaccess(root ptr ast:PRoot,
+method Block.structaccess(root ptr ast:PRoot,
                                  e1,e2 ptr ast:PExpr,
                                  type ptr ast:Type,
                                  fname ptr uint8,
-                                 line uintptr) ctrans:Elem
+                                 line uintptr) Elem
 
   mut s = me.expr(e1, root, fname, line)
 
@@ -574,11 +578,11 @@ method ctrans:Block.structaccess(root ptr ast:PRoot,
 /method
 
 
-method ctrans:Block.unop(op uint16,
+method Block.unop(op uint16,
                          destType ptr ast:Type,
-                         op1 ctrans:Elem,
+                         op1 Elem,
                          fname ptr uint8,
-                         line uintptr) ctrans:Elem
+                         line uintptr) Elem
 
   mut ret = me.nextvar(destType, fname, line)
 
@@ -588,7 +592,7 @@ method ctrans:Block.unop(op uint16,
   me.padStmts()
   me'stmts.addWord(ret.value())
   me'stmts.addWord("=")
-  me'stmts.add(ctrans:opConv(op))
+  me'stmts.add(opConv(op))
   me'stmts.addWord(op1.value())
   me'stmts.addLine(";")
 
@@ -596,7 +600,7 @@ method ctrans:Block.unop(op uint16,
 /method
 
 
-method ctrans:Block.varcopy(to,from ctrans:Elem,
+method Block.varcopy(to,from Elem,
                             deref bool,
                             fname ptr uint8,
                             line uintptr)
@@ -631,7 +635,7 @@ method Block.muldecl(pmuldecl ptr ast:PMulDecl,
     mut i uintptr = 0
 
     # Old style C array, way easier this way
-    mut elems = <ptr ctrans:Elem>(mem:zalloc(len * size(ctrans:Elem)))
+    mut elems = <ptr Elem>(mem:zalloc(len * size(Elem)))
 
     while i < len
       mut sym = <ptr ast:PSymbol>(val pmuldecl'syms.get(i))
@@ -656,7 +660,7 @@ method Block.muldecl(pmuldecl ptr ast:PMulDecl,
 /method
 
 
-method ctrans:Block.declaration(pdecl ptr ast:PDecl,
+method Block.declaration(pdecl ptr ast:PDecl,
                                 root ptr ast:PRoot,
                                 fname ptr uint8)
 
@@ -679,11 +683,11 @@ method ctrans:Block.declaration(pdecl ptr ast:PDecl,
 /method
 
 
-method ctrans:Block.handleAnd(root ptr ast:PRoot,
+method Block.handleAnd(root ptr ast:PRoot,
                               type ptr ast:Type,
                               e1,e2 ptr ast:PExpr,
                               fname ptr uint8,
-                              line uintptr) ctrans:Elem
+                              line uintptr) Elem
 
   mut ret = me.nextvar(type, fname, line)
 
@@ -735,11 +739,11 @@ method ctrans:Block.handleAnd(root ptr ast:PRoot,
 /method
 
 
-method ctrans:Block.handleDQuest(root ptr ast:PRoot,
+method Block.handleDQuest(root ptr ast:PRoot,
                                  c1,c2 ptr ast:PExpr,
                                  type ptr ast:Type,
                                  fname ptr uint8,
-                                 line uintptr) ctrans:Elem
+                                 line uintptr) Elem
 
   mut el1 = me.expr(c1, root, fname, line)
   mut ret = me.nextvar(type, fname, line)
@@ -782,10 +786,10 @@ method ctrans:Block.handleDQuest(root ptr ast:PRoot,
 /method
 
 
-method ctrans:Block.handleFn(root ptr ast:PRoot,
+method Block.handleFn(root ptr ast:PRoot,
                              pexpr ptr ast:PExpr,
                              fname ptr uint8,
-                             line uintptr) ctrans:Elem
+                             line uintptr) Elem
 
 
   mut toCall = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
@@ -796,7 +800,7 @@ method ctrans:Block.handleFn(root ptr ast:PRoot,
   # n params + me + rvo (eventally)
   mut params = vect:new(len + 1)
 
-  mut callElem ctrans:Elem
+  mut callElem Elem
 
   if methCall
     mut target = <ptr ast:PExpr>(val toCall'node'leaves.get(0))
@@ -824,9 +828,9 @@ method ctrans:Block.handleFn(root ptr ast:PRoot,
 
 
   mut rvo = pexpr'type.isStruct() or pexpr'type'type == ast:TYPE_RECALIAS
-  mut ret ctrans:Elem
+  mut ret Elem
 
-  mem:set(ptr ret, 0, size(ctrans:Elem))
+  mem:set(ptr ret, 0, size(Elem))
 
   # RVO
   if rvo
@@ -865,8 +869,8 @@ method ctrans:Block.handleFn(root ptr ast:PRoot,
 /method
 
 
-method ctrans:Block.handleMulAssign(exprs ptr ast:PExpr,
-                                    from ctrans:Elem,
+method Block.handleMulAssign(exprs ptr ast:PExpr,
+                                    from Elem,
                                     root ptr ast:PRoot,
                                     fname ptr uint8,
                                     line uintptr)
@@ -876,7 +880,7 @@ method ctrans:Block.handleMulAssign(exprs ptr ast:PExpr,
   mut len = pnode'leaves.len()
   mut i uintptr = 0
 
-  mut elems = <ptr ctrans:Elem>(mem:zalloc(len * size(ctrans:Elem)))
+  mut elems = <ptr Elem>(mem:zalloc(len * size(Elem)))
 
   while i < len
     mut member = <ptr ast:PExpr>(val pnode'leaves.get(i))
@@ -897,11 +901,11 @@ method ctrans:Block.handleMulAssign(exprs ptr ast:PExpr,
 /method
 
 
-method ctrans:Block.handleOr(root ptr ast:PRoot,
+method Block.handleOr(root ptr ast:PRoot,
                              type ptr ast:Type,
                              e1,e2 ptr ast:PExpr,
                              fname ptr uint8,
-                             line uintptr) ctrans:Elem
+                             line uintptr) Elem
 
   mut ret = me.nextvar(type, fname, line)
 
@@ -953,12 +957,12 @@ method ctrans:Block.handleOr(root ptr ast:PRoot,
 /method
 
 
-method ctrans:Block.handleShortcircuit(root ptr ast:PRoot,
+method Block.handleShortcircuit(root ptr ast:PRoot,
                                        op uint16,
                                        type ptr ast:Type,
                                        e1,e2 ptr ast:PExpr,
                                        fname ptr uint8,
-                                       line uintptr) ctrans:Elem
+                                       line uintptr) Elem
 
   if op == ast:AND
     return me.handleAnd(root, type, e1, e2, fname, line)
@@ -968,11 +972,11 @@ method ctrans:Block.handleShortcircuit(root ptr ast:PRoot,
 /method
 
 
-method ctrans:Block.handleStructLiteral(root ptr ast:PRoot,
+method Block.handleStructLiteral(root ptr ast:PRoot,
                                         lit ptr ast:PExpr,
                                         type ptr ast:Type,
                                         fname ptr uint8,
-                                        line uintptr) ctrans:Elem
+                                        line uintptr) Elem
 
   type = type ?? lit'type
 
@@ -999,11 +1003,11 @@ method ctrans:Block.handleStructLiteral(root ptr ast:PRoot,
 /method
 
 
-method ctrans:Block.handleTern(root ptr ast:PRoot,
+method Block.handleTern(root ptr ast:PRoot,
                                condEx,c1,c2 ptr ast:PExpr,
                                type ptr ast:Type,
                                fname ptr uint8,
-                               line uintptr) ctrans:Elem
+                               line uintptr) Elem
 
   mut cond = me.expr(condEx, root, fname, line)
   mut ret = me.nextvar(type, fname, line)
@@ -1056,16 +1060,16 @@ method ctrans:Block.handleTern(root ptr ast:PRoot,
 /method
 
 
-method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
+method Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
                                           root ptr ast:PRoot,
                                           destType ptr ast:Type,
                                           fname ptr uint8,
-                                          line uintptr) ctrans:Elem
+                                          line uintptr) Elem
 
   mut value = pexpr'node'value
 
   if pexpr'opType == ast:ASSIGN
-    mut to ctrans:Elem = {null, null} # ensure segfault if used
+    mut to Elem = {null, null} # ensure segfault if used
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
@@ -1244,7 +1248,7 @@ method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
     return ret
   /if
 
-  if ctrans:isBinOp(pexpr'opType) or pexpr'opType == ast:MINUS
+  if isBinOp(pexpr'opType) or pexpr'opType == ast:MINUS
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
@@ -1276,10 +1280,10 @@ method ctrans:Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
 /method
 
 
-method ctrans:Block.expr(pexpr ptr ast:PExpr,
+method Block.expr(pexpr ptr ast:PExpr,
                          root ptr ast:PRoot,
                          fname ptr uint8,
-                         line uintptr) ctrans:Elem
+                         line uintptr) Elem
 
   return me.exprWithOptimizedType(pexpr, root, null, fname, line)
 /method

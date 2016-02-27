@@ -12,14 +12,12 @@ module ctrans
 
 
 import ast
-import ctrans
-import cs
 import mem
 import proc
 import tty
 
 
-method ctrans:Transl.globDotExpr(pexpr ptr ast:PExpr)
+method Transl.globDotExpr(pexpr ptr ast:PExpr)
 
   mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
   mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
@@ -30,7 +28,7 @@ method ctrans:Transl.globDotExpr(pexpr ptr ast:PExpr)
     targetType = targetType'retType
   /if
 
-  mut typeName = ctrans:symMod(targetType'moduleName, targetType'name)
+  mut typeName = symMod(targetType'moduleName, targetType'name)
   mut methName = <ptr uint8>(e2'node'value)
 
   me'vars.addMethSym(typeName, methName)
@@ -40,7 +38,7 @@ method ctrans:Transl.globDotExpr(pexpr ptr ast:PExpr)
 
 
 
-method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
+method Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
 
   mut value = pexpr'node'value
 
@@ -273,7 +271,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
     return
   /if
 
-  if ctrans:isBinOp(pexpr'opType) or pexpr'opType == ast:MINUS
+  if isBinOp(pexpr'opType) or pexpr'opType == ast:MINUS
     mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
     mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
 
@@ -290,7 +288,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
     me'vars.add("(")
     me.globExpr(root, e1)
     me'vars.addChar(32)
-    me'vars.add(ctrans:opConv(pexpr'opType))
+    me'vars.add(opConv(pexpr'opType))
     me'vars.addChar(32)
     me.globExpr(root, e2)
     me'vars.add(")")
@@ -301,7 +299,7 @@ method ctrans:Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
   #assume prefix unary now
 
   mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
-  me'vars.add(ctrans:opConv(pexpr'opType))
+  me'vars.add(opConv(pexpr'opType))
   me'vars.add("(")
   me.globExpr(root, e)
   me'vars.add(")")

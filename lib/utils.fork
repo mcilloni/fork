@@ -12,15 +12,13 @@ module ctrans
 
 
 import ast
-import cs
-import ctrans
 import mem
 import proc
 import tty
 import txt
 
 
-method cs:Charstash.addCStr(str ptr uint8)
+method txt:Charstash.addCStr(str ptr uint8)
   me.add("(uint8_t*)\"")
 
   mut ch uint8 = 0
@@ -80,7 +78,7 @@ method cs:Charstash.addCStr(str ptr uint8)
 /method
 
 
-method cs:Charstash.addDebugLine(fname ptr uint8, line uintptr)
+method txt:Charstash.addDebugLine(fname ptr uint8, line uintptr)
   me.add("#line ")
   me.addInt(line)
   me.add(" \"")
@@ -97,7 +95,7 @@ method cs:Charstash.addDebugLine(fname ptr uint8, line uintptr)
 /method
 
 
-method cs:Charstash.addPad(p uintptr)
+method txt:Charstash.addPad(p uintptr)
   mut i uintptr = 0
 
   while i < p

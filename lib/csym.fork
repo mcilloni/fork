@@ -12,8 +12,6 @@ module ctrans
 
 
 import ast
-import cs
-import ctrans
 import mem
 import proc
 import txt
@@ -22,19 +20,19 @@ import tty
 
 # LRStr: represents a string, but with left and right separated.
 alias LRStr struct(
-  left,right ptr cs:Charstash,
-  unit ptr ctrans:Transl,
+  left,right ptr txt:Charstash,
+  unit ptr Transl,
   pad intptr
 )
 
 
 # LRStr functions
 
-func lrNew(unit ptr ctrans:Transl, pad intptr) LRStr
+func lrNew(unit ptr Transl, pad intptr) LRStr
   mut ret LRStr
 
-  ret'left  = cs:new(20)
-  ret'right = cs:new(20)
+  ret'left  = txt:newCs(20)
+  ret'right = txt:newCs(20)
   ret'unit = unit
   ret'pad = pad
 
@@ -53,7 +51,7 @@ method LRStr.addFuncType(type ptr ast:Type, methTarget ptr uint8)
     me.addType(type'retType, null, false)
   /if
 
-  mut paramsCs = cs:new(30)
+  mut paramsCs = txt:newCs(30)
 
   mut i uintptr = 0
   mut len = type'members.len()
@@ -98,7 +96,7 @@ method LRStr.addFuncType(type ptr ast:Type, methTarget ptr uint8)
 
   paramsCs.add(")")
 
-  mut params = cs:unwrap(paramsCs)
+  mut params = txt:unwrapCs(paramsCs)
 
   me'right.prepend(params)
 
@@ -208,11 +206,11 @@ method LRStr.syntetizeStructType(type ptr ast:Type)
     mem:copy(name + newLen + 1, me'unit'modName, len)
   /if
 
-  mut typeBodyCs = cs:new(30)
+  mut typeBodyCs = txt:newCs(30)
 
   me'unit.genCsym(typeBodyCs, null, null, name, type, -1, true)
 
-  mut typeBody = cs:unwrap(typeBodyCs)
+  mut typeBody = txt:unwrapCs(typeBodyCs)
 
   me'unit.typedef(name, typeBody, true)
 
@@ -297,14 +295,14 @@ method LRStr.addSymName(typeName,moduleName,name ptr uint8,
 
 # Charstash support methods.
 
-method cs:Charstash.addMethSym(typeName,name ptr uint8)
+method txt:Charstash.addMethSym(typeName,name ptr uint8)
   me.add(typeName)
   me.add("$$")
   me.add(name)
 /method
 
 
-method cs:Charstash.addSymName(modName,name ptr uint8)
+method txt:Charstash.addSymName(modName,name ptr uint8)
   if modName?
     me.add(modName)
     me.add("$")
@@ -315,18 +313,18 @@ method cs:Charstash.addSymName(modName,name ptr uint8)
 
 
 # Remember: dumpLr also frees the LRStr.
-method cs:Charstash.dumpLr(lr LRStr)
-  mut left = cs:unwrap(lr'left)
+method txt:Charstash.dumpLr(lr LRStr)
+  mut left = txt:unwrapCs(lr'left)
   me.add(left)
   mem:free(left)
 
-  mut right = cs:unwrap(lr'right)
+  mut right = txt:unwrapCs(lr'right)
   me.add(right)
   mem:free(right)
 /method
 
 
-method ctrans:Transl.genCsym(cs ptr cs:Charstash,
+method Transl.genCsym(cs ptr txt:Charstash,
                              typeName,moduleName,name ptr uint8,
                              type ptr ast:Type,
                              pad intptr,
@@ -339,11 +337,11 @@ method ctrans:Transl.genCsym(cs ptr cs:Charstash,
 /method
 
 
-method ctrans:Transl.translSym(moduleName ptr uint8,
+method Transl.translSym(moduleName ptr uint8,
                                pdecl ptr ast:PDecl,
                                dinfo ptr ast:DeclInfo) ptr uint8
 
-  mut cs = cs:new(30)
+  mut cs = txt:newCs(30)
   mut name = pdecl'sym'name
 
   # big hack for int main(int argc, char *argv[])
@@ -356,7 +354,7 @@ method ctrans:Transl.translSym(moduleName ptr uint8,
     mut typeName ptr uint8 = null
 
     if dinfo'declType == ast:PMETHOD
-      typeName = ctrans:symMod(pdecl'methodTypeModule, pdecl'methodType)
+      typeName = symMod(pdecl'methodTypeModule, pdecl'methodType)
     /if
 
     me.genCsym(cs, typeName, moduleName, name, dinfo'type, -1, false)
@@ -364,11 +362,11 @@ method ctrans:Transl.translSym(moduleName ptr uint8,
     mem:free(typeName)
   /if
 
-  return cs:unwrap(cs)
+  return txt:unwrapCs(cs)
 /method
 
 
-method ctrans:Transl.wrapType(cs ptr cs:Charstash,
+method Transl.wrapType(cs ptr txt:Charstash,
                               type ptr ast:Type,
                               pad intptr)
 
@@ -380,9 +378,9 @@ method ctrans:Transl.wrapType(cs ptr cs:Charstash,
 
 # support functions
 func symMod(modName,name ptr uint8) ptr uint8
-  mut cs = cs:new(10)
+  mut cs = txt:newCs(10)
 
   cs.addSymName(modName, name)
 
-  return cs:unwrap(cs)
+  return txt:unwrapCs(cs)
 /func

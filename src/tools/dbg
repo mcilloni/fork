@@ -1,3 +1,0 @@
-#!/usr/bin/env sh
-
-env FORDPATHS="$FORKROOT/libfork/build/ford/:$(dirname $0)/../build/ford/" LD_LIBRARY_PATH="$FORKROOT/libfork/build/:$(dirname $0)/../build/" lldb "$(dirname $0)/$1.elf" $2 
