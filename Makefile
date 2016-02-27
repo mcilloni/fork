@@ -48,18 +48,25 @@ endif
 SONAME = libctrans.so
 ARNAME = libctrans.a
 
-.PHONY: all clean package bootstrap stage1 stage2 stage3 libfork stage stage-ctrans stage-libfork stage-transmod
+.PHONY: all clean package package-base package-cross bootstrap stage1 stage2 stage3 libfork stage stage-ctrans stage-libfork stage-transmod
 
 all:
 	$(MAKE) stage-ctrans
 
 package:
 	$(MAKE) bootstrap
+	$(MAKE) STAGE=$(STAGE3) package-base
+
+package-cross:
+	$(MAKE) stage1
+	$(MAKE) STAGE=$(STAGE1) package-base
+
+package-base:
 	mkdir -p $(RELDIR)
-	cp -r $(STAGE3)/ford $(RELDIR)
-	cp $(STAGE3)/rt.o $(RELDIR)
-	cp $(STAGE3)/libfork.a $(RELDIR)
-	cp $(STAGE3)/transmod $(RELDIR)
+	cp -r $(STAGE)/ford $(RELDIR)
+	cp $(STAGE)/rt.o $(RELDIR)
+	cp $(STAGE)/libfork.a $(RELDIR)
+	cp $(STAGE)/transmod $(RELDIR)
 	cp $(PWD)/LICENSE $(RELDIR)
 	cd $(PWD) && $(TAR) -cJf $(PKGNAME) $(RELDIRNAME)
 	rm -r $(RELDIR)
