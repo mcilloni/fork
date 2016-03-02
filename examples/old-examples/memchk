@@ -1,3 +1,0 @@
-#!/usr/bin/env sh
-
-env FORDPATHS="$(dirname $0)/../src/ford/internal/":"$(dirname $0)/../src/ford/" LD_LIBRARY_PATH="$(dirname $0)/../build/" valgrind --track-origins=yes --leak-check=full  "$(dirname $0)/$1.elf" $2 

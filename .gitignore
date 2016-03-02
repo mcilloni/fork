@@ -1,0 +1,9 @@
+build/*
+perf
+examples/old-examples/*.txt
+examples/old-examples/*.elf
+examples/old-examples/*.old
+examples/*.c
+examples/parsedir
+tests/*.err
+core.*

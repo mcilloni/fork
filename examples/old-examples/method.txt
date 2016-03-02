@@ -1,3 +1,0 @@
-method txt:String.appendInt(a uint8) bool
-
-/method
