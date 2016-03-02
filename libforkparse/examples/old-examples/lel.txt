@@ -1,6 +1,0 @@
-decl func puts(x ptr uint8)
-decl mut x uint8
-
-entry
-	x'b.a(c,d)'d.p(22)
-/entry
