@@ -342,12 +342,9 @@ func makeFord(pmod ptr ast:PModule) ptr mem:Buffer
 
   buf.addString(pmod'name)
 
-
   buf.addImports(pmod)
 
-
   buf.addAliases(pmod)
-
 
   buf.addDecls(pmod)
 
