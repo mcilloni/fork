@@ -1,0 +1,43 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import cs
+import mem
+import tty
+import txt
+
+
+entry
+  mut cs = cs:new(10)
+  mut i uint16 = 0
+
+  while i < 10000
+    cs.addChar(90)
+    i++
+  /while
+
+  cs.addChar(32)
+  cs.addInt(150)
+  cs.addChar(32)
+  cs.addInt(10000)
+
+  mut len = cs.len()
+  mut str = cs:unwrap(cs)
+
+  tty:outln(str)
+  tty:out("strlen == ")
+  tty:outint(txt:strlen(str))
+  tty:outch(10)
+  tty:out("cslen == ")
+  tty:outint(len)
+  tty:outch(10)
+
+  mem:free(str)
+/entry
