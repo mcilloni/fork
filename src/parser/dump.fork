@@ -1,0 +1,42 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module parser
+
+
+import map
+import pair
+import tty
+
+
+method Parser.dumpImports()
+  mut iter = me'imports.iter()
+
+  mut pair ptr pair:Pair
+
+  tty:out("[")
+
+  mut first = true
+
+  while (pair = iter.next())?
+    if first
+      first = false
+    else
+      tty:out(", ")
+    /if
+
+    tty:out(cast<ptr uint8>(pair'key))
+
+  /while
+
+  tty:outln("]")
+
+  map:iterFree(iter)
+/method

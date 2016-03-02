@@ -1,0 +1,284 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ast
+
+
+import kv
+import map
+import mem
+import proc
+import tty
+import txt
+
+
+# Type represents a well formed, semantically valid type.
+# An instance of this is the product of type validation by sema.
+
+alias Type struct(
+  # which type macroclass this instance represents.
+  type uint16,
+
+  # eventual alias (module and name) of the current type.
+  moduleName, name ptr uint8,
+
+  # if integer, this represent its signedness.
+  isSigned bool,
+
+  # size of this type. Set on creation. -1 if recursive.
+  # functions have no size.
+  # alignment of this type. Set on creation. -1 if recursive.
+  typeSize, typeAlign intptr,
+
+  # number of items, in case this is a location.
+  itemCount uintptr,
+
+  # the type the current instance evaluates to when an operation like function invocation or derefereciation is made.
+  # For pointers, this is the type of the expression obtained with val.
+  # For functions, this is the value of the expression obtained invoking the function.
+  retType ptr Type,
+
+  # The members that compose this type.
+  # For functions, these are the parameters.
+  # For structures, these are the members.
+  members ptr kv:KVList,
+
+  # if this type is builtin
+  builtin bool,
+
+  # where the original type was defined.
+  begin, end txt:Line
+)
+
+
+alias Symbol struct(
+  name ptr uint8,
+  type ptr Type
+)
+
+
+alias DeclInfo struct(
+  declType uint16,
+  declOnly,funcParam bool,
+  type ptr Type
+)
+
+
+alias MethodInfo struct(
+  typeModule,typeName,name ptr uint8,
+  type ptr Type
+)
+
+
+alias Symtable struct(
+  syms ptr kv:KVList
+)
+
+
+method Symbol.equals(other ptr Symbol) bool
+  return txt:strequals(me'name, other'name) and me'type.equals(other'type)
+/method
+
+
+func typeEqualsList(list1, list2 ptr kv:KVList) bool
+  mut len = list1.len()
+
+  if len != list2.len()
+    return false
+  /if
+
+  mut i uintptr = 0
+
+  while i < len
+    mut pair1 = list1.getAt(i)
+    mut pair2 = list2.getAt(i)
+
+    mut name1 = <ptr uint8>(pair1'key)
+    mut name2 = <ptr uint8>(pair2'key)
+
+    mut type1 = <ptr Type>(pair1'value)
+    mut type2 = <ptr Type>(pair2'value)
+
+    if not txt:strequals(name1, name2) or not type1.equals(type2)
+      return false
+    /if
+
+    i++
+  /while
+
+  return true
+/func
+
+
+func typeFree(type ptr Type)
+  if type?
+    mem:free(type'moduleName)
+    mem:free(type'name)
+
+    if type'members?
+      kv:free(type'members)
+    /if
+
+    mem:free(type)
+  /if
+/func
+
+
+method Type.equals(other ptr Type) bool
+  if not other?
+    return false
+  /if
+
+  if me'name? and other'name?
+    mut res = txt:strequals(me'name, other'name)
+
+    if res and me'moduleName? and other'moduleName?
+      res = txt:strequals(me'moduleName, other'moduleName)
+    /if
+
+    return res
+  /if
+
+  if me'type != other'type
+    return false
+  /if
+
+  if me'type == TYPE_FUNC
+    return me'retType.equals(other'retType) and typeEqualsList(me'members, other'members)
+  else
+    if me'type == TYPE_PTR
+      return me'retType.equals(other'retType)
+    else
+      if me'type == TYPE_STRUCT
+        return typeEqualsList(me'members, other'members)
+      else
+        if me'type == TYPE_LOC
+          return me'retType.equals(other'retType) and me'itemCount == other'itemCount
+        else
+          if me'type == TYPE_BOOL
+            return true
+          else
+            if me'type == TYPE_INT
+              return me'isSigned == other'isSigned and me'typeSize == other'typeSize
+            else
+              if me'type == TYPE_DATA
+                return true
+              else
+                if me'type == TYPE_NULL
+                  return true
+                else
+                  proc:panic("unreachable: unknown type comparison")
+                /if
+              /if
+            /if
+          /if
+        /if
+      /if
+    /if
+  /if
+/method
+
+
+method Type.isBool() bool
+  return me'type == TYPE_BOOL
+/method
+
+
+method Type.isData() bool
+  return me'type == TYPE_DATA
+/method
+
+
+method Type.isEmpty() bool
+  return me'type == TYPE_EMPTY
+/method
+
+
+method Type.isFunc() bool
+  return me'type == TYPE_FUNC
+/method
+
+
+method Type.isInt() bool
+  return me'type == TYPE_INT
+/method
+
+
+method Type.isLoc() bool
+  return me'type == TYPE_LOC
+/method
+
+
+method Type.isNull() bool
+  return me'type == TYPE_NULL
+/method
+
+
+method Type.isPtr() bool
+  return me'type == TYPE_PTR or me'type == TYPE_DATA
+/method
+
+
+method Type.isStruct() bool
+  return me'type == TYPE_STRUCT
+/method
+
+
+func stabNew() ptr Symtable
+  mut stab = <ptr Symtable>(mem:zalloc(size(Symtable)))
+
+  stab'syms = kv:strnew(10)
+
+  stab'syms.setFreeFuncs(ptr mem:free, ptr declInfoFree)
+
+  return stab
+/func
+
+
+func stabFree(stab ptr Symtable)
+  if stab?
+    kv:free(stab'syms)
+    mem:free(stab)
+  /if
+/func
+
+
+method Symtable.add(name ptr uint8,
+                        isDecl,funcParam bool,
+                        type ptr Type,
+                        symType uint16)
+
+  me'syms.put(txt:strclone(name), \
+                declInfoNew(symType, isDecl, funcParam, type))
+/method
+
+
+method Symtable.get(name ptr uint8) ptr DeclInfo
+  return <ptr DeclInfo>(me'syms.get(name))
+/method
+
+
+method Symtable.typeof(name ptr uint8) ptr Type
+  mut di = me.get(name)
+
+  return di? => di'type || null
+/method
+
+
+mut TYPE_FUNC      uint16 = 10
+mut TYPE_PTR       uint16 = 20
+mut TYPE_STRUCT    uint16 = 30
+mut TYPE_LOC       uint16 = 40
+mut TYPE_BOOL      uint16 = 50
+mut TYPE_INT       uint16 = 60
+mut TYPE_DATA      uint16 = 70
+mut TYPE_RECALIAS  uint16 = 80
+mut TYPE_NULL      uint16 = 90
+mut TYPE_EMPTY     uint16 = 100

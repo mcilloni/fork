@@ -1,0 +1,1304 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module parser
+
+
+import ast
+import err
+import fs
+import list
+import mem
+import memutils
+import txt
+
+
+alias ParseState struct(
+  filename ptr uint8,
+  err ptr ast:Issue,
+  prs ptr Parser,
+  lex ptr ast:Lexer,
+  next ptr ast:Token,
+  last ptr fs:Lineno,
+  moduleName ptr uint8
+)
+
+
+method ParseState.theresError() bool
+  return me'err?
+/method
+
+
+method ParseState.next() ptr ast:Token
+  mut tok = me'next
+
+  if me'last?
+    fs:linenoFree(me'last)
+  /if
+
+  if not tok?
+    return null
+  /if
+
+  me'last = fs:linenoClone(tok'lineno)
+
+  me'next = ast:lexerNext(me'lex)
+  me'err = ast:issueFromLexError(ast:lexerError(me'lex), me'last)
+  if me'err?
+    return null
+  /if
+
+  return tok
+/method
+
+
+method ParseState.discardNext()
+  ast:tokenFree(me.next())
+/method
+
+
+# if the expected token is not given, then the ParseState gets its error set
+method ParseState.expectedError(expected, got ptr ast:Token)
+  me'err = ast:errorMism(me'last, ast:tokenStr(expected), ast:tokenStr(got))
+/method
+
+
+# get the expected token or null for error.
+method ParseState.expect(ttype uint16) ptr ast:Token
+  mut got = me.next()
+  if me.theresError()
+    return null
+  /if
+
+  mut expected ast:Token
+  expected'type = ttype
+  if (not got? and ttype != ast:EOF) or got'type != ttype
+    me.expectedError(ptr expected, got)
+    return null
+  /if
+
+  return got
+/method
+
+
+method ParseState.expectDiscard(ttype uint16) bool
+  mut tok = me.expect(ttype)
+  ast:tokenFree(tok)
+
+  return tok?
+/method
+
+
+# parses, if present, the module name. Returns null if none or error
+method ParseState.parseModuleName() ptr ast:StringDef
+  if me'next'type == ast:MODULE
+    mut begin = ast:tokDiscardBegin(me.next()) # discard 'module'
+
+    mut name = me.expect(ast:ID)
+    if name?
+      if not me.expectDiscard(ast:NEWLINE)
+        return null
+      /if
+
+      mut moduleName = txt:strclone(<ptr uint8>(name'value))
+      mut end = ast:tokDiscardEnd(name)
+
+      return ast:strdefNew(moduleName, begin, end)
+    /if
+  /if
+
+  return null
+/method
+
+
+method ParseState.parseImport() ptr ast:StringDef
+  if me'next? and me'next'type == ast:IMPORT
+    mut begin = ast:tokDiscardBegin(me.next()) # discard 'import'
+
+    mut name = me.expect(ast:ID)
+    if name?
+      if not me.expectDiscard(ast:NEWLINE)
+        return null
+      /if
+
+      mut importName = txt:strclone(<ptr uint8>(name'value))
+      mut end = ast:tokDiscardEnd(name)
+
+      return ast:strdefNew(importName, begin, end)
+    /if
+  /if
+
+  return null
+/method
+
+
+# parses the 'import' statements
+method ParseState.parseImports() ptr list:List
+  mut ret = list:new()
+  mut importLine ptr ast:StringDef
+
+  while (importLine = me.parseImport())?
+    ret.append(importLine)
+  /while
+
+  return ret
+/method
+
+
+method ParseState.parseIdType(name ptr uint8) ptr ast:PType
+  mut moduleName ptr uint8 = null
+
+  if me'next? and me'next'type == ast:COLON
+    # discard ':'
+    ast:tokenFree(me.next())
+
+    mut tok = me.expect(ast:ID)
+    if not tok?
+      return null
+    /if
+
+    moduleName = name
+    name = txt:strclone(<ptr uint8>(tok'value))
+
+    ast:tokenFree(tok)
+  /if
+
+  return ast:ptypeNew(name, moduleName, ast:ptypeDescrNew(ast:PTYPE_ID, null, null))
+/method
+
+
+func tokenIsTypeStart(tok ptr ast:Token) bool
+  mut ttype = tok'type
+  return    ttype == ast:STRUCT \
+         or ttype == ast:FUNC \
+         or ttype == ast:PTR \
+         or ttype == ast:VAL \
+         or ttype == ast:ID \
+         or ttype == ast:OBRAC \
+         or ttype == ast:OCURLY
+/func
+
+
+# if the next token exists and it's a ast:NEWLINE, then discards it
+method ParseState.discardNewLine()
+  if me'next? and me'next'type == ast:NEWLINE
+    me.discardNext()
+  /if
+/method
+
+method ParseState.parseIdList() ptr list:List
+  mut tok ptr ast:Token
+  mut ret = list:new()
+  while true
+    tok = me.expect(ast:ID)
+    if not tok?
+      break
+    /if
+
+    ret.append(txt:strclone(<ptr uint8>(tok'value)))
+    ast:tokenFree(tok)
+
+    if not me'next?
+      me'err = ast:errorMism(me'last, "a ',' or an identifier", "end of file")
+      break
+    /if
+
+    if me'next'type != ast:COMMA
+      return ret
+    /if
+
+    # discard comma
+    me.discardNext()
+  /while
+
+  list:freeAll(ret, ptr mem:free)
+  return null
+/method
+
+
+func makeSymsAndInsertInList(syms ptr list:List, ids ptr list:List, type ptr ast:PType)
+  mut len = ids.len()
+  mut i uintptr = 0
+  mut elem ptr uint8
+  mut sym ptr ast:PSymbol
+
+  while i < len
+    elem = <ptr uint8>(val ids.get(i))
+    sym = ast:psymbolNew(elem, type)
+    syms.append(sym)
+    i++
+  /while
+
+  list:free(ids)
+/func
+
+
+method ParseState.parseStructBodyVars(syms ptr list:List) bool
+
+  # allow multiline struct/methodtion header declarations
+  me.discardNewLine()
+
+  if not me'next?
+    me'err = ast:errorMism(me'last, "an identifier or a ')'", "end of file")
+    return false
+  /if
+
+  if me'next'type == ast:CPAR
+    return false
+  /if
+
+  mut ids = me.parseIdList()
+  if not ids?
+    return false
+  /if
+
+  mut type = me.parseType()
+  if not type?
+    list:freeAll(ids, ptr mem:free)
+    return false
+  /if
+
+  makeSymsAndInsertInList(syms, ids, type)
+
+  return true
+/method
+
+
+method ParseState.parseStructBody(end ptr txt:Line,
+                                   newStruct bool) ptr list:List
+
+  mut openTok = newStruct => ast:OCURLY || ast:OPAR
+  mut closeTok = newStruct => ast:CCURLY || ast:CPAR
+
+  # If newStruct is on, this just discards the `{`.
+  # Otherwise, it checks for a `(`.
+  if not me.expectDiscard(openTok)
+    return null
+  /if
+
+  mut strBody = list:new()
+
+  # each iteration parses a sequence of 'a,b,c,d type' or a full list
+  # (if this is a function header)
+  while me.parseStructBodyVars(strBody)
+
+    me.discardNewLine()
+
+    if me'next? and me'next'type == closeTok
+      break
+    /if
+
+    if not me.expectDiscard(ast:COMMA)
+      list:freeAll(strBody, <ptr func(item data)>(ptr memutils:decRef))
+      return null
+    /if
+  /while
+
+  if me.theresError()
+    list:freeAll(strBody, <ptr func(item data)>(ptr memutils:decRef))
+    return null
+  /if
+
+  mut endTok = me.expect(closeTok)
+  if not endTok?
+    list:freeAll(strBody, <ptr func(item data)>(ptr memutils:decRef))
+    return null
+  /if
+
+  # discards `)` or `}`.
+  val end = ast:tokDiscardEnd(endTok)
+
+  return strBody
+/method
+
+
+method ParseState.parseFunctionType() ptr ast:PType
+  mut end txt:Line
+  mut args = me.parseStructBody(ptr end, false)
+  if not args?
+    return null
+  /if
+
+  mut retType ptr ast:PType = null
+
+  if me'next? and tokenIsTypeStart(me'next)
+    retType = me.parseType()
+  /if
+
+  mut type = ast:ptypeNew(null, null, ast:ptypeDescrNew(ast:PTYPE_FUNC, retType, args))
+  type'end = end
+
+  return type
+/method
+
+
+method ParseState.parseLocType() ptr ast:PType
+  mut locLengthTok = me.expect(ast:NUMBER)
+  if not locLengthTok?
+    return null
+  /if
+
+  mut locLength = locLengthTok'value
+
+  ast:tokenFree(locLengthTok)
+
+  if not me.expectDiscard(ast:CBRAC)
+    return null
+  /if
+
+  mut realType = me.parseType()
+  if not realType?
+    return null
+  /if
+
+  mut type = ast:ptypeNew(null, null, ast:ptypeDescrNewLoc(realType, locLength))
+  type'end = realType'end
+
+  return type
+/method
+
+
+method ParseState.parseStructType(newStruct bool) ptr ast:PType
+  mut end txt:Line
+
+  mut args = me.parseStructBody(ptr end, newStruct)
+  if not args?
+    return null
+  /if
+
+  mut type = ast:ptypeNew(null, null, ast:ptypeDescrNew(ast:PTYPE_STRUCT, null, args))
+  type'end = end
+
+  return type
+/method
+
+
+method ParseState.parseType() ptr ast:PType
+  if not me'next?
+    me'err = ast:errorMism(me'last, "a valid type", "end of file")
+    return null
+  /if
+
+  mut ret ptr ast:PType = null
+
+  # if we have an open parenthesis, then this is a struct type (shortened).
+  # This comparison should be made BEFORE getting the token, because
+  # ParseState.parseStructType() expects a `{` at the beginning.
+  if me'next'type == ast:OCURLY
+    mut begin = ast:tokExtractBegin(me'next)
+    ret = me.parseStructType(true)
+
+    if ret?
+      ret'begin = begin
+    /if
+
+    return ret
+  /if
+
+  mut tok = me.next()
+
+  if tok'type == ast:FUNC
+    ret = me.parseFunctionType()
+  /if
+
+  if tok'type == ast:ID
+    ret = me.parseIdType(txt:strclone(<ptr uint8>(tok'value)))
+    ret'end = ast:tokExtractEnd(tok)
+  /if
+
+  if tok'type == ast:OBRAC
+    ret = me.parseLocType()
+  /if
+
+  if tok'type == ast:PTR
+    # parses the real type (after ptr)
+    mut realType = me.parseType()
+    ret = ast:ptypeNew(null, null, ast:ptypeDescrNew(ast:PTYPE_PTR, realType, null))
+    ret'end = realType'end
+  /if
+
+  if tok'type == ast:STRUCT
+    ret = me.parseStructType(false)
+  /if
+
+  if tok'type == ast:VAL
+    # parses the real type (after val)
+    ret = me.parseType()
+  /if
+
+  if not ret?
+    if not me.theresError()
+      me'err = ast:errorMism(me'last, "a valid type", ast:tokenStr(tok))
+    /if
+
+    return null
+  /if
+
+  ret'begin = ast:tokDiscardBegin(tok)
+
+  return ret
+/method
+
+
+method ParseState.parseMutId() {id ptr uint8, ptype ptr ast:PType, end txt:Line}
+  mut end txt:Line
+
+  mut idTok = me.expect(ast:ID)
+  if not idTok?
+    return {null, null, end}
+  /if
+
+  mut id = txt:strclone(<ptr uint8>(idTok'value))
+
+  ast:tokenFree(idTok)
+
+  if not me'next?
+    me'err = ast:errorMism(me'last, "a type", "EOF")
+    mem:free(id)
+    return {null, null, end}
+  /if
+
+  mut type ptr ast:PType = null
+
+  if tokenIsTypeStart(me'next)
+    type = me.parseType()
+    if not type?
+      mem:free(id)
+      return {null, null, end}
+    /if
+
+    end = type'end
+  /if
+
+  return {id, type, end}
+/method
+
+
+method ParseState.parseMutExp() {pnode ptr ast:PNode, needsAssign bool}
+  me.discardNext() # discard `{`
+
+  # check this here, because otherwise if we just rely on the loop, things like
+  # "mut {} = x" would be valid. But they are not, and they must be discarded.
+  if not me'next? or me'next'type != ast:ID
+    me'err = ast:errorMism(me'last, "an identifier", "EOF")
+    return {null, false}
+  /if
+
+  mut needsAssign = false
+  mut syms = list:new()
+
+  while true
+    mut {id,ptype,end} = me.parseMutId()
+
+    if not id?
+      list:freeAll(syms, <ptr func(item data)>(ptr memutils:decRef))
+      return {null, false}
+    /if
+
+    needsAssign = needsAssign or not ptype?
+
+    syms.append(ast:psymbolNew(id, ptype))
+
+    if not me'next? \
+        or (me'next'type != ast:CCURLY and me'next'type != ast:COMMA)
+
+      me'err = ast:errorMism(me'last, "`,` or `}`", ast:tokenStr(me'next))
+      list:freeAll(syms, <ptr func(item data)>(ptr memutils:decRef))
+      return {null, false}
+    /if
+
+    if me'next'type == ast:CCURLY
+      break
+    /if
+
+    if me'next'type == ast:COMMA
+      me.discardNext()
+    /if
+  /while
+
+  # discard `}`
+  me.discardNext()
+
+  return { <ptr ast:PNode>(ast:pmuldeclNew(ast:PMUTEXP, syms)), needsAssign}
+/method
+
+
+method ParseState.parseMut(external bool) ptr ast:PNode
+  mut end txt:Line
+  # discard 'mut'
+  mut begin = ast:tokDiscardBegin(me.next())
+
+  if not me'next?
+    me'err = ast:errorMism(me'last, "an identifier or a bracketed list", "EOF")
+    return null
+  /if
+
+  mut pnode ptr ast:PNode = null
+  mut needsAssign = false
+
+  if me'next'type == ast:OCURLY
+    {pnode,needsAssign} = me.parseMutExp()
+    if not pnode?
+      return null
+    /if
+
+  else
+
+    mut {id,ptype,end} = me.parseMutId()
+
+    if not id?
+      return null
+    /if
+
+    needsAssign = not ptype?
+
+    pnode = <ptr ast:PNode>(ast:pdeclNew(ast:PMUT, \
+                                ast:psymbolNew(id, ptype), external))
+  /if
+
+  if me'next? and me'next'type == ast:ASSIGN
+    if external
+      me'err = ast:error(me'last, "decl values can't have initializers")
+      ast:pnodeFree(pnode)
+      return null
+    /if
+
+    me.discardNext()
+
+    mut expr = me.parseExpr()
+    if not expr?
+      ast:pnodeFree(pnode)
+      return null
+    /if
+
+    mut exprPNode = <ptr ast:PNode>(expr)
+
+    ast:pnodeAppendChild(pnode, exprPNode)
+
+    end = exprPNode'end
+  else
+    if needsAssign
+      me'err = ast:errorMism(me'last, "an assignment or a type", ast:tokenStr(me'next))
+      ast:pnodeFree(pnode)
+      return null
+    /if
+  /if
+
+  pnode'begin = begin
+  pnode'end = end
+  return pnode
+/method
+
+
+method ParseState.parseDecl() ptr ast:PNode
+
+  # discard 'decl'
+  mut begin = ast:tokDiscardBegin(me.next())
+
+  if not me'next?
+    me'err = ast:errorMism(me'last, "`mut`,`method` or `func`", "EOF")
+    return null
+  /if
+
+  mut ret ptr ast:PDecl = null
+
+  if me'next'type == ast:MUT
+    ret = <ptr ast:PDecl>(me.parseMut(true))
+  else
+    if me'next'type == ast:FUNC
+      # discard 'func'
+      me.discardNext()
+
+      mut name ptr uint8
+      mut type ptr ast:PType
+
+      if not me.parseFuncHead(ptr name, ptr type)
+        return null
+      /if
+
+      ret = ast:pdeclNew(ast:PFUNCTION, ast:psymbolNew(name, type), true)
+
+      ret'node'end = type'end
+    else
+      if me'next'type == ast:METHOD
+        # discard 'method'
+        me.discardNext()
+
+        mut typeModule ptr uint8
+        mut typeName ptr uint8
+        mut name ptr uint8
+        mut ptype ptr ast:PType
+
+        if not me.parseMethodHead(ptr typeModule, ptr typeName, ptr name, ptr ptype)
+          return null
+        /if
+
+        ret = ast:pdeclNew(ast:PMETHOD, ast:psymbolNew(name, ptype), true)
+
+        ret'methodTypeModule = typeModule
+        ret'methodType = typeName
+
+        ret'node'end = ptype'end
+
+      else
+        me'err = ast:errorMism(me'last, "`mut`, `method` or `func`", ast:tokenStr(me'next))
+        return null
+      /if
+    /if
+  /if
+
+  if not ret?
+    return null
+  /if
+
+  ret'node'begin = begin
+
+  return <ptr ast:PNode>(ret)
+/method
+
+
+method ParseState.parseAlias() ptr ast:PNode
+  # discard 'alias'
+  mut begin = ast:tokDiscardBegin(me.next())
+
+  mut name = me.expect(ast:ID)
+  if name?
+    mut type = me.parseType()
+    if not type?
+      return null
+    /if
+
+    mut palias = ast:pdeclNew(ast:PALIAS, ast:psymbolNew(<ptr uint8>(name'value), type), false)
+    mut pnode = <ptr ast:PNode>(palias)
+    pnode'begin = begin
+    pnode'end = type'end
+
+    name'value = 0 # steal from the token the string
+    ast:tokenFree(name)
+
+    return pnode
+  /if
+
+  return null
+/method
+
+
+func matchWhileEndTok(tok ptr ast:Token) bool
+  return tok'type == ast:ENDWHILE
+/func
+
+
+method ParseState.parseWhile() ptr ast:PNode
+  mut begin = ast:tokDiscardBegin(me.next()) #discard while token
+
+  mut expr = <ptr ast:PNode>(me.parseExpr())
+  if not expr?
+    return null
+  /if
+
+  if not me.expectDiscard(ast:NEWLINE)
+    ast:pnodeFree(expr)
+    return null
+  /if
+
+  mut whileBlock = ast:pnodeNew(ast:PWHILE, 0)
+  ast:pnodeAppendChild(whileBlock, expr)
+
+  mut body = <ptr ast:PNode>(me.parseBody(ptr matchWhileEndTok))
+  if not body?
+    ast:pnodeFree(whileBlock)
+    return null
+  /if
+
+  ast:pnodeAppendChild(whileBlock, body)
+
+  whileBlock'begin = begin
+  whileBlock'end = ast:tokDiscardEnd(me.next()) #discard /while
+
+  return whileBlock
+/method
+
+
+func matchIfElseEndTok(tok ptr ast:Token) bool
+  return tok'type == ast:ENDIF or tok'type == ast:ELSE
+/func
+
+func matchIfEndTok(tok ptr ast:Token) bool
+  return tok'type == ast:ENDIF
+/func
+
+
+method ParseState.parseIf() ptr ast:PNode
+  mut begin = ast:tokDiscardBegin(me.next()) #discard if token
+
+  mut expr = <ptr ast:PNode>(me.parseExpr())
+  if not expr?
+    return null
+  /if
+
+  if not me.expectDiscard(ast:NEWLINE)
+    ast:pnodeFree(expr)
+    return null
+  /if
+
+  mut block = ast:pnodeNew(ast:PIF, 0)
+  ast:pnodeAppendChild(block, expr)
+
+  mut mainBlock = <ptr ast:PNode>(me.parseBody(ptr matchIfElseEndTok))
+
+  if not mainBlock?
+    ast:pnodeFree(block)
+    return null
+  /if
+
+  ast:pnodeAppendChild(block, mainBlock)
+
+  if me'next'type == ast:ELSE
+    me.discardNext() #discard else
+    if not me.expectDiscard(ast:NEWLINE)
+      ast:pnodeFree(block)
+      return null
+    /if
+
+    mut elseBlock = <ptr ast:PNode>(me.parseBody(ptr matchIfEndTok))
+
+    if not elseBlock?
+      ast:pnodeFree(block)
+      return null
+    /if
+
+    ast:pnodeAppendChild(block, elseBlock)
+
+    block'type = ast:PIFELSE
+  /if
+
+  block'begin = begin
+  block'end = ast:tokDiscardEnd(me.next()) #discard /if
+
+  return block
+/method
+
+
+method ParseState.parseReturn() ptr ast:PNode
+  mut returnTok = me.next()
+
+  mut begin = ast:tokExtractBegin(returnTok) # discard "return"
+  mut end = ast:tokDiscardEnd(returnTok)
+
+  mut returnNode = ast:pnodeNew(ast:PRETURN, 0)
+  if me'next? and me'next'type != ast:NEWLINE
+    mut expr = me.parseExpr()
+    if not expr?
+      ast:pnodeFree(returnNode)
+      return null
+    /if
+    ast:pnodeAppendChild(returnNode, <ptr ast:PNode>(expr))
+
+    end = expr'node'end
+  /if
+
+  returnNode'begin = begin
+  returnNode'end = end
+
+  return returnNode
+/method
+
+
+method ParseState.parseBreakCont(ptype uint16) ptr ast:PNode
+  mut breakTok = me.next()
+
+  mut begin = ast:tokExtractBegin(breakTok) # discard "break" or "continue"
+  mut end = ast:tokDiscardEnd(breakTok)
+  mut pnode = ast:pnodeNew(ptype, 0)
+
+  pnode'begin = begin
+  pnode'end = end
+
+  return pnode
+/method
+
+
+method ParseState.parseStatement() ptr ast:PNode
+
+  if not me'next?
+    me'err = ast:errorMism(me'last, "a statement or an expression", "EOF")
+  /if
+
+  if me'next'type == ast:BREAK
+    return me.parseBreakCont(ast:PBREAK)
+  /if
+
+  if me'next'type == ast:CONTINUE
+    return me.parseBreakCont(ast:PCONTINUE)
+  /if
+
+  if me'next'type == ast:DECL
+    return me.parseDecl()
+  /if
+
+  if me'next'type == ast:IF
+    return me.parseIf()
+  /if
+
+  if me'next'type == ast:MUT
+    return me.parseMut(false)
+  /if
+
+  if me'next'type == ast:RETURN
+    return me.parseReturn()
+  /if
+
+  if me'next'type == ast:WHILE
+    return me.parseWhile()
+  /if
+
+  return <ptr ast:PNode>(me.parseExpr())
+/method
+
+
+method ParseState.parseBody(isEndToken ptr func(tok ptr ast:Token) bool) ptr ast:PBlock
+  mut begin txt:Line
+
+  # If this block is empty, then begin will remain unset.
+  # We avoid this, assigning it to the next token position (usually newline or end of block)
+  if me'next?
+    begin = ast:tokExtractBegin(me'next)
+  /if
+
+  mut statement ptr ast:PNode = null
+  mut first = true
+
+  mut block = ast:pblockNew()
+  mut pnode = <ptr ast:PNode>(block)
+
+  while me'next? and not isEndToken(me'next)
+    statement = me.parseStatement()
+    if not statement?
+      ast:pnodeFree(pnode)
+      return null
+    /if
+
+    ast:pnodeAppendChild(pnode, statement)
+
+    if first
+      begin = statement'begin
+      first = false
+    /if
+
+    if not me.expectDiscard(ast:NEWLINE)
+      ast:pnodeFree(pnode)
+      return null
+    /if
+  /while
+
+  if not me'next?
+    ast:pnodeFree(pnode)
+    return null
+  /if
+
+  # if me'next is not null, then the while above quitted because
+  # isEndToken(me'next) == true.
+  pnode'begin = begin
+
+  # prevent issues from empty blocks.
+  pnode'end = statement? => statement'end || begin
+
+  return block
+/method
+
+
+method ParseState.makeFunction(pType uint16,
+                                name ptr uint8,
+                                type ptr ast:PType,
+                                endTType uint16,
+                                isEndToken ptr func(tok ptr ast:Token) bool) ptr ast:PNode
+
+  if not me.expectDiscard(ast:NEWLINE)
+    return null
+  /if
+
+  mut funcNode = <ptr ast:PNode>(ast:pdeclNew(pType, ast:psymbolNew(name, type), false))
+  mut body = <ptr ast:PNode>(me.parseBody(isEndToken))
+
+  if not body?
+    ast:pnodeFree(funcNode)
+    return null
+  /if
+
+  ast:pnodeAppendChild(funcNode, body)
+
+  mut endTok = me.expect(endTType)
+  if not endTok?
+    ast:pnodeFree(funcNode)
+    return null
+  /if
+
+  funcNode'end = ast:tokDiscardEnd(endTok)
+
+  return funcNode
+
+/method
+
+
+func makeEntryType() ptr ast:PType
+  return ast:ptypeNew(null, null,ast:ptypeDescrNew(ast:PTYPE_FUNC, null, null))
+/func
+
+
+func matchEntryEndTok(tok ptr ast:Token) bool
+  return tok'type == ast:ENDENTRY
+/func
+
+
+method ParseState.parseEntry() ptr ast:PNode
+  mut begin = ast:tokDiscardBegin(me.next())  #discard "entry"
+
+  mut entryNode = me.makeFunction(ast:PENTRY, txt:strclone("_fork_entry"), makeEntryType(), ast:ENDENTRY, ptr matchEntryEndTok)
+
+  if not entryNode?
+    return null
+  /if
+
+  entryNode'begin = begin
+
+  return entryNode
+/method
+
+
+method ParseState.parseIdentifier() ptr uint8
+  mut nameTok = me.expect(ast:ID)
+  if not nameTok?
+    return null
+  /if
+
+  mut name = txt:strclone(<ptr uint8>(nameTok'value))
+
+  ast:tokenFree(nameTok)
+
+  return name
+
+/method
+
+
+func matchFuncEndTok(tok ptr ast:Token) bool
+  return tok'type == ast:ENDFUNC
+/func
+
+
+method ParseState.parseFuncHead(name ptr ptr uint8, type ptr ptr ast:PType) bool
+
+  val name = me.parseIdentifier()
+  if not (val name)?
+    return false
+  /if
+
+  val type = me.parseFunctionType()
+
+  if not (val type)?
+    mem:free(val name)
+    return false
+  /if
+
+  return true
+/method
+
+
+method ParseState.parseFunc() ptr ast:PNode
+  mut begin = ast:tokDiscardBegin(me.next()) #discard "func"
+
+  mut name ptr uint8
+  mut ptype ptr ast:PType
+
+  if not me.parseFuncHead(ptr name, ptr ptype)
+    return null
+  /if
+
+  mut functionNode =  me.makeFunction(ast:PFUNCTION, name, ptype, ast:ENDFUNC, ptr matchFuncEndTok)
+  if not functionNode?
+    return null
+  /if
+
+  functionNode'begin = begin
+
+  return functionNode
+/method
+
+
+func matchMethodEndTok(tok ptr ast:Token) bool
+  return tok'type == ast:ENDMETHOD
+/func
+
+
+method ParseState.parseMethodHead(typeModule,typeName,name ptr ptr uint8, type ptr ptr ast:PType) bool
+  mut firstId = me.parseIdentifier()
+  if not firstId?
+    return false
+  /if
+
+  if not me'next?
+    mem:free(firstId)
+    return false
+  /if
+
+  if me'next'type == ast:COLON
+    me.discardNext()
+
+    val typeName = me.parseIdentifier()
+    if not (val typeName)?
+      mem:free(firstId)
+      return false
+    /if
+
+    val typeModule = firstId
+  else
+    val typeModule = txt:strclone(me'moduleName)
+    val typeName = firstId
+  /if
+
+  if not me.expectDiscard(ast:DOT)
+    mem:free(firstId)
+    mem:free(val typeName)
+    mem:free(val name)
+    return false
+  /if
+
+  val name = me.parseIdentifier()
+  if not (val name)?
+    return false
+  /if
+
+  val type = me.parseFunctionType()
+  if not (val type)?
+    mem:free(val name)
+    return false
+  /if
+
+  return true
+/method
+
+
+method ParseState.makeMethod(typeModule,typeName,name ptr uint8, ptype ptr ast:PType) ptr ast:PNode
+  mut pnode = me.makeFunction(ast:PMETHOD, name, ptype, ast:ENDMETHOD, ptr matchMethodEndTok)
+
+  if not pnode?
+    return null
+  /if
+
+  mut pdecl = <ptr ast:PDecl>(pnode)
+  pdecl'methodType = typeName
+  pdecl'methodTypeModule = typeModule
+
+  return pnode
+/method
+
+
+method ParseState.parseMethod() ptr ast:PNode
+  mut begin = ast:tokDiscardBegin(me.next()) #discard "method"
+
+  mut typeModule ptr uint8
+  mut typeName ptr uint8
+  mut name ptr uint8
+  mut ptype ptr ast:PType
+
+  if not me.parseMethodHead(ptr typeModule, ptr typeName, ptr name, ptr ptype)
+    return null
+  /if
+
+  mut methodNode = me.makeMethod(typeModule, typeName, name, ptype)
+  if not methodNode?
+    return null
+  /if
+
+  methodNode'begin = begin
+
+  return methodNode
+/method
+
+
+method ParseState.parseDefinition() ptr ast:PNode
+
+  if not me'next?
+    return null
+  /if
+
+  if me'next'type == ast:ALIAS
+    return me.parseAlias()
+  /if
+
+  if me'next'type == ast:DECL
+    return me.parseDecl()
+  /if
+
+  if me'next'type == ast:ENTRY
+    return me.parseEntry()
+  /if
+
+  if me'next'type == ast:FUNC
+    return me.parseFunc()
+  /if
+
+  if me'next'type == ast:METHOD
+    return me.parseMethod()
+  /if
+
+  if me'next'type == ast:MUT
+    return me.parseMut(false)
+  /if
+
+  me'err = ast:errorMism(me'last, "'alias', 'decl', 'entry', 'func', 'method' or 'var'", ast:tokenStr(me'next))
+
+  return null
+
+/method
+
+# parses the root node
+method ParseState.parseProgram() ptr ast:PNode
+
+  if not me'next?
+    me'err = ast:error(me'last, "empty input")
+    return null
+  /if
+
+
+  # parse module name
+  mut moduleName = me.parseModuleName()
+
+  if me.theresError()
+    return null
+  /if
+
+  me'moduleName = moduleName? => moduleName'name || null
+
+  # parse imports
+  mut imports = me.parseImports()
+
+  if me.theresError()
+    return null
+  /if
+
+  mut pnode = <ptr ast:PNode>(ast:prootNew(moduleName, imports, me'filename))
+
+  mut definition ptr ast:PNode = null
+  mut first = true
+
+  while (definition = me.parseDefinition())?
+    ast:pnodeAppendChild(pnode, definition)
+
+    if me'next? and not me.expectDiscard(ast:NEWLINE)
+      ast:pnodeFree(pnode)
+      return null
+    /if
+
+    if first
+      pnode'begin = definition'begin
+      first = false
+    /if
+
+    pnode'end = definition'end
+  /while
+
+  if me.theresError()
+    ast:pnodeFree(pnode)
+    return null
+  /if
+
+  return pnode
+
+/method
+
+
+func parse(filename ptr uint8) {file ptr ast:PNode, err ptr ast:Issue}
+  mut firstLineno = fs:linenoNew(txt:strclone(filename), 1, 1)
+
+  mut result = ast:lexerNew(filename)
+  if result'err?
+    fs:linenoFree(firstLineno)
+
+    return {null, ast:issueFromLexError(result'err, firstLineno)}
+  /if
+
+  mut lex = result'lex
+
+  # init ParseState
+  mut pst ParseState
+  pst'err = null
+  pst'lex = lex
+  pst'next = ast:lexerNext(lex)
+  pst'last = firstLineno
+  pst'moduleName = null
+  pst'filename = txt:strclone(filename)
+
+  mut lexErr = ast:lexerError(lex)
+  if lexErr?
+    mut err = ast:issueFromLexError(lexErr, firstLineno)
+
+    fs:linenoFree(firstLineno)
+    ast:tokenFree(pst'next)
+    mem:free(pst'filename)
+
+    return {null, err}
+  /if
+
+  mut newRoot = pst.parseProgram()
+
+  ast:lexerClose(lex)
+  mem:free(pst'filename)
+
+  return {newRoot, pst'err}
+/func
+
+
+func parseModule(path ptr uint8) {pmod ptr ast:PModule, errs ptr ast:Issues}
+  mut issues = ast:issuesNew()
+
+  mut {dir,err} = fs:dir(path)
+  mut zero txt:Line = {0 , 0}
+
+  if err?
+    issues.error(zero, path, err'msg)
+    err:free(err)
+    return {null, issues}
+  /if
+
+  mut ret = ast:pmoduleNew()
+
+  while true
+    mut {file,err} = dir.next()
+
+    if err?
+      issues.error(zero, path, err'msg)
+      err:free(err)
+
+      continue
+    /if
+
+    if not file?
+      break
+    /if
+
+    if not file.isDir() and txt:strEndsWith(file'name, ".fork")
+      mut {root,issue} = parse(file.path())
+
+      if issue?
+        issues.add(issue)
+      /if
+
+      if root?
+        if not ast:pmoduleAdd(ret, <ptr ast:PRoot>(root))
+          mut msg = "files belonging to different modules in directory"
+
+          issues.error(zero, path, msg)
+        /if
+      /if
+    /if
+  /while
+
+  return {ret,issues}
+/func
