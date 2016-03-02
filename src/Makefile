@@ -61,8 +61,6 @@ all:
 	$(TRNSCMD) misc
 	$(TRNSCMD) memutils
 	$(TRNSCMD) args
-	$(TRNSCMD) ast
-	$(TRNSCMD) parser
 	cd $(CFILES) && $(CC) -w -c -g -std=c99 -D_POSIX_C_SOURCE=200112L $(CFILES)/*.c
 	mv $(CFILES)/rt.o $(BUILD)
 	@printf "AR\t\t%s\n" $(ARNAME)
