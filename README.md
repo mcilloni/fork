@@ -1,15 +1,14 @@
-libfork
-=======
+libforkparse
+============
 
-A simple implementation of basic routines, data structures and a full parser for the Fork
-Language.
+The implementation of the reference parser and AST for the Fork language.
 
 This is incredibly alpha, so it may crash in unpredictable ways.
 
 Everything is available under the MPL v2 license.
 
 # Building
-libfork's main usage is (by now) in [ctrans](http://github.com/forklang/ctrans), a transpiler from Fork to C that uses libfork's parser module to parse and then transpile Fork sources.
+libforkparse is part of [fork](http://github.com/forklang/fork), a Fork compiler.
 
-Libfork needs ctrans to compile, and they are generally developed in sync.
-Use a current build of ctrans to build libfork, or otherwise get it from an official build (see ctrans releases for more informations).
+libforkparse needs transmod to compile, and they are generally developed in sync.
+Use a current build of Fork to build libforkparse, or otherwise get it from an official build (see fork releases for more informations).

@@ -1,4 +1,4 @@
-#  libfork, a base library for the Fork language
+#  libforkparse, a full parser for the Fork language
 #  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
 #
 #  This Source Code Form is subject to the terms of the Mozilla Public
@@ -333,7 +333,7 @@ method mem:Buffer.addImports(pmod ptr ast:PModule)
 func makeFord(pmod ptr ast:PModule) ptr mem:Buffer
   mut buf = mem:newBuffer(30)
 
-  # init: first thing should be libfork version.
+  # init: first thing should be libforkparse version.
 
   mut rel = about:RELEASE
   buf.add(ptr rel, size(uint16))
