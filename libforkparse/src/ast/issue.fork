@@ -1,0 +1,182 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ast
+
+
+import err
+import list
+import mem
+import txt
+
+
+alias Issue struct (
+  gravity uint8,
+  where txt:Line,
+  filename,message ptr uint8
+)
+
+
+alias Issues struct (
+  list list:List,
+  errLen uintptr
+)
+
+
+func issueFree(issue ptr Issue)
+  if issue?
+    mem:free(issue'filename)
+    mem:free(issue'message)
+  /if
+/func
+
+
+func issueNew(gravity uint8, where txt:Line, filename, message ptr uint8)  ptr Issue
+  mut issue = <ptr Issue>(mem:zalloc(size(Issue)))
+
+  issue'gravity = gravity
+  issue'where = where
+  issue'filename = txt:strclone(filename)
+  issue'message = txt:strclone(message)
+
+  return issue
+/func
+
+
+func issueGravityToStr(issueGravity uint8) ptr uint8
+  if issueGravity == ISSUE_ERR
+    return "error"
+  /if
+
+  if issueGravity == ISSUE_WARN
+    return "warning"
+  /if
+
+  if issueGravity == ISSUE_INFO
+    return "info"
+  /if
+
+  return "<UNKNOWN_ISSUE_LEVEL>"
+/func
+
+
+func issueToError(issue ptr Issue) ptr err:Error
+  mut lineno [21] uint8
+  mut pos [21] uint8
+
+  txt:numtostr(issue'where'line, ptr lineno[0], 21)
+  txt:numtostr(issue'where'pos, ptr pos[0], 21)
+
+  mut toglue [10] ptr uint8
+  toglue[0] = issue'filename
+  toglue[1] = ":"
+  toglue[2] = ptr lineno[0]
+  toglue[3] = ":"
+  toglue[4] = ptr pos[0]
+  toglue[5] = ": "
+  toglue[6] = issueGravityToStr(issue'gravity)
+  toglue[7] = ": "
+  toglue[8] = issue'message
+  toglue[9] = null
+
+  mut ret = err:glue(ptr toglue[0])
+
+  issueFree(issue)
+
+  return ret
+/func
+
+
+method Issue.writeOut(outFn ptr func(err ptr uint8))
+  outFn(me'filename)
+  outFn(":")
+
+
+  mut buf [21] uint8
+  txt:numtostr(me'where'line, ptr buf[0], 21)
+
+  outFn(ptr buf[0])
+  outFn(":")
+
+  txt:numtostr(me'where'pos, ptr buf[0], 21)
+
+  outFn(ptr buf[0])
+  outFn(": ")
+
+  outFn(issueGravityToStr(me'gravity))
+  outFn(": ")
+  outFn(me'message)
+  outFn("\n")
+/method
+
+
+# Issues container
+
+func issuesFree(iss ptr Issues)
+  if iss?
+    list:deinitAll(ptr iss'list, ptr issueFree)
+    mem:free(iss)
+  /if
+/func
+
+
+func issuesNew() ptr Issues
+  mut iss = <ptr Issues>(mem:zalloc(size(Issues)))
+  list:init(ptr iss'list)
+
+  return iss
+/func
+
+
+method Issues.add(issue ptr Issue)
+  if issue?
+    me'list.append(issue)
+
+    if issue'gravity == ISSUE_ERR
+      me'errLen++
+    /if
+  /if
+/method
+
+
+method Issues.addAll(i2 ptr Issues)
+  me'list.appendList(ptr i2'list)
+
+  me'errLen = me'errLen + i2'errLen
+
+  i2'list.prune()
+/method
+
+
+method Issues.errLen() uintptr
+  return me'errLen
+/method
+
+
+method Issues.error(where txt:Line, filename, message ptr uint8)
+  me'list.append(issueNew(ISSUE_ERR, where, filename, message))
+
+  me'errLen++
+/method
+
+
+method Issues.get(i uintptr) ptr Issue
+  return <ptr Issue>(val me'list.get(i))
+/method
+
+
+method Issues.len() uintptr
+  return me'list.len()
+/method
+
+
+mut ISSUE_ERR  uint8 = 10
+mut ISSUE_WARN uint8 = 20
+mut ISSUE_INFO uint8 = 30

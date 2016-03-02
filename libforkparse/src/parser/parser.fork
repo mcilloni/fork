@@ -1,0 +1,243 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module parser
+
+
+import ast
+import err
+import fs
+import list
+import map
+import mem
+import memutils
+import proc
+import set
+import tty
+import txt
+
+
+alias StringDefFile struct(
+  text,fileName ptr uint8,
+  begin,end txt:Line
+)
+
+
+alias Parser struct (
+  fordPaths ptr list:List,
+  imports ptr map:Map,
+  importsTPool ptr memutils:FreePool,
+  currentFile ptr uint8,
+  builtins ptr map:Map
+)
+
+
+# Parser init/deinit funcs
+
+func free(prs ptr Parser)
+  if prs?
+    map:free(prs'imports)
+    memutils:fpFree(prs'importsTPool)
+    list:freeAll(prs'fordPaths, ptr mem:free)
+
+    map:free(prs'builtins)
+
+    mem:free(prs'currentFile)
+    mem:free(prs)
+  /if
+/func
+
+
+func new() ptr Parser
+  mut prs = <ptr Parser>(mem:zalloc(size(Parser)))
+  prs'imports = map:strnew()
+  prs'importsTPool = memutils:fpNew(<ptr func(item data)>(ptr ast:typeFree))
+
+  prs'imports.setFreeFuncs(ptr mem:free, \
+                            <ptr func(item data)>(ptr fordFree))
+
+  prs'fordPaths = envExtractFordPaths()
+  prs'builtins = ast:builtinSetNew()
+  return prs
+/func
+
+
+# Parser methods
+
+method Parser.getImport(name ptr uint8) ptr Ford
+  return <ptr Ford>(me'imports.get(name))
+/method
+
+
+method Parser.findFord(name ptr uint8) {ford ptr Ford,
+                                                err ptr err:Error}
+
+  mut ford = <ptr Ford>(me'imports.get(name))
+
+  if ford?
+    return {ford,null}
+  /if
+
+  mut fordName = txt:strappend(name, ".ford")
+
+  mut len = me'fordPaths.len()
+
+  mut i uintptr = 0
+
+  while i < len
+    mut path = <ptr uint8>(val me'fordPaths.get(i))
+    mut joinedPath = fs:pathJoin(path, fordName)
+
+    if fs:pathExists(joinedPath)
+
+      mut {ford,err} = me.loadFord(joinedPath)
+
+      mem:free(joinedPath)
+      mem:free(fordName)
+
+      if err?
+        mut cs = txt:newCs(20)
+        cs.add("can't load ")
+        cs.add(joinedPath)
+        cs.add(": ")
+        cs.add(err.msg())
+
+        mut msg = txt:unwrapCs(cs)
+
+        err:free(err)
+
+        mut newErr = err:new(msg)
+
+        mem:free(msg)
+
+        return {null,newErr}
+      /if
+
+      me'imports.put(txt:strclone(name), ford)
+
+      return {ford,null}
+    /if
+
+    mem:free(joinedPath)
+
+    i++
+  /while
+
+
+  mut toGlue [4] ptr uint8
+
+  toGlue[0] = "Can't find "
+  toGlue[1] = name
+  toGlue[2] = " in the given FORDPATHS"
+  toGlue[3] = null
+
+  mut glued = txt:strglue(ptr toGlue[0])
+
+  mut err = err:new(glued)
+
+  mem:free(fordName)
+  mem:free(glued)
+
+  return {null, err}
+/method
+
+
+method Parser.importMod(importName ptr StringDefFile) ptr ast:Issue
+  mut {ford,err} = me.findFord(importName'text)
+  if err?
+    mut issue = ast:issueNew(ast:ISSUE_ERR, importName'begin, \
+                              importName'fileName, err.msg())
+
+    err:free(err)
+
+    return issue
+  /if
+
+  return null
+/method
+
+
+method Parser.importAll(imports ptr set:Set) ptr ast:Issues
+  mut ret = ast:issuesNew()
+
+  mut iter = imports.iter()
+  mut el data
+
+  while (el = iter.next())?
+    mut importName = <ptr StringDefFile>(el)
+    mut issue = me.importMod(importName)
+
+    if issue?
+      ret.add(issue)
+    /if
+  /while
+
+  return ret
+/method
+
+
+method Parser.matchBuiltin(name ptr uint8) ptr ast:Type
+  return <ptr ast:Type>(me'builtins.get(name))
+/method
+
+
+method Parser.parseDirectory(dirName ptr uint8) {pmod ptr ast:PModule,
+                                                         issues ptr ast:Issues}
+
+  mut {pmod,issues} = parseModule(dirName)
+
+  if issues.errLen() > 0
+    return {null, issues}
+  /if
+
+  return {pmod, validateModuleAst(me, pmod)}
+
+/method
+
+
+method Parser.parseFile(fileName ptr uint8) {root ptr ast:PNode,
+                                                     issues ptr ast:Issues}
+
+  mut {proot,err} = parse(fileName)
+
+  if err?
+    mut issues = ast:issuesNew()
+    issues.add(err)
+
+    return {null, issues}
+  /if
+
+  return {proot, validateAst(me, proot)}
+/method
+
+
+method Parser.setCurrentFile(filename ptr uint8)
+  mem:free(me'currentFile)
+
+  me'currentFile = txt:strclone(filename)
+/method
+
+
+func envExtractFordPaths() ptr list:List
+  mut list = list:new()
+
+  mut paths = proc:getenv("FORDPATHS")
+  if paths?
+    mut tkz = txt:tokenizerNew(paths, 58) #`:`
+    mut path ptr uint8
+
+    while (path = tkz.next())?
+      list.append(path)
+    /while
+
+  /if
+
+  return list
+/func
