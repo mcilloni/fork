@@ -1,0 +1,130 @@
+'scopeName': 'source.fork'
+'fileTypes': [
+  'fork'
+]
+'name': 'Fork',
+'patterns': [
+  {
+    'include': '#comments'
+  }
+  {
+    'include': '#fork_function_call'
+  }
+  {
+    'match': '\\b(alias|break|continue|else|entry|func|if|import|method|module|return|while)\\b|(\\/entry|\\/func|\\/method|\\/if|\\/while)\\b'
+    "name": "keyword.control.c"
+  }
+  {
+    "match": "\\b(decl|mut)\\b"
+    "name": "keyword.go"
+  }
+  {
+    "match": "\\b(bool|data|int8|int16|int32|int64|intptr|uint8|uint16|uint32|uint64|uintptr|struct)\\b"
+    "name": "storage.type.c"
+  }
+  {
+    "match": "\\b(ptr|val)\\b"
+    "name": "storage.modifier.c"
+  }
+  {
+    "match": "\\b(and|cast|mod|not|or|sh<|sh>|size)\\b"
+    "name": "keyword.control.c"
+  }
+  {
+    "match": "\\b(null|true|false|me)\\b"
+    "name": "constant.language.c++"
+  }
+  {
+    "match": "\\b((0x[0-9a-fA-F]*)|(0o[0-7]*)|(0b[0|1]*)|(([0-9]+\\.?[0-9]*)|(\\.[0-9]+))((e|E)(\\+|-)?[0-9]+)?)(L|l|UL|ul|u|U|F|f|ll|LL|ull|ULL)?\\b"
+    "name": "constant.numeric.c"
+  }
+  {
+    "match": "^func\\s+([a-zA-Z0-9]*)\\s*\\("
+    "name": "meta.function.c"
+  }
+  {
+    "begin": "\""
+    "beginCaptures": {
+      "0": {
+        "name": "punctuation.definition.string.begin.c"
+      }
+    }
+    "end": "\""
+    "endCaptures": {
+      "0": {
+        "name": "punctuation.definition.string.end.c"
+      }
+    },
+    "name": "string.quoted.double.c"
+    "patterns": [
+      {
+        "include": "#string_escaped_char"
+      }
+    ]
+  }
+]
+"repository": {
+  "comments": {
+    "patterns": [
+      {
+        "captures": {
+          "1": {
+            "name": "meta.toc-list.banner.line.c"
+          }
+        }
+        "match": "^# =(\\s*.*?)\\s*=\\s*$\\n?"
+        "name": "comment.line.banner.c++"
+      }
+      {
+        'begin': '(^[ \\t]+)?(?=#)'
+        'beginCaptures':
+          '1':
+            'name': 'punctuation.whitespace.comment.leading.c++'
+        'end': '(?!\\G)'
+        'patterns': [
+          {
+            'begin': '#'
+            'beginCaptures':
+              '0':
+                'name': 'punctuation.definition.comment.c++'
+            'end': '\\n'
+            'name': 'comment.line.double-slash.c++'
+            'patterns': [
+              {
+                'match': '(?>\\\\\\s*\\n)'
+                'name': 'punctuation.separator.continuation.c++'
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+  "string_escaped_char": {
+    "patterns": [
+      {
+        "match": "\\\\(\\\\|[abefnprtv'\"?]|[0-3]\\d{,2}|[4-7]\\d?|x[a-fA-F0-9]{,2}|u[a-fA-F0-9]{,4}|U[a-fA-F0-9]{,8})",
+        "name": "constant.character.escape.c"
+      },
+      {
+        "match": "\\\\.",
+        "name": "invalid.illegal.unknown-escape.c"
+      }
+    ]
+  }
+  "fork_function_call": {
+    "captures": {
+      "1": {
+        "name": "punctuation.whitespace.function-call.leading.c"
+      },
+      "2": {
+        "name": "entity.name.function.c"
+      },
+      "3": {
+        "name": "punctuation.definition.parameters.c"
+      }
+    },
+    "match": "(?x) (?: (?= \\s )  (?:(?<=else|return) | (?<!\\w)) (\\s+))?\n\t\t\t(\\b \n\t\t\t\t(?!(and|mod|or|size|struct|func|while|if)\\s*\\()(?:(?!NS)[A-Za-z_][A-Za-z0-9_]*+\\b | :: )++                  # actual name\n\t\t\t)\n\t\t\t \\s*(\\()",
+    "name": "meta.function-call.c"
+  }
+}

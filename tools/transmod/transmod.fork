@@ -1,0 +1,109 @@
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import args
+import ast
+import ctrans
+import err
+import fs
+import io
+import mem
+import parser
+import proc
+import tty
+import txt
+
+
+func check(err ptr err:Error)
+  if err?
+    tty:err("error: ")
+    tty:failln(err.msg())
+  /if
+/func
+
+
+entry
+  mut args = args:new("translates a module")
+
+  args.newFlag(args:STRING, "fpath", "directory to output ford (default: $PWD)", \
+                         "PATH", false, false, "--ford", "-fo")
+  args.newFlag(args:STRING, "cpath", "directory to output C file (default: $PWD)", \
+                         "PATH", false, false, "--cfile", "-co")
+  args.newFlag(args:STRING, "outname", "name to use for output files (default: inferred)", \
+                         "NAME", false, false, "--outname", "-n")
+
+  args.unboundsOpts("MODULEDIR", true, true)
+
+  check(args.parse())
+
+  mut dir = cast<ptr uint8>(val args.getUnbounds().get(0))
+
+  mut prs = parser:new()
+
+  mut {pmod,issues} = prs.parseDirectory(dir)
+
+  mut issLen = issues.len()
+
+  if issLen > 0
+    mut i uintptr = 0
+
+    while i < issLen
+      mut issue = issues.get(i)
+
+      issue.writeOut(ptr tty:out)
+
+      i++
+    /while
+
+    ast:issuesFree(issues)
+    proc:exit(1)
+  /if
+
+  mut tr ctrans:Transl
+
+  ctrans:init(ptr tr, pmod'name, prs)
+
+  tr.translateModule(pmod)
+
+  mut {head,cfile} = tr.dump()
+
+  mut {ok,cpath} = args.getStr("cpath")
+  mut {ok,outname} = args.getStr("outname")
+
+  mut cname = txt:strappend(outname ?? pmod'name ?? "main", ".c")
+  mut pwd = proc:getenv("PWD")
+
+  mut cfilePath = fs:pathJoin(cpath ?? pwd, cname)
+
+  mut {cstr,err} = fs:fileCreate(cfilePath)
+
+  mem:free(cname)
+  mem:free(cfilePath)
+
+  check(err)
+
+  cstr.writeStr(cfile)
+
+  check(cstr.error())
+
+  io:streamClose(cstr)
+
+  if pmod'name?
+    mut fordBuf = parser:makeFord(pmod)
+
+    mut {ok,fpath} = args.getStr("fpath")
+
+    check(parser:writeFord(outname ?? pmod'name, fpath ?? pwd, fordBuf, head, txt:strlen(head)))
+  /if
+
+  ast:pmoduleFree(pmod)
+  mem:free(cfile)
+  mem:free(head)
+  parser:free(prs)
+/entry
