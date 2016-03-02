@@ -1,0 +1,143 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import ast
+import cs
+import kv
+import list
+import map
+import mem
+import pair
+import parser
+import proc
+import tty
+import utils
+
+
+entry
+  mut argv = proc:args()
+  if argv'len != 1
+    tty:errln("Wrong number of arguments, required: 1")
+    proc:exit(1)
+  /if
+
+  mut prs = parser:new()
+  mut {ast,issues} = prs.parseFile(argv'args[0])
+
+  mut issLen = issues.len()
+
+  if issLen > 0
+    mut i uintptr = 0
+
+    while i < issLen
+      mut issue = issues.get(i)
+
+      issue.writeOut(ptr tty:out)
+
+      i++
+    /while
+
+    ast:issuesFree(issues)
+    proc:exit(1)
+  /if
+
+  mut root = <ptr ast:PRoot>(ast)
+
+  tty:out("== IMPORTS: ")
+  tty:outint(prs'imports.len())
+  tty:outch(10)
+
+  mut iter = prs'imports.iter()
+
+  mut pair ptr pair:Pair
+
+  while (pair = iter.next())?
+    tty:out("Imported ")
+    tty:outln(<ptr uint8>(pair'key))
+
+    pair:free(pair)
+  /while
+
+  map:iterFree(iter)
+
+  mut aliases = <ptr ast:PRoot>(ast)'aliases'syms
+
+  tty:out("\n\n== ALIASES: ")
+  tty:outint(aliases.len())
+  tty:outch(10)
+
+  mut i uintptr = 0
+  mut len = aliases.len()
+
+  while i < len
+    pair = aliases.getAt(i)
+    tty:out("alias ")
+    tty:outln(<ptr uint8>(pair'key))
+
+    i++
+  /while
+
+  mut decls = <ptr ast:PRoot>(ast)'node'syms'syms
+
+  tty:out("\n\n== DECLS: ")
+  tty:outint(decls.len())
+  tty:outch(10)
+
+  i = 0
+  len = decls.len()
+
+  while i < len
+    pair = decls.getAt(i)
+    mut dinfo = <ptr ast:DeclInfo>(pair'value)
+    mut typeStr ptr uint8 = null
+
+    if dinfo'declOnly
+      tty:out("decl ")
+    /if
+
+    if dinfo'declType == ast:PFUNCTION
+      typeStr = "func   "
+    else
+      if dinfo'declType == ast:PENTRY
+        typeStr = "entry  "
+      else
+        if dinfo'declType == ast:PMETHOD
+          typeStr = "method "
+        else
+          typeStr = "mut    "
+        /if
+      /if
+    /if
+
+    tty:out(typeStr)
+    tty:out(<ptr uint8>(pair'key))
+
+    tty:out(" :: ")
+
+    mut cs = cs:new(10)
+    dinfo'type.summarize(cs)
+
+    mut des = cs:unwrap(cs)
+
+    tty:outln(des)
+
+    mem:free(des)
+
+    i++
+  /while
+
+  tty:out("\n\n==> Has entry? ")
+
+  tty:outln(root'entryNode? => "yes" || "no")
+
+  parser:free(prs)
+
+  ast:pnodeFree(ast)
+/entry
