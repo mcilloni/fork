@@ -6,7 +6,7 @@ ifndef TRNS
 	TRNS = transmod
 endif
 
-TRNSCMD = env FORDPATHS=$(FORDS) transmod -fo $(FORDS) -co $(CFILES)
+TRNSCMD = env FORDPATHS=$(FORDS) $(TRNS) -fo $(FORDS) -co $(CFILES)
 
 ifndef AR
 	AR=ar
