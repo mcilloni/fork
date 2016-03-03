@@ -243,7 +243,7 @@ method Transl.genDecls(root ptr ast:PRoot)
 
       mem:free(key)
 
-      mut wantsModName = me'modName? or not child'isDecl
+      mut wantsModName = me'modName? and not child'isDecl
 
       mut sym = me.translSym(wantsModName => moduleName || null, child, dinfo)
 
