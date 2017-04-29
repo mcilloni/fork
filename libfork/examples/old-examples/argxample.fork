@@ -1,0 +1,113 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+import args
+import tty
+
+
+entry
+  mut args = args:new("a test application")
+
+  args.newFlag(args:BOOL, "bool", "boolean flag", null, false, false, "--bool", "-b")
+  args.newFlag(args:STRING, "string", "string flag", "STRING", false, false, "--str", "-s")
+  args.newFlag(args:LIST, "list", "list flag", "LIST", false, false, "--list", "-L")
+  args.newFlag(args:STRING, "multi", "multiple flag", "STR", true, false, "--mul", "-m")
+  args.newFlag(args:STRING, "mand", "mandatory flag", "STR", false, true, "--mand", "-M")
+
+  args.unboundsOpts("UNBOUND", false, true)
+
+  mut err = args.parse()
+  if err?
+    tty:err("error: ")
+    tty:failln(err.msg())
+  /if
+
+  tty:out("bool is: ")
+  tty:outln(args.isSet("bool") => "true" || "false")
+
+  tty:out("string is: ")
+  mut {ok,string} = args.getStr("string")
+  tty:outln(ok => string || "<not set>")
+
+  tty:out("list is: ")
+  mut {ok,list} = args.getList("list")
+
+  if ok
+    tty:out("[")
+
+    mut i uintptr = 0
+    mut len = list.len()
+
+    while i < len
+      if i > 0
+        tty:out(",")
+      /if
+
+      tty:out(cast<ptr uint8>(val list.get(i)))
+
+      i++
+    /while
+
+    tty:outln("]")
+  else
+  tty:outln("<not set>")
+  /if
+
+  tty:out("multi is: ")
+  mut {ok,multi} = args.getList("multi")
+
+  if ok
+    tty:out("[")
+
+    mut i uintptr = 0
+    mut len = multi.len()
+
+    while i < len
+      if i > 0
+        tty:out(",")
+      /if
+
+      tty:out(cast<ptr uint8>(val multi.get(i)))
+
+      i++
+    /while
+
+    tty:outln("]")
+  else
+    tty:outln("<not set>")
+  /if
+
+  tty:out("mand is: ")
+  mut {ok,mand} = args.getStr("mand")
+  tty:outln(mand)
+
+  tty:out("help is: ")
+  tty:outln(args'help => "true" || "false")
+
+  tty:out("Unbounds: [")
+
+  mut unb = args.getUnbounds()
+  mut i uintptr = 0
+  mut len = unb.len()
+
+  while i < len
+    if i > 0
+      tty:out(",")
+    /if
+
+    tty:out(cast<ptr uint8>(val unb.get(i)))
+
+    i++
+  /while
+
+  tty:outln("]")
+
+  args:free(args)
+/entry

@@ -1,0 +1,253 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+# KVList'list contains (key, data) pairs; contents are there freed itereratively.
+# KVList'hash contains (key, (index,data)) pairs; the only freed thing there is
+# the (index, data) pair itself (data is left untouched because it has been
+# freed before)
+
+module kv
+
+
+import hash
+import list
+import mem
+import pair
+import sort
+import tty
+import txt
+
+
+alias KVList struct(
+    hash hash:Hash,
+    list list:List,
+    freeKey,freeVal ptr func(item data)
+)
+
+
+# KVList init/deinit functions
+
+func deinit(kv ptr KVList)
+  kv.freeContents()
+
+  hash:deinit(ptr kv'hash)
+  list:deinitAll(ptr kv'list, ptr pair:free)
+/func
+
+
+func free(kv ptr KVList)
+  if kv?
+    deinit(kv)
+    mem:free(kv)
+  /if
+/func
+
+
+func init(kv ptr KVList, cap uintptr, hf hash:hashfn) ptr KVList
+  mem:set(kv, 0, size(KVList))
+
+  hash:init(ptr kv'hash, cap, hf)
+
+  kv'hash.setFreeFuncs(null, ptr hashFreePairs)
+
+  list:init(ptr kv'list)
+
+  return kv
+/func
+
+
+func new(cap uintptr, hf hash:hashfn) ptr KVList
+  return init(<ptr KVList>(mem:alloc(size(KVList))), cap, hf)
+/func
+
+
+func strinit(kv ptr KVList, cap uintptr) ptr KVList
+  return init(kv, cap, ptr txt:strhash)
+/func
+
+
+func strnew(cap uintptr) ptr KVList
+  return new(cap, ptr txt:strhash)
+/func
+
+
+# KVList methods
+
+method KVList.clone() ptr KVList
+  mut ret = new(me'hash'buckets'cap, me'hash'hf)
+
+  mut len = me.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut elem = me.getAt(i)
+    ret.put(elem'key, elem'value)
+
+    i++
+  /while
+
+  return ret
+/method
+
+
+method KVList.contains(key data) bool
+  return me'hash.contains(key)
+/method
+
+
+method KVList.first() ptr pair:Pair
+  return me'list.len() > 0 => <ptr pair:Pair>(val me'list.get(0)) || null
+/method
+
+
+method KVList.fixIndices(pos uintptr)
+  mut len = me'list.len()
+
+  while pos < len
+    mut pair = me.getAt(pos)
+    mut indexValue = <ptr pair:Pair>(me'hash.get(pair'key))
+
+    indexValue'key = <data>(pos)
+
+    pos++
+  /while
+/method
+
+
+method KVList.freePairContents(pair ptr pair:Pair)
+  if me'freeKey?
+    me'freeKey(pair'key)
+  /if
+
+  if me'freeVal?
+    me'freeVal(pair'value)
+  /if
+/method
+
+
+method KVList.freeContents()
+  mut len = me.len()
+  mut i uintptr = 0
+
+  while i < len
+    me.freePairContents(me.getAt(i))
+
+    i++
+  /while
+/method
+
+
+method KVList.get(key data) data
+  mut indexValue = <ptr pair:Pair>(me'hash.get(key))
+
+  return indexValue? => indexValue'value || null
+/method
+
+
+method KVList.getAt(index uintptr) ptr pair:Pair
+  mut ret = me'list.get(index)
+  return ret? => <ptr pair:Pair>(val ret) || null
+/method
+
+
+method KVList.getPos(key data) intptr
+  mut indexValue = <ptr pair:Pair>(me'hash.get(key))
+
+  return indexValue? => <intptr>(indexValue'key) || -1
+/method
+
+
+method KVList.len() uintptr
+  return me'list.len()
+/method
+
+
+method KVList.print()
+
+  tty:out("[ ")
+
+  mut len = me.len()
+  mut i uintptr = 0
+
+  while i < len
+    if i > 0
+      tty:out(", ")
+    /if
+
+    mut pair = me.getAt(i)
+
+    tty:out(<ptr uint8>(pair'key))
+    tty:out(": ")
+    tty:out(<ptr uint8>(pair'value))
+
+    i++
+  /while
+
+  tty:out(" ]")
+
+/method
+
+
+method KVList.put(key data, value data)
+  mut indexValue = <ptr pair:Pair>(me'hash.get(key))
+
+  # if no key matches, then create a new element in list and hash
+  # The index of this element will be the current length of the list (obviously).
+  if not indexValue?
+    indexValue = pair:new(<data>(me'list.len()), value)
+
+    me'hash.put(key, indexValue)
+    me'list.append(pair:new(key, value))
+  else
+    mut index = <uintptr>(indexValue'key)
+    mut pair = <ptr pair:Pair>(val me'list.get(index))
+
+    me.freePairContents(pair)
+    # bug: check for double frees. Won't fix because it's better to improve the
+    # language with destructors and methods, then making hacks.
+    pair'key = key
+    pair'value = indexValue'value = value
+  /if
+/method
+
+
+method KVList.remove(key data) bool
+
+  # pair value will be discarded.
+  mut pos = me.getPos(key)
+
+  if pos >= 0
+    mut pair = <ptr pair:Pair>(val me'list.get(pos))
+
+    me.freePairContents(pair)
+
+    me'list.remove(pos, ptr pair:free)
+
+    me'hash.remove(key)
+
+    me.fixIndices(pos)
+
+    return true
+  /if
+
+  return false
+/method
+
+
+method KVList.setFreeFuncs(freeKey,freeVal ptr func(item data))
+  me'freeKey = freeKey
+  me'freeVal = freeVal
+/method
+
+
+func hashFreePairs(pairV data)
+  mut pair = <ptr pair:Pair>(pairV)
+
+  pair:free(pair)
+/func

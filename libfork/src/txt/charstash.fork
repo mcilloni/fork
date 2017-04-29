@@ -1,0 +1,138 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module txt
+
+
+import mem
+
+
+# charstash structure
+alias Charstash struct (
+  buf mem:Buffer
+)
+
+
+# charstash init/deinit functions
+
+func freeCs(cs ptr Charstash)
+  if cs?
+    mem:deinitBuffer(ptr cs'buf)
+    mem:free(cs)
+  /if
+/func
+
+
+func newCs(cap uintptr) ptr Charstash
+  mut cs = <ptr Charstash>(mem:zalloc(size(Charstash)))
+
+  mem:initBuffer(ptr cs'buf, cap)
+
+  return cs
+/func
+
+
+func unwrapCs(cs ptr Charstash) ptr uint8
+  cs.addChar(0)
+
+  mut ret = cs'buf'base
+  mem:free(cs)
+
+  return ret
+/func
+
+
+# charstash methods
+
+method Charstash.add(str ptr uint8) ptr Charstash
+  me'buf.add(str, strlen(str))
+
+  return me
+/method
+
+
+method Charstash.addChar(ch uint8) ptr Charstash
+  me'buf.addByte(ch)
+
+  return me
+/method
+
+
+method Charstash.addInt(num uintptr) ptr Charstash
+  mut buf [20] int8
+
+  numtostr(num, ptr buf[0], 20)
+
+  me.add(ptr buf[0])
+
+  return me
+/method
+
+
+method Charstash.addLine(str ptr uint8) ptr Charstash
+  me.add(str)
+  me.add("\n")
+
+  return me
+/method
+
+
+method Charstash.addWord(str ptr uint8) ptr Charstash
+  me.add(str)
+  me.addChar(32)
+
+  return me
+/method
+
+
+method Charstash.len() uintptr
+  return me'buf.len()
+/method
+
+
+method Charstash.prepend(str ptr uint8) ptr Charstash
+  me'buf.prepend(str, strlen(str))
+
+  return me
+/method
+
+
+method Charstash.prependChar(ch uint8) ptr Charstash
+  me'buf.prependByte(ch)
+
+  return me
+/method
+
+
+method Charstash.prependInt(num uintptr) ptr Charstash
+  mut buf [20] int8
+
+  numtostr(num, ptr buf[0], 20)
+
+  me.prepend(ptr buf[0])
+
+  return me
+/method
+
+
+method Charstash.prependLine(str ptr uint8) ptr Charstash
+  me.prepend(str)
+  me.prepend("\n")
+
+  return me
+/method
+
+
+method Charstash.prependWord(str ptr uint8) ptr Charstash
+  me.prepend(str)
+  me.prependChar(32)
+
+  return me
+/method

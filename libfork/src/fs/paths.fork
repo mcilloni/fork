@@ -1,0 +1,102 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module fs
+
+
+import err
+import list
+import mem
+import txt
+
+
+mut dirSep = "/"
+
+
+decl func path_absolute(relPath ptr uint8) ptr uint8
+
+
+decl func path_exists(path ptr uint8) uintptr
+
+decl func path_listAll(path ptr uint8,
+                       appendTo data,
+                       appender ptr func(to data, elem ptr uint8),
+                       error ptr uint8,
+                       errl uintptr) bool
+
+
+
+# path functions
+func pathAbsolute(relPath ptr uint8) ptr uint8
+  return path_absolute(relPath)
+/func
+
+
+func pathExists(path ptr uint8) bool
+  mut result = path_exists(path)
+
+  return result != 0
+/func
+
+
+func pathExistsDir(path ptr uint8) bool
+  mut result = path_exists(path)
+
+  return result == 2
+/func
+
+
+func pathJoin(path1,path2 ptr uint8) ptr uint8
+  mut arr [4] ptr uint8
+
+  arr[0] = path1
+  arr[1] = dirSep
+  arr[2] = path2
+  arr[3] = null
+
+  return txt:strglue(ptr arr[0])
+/func
+
+
+func pathContains(path,filename ptr uint8) bool
+  mut fullpath = pathJoin(path, filename)
+
+  mut ret = pathExists(fullpath)
+
+  mem:free(fullpath)
+
+  return ret
+/func
+
+
+func listAppend(to data, elem ptr uint8)
+  <ptr list:List>(to).append(elem)
+/func
+
+
+func pathListFiles(path ptr uint8) {paths ptr list:List, err ptr err:Error}
+  mut ret = list:new()
+  mut buf [512] uint8
+
+  if not path_listAll(path, ret, ptr listAppend, ptr buf[0], 512)
+    list:free(ret)
+
+    return {null, err:new(ptr buf[0])}
+  /if
+
+  return {ret, null}
+/func
+
+
+func pathBasename(path ptr uint8) ptr uint8
+  decl func basename(path ptr uint8) ptr uint8
+
+  return basename(path)
+/func

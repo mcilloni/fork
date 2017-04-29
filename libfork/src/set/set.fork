@@ -1,0 +1,121 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module set
+
+
+import hash
+import mem
+import tty
+import txt
+
+
+alias Set struct(
+  hash ptr hash:Hash
+)
+
+
+# set init/deinit functions
+
+func deinit(set ptr Set)
+  hash:free(set'hash)
+/func
+
+
+func free(set ptr Set)
+  if set?
+    deinit(set)
+    mem:free(set)
+  /if
+/func
+
+
+func init(set ptr Set, cap uintptr, hf hash:hashfn) ptr Set
+  set'hash = hash:new(cap, hf)
+
+  return set
+/func
+
+
+func new(cap uintptr, hf hash:hashfn) ptr Set
+  return init(<ptr Set>(mem:alloc(size(Set))), cap, hf)
+/func
+
+
+# set methods
+
+method Set.clone() ptr Set
+  mut newSet = <ptr Set>(mem:alloc(size(Set)))
+
+  newSet'hash = me'hash.clone()
+
+  return newSet
+/method
+
+
+method Set.contains(value data) bool
+  return me'hash.contains(value)
+/method
+
+
+method Set.len() uintptr
+  return me'hash.len()
+/method
+
+
+method Set.print()
+  # TODO: complete
+
+  tty:out("[ ")
+
+  mut siter = me.iter()
+
+  mut item data = null
+  mut first = true
+
+  while (item = siter.next())?
+    if first
+      first = false
+    else
+      tty:out(", ")
+    /if
+
+    tty:out(<ptr uint8>(item))
+  /while
+
+  iterFree(siter)
+
+  tty:out(" ]")
+/method
+
+
+method Set.put(value data)
+  me'hash.put(value, null)
+/method
+
+
+method Set.remove(key data) bool
+  return me'hash.remove(key)
+/method
+
+
+method Set.setFreeFunc(ff ptr func(item data))
+  me'hash.setFreeFuncs(ff, null)
+/method
+
+
+func strinit(set ptr Set, cap uintptr) ptr Set
+  return init(set, cap, ptr txt:strhash)
+/func
+
+
+func strnew(cap uintptr) ptr Set
+  return new(cap, ptr txt:strhash)
+/func

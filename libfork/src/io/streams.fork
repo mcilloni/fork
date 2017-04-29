@@ -1,0 +1,121 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module io
+
+
+import err
+import mem
+import txt
+
+
+# cookie structure
+
+alias closefunc func(handl data, err ptr ptr err:Error) bool
+alias readfunc func(handl data, buf ptr uint8, bufSize intptr, err ptr ptr err:Error, eof ptr bool) uintptr
+alias writefunc func(handl data, buf ptr uint8, bufSize intptr, err ptr ptr err:Error) uintptr
+
+
+alias Cookie struct (
+  priv8 data,
+  cfn ptr closefunc,
+  rfn ptr readfunc,
+  wfn ptr writefunc
+)
+
+
+# stream structure
+
+alias Stream struct (
+  cookie Cookie,
+  eof bool,
+  error ptr err:Error,
+  inout uint8
+)
+
+
+mut STREAM_IN uint8 = 1
+mut STREAM_OUT uint8 = 2
+mut STREAM_INOUT uint8 = 3
+
+
+# Stream functions
+
+func streamClose(stream ptr Stream) bool
+  mut ret = stream'cookie'cfn(stream'cookie'priv8, ptr stream'error)
+
+  mem:free(stream)
+  return ret
+/func
+
+
+func streamNew(priv8 data,
+               rfn ptr readfunc,
+               wfn ptr writefunc,
+               cfn ptr closefunc) ptr Stream
+
+  mut ret = <ptr Stream>(mem:zalloc(size(Stream)))
+  ret'cookie'priv8 = priv8
+
+  if wfn?
+    ret'inout = ret'inout | STREAM_OUT
+  /if
+
+  if rfn?
+    ret'inout = ret'inout | STREAM_IN
+  /if
+
+  ret'cookie'wfn = wfn
+  ret'cookie'rfn = rfn
+  ret'cookie'cfn = cfn
+  return ret
+/func
+
+
+# Stream methods
+
+method Stream.ended() bool
+  return me'eof
+/method
+
+
+method Stream.error() ptr err:Error
+  return me'error
+/method
+
+
+method Stream.read(buf data, len intptr) uintptr
+  if (me'inout & STREAM_IN) == 0
+    me'error = err:new("stream opened write-only")
+    return 0
+  /if
+
+  return me'cookie'rfn(me'cookie'priv8, <ptr uint8>(buf), len, ptr me'error, ptr me'eof)
+/method
+
+
+method Stream.readStr(str ptr uint8, len intptr) uintptr
+  me.read(str, len)
+/method
+
+
+method Stream.write(buf data, len intptr) uintptr
+  if (me'inout & STREAM_OUT) == 0
+    me'error = err:new("stream opened read-only")
+    return 0
+  /if
+
+  return me'cookie'wfn(me'cookie'priv8, <ptr uint8>(buf), len, ptr me'error)
+/method
+
+
+method Stream.writeStr(string ptr uint8) uintptr
+  me.write(string, <intptr>(txt:strlen(string)))
+/method

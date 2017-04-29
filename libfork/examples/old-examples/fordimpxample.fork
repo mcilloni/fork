@@ -1,0 +1,146 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module parser
+
+
+import ast
+import cs
+import map
+import mem
+import pair
+import parser
+import proc
+import tty
+
+
+entry
+  mut argv = proc:args()
+  if argv'len != 1
+    tty:errln("Wrong number of arguments, required: 1")
+    proc:exit(1)
+  /if
+
+  mut prs = parser:new()
+  mut {ford,err} = prs.loadFord(argv'args[0])
+
+  if err?
+    tty:err("error: ")
+    tty:failln(err.msg())
+  /if
+
+  tty:out("=== MODULE ")
+  tty:outln(ford'name)
+  tty:out("\n\n\n")
+
+  tty:out("== IMPORTS: ")
+  tty:outint(prs'imports.len())
+  tty:outch(10)
+
+  mut iter = prs'imports.iter()
+
+  mut pair ptr pair:Pair
+
+  while (pair = iter.next())?
+    tty:out("Imported ")
+    tty:outln(<ptr uint8>(pair'key))
+
+    pair:free(pair)
+  /while
+
+  map:iterFree(iter)
+
+  mut aliases = ford'aliases'syms
+
+  tty:out("\n\n== ALIASES: ")
+  tty:outint(aliases.len())
+  tty:outch(10)
+
+  mut i uintptr = 0
+  mut len = aliases.len()
+
+  while i < len
+    pair = aliases.getAt(i)
+    tty:out("alias ")
+    tty:out(<ptr uint8>(pair'key))
+
+    tty:out(" ")
+
+    mut cs = cs:new(20)
+
+    <ptr ast:DeclInfo>(pair'value)'type.dump(cs)
+
+    mut txt = cs:unwrap(cs)
+
+    tty:outln(txt)
+
+    mem:free(txt)
+    i++
+  /while
+
+  mut decls = ford'decls'syms
+
+  tty:out("\n\n== DECLS: ")
+  tty:outint(decls.len())
+  tty:outch(10)
+
+  i = 0
+  len = decls.len()
+
+  while i < len
+    pair = decls.getAt(i)
+    mut dinfo = <ptr ast:DeclInfo>(pair'value)
+    mut typeStr ptr uint8 = null
+
+    if dinfo'declOnly
+      tty:out("decl ")
+    /if
+
+    if dinfo'declType == ast:PFUNCTION
+      typeStr = "func   "
+    else
+      if dinfo'declType == ast:PMETHOD
+        typeStr = "method "
+      else
+        typeStr = "mut    "
+      /if
+    /if
+
+    tty:out(typeStr)
+    tty:out(<ptr uint8>(pair'key))
+
+    tty:out(" :: ")
+
+    mut cs = cs:new(10)
+    dinfo'type.summarize(cs)
+
+    mut des = cs:unwrap(cs)
+
+    tty:outln(des)
+
+    mem:free(des)
+
+    i++
+  /while
+
+  tty:out("\n\nEXTRA: ")
+  if ford'extra?
+    tty:outln("yes\n\n")
+    mut os = tty:ttyStream()
+
+    os.write(ford'extra, ford'extraLen)
+  else
+    tty:outln("no")
+  /if
+
+  parser:free(prs)
+
+  parser:fordFree(ford)
+/entry

@@ -1,0 +1,70 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module tty
+
+
+import proc
+import c
+
+
+func err(str ptr uint8)
+  decl func fputs(str ptr uint8, file c:CFILE)
+  fputs(str, c:stderr_file())
+/func
+
+
+func errch(ch uint8)
+  decl func putc(ch uint8, file c:CFILE)
+  putc(ch, c:stderr_file())
+/func
+
+
+func errln(str ptr uint8)
+  err(str)
+  errch(10)
+/func
+
+
+func fail(str ptr uint8)
+  err(str)
+  proc:exit(1)
+/func
+
+
+func failln(str ptr uint8)
+  errln(str)
+  proc:exit(1)
+/func
+
+
+func out(str ptr uint8)
+  decl func fputs(str ptr uint8, file c:CFILE)
+  fputs(str, c:stdout_file())
+/func
+
+
+func outch(ch uint8)
+  decl func putchar(ch uint8)
+  putchar(ch)
+/func
+
+
+func outln(str ptr uint8)
+  decl func puts(str ptr uint8)
+  puts(str)
+/func
+
+
+func outint(n uint64)
+  decl func outint(n uint64)
+
+  outint(n)
+/func

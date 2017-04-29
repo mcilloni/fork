@@ -1,0 +1,60 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module proc
+
+
+import c
+
+
+alias Args struct (
+  len uintptr,
+  progname ptr uint8,
+  args ptr ptr uint8
+)
+
+
+mut __forkprogArgs Args
+
+func args() ptr Args
+  return ptr __forkprogArgs
+/func
+
+
+func abort()
+  decl func abort()
+
+  abort()
+/func
+
+
+func exit(retval int16)
+  decl func exit(retval int16)
+
+  exit(retval)
+/func
+
+
+func getenv(variable ptr uint8) ptr uint8
+  decl func getenv(variable ptr uint8) ptr uint8
+
+  return getenv(variable)
+/func
+
+
+func panic(msg ptr uint8)
+  decl func fputs(str ptr uint8, file c:CFILE)
+  mut stderr = c:stderr_file()
+  fputs("panic: ", stderr)
+  fputs(msg, stderr)
+  fputs("\n", stderr)
+
+  abort()
+/func

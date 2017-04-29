@@ -1,0 +1,134 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module mem
+
+
+# buffer structure
+alias Buffer struct (
+  base, work ptr uint8,
+  len, cap uintptr
+)
+
+
+# buffer init/deinit functions
+
+
+func deinitBuffer(buf ptr Buffer)
+  free(buf'base)
+/func
+
+
+func freeBuffer(buf ptr Buffer)
+  if buf?
+    deinitBuffer(buf)
+    free(buf)
+  /if
+/func
+
+
+func initBuffer(buf ptr Buffer, cap uintptr) ptr Buffer
+  buf'work = buf'base = <ptr uint8>(alloc(cap))
+  buf'cap = cap
+
+  return buf
+/func
+
+
+func newBuffer(cap uintptr) ptr Buffer
+  mut buf = <ptr Buffer>(zalloc(size(Buffer)))
+
+  return initBuffer(buf, cap)
+/func
+
+
+func unwrapBuffer(buf ptr Buffer) {bytes ptr uint8, len uintptr}
+  mut ret = buf'base
+  mut len = buf.len()
+  free(buf)
+
+  return {ret,len}
+/func
+
+
+# buffer methods
+
+method Buffer.add(bytes data, len uintptr) ptr Buffer
+  mut req = me.len() + len
+
+  me.ensure(req, 0)
+
+  copy(me'work, bytes, len)
+
+  me'len = req
+  me'work = me'base + req
+
+  return me
+/method
+
+
+method Buffer.addByte(b uint8) ptr Buffer
+  me.ensure(me.len() + 1, 0)
+
+  val me'work = b
+  me'len++
+  me'work++
+
+  return me
+/method
+
+
+method Buffer.prepend(bytes data, len uintptr) ptr Buffer
+  mut req = me.len() + len
+
+  me.ensure(req, len)
+
+  me'len = me'len + len
+  me'work = me'base + me'len
+
+  copy(me'base, bytes, len)
+
+  return me
+/method
+
+
+method Buffer.prependByte(b uint8) ptr Buffer
+  me.prepend(ptr b, 1)
+
+  return me
+/method
+
+
+method Buffer.ensure(newcap,offset uintptr)
+  # If we already have the needed capacity, just shift stuff of the required
+  # offset
+  if me'cap >= newcap
+    if offset > 0
+      move(me'base + offset, me'base, me.len())
+    /if
+
+    return
+  /if
+
+  while me'cap < newcap
+    me'cap = (3 * me'cap) / 2 # 1.5x increase steps
+  /while
+
+  mut new = <ptr uint8>(alloc(me'cap))
+  copy(new + offset, me'base, me'len)
+  free(me'base)
+  me'base = new
+  me'work = me'base + me'len
+/method
+
+
+method Buffer.len() uintptr
+  return me'len
+/method

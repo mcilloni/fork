@@ -1,0 +1,83 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module dyn
+
+
+import err
+import mem
+import txt
+
+
+alias SObj struct(
+    handl data,
+    name ptr uint8
+)
+
+
+decl func load_lib(name ptr uint8, err ptr uint8, len uintptr) data
+decl func load_sym(handl data, name ptr uint8, err ptr uint8, len uintptr) data
+decl func free_lib(handl data, err ptr uint8, len uintptr) bool
+
+
+func close(sobj ptr SObj)
+  mut buf [1024] uint8 # ignore the error, though, I don't care about it right now
+
+  free_lib(sobj'handl, ptr buf[0], 1024)
+  mem:free(sobj)
+/func
+
+
+func open(name ptr uint8, err ptr ptr err:Error) ptr SObj
+  mut ret = <ptr SObj>(mem:alloc(size(SObj)))
+
+  if not sobjInit(ret, name, err)
+    mem:free(ret)
+
+    return null
+  /if
+
+  return ret
+/func
+
+
+func sobjInit(sobj ptr SObj, name ptr uint8, err ptr ptr err:Error) bool
+  mut buf [1024] uint8
+  sobj'handl = load_lib(name, ptr buf[0], 1024)
+
+  if not sobj'handl?
+    val err = err:new(ptr buf[0])
+
+    return false
+  /if
+
+  sobj'name = txt:strclone(name)
+
+  return true
+/func
+
+
+method SObj.sym(name ptr uint8, err ptr ptr err:Error) data
+  mut buf [1024] uint8
+
+  mut sym = load_sym(me'handl, name, ptr buf[0], 1024)
+  if not sym?
+    val err = err:new(ptr buf[0])
+
+    return null
+  /if
+
+  return sym
+/method
+
+
+#mut SO_SUFFIX = ".dylib"
+#mut SO_SUFFIX = ".dll"
+mut SO_SUFFIX = ".so"

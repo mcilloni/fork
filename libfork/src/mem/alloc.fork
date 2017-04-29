@@ -1,0 +1,45 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module mem
+
+
+import proc
+
+
+func alloc(len uintptr) data
+  decl func malloc(cap uintptr) data
+  mut ret = malloc(len)
+
+  if not ret? and len != 0
+    proc:panic("bad alloc")
+  /if
+
+  return ret
+/func
+
+
+func zalloc(len uintptr) data
+  decl func calloc(len uintptr, storageSize uintptr) data
+  mut ret = calloc(1, len)
+
+  if not ret? and len != 0
+    proc:panic("bad alloc")
+  /if
+
+  return ret
+/func
+
+
+func free(d data)
+  decl func free(d data)
+
+  free(d)
+/func

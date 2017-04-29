@@ -1,0 +1,83 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module map
+
+
+import mem
+import pair
+
+
+alias Iter struct (
+  map ptr Map,
+  lastKey data,
+  begin bool
+)
+
+
+method Map.iter() ptr Iter
+  mut iter = <ptr Iter>(mem:alloc(size(Iter)))
+  iter'map = me
+  iter'lastKey = null
+  iter'begin = true
+  return iter
+/method
+
+
+method Iter.intNext(node ptr Node) ptr pair:Pair
+
+  if not node?
+    return null
+  /if
+
+  mut cmp = node'cmp(me'lastKey, node'key)
+
+  #lastKey < node'key
+  if cmp < 0
+    mut pair = me.intNext(node'left)
+    if pair?
+      return pair
+    /if
+
+    return nodeMkpair(node)
+  /if
+
+  return me.intNext(node'right)
+/method
+
+
+method Iter.next() ptr pair:Pair
+  mut root = me'map'root
+
+  if not root?
+    return null
+  /if
+
+  if me'begin
+    me'begin = false
+    mut pair = nodeMinpair(root)
+    me'lastKey = pair'key
+    return pair
+  /if
+
+  mut pair = me.intNext(me'map'root)
+
+  if pair?
+    me'lastKey = pair'key
+  /if
+
+  return pair
+
+/method
+
+
+func iterFree(iter ptr Iter)
+  mem:free(iter)
+/func

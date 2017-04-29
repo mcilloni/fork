@@ -1,0 +1,138 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module misc
+
+
+import err
+import list
+import mem
+import txt
+
+
+func charIsIdVal(ch uint8) bool
+  if (ch >= 48) and (ch <= 57) #is a number
+    return true
+  /if
+
+  if (ch >= 65) and (ch <= 90) #is an uppercase letter
+    return true
+  /if
+
+  if (ch >= 97) and (ch <= 122) #is a lowcase letter
+    return true
+  /if
+
+  if ch == 95 #is a `_`
+    return true
+  /if
+
+  return false
+/func
+
+
+func charIsBackslash(ch uint8) bool
+  return ch == 92
+/func
+
+
+func charIsControl(ch uint8) bool
+  return ch < 20 or ch > 126
+/func
+
+
+func charIsPar(ch uint8) bool
+  #40 == `(`, 41 == `)`, 91 == `[`, 93 == `]`
+  return ch == 40 or ch == 41 or ch == 91 or ch == 93
+/func
+
+
+func charIsWhite(ch uint8) bool
+  #32 == ` `, 10 == `\n`, 13 == `\r`, 12 == `\f`, 11 == `\v`, 9 == `\t`
+  return ch == 32 or ch == 10 or ch == 13 or ch == 12 or ch == 11 or ch == 9
+/func
+
+# backslash is not a symbol. It should never be grouped with anything.
+func charIsSym(ch uint8) bool
+  return not charIsIdVal(ch) and not charIsPar(ch) and not charIsWhite(ch) and not charIsBackslash(ch)
+/func
+
+
+func charCanBeInString(ch uint8, escape bool) bool
+  if not escape and ch == 34 # `"`
+    return false #if the matching " is found, then stop
+  /if
+
+  return not charIsControl(ch)
+/func
+
+
+func strIsUInt(str ptr uint8) bool
+  while val str != 0
+    if (val str < 48) or (val str > 57) # current letter is not an ASCII number
+      return false
+    /if
+
+    str++
+  /while
+
+  return true
+/func
+
+
+func listContains(list ptr list:List, value ptr uint8) bool
+  mut i uintptr = 0
+  mut len = list.len()
+
+
+  mut clone = val list
+
+  # this fixes a weird bug in list:List that I haven't found yet.
+  list.seekZero()
+
+  while i < len
+    mut ptrElem = list.get(i)
+    mut elem = <ptr uint8>(val ptrElem)
+
+    if txt:strequals(elem, value)
+      return true
+    /if
+
+    i++
+  /while
+
+  return false
+/func
+
+
+func listDumpHierarchyIntoCS(list ptr list:List, cs ptr txt:Charstash)
+  mut len = list.len()
+
+  cs.add("(")
+
+  if len > 1
+
+    mut i = <intptr>(len)
+
+    while i > 0
+      i--
+
+      cs.add(<ptr uint8>(val list.get(i)))
+
+      cs.add(" => ")
+    /while
+
+    cs.add(<ptr uint8>(val list.get(len - 1)))
+  else
+    cs.add("alias of itself")
+  /if
+
+  cs.add(")")
+/func

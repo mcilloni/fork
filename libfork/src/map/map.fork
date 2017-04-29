@@ -1,0 +1,434 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module map
+
+
+import mem
+import pair
+import proc
+import sort
+import tty
+import txt
+
+
+mut BLACK = false
+mut RED = true
+
+
+# map structures
+alias Node struct (
+  left, right ptr Node,
+  key, value data,
+  color bool,
+  cmp sort:comparator
+)
+
+
+alias Map struct (
+  root ptr Node,
+  len uintptr,
+  cmp sort:comparator,
+  freeKey,freeVal ptr func(item data)
+)
+
+
+# node init/deinit functions
+
+
+func nodeFree(node ptr Node, freeKey,freeVal ptr func(item data))
+
+  if not node?
+    return
+  /if
+
+  nodeFree(node'left, freeKey, freeVal)
+  nodeFree(node'right, freeKey, freeVal)
+
+  if freeKey?
+    freeKey(node'key)
+  /if
+
+  if freeVal?
+    freeVal(node'value)
+  /if
+
+  mem:free(node)
+
+/func
+
+
+func nodeNew(key data, value data, cmp sort:comparator) ptr Node
+  mut ret = <ptr Node>(mem:zalloc(size(Node)))
+  ret'key = key
+  ret'value = value
+  ret'color = RED
+  ret'cmp = cmp
+  return ret
+/func
+
+
+# node functions
+
+func nodeDelete(node ptr Node, keyV data, found ptr bool) ptr Node
+  if not node?
+    val found = false
+    return null
+  /if
+
+  if node'cmp(keyV,node'key) < 0
+    if not node'left?
+      return null
+    /if
+
+    if nodeIsBlack(node'left) and nodeIsBlack(node'left'left)
+      node = nodeMoveRedLeft(node)
+    /if
+
+    node'left = nodeDelete(node'left, keyV, found)
+  else
+
+    if nodeIsRed(node'left)
+      node = nodeRotateRight(node)
+    /if
+
+    if node'cmp(keyV, node'key) == 0 and not node'right?
+      val found = true
+      return null
+    /if
+
+    if node'right? and node'right'left? and nodeIsBlack(node'right) and nodeIsBlack(node'right'left)
+      node = nodeMoveRedRight(node)
+    /if
+
+    if node'cmp(keyV, node'key) == 0
+      nodeGet(node'right, nodeMin(node'right), ptr node'value)
+      node'key = nodeMin(node'right)
+      node'right = nodeDeleteMin(node'right)
+      val found = true
+    else
+      node'right = nodeDelete(node'right, keyV, found)
+    /if
+
+  /if
+
+  return nodeFixUp(node)
+
+/func
+
+
+func nodeRotateLeft(node ptr Node) ptr Node
+  mut ret = node'right
+
+  if ret'color == BLACK
+    proc:panic("rotating left a black node")
+  /if
+
+  node'right = ret'left
+  ret'left = node
+#  ret'color = ret'left'color
+  ret'color = node'color
+  node'color = RED
+
+  return ret
+/func
+
+
+func nodeRotateRight(node ptr Node) ptr Node
+  mut ret = node'left
+
+  if ret'color == BLACK
+    proc:panic("rotating right a black node")
+  /if
+
+  node'left = ret'right
+  ret'right = node
+#  ret'color = ret'right'color
+  ret'color = node'color
+#  ret'right'color = RED
+  node'color = RED
+  return ret
+/func
+
+
+func nodeColorFlip(node ptr Node)
+  node'color = not node'color
+  node'left'color = not node'left'color
+  node'right'color = not node'right'color
+/func
+
+
+func nodeIsRed(node ptr Node) bool
+  return node? and (node'color == RED)
+/func
+
+
+func nodeIsBlack(node ptr Node) bool
+  return (not node?) or (node'color == BLACK)
+/func
+
+
+func nodeFixUp(node ptr Node) ptr Node
+  if nodeIsRed(node'right)
+	  node = nodeRotateLeft(node)
+  /if
+
+  if nodeIsRed(node'left) and nodeIsRed(node'left'left)
+	  node = nodeRotateRight(node)
+  /if
+
+  if nodeIsRed(node'left) and nodeIsRed(node'right)
+	  nodeColorFlip(node)
+  /if
+
+  return node
+/func
+
+
+func nodeAdd(node ptr Node, keyV data, value data, cmp sort:comparator, oldvalue ptr data) ptr Node
+
+  if not node?
+    val oldvalue = null
+    return nodeNew(keyV, value, cmp)
+  /if
+
+  mut res = node'cmp(keyV,node'key)
+  if res == 1
+    node'right = nodeAdd(node'right, keyV, value, node'cmp, oldvalue)
+  else
+    if res == -1
+      node'left = nodeAdd(node'left, keyV, value, node'cmp, oldvalue)
+	  else
+      val oldvalue = node'value
+	    node'value = value
+	  /if
+  /if
+
+  return nodeFixUp(node)
+
+/func
+
+
+func nodeMoveRedLeft(node ptr Node) ptr Node
+
+  nodeColorFlip(node)
+
+  if (nodeIsRed(node'right'left))
+    node'right = nodeRotateRight(node'right)
+	  node = nodeRotateLeft(node)
+	  nodeColorFlip(node)
+  /if
+
+  return node
+
+/func
+
+
+func nodeMoveRedRight(node ptr Node) ptr Node
+
+  nodeColorFlip(node)
+
+  if nodeIsRed(node'left'left)
+    node = nodeRotateRight(node)
+	  nodeColorFlip(node)
+  /if
+
+  return node
+
+/func
+
+
+func nodeGetnode(node ptr Node, keyV data) ptr Node
+  if not node?
+    return null
+  /if
+
+  mut res = node'cmp(keyV, node'key)
+  if res == 0
+    return node
+  else
+    if res == -1
+      return nodeGetnode(node'left, keyV)
+    else
+      return nodeGetnode(node'right, keyV)
+    /if
+  /if
+/func
+
+
+func nodeGet(node ptr Node, keyV data, valueV ptr data) bool
+  mut found = nodeGetnode(node, keyV)
+
+  if not found?
+    return false
+  /if
+
+  val valueV = found'value
+  return true
+/func
+
+
+func nodeDeleteMin(node ptr Node) ptr Node
+  if not node'left?
+    return null
+  /if
+
+  if nodeIsBlack(node'left) and nodeIsBlack(node'left'left)
+    node = nodeMoveRedLeft(node)
+  /if
+
+  node'left = nodeDeleteMin(node'left)
+  return nodeFixUp(node)
+/func
+
+
+func nodeMkpair(node ptr Node) ptr pair:Pair
+  if not node?
+    return null
+  /if
+
+  mut ret = <ptr pair:Pair>(mem:alloc(size(pair:Pair)))
+  ret'key = node'key
+  ret'value = node'value
+  return ret
+/func
+
+
+func nodeMinpair(node ptr Node) ptr pair:Pair
+  if not node'left?
+    return nodeMkpair(node)
+  else
+    return nodeMinpair(node'left)
+  /if
+/func
+
+
+func nodeMin(node ptr Node) data
+  if not node'left?
+    return node'key
+  else
+    return nodeMin(node'left)
+  /if
+/func
+
+
+# map init/deinit functions
+
+func deinit(map ptr Map)
+  if not map?
+    return
+  /if
+
+  nodeFree(map'root, map'freeKey, map'freeVal)
+/func
+
+
+func free(map ptr Map)
+  deinit(map)
+  mem:free(map)
+/func
+
+
+func init(map ptr Map, cmp sort:comparator) ptr Map
+  map'cmp = cmp
+  return map
+/func
+
+
+func new(cmp sort:comparator) ptr Map
+  mut map = <ptr Map>(mem:zalloc(size(Map)))
+
+  return init(map, cmp)
+/func
+
+
+func strinit(map ptr Map) ptr Map
+  return init(map, ptr txt:strcompare)
+/func
+
+
+func strnew() ptr Map
+  return new(ptr txt:strcompare)
+/func
+
+
+# map methods
+
+method Map.contains(key data) bool
+  mut value data #ignored - will be discarded
+  return me.getInternal(key, ptr value)
+/method
+
+
+method Map.first() ptr pair:Pair
+  return me'root? => nodeMinpair(me'root) || null
+/method
+
+
+method Map.get(key data) data
+  mut value data = null
+
+  me.getInternal(key, ptr value)
+
+  return value
+/method
+
+
+method Map.getInternal(key data, value ptr data) bool
+  if not me'root?
+    return false
+  /if
+
+  return nodeGet(me'root, key, value)
+/method
+
+
+method Map.len() uintptr
+  return me'len
+/method
+
+
+method Map.put(key data, value data) data
+  mut oldvalue data = null
+  me'root = nodeAdd(me'root, key, value, me'cmp, ptr oldvalue)
+  me'root'color = BLACK
+
+  if not oldvalue?
+    me'len++
+  /if
+
+  return oldvalue
+/method
+
+
+method Map.remove(key data) bool
+	mut ret = false
+	mut newVal = nodeDelete(me'root, key, ptr ret)
+
+  if ret
+    me'root = newVal
+
+    if me'root?
+  	  me'root'color = BLACK
+    /if
+
+  	if ret
+  	  me'len--
+    /if
+  /if
+
+	return ret
+/method
+
+
+method Map.setFreeFuncs(freeKey,freeVal ptr func(item data))
+  me'freeKey = freeKey
+  me'freeVal = freeVal
+/method

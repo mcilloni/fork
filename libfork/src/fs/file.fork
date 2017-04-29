@@ -1,0 +1,151 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module fs
+
+
+import err
+import io
+import mem
+
+
+alias File struct(
+  name,path ptr uint8,
+  isDir bool,
+  length uint64
+)
+
+
+func filereadInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err:Error, eof ptr bool) uintptr
+  mut fd = <int64>(camoFd)
+  decl func stream_readfileInternal(fd int64, buf data, len intptr, error ptr uint8, errLen uintptr) intptr
+  mut buf [512] uint8
+  mut rd = stream_readfileInternal(fd, bytes, len, ptr buf[0], 512)
+
+  if rd < 0
+    val err = err:new(ptr buf[0])
+    return 0
+  /if
+
+  if rd == 0
+    val eof = true
+  /if
+
+  return rd
+/func
+
+
+func filewriteInternal(camoFd data, bytes ptr uint8, len intptr, err ptr ptr err:Error) uintptr
+  mut fd = <int64>(camoFd)
+  decl func stream_writefileInternal(fd int64, buf data, len intptr, error ptr uint8, errLen uintptr) intptr
+  mut buf [512] uint8
+  mut wt intptr
+  mut wttot intptr = 0
+
+  while wttot < len
+    wt = stream_writefileInternal(fd, bytes + wttot, len - wttot, ptr buf[0], 512)
+
+    if wt < 0
+      val err = err:new(ptr buf[0])
+      return 0
+    /if
+
+    wttot = wttot + wt
+  /while
+
+  return wttot
+/func
+
+
+func filecloseInternal(camoFd data, err ptr ptr err:Error) bool
+  decl func stream_closefileInternal(fd int64, error ptr uint8, errLen uintptr) uint8
+  mut buf [512] uint8
+
+  if stream_closefileInternal(<int64>(camoFd), ptr buf[0], 512) != 0
+    return true
+  /if
+
+  return false
+/func
+
+
+func fileFree(fi ptr File)
+  if fi?
+    mem:free(fi'path)
+    mem:free(fi)
+  /if
+/func
+
+
+func stat(filename ptr uint8) {file ptr File, err ptr err:Error}
+  decl func file_populate(filename,error ptr uint8, errl uintptr) ptr File
+
+  mut buf [512] uint8
+
+  mut ret = file_populate(filename, ptr buf[0], 512)
+  if not ret?
+    return {null, err:new(ptr buf[0])}
+  /if
+
+  return {ret, null}
+/func
+
+
+method File.isDir() bool
+  return me'isDir
+/method
+
+
+method File.len() uint64
+  return me'length
+/method
+
+
+method File.open() {stream ptr io:Stream, err ptr err:Error}
+  return fileOpen(me'path)
+/method
+
+
+method File.openDir() {dir ptr Dir, err ptr err:Error}
+  return dir(me'path)
+/method
+
+
+method File.path() ptr uint8
+  return me'path
+/method
+
+
+func fileOpen(filename ptr uint8) {stream ptr io:Stream, err ptr err:Error}
+  decl func open_readfile(name ptr uint8, error ptr uint8, errlen uintptr) int64
+  mut buf [512] uint8
+
+  mut fd = open_readfile(filename, ptr buf[0], 512)
+  if fd < 0
+    return {null, err:new(ptr buf[0])}
+  /if
+
+  return {io:streamNew(<data>(fd), ptr filereadInternal, \
+                        null, ptr filecloseInternal), null}
+/func
+
+
+func fileCreate(filename ptr uint8) {stream ptr io:Stream, err ptr err:Error}
+  decl func open_writefile(name ptr uint8, error ptr uint8, errlen uintptr) int64
+  mut buf [512] uint8
+
+  mut fd = open_writefile(filename, ptr buf[0], 512)
+  if fd < 0
+    return {null, err:new(ptr buf[0])}
+  /if
+
+  return {io:streamNew(<data>(fd), null, ptr filewriteInternal, \
+                        ptr filecloseInternal), null}
+/func

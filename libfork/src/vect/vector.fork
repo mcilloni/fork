@@ -1,0 +1,242 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module vect
+
+
+import mem
+import tty
+
+
+# vector structure
+alias Vect struct (
+  arr ptr uintptr,
+  cap,len uintptr,
+  isSlice bool
+)
+
+
+# vector init/deinit functions
+
+
+func deinit(vect ptr Vect)
+  if not vect'isSlice
+    mem:free(vect'arr)
+  /if
+/func
+
+
+func free(vect ptr Vect)
+
+  if vect?
+    deinit(vect)
+
+    mem:free(vect)
+  /if
+
+/func
+
+
+func freeAll(vect ptr Vect,  freefunc ptr func(item data))
+  if vect?
+    vect.freeContents(freefunc)
+    free(vect)
+  /if
+/func
+
+
+func init(arr ptr Vect, cap uintptr) ptr Vect
+  mem:set(arr, 0, size(Vect))
+
+  if cap != 0
+    arr'arr = <ptr uintptr>(mem:zalloc(cap * size(uintptr)))
+  /if
+
+  arr'cap = cap
+  return arr
+/func
+
+
+func new(cap uintptr) ptr Vect
+  return init(<ptr Vect>(mem:alloc(size(Vect))), cap)
+/func
+
+
+# vector methods
+
+method Vect.appendInt(value uintptr) bool
+  return me.putInt(me.len(), value)
+/method
+
+
+method Vect.append(item data) bool
+  return me.appendInt(<uintptr>(item))
+/method
+
+
+method Vect.cap() uintptr
+  return me'cap
+/method
+
+
+method Vect.ensureCap(newMinCap uintptr)
+  if newMinCap > me'cap
+    # prevent overflows
+    mut oldCap = me'cap
+
+    # exponential growth
+    mut newCap = oldCap + (oldCap / 2)
+    if newCap < newMinCap
+      newCap = newMinCap
+    /if
+
+    me.newCap(newCap)
+  /if
+/method
+
+
+method Vect.freeContents(freefunc ptr func(item data))
+  if me'isSlice
+    return
+  /if
+
+  if not freefunc?
+    freefunc = ptr mem:free
+  /if
+
+  mut i uintptr = 0
+  while i < me.len()
+    freefunc(<data>(me'arr[i]))
+    i++
+  /while
+
+  me.prune()
+/method
+
+
+method Vect.getInt(index uintptr) ptr uintptr
+  if me.len() <= index
+    return null
+  /if
+
+  return me'arr + index
+/method
+
+
+method Vect.get(index uintptr) ptr data
+  return <ptr data>(me.getInt(index))
+/method
+
+
+method Vect.len() uintptr
+  return me'len
+/method
+
+
+method Vect.newCap(newcap uintptr)
+  mut lowercap uintptr
+
+  if me.cap() > newcap
+    lowercap = newcap
+  else
+    lowercap = me.cap()
+  /if
+
+  mut newarr = <ptr uintptr>(mem:zalloc(newcap * size(uintptr)))
+
+  mem:move(newarr, me'arr, lowercap * size(uintptr))
+
+  mem:free(me'arr)
+
+  me'arr = newarr
+  if me.len() > newcap
+    me'len = newcap
+  /if
+
+  me'cap = newcap
+  me'isSlice = false
+/method
+
+
+method Vect.print()
+  mut inside = false
+
+  tty:out("[ ")
+  mut len = me.len()
+  mut i uint8 = 0
+
+  while i < len
+    if inside
+      tty:out(", ")
+    else
+      inside = true
+    /if
+
+    tty:outint(val me.getInt(i))
+    i++
+  /while
+
+  tty:outln(" ]")
+/method
+
+
+method Vect.prune()
+  mem:set(me'arr, 0, me.cap())
+  me'len = 0
+/method
+
+
+method Vect.putInt(index uintptr, value uintptr) bool
+  mut newalloc = false
+  if me.cap() <= index
+    newalloc = true
+
+    me.ensureCap(index + 1)
+  /if
+
+  me'arr[index] = value
+
+  index++
+
+  if me.len() <= index
+    me'len = index
+  /if
+
+  return newalloc
+/method
+
+
+method Vect.put(index uintptr, value data) bool
+  return me.putInt(index, <uintptr>(value))
+/method
+
+
+method Vect.slice(start uintptr, len intptr) ptr Vect
+  mut ret = new(0)
+
+  ret'isSlice = true
+
+  mut meLen = me.len()
+
+  if len < 0
+    len = <intptr>(meLen - start)
+  /if
+
+  if len > (meLen - start)
+    len = <intptr>(meLen - start)
+  /if
+
+  ret'cap = len
+  ret'len = len
+
+  ret'arr = me'arr + start
+
+  return ret
+/method

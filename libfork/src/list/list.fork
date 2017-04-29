@@ -1,0 +1,489 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module list
+
+
+import mem
+import tty
+
+
+# list structures
+alias Lnode struct(
+  prec, next ptr Lnode,
+  value uintptr
+)
+
+
+alias List struct(
+  start, end ptr Lnode,
+  len uintptr,
+
+  current ptr Lnode,
+  pos uintptr
+)
+
+
+
+# lnode init/deinit functions
+
+
+func lnodeFree(lnode ptr Lnode)
+  while lnode?
+    mut next = lnode'next
+    mem:free(lnode)
+    lnode = next
+  /while
+/func
+
+
+func lnodeFreeAll(lnode ptr Lnode, freefunc ptr func(item data))
+  while lnode?
+    mut next = lnode'next
+    freefunc(<data>(lnode'value))
+    mem:free(lnode)
+    lnode = next
+  /while
+/func
+
+
+func lnodeFreeContents(lnode ptr Lnode, freefunc ptr func(item data))
+  while lnode?
+    mut next = lnode'next
+    freefunc(<data>(lnode'value))
+    lnode = next
+  /while
+/func
+
+
+# list init/deinit functions
+
+
+func deinit(list ptr List)
+  lnodeFree(list'start)
+/func
+
+
+func deinitAll(list ptr List, freefunc ptr func(item data))
+  lnodeFreeAll(list'start, freefunc)
+/func
+
+
+func free(list ptr List)
+  if list?
+    deinit(list)
+
+    mem:free(list)
+  /if
+/func
+
+
+func freeAll(list ptr List, freefunc ptr func(item data))
+  deinitAll(list, freefunc)
+  mem:free(list)
+/func
+
+
+func init(list ptr List) ptr List
+  mem:set(list, 0, size(List))
+  return list
+/func
+
+
+func new() ptr List
+  return init(<ptr List>(mem:alloc(size(List))))
+/func
+
+
+# list methods
+
+
+method List.addInt(pos uintptr, value uintptr) intptr
+  if pos > me'len
+    return -1
+  /if
+
+  if pos == me'len
+    return me.appendInt(value)
+  /if
+
+  me.seek(pos)
+
+  mut new = <ptr Lnode>(mem:zalloc(size(Lnode)))
+  mut prec = me'current'prec
+
+  if prec?
+    prec'next = new
+  /if
+
+  new'prec = prec
+  new'value = value
+  new'next = me'current
+  me'current'prec = new
+
+  me'current = <ptr Lnode>(me'pos = 0)
+
+  me'len++
+
+  return <intptr>(pos)
+/method
+
+
+method List.add(index uintptr, item data) intptr
+  return me.addInt(index, <uintptr>(item))
+/method
+
+
+method List.appendInt(value uintptr) intptr
+  if not me'start?
+    me.pushInt(value)
+    return 1
+  /if
+
+  mut new = <ptr Lnode>(mem:zalloc(size(Lnode)))
+
+  new'value = value
+  new'prec = me'end
+  me'end'next = new
+
+  me'end = new
+
+  return <intptr>(me'len++)
+/method
+
+
+method List.append(item data) intptr
+  return me.appendInt(<uintptr>(item))
+/method
+
+
+method List.appendList(list ptr List) intptr
+  if not list?
+    return -1
+  /if
+
+  mut i uintptr = 0
+  mut len = list.len()
+
+  while i < len
+    mut it = list.getInt(i)
+
+    if it?
+      me.appendInt(val it)
+    /if
+
+    i++
+  /while
+
+  return me.len()
+/method
+
+
+method List.extract(start uintptr, len intptr) ptr List
+  mut extract = new()
+
+  if start < me'len
+    if len > me'len
+      len = <intptr>(me'len - start)
+    /if
+
+    if len < 0
+      len = <intptr>(me'len - start)
+    /if
+
+    me.seek(start)
+
+    mut prec = me'current'prec
+    mut link1 ptr ptr Lnode
+    if prec?
+      link1 = ptr prec'next
+    else
+      link1 = ptr me'start
+    /if
+
+    extract'current = extract'start = extract'end = me'current
+
+    me.seek(start + len - 1)
+
+    mut next = me'current'next
+    mut link2 ptr ptr Lnode
+    if next?
+      link2 = ptr next'prec
+    else
+      link2 = ptr me'end
+    /if
+
+    extract'end = me'current
+
+    extract'len = len
+
+    val link1 = next
+    val link2 = prec
+
+    extract'start'prec = extract'end'next = null
+
+    me'len = me'len - len
+
+    me'current = me'start
+    me'pos = 0
+  /if
+
+  return extract
+/method
+
+
+method List.freeContents(freeFunc ptr func(item data))
+  lnodeFreeContents(me'start, freeFunc)
+/method
+
+
+method List.getInt(pos uintptr) ptr uintptr
+  if pos >= me'len
+    return null
+  /if
+
+  me.seek(pos)
+
+  if me'current?
+    return ptr me'current'value
+  /if
+
+  return null
+/method
+
+
+method List.get(pos uintptr) ptr data
+  return <ptr data>(me.getInt(pos))
+/method
+
+
+method List.insertInt(pos uintptr, value uintptr) intptr
+  mut len = me.len()
+
+  if pos > len
+    return -1
+  /if
+
+  if pos == len
+    return me.appendInt(value)
+  /if
+
+  me.seek(pos)
+
+  me'current'value = value
+
+  return <intptr>(me'pos)
+/method
+
+
+method List.insert(index uintptr, item data) intptr
+  return me.insertInt(index, <uintptr>(item))
+/method
+
+
+method List.len() uintptr
+  return me'len
+/method
+
+
+method List.popInt() uintptr
+  if not me'start?
+    return 0
+  /if
+
+  mut next = me'start'next
+  mut ret = me'start'value
+
+  mem:free(me'start)
+
+  if next?
+    next'prec = null
+  /if
+
+  if me'start == me'end
+    mem:set(me, 0, size(List))
+  else
+    me'start = next
+    me'len--
+  /if
+
+  return ret
+/method
+
+
+method List.pop() data
+  return <data>(me.popInt())
+/method
+
+
+method List.print()
+  mut inside = false
+  tty:out("[ ")
+  mut len = me.len()
+  mut i uint8 = 0
+
+  while i < len
+    if inside
+      tty:out(", ")
+    else
+      inside = true
+    /if
+
+    tty:outint(val me.getInt(i))
+    i++
+  /while
+  tty:outln(" ]")
+/method
+
+
+method List.prune()
+  lnodeFree(me'start)
+  mem:set(me, 0, size(List))
+/method
+
+
+method List.pushInt(value uintptr)
+  mut new = <ptr Lnode>(mem:zalloc(size(Lnode)))
+
+  new'next = me'start
+  if me'start?
+    me'start'prec = new
+  /if
+
+  if not me'end?
+    me'end = new
+    me'current = new
+  else
+    me'pos++
+  /if
+
+  new'value = value
+  me'start = new
+
+  me'len++
+/method
+
+
+method List.push(item data)
+  me.pushInt(<uintptr>(item))
+/method
+
+
+method List.remove(item uintptr, freefunc ptr func(item data)) bool
+  mut len = me.len()
+
+  if item >= len
+    return false
+  /if
+
+  me.seek(item)
+
+  mut prec = me'current'prec
+  mut next = me'current'next
+
+  mut precNodeNext = ptr me'start
+
+  if prec?
+    precNodeNext = ptr prec'next
+  /if
+
+  mut nextNodePrec = ptr me'end
+
+  if next?
+    nextNodePrec = ptr next'prec
+  /if
+
+  val precNodeNext = next
+  val nextNodePrec = prec
+
+  if freefunc?
+    freefunc(<data>(me'current'value))
+  /if
+
+  mem:free(me'current)
+
+  me'len--
+
+  if item == 0
+    me'current = next
+    # position is 0 already
+  else
+    me'current = prec
+    me'pos--
+  /if
+
+  return true
+/method
+
+
+method List.seek(pos uintptr)
+  if not me'current? and (pos == 0)
+     me.seekZero()
+  /if
+
+  if pos > me'pos
+    me.seekAhead(pos)
+  else
+    if pos < me'pos
+      me.seekBehind(pos)
+    /if
+  /if
+/method
+
+
+method List.seekAhead(pos uintptr)
+
+  if not me'current? or (pos == 0)
+    me'current = me'start
+    me'pos = 0
+  /if
+
+  while me'pos < pos
+    me'current = me'current'next
+    me'pos++
+  /while
+
+/method
+
+
+method List.seekBehind(pos uintptr)
+  mut len = me.len()
+
+  if not me'current? or ((len - 1) == pos)
+    me'current = me'end
+    me'pos = len - 1
+  /if
+
+  while me'pos > pos
+    me'current = me'current'prec
+    me'pos--
+  /while
+
+/method
+
+
+method List.seekZero()
+  me'current = me'start
+  me'pos = 0
+/method
+
+
+method List.shallowCopy() ptr List
+  mut newList = new()
+  mut len = me.len()
+  mut i uintptr = 0
+
+  while i < len
+    newList.appendInt(val me.getInt(i))
+    i++
+  /while
+
+  return newList
+/method

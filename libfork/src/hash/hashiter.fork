@@ -1,0 +1,80 @@
+#  libfork, a base library for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2014, 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module hash
+
+
+import list
+import mem
+import pair
+import vect
+
+
+alias Iter struct (
+  hash ptr Hash,
+  curBucket ptr list:List,
+  buckIndex,pos uintptr,
+  end bool
+)
+
+
+method Hash.iter() ptr Iter
+  mut iter = <ptr Iter>(mem:zalloc(size(Iter)))
+
+  iter'hash = me
+
+  if me'buckets.len() > 0
+    iter'curBucket = <ptr list:List>(val me'buckets.get(0))
+  else
+    iter'end = true
+  /if
+
+  return iter
+/method
+
+
+method Iter.loadNextBucket()
+  me'curBucket = null
+
+  while (not me'curBucket?) or me'curBucket.len() == 0
+    me'buckIndex++
+
+    # if we've reached the last bucket, return null and stop
+    if me'buckIndex >= me'hash'buckets.len()
+      me'end = true
+      break
+    /if
+
+    me'curBucket = <ptr list:List>(val me'hash'buckets.get(me'buckIndex))
+    me'pos = 0
+  /while
+/method
+
+
+method Iter.next() ptr pair:Pair
+  # load next bucket
+  if not me'curBucket? or me'curBucket.len() == 0 or me'pos == me'curBucket.len()
+    me.loadNextBucket()
+  /if
+
+  if me'end
+    return null
+  /if
+
+  mut ent = <ptr Entry>(val me'curBucket.get(me'pos))
+  me'pos++
+
+  return pair:new(ent'key, ent'value)
+/method
+
+
+func iterFree(iter ptr Iter)
+  mem:free(iter)
+/func
