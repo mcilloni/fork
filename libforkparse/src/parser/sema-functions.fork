@@ -1,0 +1,548 @@
+#  libforkparse, a full parser for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module parser
+
+
+import ast
+import kv
+import list
+import mem
+import proc
+import tty
+import txt
+
+
+method ast:Symtable.addFuncParams(syms ptr kv:KVList)
+  mut len = syms.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut pair = syms.getAt(i)
+
+    mut name = <ptr uint8>(pair'key)
+    mut type = <ptr ast:Type>(pair'value)
+
+    me.add(name, true, true, type, 0) #0 ignored
+
+    i++
+  /while
+/method
+
+
+method Resolver.isCurrentModule(modName ptr uint8) bool
+  mut curMod = me'curRoot'moduleName? => me'curRoot'moduleName'name || null
+
+  if modName == curMod
+    return true
+  /if
+
+  return (modName == curMod) \
+         or (curMod? and modName? and txt:strequals(curMod, modName))
+/method
+
+
+method Resolver.ensureMethodCorrectness(pdecl ptr ast:PDecl,
+                                               funcType ptr ast:Type) bool
+
+  mut type ptr ast:Type = null
+
+  # the method's type is either defined in the given module, or not defined at all.
+  # If it's not present, then it may be possibile that it belongs to the current scope
+  # if this file is in the same module of this type.
+  if pdecl'methodTypeModule? and not me.isCurrentModule(pdecl'methodTypeModule)
+    type = me.findAliasImport(pdecl'methodTypeModule, pdecl'methodType)
+
+    if not type?
+      mut cs = txt:newCs(20)
+
+      cs.add("type ")
+
+      if pdecl'methodTypeModule?
+        cs.add(pdecl'methodTypeModule)
+        cs.add(":")
+      /if
+
+      cs.add(pdecl'methodType)
+      cs.add(" is undefined")
+
+      mut msg = txt:unwrapCs(cs)
+
+      me'issues.error(pdecl'node'begin, me'curRoot'fileName, msg)
+
+      mem:free(msg)
+    /if
+  else
+    type = me.resolveTypeName(pdecl'methodType)
+  /if
+
+  if not type?
+    return false
+  /if
+
+  mut pblock = <ptr ast:PBlock>(val pdecl'node'leaves.get(0))
+  mut meType = ast:typeNewPtr(me'curRoot'typePool, null, null, type)
+
+  pblock'syms.add("me", true, true, meType, 0)
+
+  return true
+/method
+
+
+method Resolver.validateBreakContinue(stmt ptr ast:PNode, inLoop bool) bool
+
+  if not inLoop
+    me'issues.error(stmt'begin, me'curRoot'fileName, "break or continue outside of a loop")
+
+    return false
+  /if
+
+  return true
+/method
+
+
+method Resolver.validateDecl(pdecl ptr ast:PDecl) bool
+
+  mut isDecl = pdecl'isDecl
+
+  mut type ptr ast:Type = null
+
+  if pdecl'sym'type?
+    type = me.resolveType(pdecl'sym'type)
+    if not type?
+      return false
+    /if
+  else
+    if isDecl
+      me'issues.error(pdecl'node'begin, me'curRoot'fileName, "a decl must have a type")
+
+      return false
+    /if
+  /if
+
+  mut leavLen = pdecl'node'leaves.len()
+
+  if leavLen > 0
+    mut pexpr = <ptr ast:PExpr>(val pdecl'node'leaves.get(0))
+    if isDecl
+      me'issues.error(pexpr'node'begin, me'curRoot'fileName, "a decl can't have an assignment")
+    /if
+
+    mut exprType = me.validateExpr(pexpr)
+    if not exprType?
+      return false
+    /if
+
+    if exprType.isEmpty()
+      me'issues.error(pexpr'node'begin, \
+                      me'curRoot'fileName, "expression has no type")
+      return false
+    /if
+
+    if type?
+      if not me.typeIsAssignable(<ptr ast:PNode>(pdecl), type, exprType)
+        mut cs = txt:newCs(20)
+        cs.add("cannot assign an expression of type '")
+        exprType.summarize(cs)
+        cs.add("' to a variable declared as '")
+        type.summarize(cs)
+        cs.add("'")
+
+        mut msg = txt:unwrapCs(cs)
+
+        me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+
+        mem:free(msg)
+
+        return false
+      /if
+    else
+      if exprType.isNull()
+        me'issues.error(pexpr'node'begin, \
+                        me'curRoot'fileName, \
+                        "can't declare a variable with type 'null'")
+        return false
+      /if
+
+      type = exprType
+    /if
+  /if
+
+  if not type?
+    me'issues.error(pdecl'node'begin, me'curRoot'fileName, \
+                    "declaration without an explicit or inferrable type")
+
+    return false
+  /if
+
+  return me.registerDecl(pdecl, pdecl'sym'name, type, pdecl'node'type)?
+/method
+
+
+method Resolver.validateMulDecl(pmuldecl ptr ast:PMulDecl) bool
+
+  mut pnode = <ptr ast:PNode>(pmuldecl)
+  mut exprType ptr ast:Type = null
+  mut leavLen = pnode'leaves.len()
+  mut len = pmuldecl'syms.len()
+
+  if leavLen > 0
+    mut pexpr = <ptr ast:PExpr>(val pnode'leaves.get(0))
+
+    exprType = me.validateExpr(pexpr)
+    if not exprType?
+      return false
+    /if
+
+    if not exprType.isStruct()
+      mut cs = txt:newCs(30)
+      cs.add("trying to expand non-struct type '")
+      exprType.summarize(cs)
+      cs.add("'")
+
+      mut msg = txt:unwrapCs(cs)
+
+      me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+      mem:free(msg)
+
+      return false
+    /if
+
+    if exprType'members.len() != len
+      mut msg = "trying to expand a struct with a wrong number of variables (use '_' if you don't need one of the fields)"
+      me'issues.error(pexpr'node'begin, me'curRoot'fileName, msg)
+
+      return false
+    /if
+  /if
+
+  mut i uintptr = 0
+  mut stab = pnode.findStab()
+  mut newVars = false
+
+  while i < len
+    mut sym = <ptr ast:PSymbol>(val pmuldecl'syms.get(i))
+
+    # if _, skip
+    if txt:strequals(sym'name, "_")
+      i++
+      continue
+    /if
+
+    mut exists = pnode.findSym(sym'name)
+
+    # Init varType with the (eventual) existing type of the variable (it's null
+    # if it doesn't exist)
+
+    mut varType = exists
+
+    mut initType = exprType? => <ptr ast:Type>(exprType'members.getAt(i)'value) || null
+
+    # If we have a sym'type, then exists? will make this function fail;
+    # we're safe to assume then that the variable exists and sym'type can't be
+    # both non-null at the same time.
+    if sym'type?
+      if exists?
+        mut msg = txt:strappend(sym'name, " has been redeclared")
+
+        me'issues.error(pnode'begin, me'curRoot'fileName, msg)
+
+        mem:free(msg)
+
+        return false
+      /if
+
+      varType = me.resolveType(sym'type)
+
+      if not varType?
+        return false
+      /if
+    /if
+
+    # Now, we're check if the variable type is compatible with the expression.
+    # This can be true only in two cases:
+    # 1. the variable does not exist, but there is a type specifier and an expr;
+    # 2. the variable exists, there is no type specifier, but there's an expr.
+
+    if varType? and initType?
+      if not me.typeIsAssignable(pnode, varType, initType)
+        mut cs = txt:newCs(20)
+        cs.add("cannot assign an expression of type '")
+        initType.summarize(cs)
+        cs.add("' to '")
+        cs.add(sym'name)
+        cs.add("' declared as '")
+        varType.summarize(cs)
+        cs.add("'")
+
+        mut msg = txt:unwrapCs(cs)
+
+        me'issues.error(pnode'begin, me'curRoot'fileName, msg)
+
+        mem:free(msg)
+
+        return false
+      /if
+    /if
+
+    # The following block creates the variable, if not existent.
+    if not exists?
+      # type inference: if there is no varType, then use the expression's type.
+      # we're pretty safe, because synt won't allow the existence of a mulmut
+      # expr with neither full types nor an initialization expression, so they
+      # will never be both null.
+      varType = varType ?? initType
+
+      # Each variable in a MutExp is still a mut. So they're added as muts.
+      stab.add(sym'name, false, false, varType, ast:PMUT)
+      newVars = true
+    /if
+
+    i++
+  /while
+
+  if not newVars
+    mut msg = "no new variables in mut statement"
+    me'issues.error(pnode'begin, me'curRoot'fileName, msg)
+
+    return false
+  /if
+
+  return true
+/method
+
+
+method Resolver.validateIf(stmt ptr ast:PNode,
+                                funcInfo ast:Symbol,
+                                inLoop bool) bool
+
+  mut cond = <ptr ast:PExpr>(val stmt'leaves.get(0))
+
+  mut condType = me.validateExpr(cond)
+  if not condType?
+    return false
+  /if
+
+  if not condType.isBool()
+    mut cs = txt:newCs(20)
+    cs.add("expected a boolean expression, got type '")
+    condType.summarize(cs)
+    cs.add("' instead")
+
+    mut msg = txt:unwrapCs(cs)
+
+    me'issues.error(cond'node'begin, me'curRoot'fileName, msg)
+
+    mem:free(msg)
+
+    return false
+  /if
+
+  mut firstBlock = <ptr ast:PBlock>(val stmt'leaves.get(1))
+  if not me.validatePBlock(firstBlock, funcInfo, inLoop)
+    return false
+  /if
+
+  if stmt'type == ast:PIFELSE
+    mut elseBlock = <ptr ast:PBlock>(val stmt'leaves.get(2))
+    if not me.validatePBlock(elseBlock, funcInfo, inLoop)
+      return false
+    /if
+  /if
+
+  return true
+/method
+
+
+method Resolver.validatePBlock(pblock ptr ast:PBlock,
+                                    funcInfo ast:Symbol,
+                                    inLoop bool) bool
+
+  if not pblock'syms?
+    pblock'syms = ast:stabNew()
+  /if
+
+  mut len = pblock'node'leaves.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut stmt = <ptr ast:PNode>(val pblock'node'leaves.get(i))
+
+    if not me.validateStmt(stmt, funcInfo, inLoop)
+      return false
+    /if
+
+    i++
+  /while
+
+  return true
+/method
+
+
+method Resolver.validateReturn(stmt ptr ast:PNode, funcInfo ast:Symbol) bool
+
+  mut hasRetExpr = (stmt'leaves.len() == 1)
+  mut funcRetTypeEmpty = not funcInfo'type'retType? or funcInfo'type'retType'type == ast:TYPE_EMPTY
+
+  if not hasRetExpr and not funcRetTypeEmpty
+    mut cs = txt:newCs(20)
+    cs.add("function '")
+    cs.add(funcInfo'name)
+    cs.add("' has a return value, but no expression is given to return")
+
+    mut msg = txt:unwrapCs(cs)
+
+    me'issues.error(stmt'begin, me'curRoot'fileName, msg)
+
+    mem:free(msg)
+
+    return false
+  /if
+
+  if hasRetExpr and funcRetTypeEmpty
+    mut cs = txt:newCs(20)
+    cs.add("function '")
+    cs.add(funcInfo'name)
+    cs.add("' has no return value, but an expression is given to return")
+
+    mut msg = txt:unwrapCs(cs)
+
+    me'issues.error(stmt'begin, me'curRoot'fileName, msg)
+
+    mem:free(msg)
+
+    return false
+  /if
+
+  if hasRetExpr
+    mut retType = funcInfo'type'retType
+    mut retExpr = <ptr ast:PExpr>(val stmt'leaves.get(0))
+
+    mut exprType = me.validateExpr(retExpr)
+    if not exprType?
+      return false
+    /if
+
+    if not me.typeIsAssignable(stmt, retType, exprType)
+      mut cs = txt:newCs(20)
+      cs.add("cannot return type '")
+      exprType.summarize(cs)
+      cs.add("' from function ")
+      cs.add(funcInfo'name)
+      cs.add("(), returning '")
+      retType.summarize(cs)
+      cs.add("'")
+
+      mut msg = txt:unwrapCs(cs)
+
+      me'issues.error(stmt'begin, me'curRoot'fileName, msg)
+
+      mem:free(msg)
+
+      return false
+    /if
+  /if
+
+  return true
+/method
+
+
+method Resolver.validateStmt(stmt ptr ast:PNode,
+                                  funcInfo ast:Symbol,
+                                  inLoop bool) bool
+
+  if stmt.isBreakContinue()
+    return me.validateBreakContinue(stmt, inLoop)
+  /if
+
+  if stmt.isDecl()
+    return me.validateDecl(<ptr ast:PDecl>(stmt))
+  /if
+
+  if stmt.isExpr()
+    return me.validateExpr(<ptr ast:PExpr>(stmt))?
+  /if
+
+  if stmt.isIf()
+    return me.validateIf(stmt, funcInfo, inLoop)
+  /if
+
+  if stmt.isMulDecl()
+    return me.validateMulDecl(<ptr ast:PMulDecl>(stmt))
+  /if
+
+  if stmt.isReturn()
+    return me.validateReturn(stmt, funcInfo)
+  /if
+
+  if stmt.isWhile()
+    return me.validateWhile(stmt, funcInfo, inLoop)
+  /if
+
+  # unreachable
+  proc:panic("unknown statement type")
+  return false
+/method
+
+
+method Resolver.validateWhile(stmt ptr ast:PNode,
+                                   funcInfo ast:Symbol,
+                                   inLoop bool) bool
+
+  mut cond = <ptr ast:PExpr>(val stmt'leaves.get(0))
+
+  mut condType = me.validateExpr(cond)
+  if not condType?
+    return false
+  /if
+
+  if not condType.isBool()
+    mut cs = txt:newCs(20)
+    cs.add("expected a boolean expression, got type '")
+    condType.summarize(cs)
+    cs.add("' instead")
+
+    mut msg = txt:unwrapCs(cs)
+
+    me'issues.error(cond'node'begin, me'curRoot'fileName, msg)
+
+    mem:free(msg)
+
+    return false
+  /if
+
+  mut pblock = <ptr ast:PBlock>(val stmt'leaves.get(1))
+
+  return me.validatePBlock(pblock, funcInfo, true)
+/method
+
+
+method Resolver.validateFunc(pdecl ptr ast:PDecl,
+                                  funcType ptr ast:Type) bool
+
+  mut sym ast:Symbol
+
+  sym'type = funcType
+  sym'name = pdecl'sym'name
+
+  mut pblock = <ptr ast:PBlock>(val pdecl'node'leaves.get(0))
+
+  pblock'syms = ast:stabNew()
+
+  pblock'syms.addFuncParams(funcType'members)
+
+  if pdecl'node'type == ast:PMETHOD
+    if not me.ensureMethodCorrectness(pdecl, funcType)
+      return false
+    /if
+  /if
+
+  return me.validatePBlock(pblock, sym, false)
+/method

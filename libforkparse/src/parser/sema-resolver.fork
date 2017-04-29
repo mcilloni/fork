@@ -1,0 +1,226 @@
+#  libforkparse, a full parser for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module parser
+
+
+import ast
+import kv
+import list
+import mem
+import memutils
+import proc
+import set
+import tty
+import txt
+
+
+func resolverDeinit(rsv ptr Resolver)
+  kv:free(rsv'aliases)
+  kv:free(rsv'decls)
+/func
+
+
+method Resolver.setCurrentRoot(root ptr ast:PRoot)
+  me'curRoot = root
+/method
+
+
+method Resolver.collectAlias(pdecl ptr ast:PDecl,
+                                  root ptr ast:PRoot) bool
+
+  mut name = pdecl'sym'name
+
+  if me'aliases.contains(name)
+
+    mut cs = txt:newCs(20)
+    cs.add("alias ")
+    cs.add(name)
+    cs.add(" is already defined")
+
+    me'issues.error(pdecl'node'begin, root'fileName, txt:unwrapCs(cs))
+
+    return false
+  /if
+
+  me'aliases.put(name, pdecl)
+
+  return true
+/method
+
+
+method Resolver.collectDecls(pdecl ptr ast:PDecl,
+                                    root ptr ast:PRoot) bool
+
+  mut name = ast:declKey(pdecl)
+  mut existent = <ptr ast:PDecl>(me'decls.get(name))
+
+  if existent?
+    mut cs = txt:newCs(20)
+    cs.add("symbol ")
+    cs.add(name)
+    cs.add(" defined twice in current module")
+
+    mut str = txt:unwrapCs(cs)
+    me'issues.error(pdecl'node'begin, root'fileName, str)
+
+    mem:free(str)
+    mem:free(name)
+
+    return false
+  /if
+
+  #search for method in module
+
+  me'decls.put(name, pdecl)
+  return true
+/method
+
+
+method Resolver.collectPDecl(pnode ptr ast:PNode,
+                                    root ptr ast:PRoot,
+                                    entryNode ptr ptr ast:PDecl) bool
+
+
+
+  if pnode.isMulDecl()
+    mut msg = "mut struct expansion is not allowed on global scope"
+    me'issues.error(pnode'begin, root'fileName, msg)
+
+    return false
+  /if
+
+  # Once we're sure that this isn't a multiple declaration, we are certain it
+  # is a PDecl
+  mut pdecl = <ptr ast:PDecl>(pnode)
+
+  mut ntype = pdecl'node'type
+
+  if ntype == ast:PMUT or ntype == ast:PFUNCTION or ntype == ast:PMETHOD
+    if not me.collectDecls(pdecl, root)
+      return false
+    /if
+  else
+
+    if ntype == ast:PALIAS
+      if not me.collectAlias(pdecl, root)
+        return false
+      /if
+    else
+
+      if ntype == ast:PENTRY
+        if not (val entryNode)?
+          val entryNode = pdecl
+        else
+          me'issues.error(pdecl'node'begin, root'fileName, \
+                          "entry declared twice in same module")
+
+          return false
+        /if
+      else
+        proc:panic("unreachable: invalid pdecl value")
+      /if
+    /if
+  /if
+
+  return true
+/method
+
+
+method Resolver.collectImports(fileName ptr uint8, list ptr list:List)
+  mut len = list.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut imp = cast<ptr ast:StringDef>(val list.get(i))
+    mut sdf = cast<ptr StringDefFile>(mem:alloc(size(StringDefFile)))
+
+    val sdf = {imp'name, fileName, imp'begin, imp'end}
+
+    me'imports.put(sdf)
+
+    i++
+  /while
+/method
+
+
+method Resolver.collectFromRoot(root ptr ast:PRoot,
+                                       values ptr kv:KVList,
+                                       entryNode ptr ptr ast:PDecl) bool
+
+  me.collectImports(root'fileName, root'imports)
+
+  mut len = root'node'node'leaves.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut pnode = <ptr ast:PNode>(val root'node'node'leaves.get(i))
+
+    if not me.collectPDecl(pnode, root, entryNode)
+
+      return false
+    /if
+
+    mut pdecl = <ptr ast:PDecl>(pnode)
+    values.put(ast:declKey(pdecl), pdecl)
+
+    i++
+  /while
+
+  return true
+/method
+
+
+func sdfhash(sdf ptr StringDefFile) uintptr
+  return txt:strhash(sdf'text)
+/func
+
+
+method Resolver.collect(prs ptr Parser,
+                               pmod ptr ast:PModule,
+                               issues ptr ast:Issues) ptr kv:KVList
+
+  me'imports = set:new(5, ptr sdfhash)
+  me'aliases = kv:strnew(5)
+  me'decls = kv:strnew(10)
+  me'issues = issues
+
+  me'imports.setFreeFunc(ptr mem:free)
+
+  me'prs = prs
+
+  mut ret = kv:strnew(20)
+
+  ret.setFreeFuncs(ptr mem:free, null)
+
+  pmod'entryNode = null
+
+  mut i uintptr = 0
+  mut len = pmod'roots.len()
+
+  while i < len
+    mut root = <ptr ast:PRoot>(val pmod'roots.get(i))
+
+    # init the root file with type pool and aliases/decls symtable
+    root'typePool = memutils:fpNew(<ptr func(item data)>(ptr ast:typeFree))
+    root'aliases = ast:stabNew()
+    root'node'syms = ast:stabNew()
+
+    if not me.collectFromRoot(root, ret, <ptr ptr ast:PDecl>(ptr pmod'entryNode))
+      kv:free(ret)
+
+      return null
+    /if
+
+    i++
+  /while
+
+  return ret
+/method

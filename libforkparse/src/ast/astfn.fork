@@ -1,0 +1,560 @@
+#  libforkparse, a full parser for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ast
+
+
+import about
+import kv
+import list
+import map
+import mem
+import memutils
+import txt
+import vect
+
+
+func declInfoFree(declInfo ptr DeclInfo)
+  mem:free(declInfo)
+/func
+
+
+func declInfoNew(declType uint16, declOnly,funcParam bool, type ptr Type) ptr DeclInfo
+
+  mut ret = <ptr DeclInfo>(mem:alloc(size(DeclInfo)))
+
+  val ret = {declType, declOnly, funcParam, type}
+
+  return ret
+/func
+
+
+func pblockNew() ptr PBlock
+  mut pblock = <ptr PBlock>(mem:zalloc(size(PBlock)))
+  mut pnode = <ptr PNode>(pblock)
+
+  pnode'type = PBLOCK
+  pnode'leaves = list:new()
+
+  return pblock
+/func
+
+
+func pdeclNew(nodeType uint16, sym ptr PSymbol, isDecl bool) ptr PDecl
+
+  mut pdecl = <ptr PDecl>(mem:zalloc(size(PDecl)))
+  pdecl'node'type = nodeType
+  pdecl'node'leaves = list:new()
+  pdecl'isDecl = isDecl
+
+  memutils:incRef(sym)
+
+  pdecl'sym = sym
+
+  return pdecl
+/func
+
+
+func pexprNew(tok ptr Token, lhs,rhs ptr PExpr, begin,end txt:Line) ptr PExpr
+  return pexprNewTernary(tok, lhs, null, rhs, begin, end)
+/func
+
+
+func pexprNewSingle(tok ptr Token) ptr PExpr
+  return pexprNew(tok, null, null, tokExtractBegin(tok), tokExtractEnd(tok))
+/func
+
+
+func pexprNewTernary(tok ptr Token, lhs,mid,rhs ptr PExpr, begin,end txt:Line) ptr PExpr
+  mut pexpr = <ptr PExpr>(mem:zalloc(size(PExpr)))
+  pexpr'node'type = PEXPR
+  pexpr'node'value = tok'value
+  pexpr'node'leaves = list:new()
+  pexpr'opType = tok'type
+  tok'value = 0 # now the value belongs to this PExpr
+
+  mut pnode = ptr pexpr'node
+  pnode'begin = begin
+  pnode'end = end
+
+  pnodeAppendChild(pnode, <ptr PNode>(lhs))
+  pnodeAppendChild(pnode, <ptr PNode>(mid))
+  pnodeAppendChild(pnode, <ptr PNode>(rhs))
+
+  tokenFree(tok)
+
+  return pexpr
+/func
+
+
+method PModule.differs(root ptr PRoot) bool
+  mut hasModuleName = root'moduleName?
+  if me'name?
+    return not hasModuleName or not txt:strequals(me'name, root'moduleName'name)
+  /if
+
+  return hasModuleName
+/method
+
+
+func pmoduleAdd(pmod ptr PModule, root ptr PRoot) bool
+  if pmod'roots.len() > 0
+    if pmod.differs(root)
+      return false
+    /if
+  else
+    pmod'name = root'moduleName? => txt:strclone(root'moduleName'name) || null
+  /if
+
+  root'pmodule = pmod
+  pmod'roots.append(root)
+  return true
+/func
+
+
+func pmoduleNew() ptr PModule
+  mut pmod = <ptr PModule>(mem:alloc(size(PModule)))
+
+  val pmod = {null, vect:new(5), null}
+
+  return pmod
+/func
+
+
+func pmuldeclNew(nodeType uint16, syms ptr list:List) ptr PMulDecl
+
+  mut pmuldecl = <ptr PMulDecl>(mem:zalloc(size(PMulDecl)))
+  pmuldecl'node'type = nodeType
+  pmuldecl'node'leaves = list:new()
+
+  mut len = syms.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut sym = <ptr PSymbol>(val syms.get(i))
+
+    memutils:incRef(sym)
+
+    i++
+  /while
+
+  pmuldecl'syms = syms
+
+  return pmuldecl
+/func
+
+
+func pnodeAppendChild(pnode, child ptr PNode) ptr PNode
+
+  if pnode? and child?
+    pnode'leaves.append(child)
+
+    child'parent = pnode
+  /if
+
+  return pnode
+/func
+
+
+func pnodeNew(type uint16, value uintptr) ptr PNode
+
+  mut pnode = <ptr PNode>(mem:zalloc(size(PNode)))
+  pnode'type = type
+  pnode'value = value
+  pnode'leaves = list:new()
+
+  return pnode
+/func
+
+
+func prootNew(moduleName ptr StringDef, imports ptr list:List, fileName ptr uint8) ptr PRoot
+
+  mut proot = <ptr PRoot>(mem:zalloc(size(PRoot)))
+  mut pnode = <ptr PNode>(proot)
+
+  pnode'type = PROOT
+  pnode'leaves = list:new()
+  pnode'parent = null
+
+  proot'pmodule = null
+  proot'moduleName = moduleName
+  proot'imports = imports
+  proot'fileName = txt:strclone(fileName)
+
+  return proot
+
+/func
+
+
+func psymbolFree(sym ptr PSymbol)
+  if sym?
+    mem:free(sym'name)
+    memutils:decRef(sym'type)
+    mem:free(sym)
+  /if
+/func
+
+
+func psymbolNew(name ptr uint8, type ptr PType) ptr PSymbol
+  mut sym = <ptr PSymbol>(mem:zalloc(size(PSymbol)))
+
+  sym'refc'freeFunc = ptr psymbolFree
+
+  memutils:incRef(type)
+  sym'name = name
+  sym'type = type
+
+  return sym
+/func
+
+
+func ptypeDescrFree(descr ptr PTypeDescr)
+  if descr?
+    if descr'retType?
+      memutils:decRef(descr'retType)
+    /if
+
+    if descr'arguments?
+      list:freeAll(descr'arguments, ptr psymbolFree)
+    /if
+  /if
+/func
+
+
+func ptypeDescrNew(type uint16, retType ptr PType, params ptr list:List) ptr PTypeDescr
+  mut descr = <ptr PTypeDescr>(mem:zalloc(size(PTypeDescr)))
+
+  descr'refc'freeFunc = ptr ptypeDescrFree
+
+  memutils:incRef(retType)
+
+  descr'type = type
+  descr'retType = retType
+  descr'arguments = params
+
+  return descr
+/func
+
+
+func ptypeDescrNewLoc(innerType ptr PType, length uintptr) ptr PTypeDescr
+  mut typeDescr = ptypeDescrNew(PTYPE_LOC, innerType, null)
+  typeDescr'length = length
+
+  return typeDescr
+/func
+
+
+func ptypeFree(type ptr PType)
+  if type?
+    if type'descr?
+      memutils:decRef(type'descr)
+    /if
+
+    if type'moduleName?
+      mem:free(type'moduleName)
+    /if
+
+    if type'name?
+      mem:free(type'name)
+    /if
+
+    mem:free(type)
+  /if
+/func
+
+
+func ptypeNew(name, moduleName ptr uint8, descr ptr PTypeDescr) ptr PType
+  mut type = <ptr PType>(mem:zalloc(size(PType)))
+
+  type'refc'freeFunc = ptr ptypeFree
+
+  type'name = name
+  type'moduleName = moduleName
+  memutils:incRef(descr)
+  type'descr = descr
+
+  return type
+/func
+
+
+func strdefFree(strdef ptr StringDef)
+  if strdef?
+    mem:free(strdef'name)
+    mem:free(strdef)
+  /if
+/func
+
+
+func strdefNew(name ptr uint8, begin,end txt:Line) ptr StringDef
+  mut strdef = <ptr StringDef>(mem:zalloc(size(StringDef)))
+  strdef'name = name
+  strdef'begin = begin
+  strdef'end = end
+
+  return strdef
+/func
+
+
+func symbolClone(sym ptr Symbol) ptr Symbol
+  if not sym?
+    return null
+  /if
+
+  mut newInst = <ptr Symbol>(mem:alloc(size(Symbol)))
+  newInst'name = txt:strclone(sym'name)
+  newInst'type = sym'type
+
+  return newInst
+/func
+
+
+func symbolFree(sym ptr Symbol)
+  if sym?
+    mem:free(sym'name)
+
+    mem:free(sym)
+  /if
+/func
+
+
+func symbolListClone(pool ptr memutils:FreePool, symList ptr kv:KVList) ptr kv:KVList
+  if not symList?
+    return null
+  /if
+
+  mut len = symList.len()
+  mut ret = kv:strnew(len)
+  mut i uintptr = 0
+
+  while i < len
+    mut elem = symList.getAt(i)
+    mut newStr = txt:strclone(<ptr uint8>(elem'key))
+    mut newType = typeClone(pool, <ptr Type>(elem'value))
+
+    ret.put(newStr, newType)
+
+    i++
+  /while
+
+  return ret
+/func
+
+
+func symbolNew(name ptr uint8, type ptr Type) ptr Symbol
+  mut sym = <ptr Symbol>(mem:alloc(size(Symbol)))
+
+  sym'name = txt:strclone(name)
+  sym'type = type
+
+  return sym
+/func
+
+
+alias AlignResult struct(typeAlign,typeSize intptr)
+
+# members is a list of Symbol
+func typeCalculateAlign(members ptr kv:KVList) AlignResult
+  mut ret AlignResult
+  ret'typeAlign = 1
+  ret'typeSize  = 0
+
+  mut i uintptr = 0
+  mut len = members.len()
+
+  while i < len
+    mut member = <ptr Type>(members.getAt(i)'value)
+
+    # calculate the alignment offset of the member against the current starting address.
+    mut offset = ret'typeSize mod member'typeAlign
+
+    # if offset is not 0, then the member to be inserted is currently misaligned.
+    # padding is needed.
+    if offset != 0
+      mut padding = member'typeAlign - offset
+      ret'typeSize = ret'typeSize + padding
+    /if
+
+    ret'typeSize = ret'typeSize + member'typeSize
+    ret'typeAlign = (member'typeAlign > ret'typeAlign) => member'typeAlign || ret'typeAlign
+
+    i++
+  /while
+
+  # for being sequentially stackable, structs must be padded at the end, according to their alignment.
+  mut finalOffset = ret'typeSize mod ret'typeAlign
+
+  # if there is misalignment at the end of the struct, we need additional padding to reach
+  # a size which is a multiple of the alignment value.
+  if finalOffset > 0
+    ret'typeSize = ret'typeSize + (ret'typeAlign - finalOffset)
+  /if
+
+  return ret
+/func
+
+
+func typeClone(pool ptr memutils:FreePool, type ptr Type) ptr Type
+  if not type?
+    return null
+  /if
+
+  mut newInst = <ptr Type>(mem:copy(pool.alloc(size(Type)), type, size(Type)))
+  newInst'moduleName = txt:strclone(type'moduleName)
+  newInst'name = txt:strclone(type'name)
+  newInst'retType = typeClone(pool, type'retType)
+  newInst'members = symbolListClone(pool, type'members)
+
+  return newInst
+/func
+
+
+func typeNew(pool ptr memutils:FreePool,
+             type uint16,
+             moduleName, name ptr uint8,
+             isSigned bool,
+             typeSize, typeAlign intptr,
+             itemCount uintptr,
+             retType ptr Type,
+             members ptr kv:KVList) ptr Type
+
+  mut location =    pool? \
+                 => pool.zalloc(size(Type)) \
+                 || mem:zalloc(size(Type))
+
+  mut ret = <ptr Type>(location)
+
+  ret'type = type
+  ret'moduleName = txt:strclone(moduleName)
+  ret'name = txt:strclone(name)
+  ret'isSigned = isSigned
+  ret'typeSize = typeSize
+  ret'typeAlign = typeAlign
+  ret'itemCount = itemCount
+  ret'retType = retType
+  ret'members = members
+
+  return ret
+/func
+
+
+func typeNewBuiltin(type uint16,
+                    name ptr uint8,
+                    isSigned bool,
+                    typeSize, typeAlign intptr,
+                    itemCount uintptr,
+                    retType ptr Type,
+                    members ptr kv:KVList) ptr Type
+
+  mut ret = typeNew(null, type, null, name, isSigned, typeSize, typeAlign, itemCount, retType, members)
+  ret'builtin = true
+
+  return ret
+/func
+
+
+func typeNewBuiltinInt(name ptr uint8, len uint8, isSigned bool) ptr Type
+  return typeNewBuiltin(TYPE_INT, name, isSigned, len, len, 1, null, null)
+/func
+
+
+func typeNewBuiltinBool() ptr Type
+  return typeNewBuiltin(TYPE_BOOL, "bool", false, 1, 1, 1, null, null)
+/func
+
+
+func typeNewBuiltinData() ptr Type
+  return typeNewBuiltin(TYPE_DATA, "data", false, about:ptrSize, about:ptrSize, 1, null, null)
+/func
+
+
+func typeNewBuiltinEmpty() ptr Type
+  return typeNewBuiltin(TYPE_EMPTY, "\0", false, 0, 0, 0, null, null)
+/func
+
+
+func typeNewBuiltinNull() ptr Type
+  return typeNewBuiltin(TYPE_NULL, "null", false, about:ptrSize, about:ptrSize, 1, null, null)
+/func
+
+
+func typeNewBuiltinString(uint8t ptr Type) ptr Type
+  return typeNewPtr(null, null, null, uint8t)
+/func
+
+
+func builtinSetNew() ptr map:Map
+
+  mut ret = map:strnew()
+
+  ret.setFreeFuncs(null, <ptr func(item data)>(ptr typeFree))
+
+  mut uint8t = typeNewBuiltinInt("uint8", 1, false)
+
+  ret.put("uint8", uint8t)
+  ret.put("uint16", typeNewBuiltinInt("uint16", 2, false))
+  ret.put("uint32", typeNewBuiltinInt("uint32", 4, false))
+  ret.put("uint64", typeNewBuiltinInt("uint64", 8, false))
+  ret.put("int8", typeNewBuiltinInt("int8", 1, true))
+  ret.put("int16", typeNewBuiltinInt("int16", 2, true))
+  ret.put("int32", typeNewBuiltinInt("int32", 4, true))
+  ret.put("int64", typeNewBuiltinInt("int64", 8, true))
+  ret.put("uintptr", typeNewBuiltinInt("uintptr", about:ptrSize, false))
+  ret.put("intptr", typeNewBuiltinInt("intptr", about:ptrSize, true))
+  ret.put("bool", typeNewBuiltinBool())
+  ret.put("data", typeNewBuiltinData())
+  ret.put("\0", typeNewBuiltinEmpty())
+  ret.put("null", typeNewBuiltinNull())
+  ret.put("ptr uint8", typeNewBuiltinString(uint8t))
+
+  return ret
+/func
+
+
+func typeNewFunc(pool ptr memutils:FreePool, moduleName, name ptr uint8, retVal ptr Type, members ptr kv:KVList) ptr Type
+  return typeNew(pool, TYPE_FUNC, moduleName, name, false, 0, 0, 0, retVal, members)
+/func
+
+
+func typeNewLoc(pool ptr memutils:FreePool, moduleName, name ptr uint8, itemCount uintptr, retVal ptr Type) ptr Type
+  return typeNew(pool, TYPE_LOC, moduleName, name, false, retVal'typeSize * <intptr>(itemCount), retVal'typeAlign, itemCount, retVal, null)
+/func
+
+
+func typeNewPtr(pool ptr memutils:FreePool, moduleName, name ptr uint8, retVal ptr Type) ptr Type
+  return typeNew(pool, TYPE_PTR, moduleName, name, false, about:ptrSize, about:ptrSize, 1, retVal, null)
+/func
+
+
+func typeNewRecursiveAlias(pool ptr memutils:FreePool, moduleName, name ptr uint8) ptr Type
+  return typeNew(pool, TYPE_RECALIAS, moduleName, name, false, -1, -1, 0, null, null)
+/func
+
+
+func typeNewStruct(pool ptr memutils:FreePool, moduleName, name ptr uint8, members ptr kv:KVList) ptr Type
+  mut alignInfo = typeCalculateAlign(members)
+
+  return typeNew(pool, TYPE_STRUCT, moduleName, name, false, alignInfo'typeSize, alignInfo'typeAlign, 1, null, members)
+/func
+
+
+func typeSetAlias(type ptr Type, moduleName, name ptr uint8)
+  if type?
+    type'moduleName = txt:strclone(moduleName)
+    type'name = txt:strclone(name)
+  /if
+/func
+
+
+func typeSetBoundaries(type ptr Type, begin,end txt:Line)
+  if type?
+    type'begin = begin
+    type'end = end
+  /if
+/func

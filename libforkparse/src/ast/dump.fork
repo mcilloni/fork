@@ -1,0 +1,649 @@
+#  libforkparse, a full parser for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ast
+
+
+import kv
+import list
+import mem
+import tty
+import txt
+
+
+func printPadding(depth uintptr)
+  mut i uintptr = 0
+
+  while i < depth
+    tty:out("    ")
+    i++
+  /while
+
+/func
+
+
+method txt:Line.dump()
+  tty:outint(me'line)
+  tty:out(":")
+  tty:outint(me'pos)
+/method
+
+
+func linesDump(begin,end txt:Line)
+  tty:out("(at ")
+  begin.dump()
+  tty:out("-")
+  if begin'line == end'line
+    tty:outint(end'pos)
+  else
+    end.dump()
+  /if
+  tty:out(")")
+/func
+
+
+func psymbolDump(psym ptr PSymbol)
+  if not psym?
+    return
+  /if
+
+  tty:out(psym'name)
+  tty:out(" :: ")
+  if psym'type?
+    psym'type.dump()
+  else
+    tty:out("<inferred>")
+  /if
+/func
+
+
+func ptypeDescrDumpStructuredDataArgs(args ptr list:List)
+  if not args?
+    tty:out("<null>")
+    return
+  /if
+
+  mut len = args.len()
+  mut first = true
+  mut i uintptr = 0
+
+  tty:out("(")
+
+  while i < len
+    if first
+      first = false
+    else
+      tty:out(", ")
+    /if
+
+    mut sym = <ptr PSymbol>(val args.get(i))
+    psymbolDump(sym)
+
+    i++
+  /while
+
+  tty:out(")")
+/func
+
+
+func pnodeTypeToString(ptype uint16) ptr uint8
+
+  if ptype == PROOT
+    return "Root"
+  /if
+
+  if ptype == PENTRY
+    return "Entry"
+  /if
+
+  if ptype == PEXPR
+    return "Expression"
+  /if
+
+  if ptype == PFUNCTION
+    return "Function"
+  /if
+
+  if ptype == PALIAS
+    return "Alias"
+  /if
+
+  if ptype == PMETHOD
+    return "Method"
+  /if
+
+  if ptype == PMUT
+    return "Mut"
+  /if
+
+  if ptype == PMUTEXP
+    return "Mut expansion"
+  /if
+
+  if ptype == PBREAK
+    return "Break"
+  /if
+
+  if ptype == PCONTINUE
+    return "Continue"
+  /if
+
+  if ptype == PRETURN
+    return "Return"
+  /if
+
+  if ptype == PIF
+    return "If"
+  /if
+
+  if ptype == PIFELSE
+    return "IfElse"
+  /if
+
+  if ptype == PWHILE
+    return "While"
+  /if
+
+  if ptype == PBLOCK
+    return "Block"
+  /if
+
+  return "<UNKNOWN BLOCK>"
+/func
+
+
+func prootDumpInfo(proot ptr PRoot, depth uintptr)
+  if proot'moduleName?
+    tty:out(" [module: ")
+    tty:out(proot'moduleName'name)
+    tty:outch(32)
+    linesDump(proot'moduleName'begin, proot'moduleName'end)
+    tty:out("]")
+  /if
+
+  tty:outch(10)
+
+  mut len = proot'imports.len()
+  if len > 0
+    printPadding(depth)
+    tty:outln("Imports: ")
+
+    mut i uintptr = 0
+
+    while i < len
+      printPadding(depth + 1)
+      mut imp = <ptr StringDef>(val proot'imports.get(i))
+
+      tty:out(imp'name)
+      tty:outch(32)
+      linesDump(imp'begin, imp'end)
+      tty:outch(10)
+
+      i++
+    /while
+  /if
+/func
+
+
+func pdeclDumpInfo(pdecl ptr PDecl, depth uintptr)
+  tty:outch(10)
+  printPadding(depth + 1)
+
+  psymbolDump(pdecl'sym)
+
+  if pdecl'isDecl
+    tty:out(" (decl only)")
+  /if
+
+  if pdecl'methodType?
+    tty:outch(10)
+    printPadding(depth + 1)
+
+    tty:out("(method of ")
+
+    if pdecl'methodTypeModule?
+      tty:out(pdecl'methodTypeModule)
+      tty:out(":")
+    /if
+
+    tty:out(pdecl'methodType)
+    tty:outln(")")
+  /if
+/func
+
+
+func pmuldeclDumpInfo(pmuldecl ptr PMulDecl, depth uintptr)
+  mut len = pmuldecl'syms.len()
+  mut i uintptr = 0
+
+  while i < len
+    tty:outch(10)
+    printPadding(depth + 1)
+
+    psymbolDump(<ptr PSymbol>(val pmuldecl'syms.get(i)))
+
+    i++
+  /while
+/func
+
+
+func pexprDumpInfo(pexpr ptr PExpr, depth uintptr)
+  mut tok Token
+  tok'type = pexpr'opType
+
+  tty:out(": ")
+
+  if pexpr'opType == ID
+    tty:out("an id - \"")
+    tty:out(<ptr uint8>(pexpr'node'value))
+    tty:out("\"")
+  else
+    if pexpr'opType == NUMBER
+      tty:outint(pexpr'node'value)
+    else
+      if pexpr'opType == STRING
+        tty:out("a string - \"")
+        tty:out(<ptr uint8>(pexpr'node'value))
+        tty:out("\"")
+      else
+        if pexpr'opType == OPAR
+          tty:out("a function call")
+        else
+          if pexpr'opType == OBRAC
+            tty:out("an array access")
+          else
+            if pexpr'opType == OCURLY
+              tty:out("a struct literal")
+            else
+              tty:out(tokenStr(ptr tok))
+
+              if pexpr'opType == CAST or pexpr'opType == SIZE
+                tty:out(" to ")
+
+                <ptr PType>(pexpr'node'value).dump()
+              /if
+            /if
+          /if
+        /if
+      /if
+    /if
+  /if
+/func
+
+
+func pnodeDumpRec(pnode ptr PNode, depth uintptr)
+
+  printPadding(depth)
+
+  tty:out(pnodeTypeToString(pnode'type))
+  tty:out(":")
+
+  tty:outch(32)
+  linesDump(pnode'begin, pnode'end)
+
+  if pnode.isRoot()
+    prootDumpInfo(<ptr PRoot>(pnode), depth)
+  /if
+
+  if pnode.isDecl()
+    pdeclDumpInfo(<ptr PDecl>(pnode), depth)
+  /if
+
+  if pnode.isExpr()
+    pexprDumpInfo(<ptr PExpr>(pnode), depth)
+  /if
+
+  if pnode.isMulDecl()
+    pmuldeclDumpInfo(<ptr PMulDecl>(pnode), depth)
+  /if
+
+  tty:outch(10)
+
+  mut len = pnode'leaves.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut child = <ptr PNode>(val pnode'leaves.get(i))
+
+    pnodeDumpRec(child, depth + 1)
+
+    i++
+  /while
+
+/func
+
+
+method PNode.dump()
+  pnodeDumpRec(me, 0)
+/method
+
+
+method PModule.dump()
+  tty:out("Module ")
+
+  tty:outln(me'name ?? "<main>")
+
+  tty:outln("")
+
+  mut i uintptr = 0
+  mut len = me'roots.len()
+
+  while i < len
+    mut root = <ptr PRoot>(val me'roots.get(i))
+
+    tty:out("\nfile ")
+    tty:out(root'fileName)
+    tty:outln(":\n")
+
+    root'node'node.dump()
+
+    i++
+  /while
+/method
+
+
+method Symbol.dump(cs ptr txt:Charstash)
+  cs.add(me'name)
+  cs.addChar(32)
+  me'type.dump(cs)
+/method
+
+
+func symlistDump(cs ptr txt:Charstash, symlist ptr kv:KVList)
+
+  if symlist?
+    mut len = symlist.len()
+    mut i uintptr = 0
+
+    while i < len
+      mut pair = symlist.getAt(i)
+      mut sym Symbol
+
+      sym'name = <ptr uint8>(pair'key)
+      sym'type = <ptr Type>(pair'value)
+
+      sym.dump(cs)
+
+      if i + 1 < len
+        cs.add(", ")
+      /if
+
+      i++
+    /while
+  /if
+/func
+
+
+func typeDumpName(cs ptr txt:Charstash, type ptr Type)
+  if type'name?
+    cs.add("{ ")
+
+    if type'moduleName?
+      cs.add(type'moduleName)
+      cs.add(":")
+    /if
+    cs.add(type'name)
+
+    cs.add(" } ")
+  /if
+/func
+
+
+method Type.dump(cs ptr txt:Charstash)
+  typeDumpName(cs, me)
+
+  if me'type == TYPE_FUNC
+    typeDumpName(cs, me)
+
+    cs.add("func (")
+
+    symlistDump(cs, me'members)
+
+    cs.add(")")
+
+    if me'retType?
+      cs.addChar(32)
+
+      me'retType.dump(cs)
+    /if
+  else
+    if me'type == TYPE_PTR
+      cs.add("ptr ")
+
+      me'retType.dump(cs)
+    else
+      if me'type == TYPE_STRUCT
+        cs.add("{")
+        symlistDump(cs, me'members)
+        cs.add("}")
+      else
+        if me'type == TYPE_LOC
+          cs.add("[")
+          cs.addInt(me'itemCount)
+          cs.add("] ")
+
+          me'retType.dump(cs)
+        else
+          if me'type == TYPE_BOOL
+            cs.add("bool")
+          else
+            if me'type == TYPE_INT
+              if not me'isSigned
+                cs.add("u")
+              /if
+
+              cs.add("int")
+              cs.addInt(me'typeSize * 8)
+
+            else
+              if me'type == TYPE_DATA
+                cs.add("data")
+              else
+                if me'type == TYPE_RECALIAS
+                  cs.add("<< alias to ")
+                  cs.add(me'name)
+                  cs.add(" >>")
+                else
+                  if me'type == TYPE_NULL
+                    cs.add("null")
+                  else
+                    if me'type == TYPE_EMPTY
+                      cs.add("<<empty type>>")
+                    /if
+                  /if
+                /if
+              /if
+            /if
+          /if
+        /if
+      /if
+    /if
+  /if
+
+/method
+
+
+method Type.ttydump()
+  mut cs = txt:newCs(20)
+
+  me.dump(cs)
+  mut str = txt:unwrapCs(cs)
+
+  tty:outln(str)
+
+  mem:free(str)
+/method
+
+
+method Symbol.summarize(cs ptr txt:Charstash)
+  cs.add(me'name)
+  cs.addChar(32)
+  me'type.summarize(cs)
+/method
+
+
+func symlistSummarize(cs ptr txt:Charstash, symlist ptr kv:KVList)
+
+  if symlist?
+    mut len = symlist.len()
+    mut i uintptr = 0
+
+    while i < len
+      mut pair = symlist.getAt(i)
+      mut sym Symbol
+
+      sym'name = <ptr uint8>(pair'key)
+      sym'type = <ptr Type>(pair'value)
+
+      sym.summarize(cs)
+
+      if i + 1 < len
+        cs.add(", ")
+      /if
+
+      i++
+    /while
+  /if
+/func
+
+
+method Type.summarize(cs ptr txt:Charstash)
+  if me'name?
+    if me'moduleName?
+      cs.add(me'moduleName)
+      cs.add(":")
+    /if
+
+    cs.add(me'name)
+    return
+  /if
+
+  if me.isPtr()
+    cs.add("ptr ")
+    me'retType.summarize(cs)
+    return
+  /if
+
+  if me.isLoc()
+    cs.add("loc[")
+    cs.addInt(me'itemCount)
+    cs.add("] ")
+    me'retType.summarize(cs)
+    return
+  /if
+
+  if me.isFunc()
+    cs.add("func (")
+    symlistSummarize(cs, me'members)
+    cs.add(")")
+
+    if me'retType?
+      cs.addChar(32)
+
+      me'retType.summarize(cs)
+    /if
+
+    return
+  /if
+
+  if me.isStruct()
+    cs.add("{")
+    symlistSummarize(cs, me'members)
+    cs.add("}")
+
+    return
+  /if
+
+  me.dump(cs)
+/method
+
+
+func declDump(prefix,name ptr uint8, type ptr Type)
+  tty:out(prefix)
+  tty:outch(32)
+
+  tty:out(name)
+  tty:outch(32)
+
+  mut cs = txt:newCs(40)
+  type.dump(cs)
+  mut str = txt:unwrapCs(cs)
+
+  tty:out(str)
+
+  mem:free(str)
+
+  tty:outch(10)
+
+  tty:out("[[ size: ")
+  tty:outint(type'typeSize)
+  tty:out(", align: ")
+  tty:outint(type'typeAlign)
+  tty:out(" ]]")
+
+  tty:outch(10)
+/func
+
+
+method PTypeDescr.dump()
+  mut ptype = me'type
+
+  if ptype == PTYPE_FUNC
+    tty:out("func")
+
+    if me'arguments?
+
+      ptypeDescrDumpStructuredDataArgs(me'arguments)
+      tty:outch(32)
+    else
+      tty:out("()")
+    /if
+
+    if me'retType?
+      me'retType.dump()
+    /if
+  /if
+
+  if ptype == PTYPE_ID
+    return
+  /if
+
+  if ptype == PTYPE_LOC
+    tty:out("[")
+    tty:outint(me'length)
+    tty:out("] ")
+    me'retType.dump()
+  /if
+
+  if ptype == PTYPE_PTR
+    tty:out("ptr ")
+    me'retType.dump()
+  /if
+
+  if ptype == PTYPE_STRUCT
+    tty:out("struct ")
+    ptypeDescrDumpStructuredDataArgs(me'arguments)
+  /if
+/method
+
+
+method PType.dump()
+  if me'name?
+    if me'moduleName?
+      tty:out(me'moduleName)
+      tty:outch(58)
+    /if
+    tty:out(me'name)
+  /if
+
+  if me'descr?
+    me'descr.dump()
+  /if
+/method

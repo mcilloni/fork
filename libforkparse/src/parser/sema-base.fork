@@ -1,0 +1,152 @@
+#  libforkparse, a full parser for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module parser
+
+
+import ast
+import hash
+import kv
+import list
+import mem
+import proc
+
+
+func intHash(n data) uintptr
+  return <uintptr>(n)
+/func
+
+
+# This function validates a single declaration.
+# The resolver is used to resolve symbols and aliases; if they are in the global
+# scope, they may be unresolved yet, and are then verified.
+method Resolver.validatePDecl(pdecl ptr ast:PDecl) bool
+  mut ntype = pdecl'node'type
+
+  if ntype == ast:PMUT or ntype == ast:PFUNCTION or ntype == ast:PENTRY or ntype == ast:PMETHOD
+    return me.registerTopDecl(pdecl)?
+  else
+    if ntype == ast:PALIAS
+      return me.registerAlias(pdecl)?
+    else
+      proc:panic("unreachable: invalid pdecl value")
+    /if
+  /if
+
+  # unreachable
+  return false
+/method
+
+
+# This method validates a file AST.
+# Being supposed to be called by validateModuleFile, we may assume that all the
+# imports have been already evaluated.
+#
+# This function parses the children of the given AST root, using the resolver to
+# resolve eventual symbols and aliases.
+#
+# If not found, a symbol is looked after and verified out of order, allowing
+# complete visibility of the global module scope without any issue with the
+# declaration order of variables, aliases and functions.
+method Resolver.validateFile(root ptr ast:PRoot) bool
+
+  if root'node'node'validated
+    return true
+  /if
+
+  me.setCurrentRoot(root)
+
+  mut pnode = <ptr ast:PNode>(root)
+
+  mut len = pnode'leaves.len()
+  mut i uintptr = 0
+  mut result = true
+
+  while i < len
+    mut node = <ptr ast:PNode>(val pnode'leaves.get(i))
+
+    if node.isDecl()
+      if not node'validated
+        if not me.validatePDecl(<ptr ast:PDecl>(node))
+          result = false
+
+          break
+        /if
+      /if
+    /if
+
+    i++
+  /while
+
+  return result
+/method
+
+
+method Resolver.validateModuleFile(root ptr ast:PRoot)
+  mut proot = <ptr ast:PRoot>(root)
+  me'prs.setCurrentFile(proot'fileName)
+
+  me.validateFile(proot)
+/method
+
+
+func validateModuleAst(prs ptr Parser, pmod ptr ast:PModule) ptr ast:Issues
+  mut iss = ast:issuesNew()
+
+  mut rsv Resolver
+
+  mut decls = rsv.collect(prs, pmod, iss)
+  if not decls?
+    return iss
+  /if
+
+  mut importIssues = prs.importAll(rsv'imports)
+  mut importErrorsLen = importIssues.errLen()
+
+  iss.addAll(importIssues)
+  ast:issuesFree(importIssues)
+
+  if importErrorsLen < 1
+    mut i uintptr = 0
+    mut len = pmod'roots.len()
+
+    while i < len
+    mut root = <ptr ast:PRoot>(val pmod'roots.get(i))
+
+    rsv.validateModuleFile(root)
+
+    i++
+    /while
+
+    kv:free(decls)
+    resolverDeinit(ptr rsv)
+  /if
+
+  return iss
+/func
+
+
+func validateAst(prs ptr Parser, root ptr ast:PNode) ptr ast:Issues
+  if not root.isRoot()
+    proc:panic("non PRoot node can't be validated")
+    return null
+  /if
+
+  mut pmod = ast:pmoduleNew()
+
+  ast:pmoduleAdd(pmod, <ptr ast:PRoot>(root))
+
+  mut ret = validateModuleAst(prs, pmod)
+
+  mem:free(pmod'name)
+  mem:free(pmod)
+
+  return ret
+/func

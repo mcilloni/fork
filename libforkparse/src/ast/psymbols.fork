@@ -1,0 +1,56 @@
+#  libforkparse, a full parser for the Fork language
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ast
+
+
+import list
+import memutils
+import txt
+
+
+# PType and PTypeDescr do not represent a type, but its parse-time representation.
+# Per example, uint16 and PType are bot "id-types", because they are syntactically presented by
+# an identifier at parsing time, while being really very different (a struct and an integer).
+
+alias PType struct (
+  refc memutils:Ref,
+  name, moduleName ptr uint8,
+  descr ptr PTypeDescr,
+  begin, end txt:Line
+)
+
+
+alias PTypeDescr struct (
+  refc memutils:Ref,
+  type uint16,
+  # if type is PTYPE_PTR or PTYPE_LOC, this is the type returned by dereferencing.
+  # if type is PTYPE_FUNC, this is the return type of the function
+  retType ptr PType,
+  # if type is PTYPE_FUNC, this is the arguments list
+  # if type is PTYPE_STRUCT, this is the fields list
+  arguments ptr list:List,
+  #if type is PTYPE_LOC, this is the number of items allocated
+  length uintptr
+)
+
+
+alias PSymbol struct(
+  refc memutils:Ref,
+  name ptr uint8,
+  type ptr PType
+)
+
+
+mut PTYPE_FUNC   uint16 = 10
+mut PTYPE_ID     uint16 = 20
+mut PTYPE_PTR    uint16 = 30
+mut PTYPE_STRUCT uint16 = 40
+mut PTYPE_LOC    uint16 = 50
