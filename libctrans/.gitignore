@@ -1,0 +1,9 @@
+build/*
+build.1/*
+build.2/*
+ctrans-release*
+examples/*.txt
+examples/*.elf
+examples/*.old
+tests/*.err
+core.*

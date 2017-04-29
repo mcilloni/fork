@@ -1,0 +1,471 @@
+#  libctrans, Fork to C transpiler library
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ctrans
+
+
+import about
+import ast
+import err
+import hash
+import io
+import kv
+import list
+import mem
+import pair
+import parser
+import proc
+import set
+import txt
+import tty
+
+
+alias Transl struct(
+  includes,typedefs,ssastructs,externs,vars,funcs ptr txt:Charstash,
+  modName ptr uint8,
+  debug bool,
+  parser ptr parser:Parser,
+  cnt uintptr
+)
+
+
+func init(tr ptr Transl,
+          name ptr uint8,
+          parser ptr parser:Parser)
+
+  tr'includes = txt:newCs(40)
+  tr'typedefs = txt:newCs(300)
+  tr'ssastructs = txt:newCs(300)
+  tr'externs = txt:newCs(300)
+  tr'vars = txt:newCs(300)
+  tr'funcs = txt:newCs(300)
+  tr'parser = parser
+  tr'cnt = 0
+
+  tr'modName = name
+/func
+
+
+func nullSafestreq(str1,str2 ptr uint8) bool
+  return (str1? and str2?) => txt:strequals(str1, str2) || str1 == str2
+/func
+
+
+method Transl.extern(sym ptr uint8)
+  me'externs.addWord("extern")
+  me'externs.add(sym)
+  me'externs.addLine(";")
+/method
+
+
+method Transl.fnblock(root ptr ast:PRoot,
+                             block ptr ast:PBlock,
+                             rvoType ptr ast:Type,
+                             fname ptr uint8)
+
+  translBlock(me'funcs, me, root, block, rvoType, fname, 2, true)
+/method
+
+
+method Transl.function(root ptr ast:PRoot,
+                              fname,sym ptr uint8,
+                              type ptr ast:Type,
+                              fn ptr ast:PDecl)
+
+  me'funcs.addDebugLine(fname, fn'node'begin'line)
+  me'funcs.addWord(sym)
+
+  mut rvoType = (type'retType? and type'retType.isStruct()) => type'retType || null
+
+  mut block = <ptr ast:PBlock>(val fn'node'leaves.get(0))
+
+
+
+  me.fnblock(root, block, rvoType, fname)
+
+  me'funcs.addLine("\n")
+/method
+
+
+method Transl.forkmain(root ptr ast:PRoot)
+  mut entryN = root'entryNode
+
+  me'funcs.addDebugLine(root'fileName, entryN'node'begin'line)
+  me'funcs.add("void __fork_entry(void) ")
+
+  mut block = <ptr ast:PBlock>(val entryN'node'leaves.get(0))
+
+  me.fnblock(root, block, null, root'fileName)
+
+  me'funcs.addLine("\n")
+/method
+
+
+method Transl.globVar(sym ptr uint8, root ptr ast:PRoot, expr ptr ast:PExpr)
+  me'vars.add(sym)
+
+  if expr?
+    me'vars.add(" = ")
+    me.globExpr(root, expr)
+  /if
+
+  me'vars.addLine(";")
+/method
+
+
+method Transl.typedef(name,body ptr uint8, ssa bool)
+  mut cs = ssa => me'ssastructs || me'typedefs
+
+  cs.addWord("typedef")
+
+  mut modName = ssa => null || me'modName
+
+  cs.add(body)
+
+  cs.addLine(";\n")
+/method
+
+
+method Transl.dump() {headers,cfile ptr uint8}
+  mut cs = txt:newCs(200)
+
+  cs.add("// generated with ctrans v")
+  cs.add(VERSION)
+  cs.add(" (")
+
+  cs.add("libfork v")
+  cs.add(about:VERSION)
+  cs.add(")\n\n\n")
+
+  cs.add("#include <stdint.h>\n\n")
+
+  #just in case, you know.
+  cs.add("#undef NULL\n\n")
+
+  mut includes = txt:unwrapCs(me'includes)
+  cs.add(includes)
+  mem:free(includes)
+
+  cs.add("\n\n")
+
+  mut headers = txt:newCs(200)
+
+  mut typedefs = txt:unwrapCs(me'typedefs)
+  headers.add(typedefs)
+  mem:free(typedefs)
+
+  cs.add("\n\n")
+
+  mut ssastructs = txt:unwrapCs(me'ssastructs)
+  headers.add(ssastructs)
+  mem:free(ssastructs)
+
+  cs.add("\n\n")
+
+  mut externs = txt:unwrapCs(me'externs)
+  headers.add(externs)
+  mem:free(externs)
+
+  headers.add("\n\n")
+
+  mut headRet = txt:unwrapCs(headers)
+
+  cs.add(headRet)
+  cs.add("\n\n")
+
+  mut vars = txt:unwrapCs(me'vars)
+  cs.add(vars)
+  mem:free(vars)
+
+  mut funcs = txt:unwrapCs(me'funcs)
+  cs.add(funcs)
+  mem:free(funcs)
+
+  cs.add("\n\n")
+
+  return {headRet,txt:unwrapCs(cs)}
+/method
+
+
+# Include a ford.
+method Transl.includeFord(fordName ptr uint8, done ptr set:Set)
+  if done.contains(fordName)
+    return
+  /if
+
+  # Find ford for this include in parser.
+
+  mut ford = me'parser.getImport(fordName)
+
+  if ford'extra?
+    mut impLen = ford'imports.len()
+    mut i uintptr = 0
+
+    while i < impLen
+      mut upImp = cast<ptr uint8>(val ford'imports.get(i))
+
+      me.includeFord(upImp, done)
+
+      i++
+    /while
+
+    me'includes.add("\n// module ")
+    me'includes.add(fordName)
+    me'includes.add("\n\n\n")
+    me'includes.addLine(ford'extra)
+
+    done.put(fordName)
+  /if
+/method
+
+
+method Transl.genDecls(root ptr ast:PRoot)
+
+  mut len = root'node'node'leaves.len()
+  mut i uintptr = 0
+  mut moduleName ptr uint8 = root'moduleName? => root'moduleName'name || null
+
+  while i < len
+    mut child = <ptr ast:PDecl>(val root'node'node'leaves.get(i))
+
+    if child'node'type != ast:PALIAS and child'node'type != ast:PENTRY
+
+      mut key = ast:declKey(child)
+
+      mut dinfo = root'node'syms.get(key)
+
+      mem:free(key)
+
+      mut wantsModName = me'modName? and not child'isDecl
+
+      mut sym = me.translSym(wantsModName => moduleName || null, child, dinfo)
+
+      me.extern(sym)
+
+      if not child'isDecl
+        if child'node'type == ast:PMUT
+          mut expr = child'node'leaves.get(0)
+
+          me.globVar(sym, root, expr? => <ptr ast:PExpr>(val expr) || null)
+        else
+          if child'node'type == ast:PFUNCTION or child'node'type == ast:PMETHOD
+            me.function(root, root'fileName, sym, dinfo'type, child)
+          /if
+        /if
+      /if
+
+      mem:free(sym)
+
+    /if
+
+    i++
+  /while
+/method
+
+
+method Transl.genImports(root ptr ast:PRoot)
+
+  mut i uintptr = 0
+  mut len = root'imports.len()
+
+  mut done set:Set
+
+  set:strinit(ptr done, 10)
+
+  while i < len
+    mut impdef = <ptr ast:StringDef>(val root'imports.get(i))
+
+    me.includeFord(impdef'name, ptr done)
+
+    i++
+  /while
+
+  set:deinit(ptr done)
+/method
+
+
+method set:Set.gatherImports(root ptr ast:PRoot)
+  mut impLen = root'imports.len()
+
+  mut i uintptr = 0
+  while i < impLen
+    mut impdef = <ptr ast:StringDef>(val root'imports.get(i))
+    me.put(impdef'name)
+
+    i++
+  /while
+/method
+
+
+method Transl.genTypedef(kv ptr kv:KVList,
+                                name,body ptr uint8,
+                                deps,done ptr set:Set)
+
+  mut iter = deps.iter()
+  mut dep ptr uint8 = null
+
+  while (dep = cast<ptr uint8>(iter.next()))?
+    if not done.contains(dep)
+      mut idep = cast<ptr {body ptr uint8, deps ptr set:Set} >(kv.get(dep))
+
+      if idep?
+        me.genTypedef(kv, dep, idep'body, idep'deps, done)
+      /if
+    /if
+  /while
+
+  me.typedef(name, body, false)
+
+  done.put(name)
+/method
+
+
+method Transl.genTypedefs(kv ptr kv:KVList)
+  mut done = set:strnew(10)
+  mut len = kv.len()
+
+  mut i uintptr = 0
+
+  while i < len
+    mut pair = kv.getAt(i)
+    mut name = cast<ptr uint8>(pair'key)
+    mut {body,deps} = val cast<ptr {body ptr uint8, deps ptr set:Set} >(pair'value)
+
+    if not done.contains(name)
+      me.genTypedef(kv, name, body, deps, done)
+    /if
+
+    i++
+  /while
+/method
+
+
+func typeGatherMembersDepSet(set ptr set:Set,
+                             curMod,aliasName ptr uint8,
+                             members ptr kv:KVList)
+
+  mut len = members.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut pair = members.getAt(i)
+    mut type = cast<ptr ast:Type>(pair'value)
+
+    typeGatherDepSet(set, curMod, aliasName, type)
+
+    i++
+  /while
+/func
+
+
+func typeGatherDepSet(set ptr set:Set,
+                      curMod,aliasName ptr uint8,
+                      type ptr ast:Type)
+
+  if not type'builtin and type'type != ast:TYPE_RECALIAS
+    if type'name? and not txt:strequals(type'name, aliasName)
+      if not type'moduleName? or txt:strequals(type'moduleName, curMod)
+        set.put(type'name)
+      /if
+    else
+      if type'retType?
+        typeGatherDepSet(set, curMod, aliasName, type'retType)
+      /if
+
+      if type'members?
+        typeGatherMembersDepSet(set, curMod, aliasName, type'members)
+      /if
+    /if
+  /if
+/func
+
+
+func genDepSet(curMod,aliasName ptr uint8, type ptr ast:Type) ptr set:Set
+  mut set = set:strnew(10)
+
+  typeGatherDepSet(set, curMod, aliasName, type)
+
+  return set
+/func
+
+
+method Transl.gatherAliases(aliases ptr kv:KVList, root ptr ast:PRoot)
+  mut modName = root'moduleName? => root'moduleName'name || null
+  mut kv = root'aliases'syms
+
+  mut len = kv.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut pair = kv.getAt(i)
+    mut name = cast<ptr uint8>(pair'key)
+    mut type = cast<ptr ast:DeclInfo>(pair'value)'type
+
+    mut typeBodyCs = txt:newCs(30)
+
+    me.genCsym(typeBodyCs, null, modName, name, type, -1, true)
+
+    mut typeDeps = genDepSet(me'modName, name, type)
+    mut typeBody = txt:unwrapCs(typeBodyCs)
+
+    mut its = cast<ptr {body ptr uint8, deps ptr set:Set} >(mem:alloc(size({body ptr uint8, deps ptr set:Set})))
+
+    val its = {typeBody, typeDeps}
+
+    aliases.put(name, its)
+
+    i++
+  /while
+/method
+
+
+method Transl.translateModule(pmod ptr ast:PModule)
+  mut importSet set:Set
+  mut typedefKV kv:KVList
+  set:strinit(ptr importSet, 10)
+  kv:strinit(ptr typedefKV, 10)
+
+  mut len = pmod'roots.len()
+
+  mut i uintptr = 0
+  while i < len
+    mut root = <ptr ast:PRoot>(val pmod'roots.get(i))
+
+    importSet.gatherImports(root)
+    me.gatherAliases(ptr typedefKV, root)
+
+    me.genDecls(root)
+
+    i++
+  /while
+
+  mut done set:Set
+  set:strinit(ptr done, importSet.len())
+
+  mut iter = importSet.iter()
+
+  mut imp ptr uint8
+
+  while (imp = <ptr uint8>(iter.next()))?
+    me.includeFord(imp, ptr done)
+  /while
+
+  set:iterFree(iter)
+
+  set:deinit(ptr importSet)
+
+  me.genTypedefs(ptr typedefKV)
+
+  kv:deinit(ptr typedefKV)
+
+  if pmod'entryNode?
+    me.forkmain(pmod'entryNode.findPRoot())
+  /if
+/method

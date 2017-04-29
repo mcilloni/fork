@@ -1,0 +1,395 @@
+#  libctrans, Fork to C transpiler library
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ctrans
+
+
+import ast
+import list
+import mem
+import txt
+
+
+alias LineStr struct(
+  line txt:Line,
+  str ptr uint8
+)
+
+
+# LineStr functions
+func lsFree(ls ptr LineStr)
+  mem:free(ls'str)
+  mem:free(ls)
+/func
+
+
+func lsNew(line txt:Line, str ptr uint8) ptr LineStr
+  mut ls = <ptr LineStr>(mem:alloc(size(LineStr)))
+
+  ls'line = line
+  ls'str = str
+
+  return ls
+/func
+
+
+alias Block struct(
+  decls,vars,stmts ptr txt:Charstash,
+  unit ptr Transl,
+  pad uintptr,
+  pblock ptr ast:PBlock,
+  rvoType ptr ast:Type
+)
+
+
+# Block functions
+func blNew(unit ptr Transl,
+           pblock ptr ast:PBlock,
+           pad uintptr,
+           rvoType ptr ast:Type) Block
+
+  mut ret Block
+
+  ret'decls = txt:newCs(20)
+  ret'vars = txt:newCs(20)
+  ret'stmts = txt:newCs(20)
+  ret'unit = unit
+  ret'pblock = pblock
+  ret'pad = pad
+  ret'rvoType = rvoType
+
+  return ret
+/func
+
+
+method Block.padDecls()
+  me'decls.addPad(me'pad)
+/method
+
+
+method Block.padStmts()
+  me'stmts.addPad(me'pad)
+/method
+
+
+method Block.padVars()
+  me'vars.addPad(me'pad)
+/method
+
+
+method Block.newDecl(ext bool,
+                            name,fname ptr uint8,
+                            type ptr ast:Type,
+                            line uintptr)
+
+  mut cs = ext => me'decls || me'vars
+
+  cs.addPad(me'pad)
+  cs.addDebugLine(fname, line)
+
+  cs.addPad(me'pad)
+  me'unit.genCsym(cs, null, null, name, type, me'pad, false)
+  cs.addLine(";")
+/method
+
+
+method Block.genDecls(stab ptr ast:Symtable, fname ptr uint8, line uintptr)
+  mut len = stab'syms.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut pair = stab'syms.getAt(i)
+    mut name = <ptr uint8>(pair'key)
+    mut dinfo = <ptr ast:DeclInfo>(pair'value)
+    mut type = dinfo'type
+
+    if not dinfo'funcParam
+      me.newDecl(dinfo'declOnly, name, fname, type, line)
+    /if
+
+    i++
+  /while
+/method
+
+
+# Deinits the block.
+method Block.dumpInCs(cs ptr txt:Charstash)
+  mut decls = txt:unwrapCs(me'decls)
+  cs.addLine(decls)
+  mem:free(decls)
+
+  cs.add("\n\n")
+
+  mut vars = txt:unwrapCs(me'vars)
+  cs.addLine(vars)
+  mem:free(vars)
+
+  cs.add("\n\n")
+
+  mut stmts = txt:unwrapCs(me'stmts)
+  cs.addLine(stmts)
+  mem:free(stmts)
+/method
+
+
+method Block.decPad()
+  if me'pad > 0
+    me'pad = me'pad - 2
+  /if
+/method
+
+
+method Block.ifblock(stmt ptr ast:PNode,
+                            root ptr ast:PRoot,
+                            fname ptr uint8)
+
+  mut pexpr = <ptr ast:PExpr>(val stmt'leaves.get(0))
+
+  mut cond = me.expr(pexpr, root, fname, stmt'begin'line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, stmt'begin'line)
+
+  me.padStmts()
+  me'stmts.add("if (")
+  me'stmts.add(cond.value())
+  me'stmts.addWord(")")
+
+  mut block = <ptr ast:PBlock>(val stmt'leaves.get(1))
+
+  me.subblock(root, block, fname)
+
+  if stmt'type == ast:PIFELSE
+    me'stmts.add(" else ")
+
+    block = <ptr ast:PBlock>(val stmt'leaves.get(2))
+
+    me.subblock(root, block, fname)
+  /if
+
+  cond.wipe()
+/method
+
+
+method Block.incPad()
+  me'pad = me'pad + 2
+/method
+
+
+method Block.returnstmt(stmt ptr ast:PNode,
+                               root ptr ast:PRoot,
+                               fname ptr uint8)
+
+  mut line = stmt'begin'line
+
+  mut expr = stmt'leaves.get(0)
+
+  mut elem Elem
+
+  if expr?
+    me'stmts.addChar(32)
+
+    elem = me.expr(<ptr ast:PExpr>(val expr), root, fname, line)
+
+    if me'rvoType?
+      mut rvoOut Elem
+
+      rvoOut'str = "(*_rvoOut)"
+      rvoOut'type = me'rvoType
+
+      me.assign(rvoOut, elem, fname, line)
+
+      elem.wipe()
+    /if
+  /if
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("return")
+
+  if expr? and not me'rvoType?
+    me'stmts.add(" ")
+    me'stmts.add(elem.value())
+
+    elem.wipe()
+  /if
+/method
+
+
+method Block.statement(stmt ptr ast:PNode,
+                              root ptr ast:PRoot,
+                              fname ptr uint8)
+
+  mut semicolon = false
+
+  if stmt'type == ast:PIF or stmt'type == ast:PIFELSE
+    me.ifblock(stmt, root, fname)
+  else
+
+    if    stmt'type == ast:PMUT \
+       or stmt'type == ast:PFUNCTION \
+       or stmt'type == ast:PMETHOD
+
+      me.declaration(<ptr ast:PDecl>(stmt), root, fname)
+    else
+      if stmt'type == ast:PMUTEXP
+        me.muldecl(<ptr ast:PMulDecl>(stmt), root, fname)
+      else
+        if stmt'type == ast:PWHILE
+          me.whileblock(stmt, root, fname)
+          semicolon = false
+        else
+          if stmt'type == ast:PCONTINUE
+            me'stmts.add("continue")
+            semicolon = true
+          else
+            if stmt'type == ast:PBREAK
+              me'stmts.add("break")
+              semicolon = true
+            else
+              if stmt'type == ast:PRETURN
+                me.returnstmt(stmt, root, fname)
+                semicolon = true
+              else
+                if stmt'type == ast:PEXPR
+                  me.expr(<ptr ast:PExpr>(stmt), root, fname, stmt'begin'line).wipe()
+                /if
+              /if
+            /if
+          /if
+        /if
+      /if
+    /if
+  /if
+
+
+  me'stmts.addLine(semicolon => ";" || "")
+/method
+
+
+method Block.subblock(root ptr ast:PRoot,
+                             block ptr ast:PBlock,
+                             fname ptr uint8)
+
+  translBlock(me'stmts, me'unit, root, block, me'rvoType, fname, \
+                      me'pad + 2, false)
+/method
+
+
+method Block.whileblock(stmt ptr ast:PNode,
+                               root ptr ast:PRoot,
+                               fname ptr uint8)
+
+  mut line = stmt'begin'line
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addLine("for (;;) {")
+
+  me.incPad()
+
+  mut pexpr = <ptr ast:PExpr>(val stmt'leaves.get(0))
+
+  mut cond = me.expr(pexpr, root, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("if(")
+  me'stmts.add(cond.value())
+  me'stmts.addWord(")")
+
+  mut block = <ptr ast:PBlock>(val stmt'leaves.get(1))
+
+  me.subblock(root, block, fname)
+
+  me'stmts.addLine(" else {")
+
+  me.incPad()
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addLine("break;")
+
+  me.decPad()
+
+  mut endLine = block'node'end'line
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, endLine)
+
+  me.padStmts()
+  me'stmts.addLine("}")
+
+  me.decPad()
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, endLine)
+
+  me.padStmts()
+  me'stmts.addLine("}\n")
+
+  cond.wipe()
+/method
+
+
+func translBlock(cs ptr txt:Charstash,
+                 unit ptr Transl,
+                 root ptr ast:PRoot,
+                 block ptr ast:PBlock,
+                 rvoType ptr ast:Type,
+                 fname ptr uint8,
+                 p uintptr,
+                 horribleRVOHack bool)
+
+  mut origp uintptr = p == 0 => 0 || p - 2
+
+  cs.addLine("{")
+
+  mut bl = blNew(unit, block, p, rvoType)
+
+  if rvoType? and horribleRVOHack
+    bl.newDecl(false, "*_rvoOut", fname, rvoType, block'node'begin'line - 1)
+
+    bl.padStmts()
+    bl'stmts.addDebugLine(fname, block'node'begin'line - 1)
+
+    bl.padStmts()
+    bl'stmts.addLine("_rvoOut = _rvoHack;\n")
+  /if
+
+  bl.genDecls(block'syms, fname, block'node'begin'line)
+
+  mut bLen = block'node'leaves.len()
+  mut i uintptr = 0
+
+  while i < bLen
+    mut stmt = <ptr ast:PNode>(val block'node'leaves.get(i))
+
+    bl.statement(stmt, root, fname)
+
+    i++
+  /while
+
+  bl.dumpInCs(cs)
+
+  cs.addPad(origp)
+  cs.addDebugLine(fname, block'node'end'line + 1)
+
+  cs.addPad(origp)
+  cs.add("}")
+/func

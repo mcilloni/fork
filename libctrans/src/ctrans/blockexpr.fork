@@ -1,0 +1,1289 @@
+#  libctrans, Fork to C transpiler library
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ctrans
+
+
+import ast
+import mem
+import parser
+import proc
+import tty
+import txt
+import vect
+
+
+alias Elem struct(
+  str ptr uint8,
+  type ptr ast:Type
+)
+
+
+func isShortcircuitOp(op uint16) bool
+  return op == ast:AND or op == ast:OR
+/func
+
+
+func freeElem(elem ptr Elem)
+  if elem?
+    elem.wipe()
+    mem:free(elem)
+  /if
+/func
+
+
+func needsStructCopy(to,from ptr ast:Type) bool
+  return to? and from? and from.isStruct() and (not to'name? or not from'name?)
+/func
+
+
+method Elem.copy() ptr Elem
+  mut ret = <ptr Elem>(mem:alloc(size(Elem)))
+
+  mem:copy(ret, me, size(Elem))
+
+  return ret
+/method
+
+
+method Elem.value() ptr uint8
+  return me'str
+/method
+
+
+method Elem.type() ptr ast:Type
+  return me'type
+/method
+
+
+method Elem.wipe()
+  mem:free(me'str)
+  me'str = null
+/method
+
+
+func boolelem(v bool, type ptr ast:Type) Elem
+  return elem(v => "1" || "0", type)
+/func
+
+
+func deref(elem Elem, ptrType ptr ast:Type) Elem
+  mut ret Elem
+  mut cs = txt:newCs(20)
+
+  cs.add("(*")
+  cs.add(elem.value())
+  cs.add(")")
+
+  ret'str = txt:unwrapCs(cs)
+  ret'type = ptrType'retType
+
+  return ret
+/func
+
+
+func elem(name ptr uint8, type ptr ast:Type) Elem
+  mut ret Elem
+
+  ret'str = txt:strclone(name)
+  ret'type = type
+
+  return ret
+/func
+
+
+func intelem(n uintptr, type ptr ast:Type) Elem
+  mut ret Elem
+
+  ret'str = <ptr uint8>(mem:zalloc(21))
+  txt:numtostr(n, ret'str, 20)
+  ret'type = type
+
+  return ret
+/func
+
+
+func methelem(name ptr uint8, type ptr ast:Type) Elem
+
+  if type.isPtr()
+    type = type'retType
+  /if
+
+  mut cs = txt:newCs(20)
+
+  if type.isPtr()
+    type = type'retType
+  /if
+
+  mut typeName = symMod(type'moduleName, type'name)
+
+  cs.addMethSym(typeName, name)
+
+  mem:free(typeName)
+
+  mut ret Elem
+
+  ret'str = txt:unwrapCs(cs)
+  ret'type = type
+
+  return ret
+/func
+
+
+func modelem(modName,name ptr uint8, type ptr ast:Type) Elem
+  mut ret Elem
+  mut modLen = txt:strlen(modName)
+  mut nameLen = txt:strlen(name)
+
+  ret'str = <ptr uint8>(mem:zalloc(modLen + nameLen + 2))
+
+  mem:copy(ret'str, modName, modLen)
+  ret'str[modLen] = val "$"
+  mem:copy(ret'str + modLen + 1, name, nameLen)
+
+  ret'type = type
+
+  return ret
+/func
+
+
+func refhack(el Elem, origType ptr ast:Type) ptr uint8
+  mut isToFn = origType.isFunc()
+
+  mut cs = txt:newCs(20)
+
+  if isToFn
+    cs.add("(")
+  /if
+
+  cs.add("*")
+  cs.add(el.value())
+
+  if isToFn
+    cs.add(")")
+  /if
+
+  return txt:unwrapCs(cs)
+/func
+
+
+func sizeelem(opType,aType ptr ast:Type) Elem
+  return intelem(opType'typeSize, aType)
+/func
+
+
+func structelem(left,field ptr uint8, leftType,fieldType ptr ast:Type) Elem
+  mut ret Elem
+  mut accOp = (leftType? and leftType'type == ast:TYPE_PTR) => "->" || "."
+  mut leftLen = txt:strlen(left)
+  mut accLen = txt:strlen(accOp)
+  mut fieldLen = txt:strlen(field)
+
+  ret'str = <ptr uint8>(mem:zalloc(leftLen + fieldLen + accLen + 1))
+
+  mem:copy(ret'str, left, leftLen)
+  mem:copy(ret'str + leftLen, accOp, accLen)
+  mem:copy(ret'str + leftLen + accLen, field, fieldLen)
+
+  ret'type = fieldType
+
+  return ret
+/func
+
+
+method Block.access(from,index Elem,
+                           fromType ptr ast:Type,
+                           fname ptr uint8,
+                           line uintptr) Elem
+
+  mut rightPtr = me.binop(ast:PLUS, fromType, from, index, fname, line)
+
+  mut ret = deref(rightPtr, fromType)
+
+  rightPtr.wipe()
+
+  return ret
+/method
+
+
+method Block.assign(to,from Elem, fname ptr uint8, line uintptr)
+
+  if needsStructCopy(to'type, from'type)
+    me.assignAnonStruct(to, from, fname, line)
+  else
+    me.padStmts()
+    me'stmts.addDebugLine(fname, line)
+
+    me.padStmts()
+    me'stmts.addWord(to.value())
+    me'stmts.addWord("=")
+    me'stmts.add(from.value())
+    me'stmts.addLine(";")
+  /if
+/method
+
+
+method Block.assignAnonStruct(to,from Elem,
+                                     fname ptr uint8,
+                                     line uintptr)
+
+  mut toMembers = to'type'members
+  mut fromMembers = from'type'members
+
+  mut len = toMembers.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut toPair = toMembers.getAt(i)
+    mut fromPair = fromMembers.getAt(i)
+
+    mut toName = <ptr uint8>(toPair'key)
+    mut fromName = <ptr uint8>(fromPair'key)
+
+    mut toType = <ptr ast:Type>(toPair'value)
+    mut fromType = <ptr ast:Type>(fromPair'value)
+
+    mut toMem = structelem(to.value(), toName, to'type, toType)
+    mut fromMem = structelem(from.value(), fromName, from'type, fromType)
+
+    me.assign(toMem, fromMem, fname, line)
+
+    toMem.wipe()
+    fromMem.wipe()
+
+    i++
+  /while
+/method
+
+
+method Block.binop(op uint16,
+                          destType ptr ast:Type,
+                          op1,op2 Elem,
+                          fname ptr uint8,
+                          line uintptr) Elem
+
+  if op == ast:POW
+    return me.pow(op1, op2, destType, fname, line)
+  /if
+
+  mut ret = me.nextvar(destType, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+  me'stmts.addWord(op1.value())
+  me'stmts.addWord(opConv(op))
+  me'stmts.add(op2.value())
+  me'stmts.addLine(";")
+
+  return ret
+/method
+
+
+method Block.castexpr(expr Elem,
+                             castType ptr ast:Type,
+                             fname ptr uint8,
+                             line uintptr) Elem
+
+  mut ret = me.nextvar(castType, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+
+  me'stmts.add("(")
+  me'unit.wrapType(me'stmts, castType, -1)
+  me'stmts.add(") ")
+
+  me'stmts.add(expr.value())
+  me'stmts.addLine(";")
+
+  return ret
+/method
+
+
+method Block.dec(op Elem,
+                        fname ptr uint8,
+                        line uintptr)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("--")
+  me'stmts.add(op.value())
+  me'stmts.addLine(";")
+/method
+
+
+method Block.fncall(name ptr uint8,
+                           retval ptr Elem,
+                           rettype ptr ast:Type,
+                           params ptr vect:Vect,
+                           fname ptr uint8,
+                           line uintptr )
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+
+  if retval?
+    me'stmts.addWord(retval.value())
+    me'stmts.addWord("=")
+  /if
+
+  me'stmts.add(name)
+  me'stmts.add("(")
+
+  mut i uintptr = 0
+  mut len = params.len()
+
+  while i < len
+    if i > 0
+      me'stmts.addWord(",")
+    /if
+
+    mut param = <ptr Elem>(val params.get(i))
+
+    me'stmts.add(param.value())
+
+    freeElem(param)
+
+    i++
+  /while
+
+  me'stmts.addLine(");")
+
+/method
+
+
+method Block.inc(op Elem,
+                        fname ptr uint8,
+                        line uintptr)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("++")
+  me'stmts.add(op.value())
+  me'stmts.addLine(";")
+/method
+
+
+method Block.label(lb Elem, empty bool)
+  me'stmts.add(lb.value())
+  me'stmts.add(":")
+
+  me'stmts.addLine(empty => " ;" || "")
+/method
+
+
+method Block.mulassign(to ptr Elem,
+                       from Elem,
+                       fname ptr uint8,
+                       line uintptr)
+
+  mut type = from'type
+  mut i uintptr = 0
+  mut len = type'members.len()
+  mut fromName = from.value()
+
+  while i < len
+    mut member = type'members.getAt(i)
+    mut memName = <ptr uint8>(member'key)
+    mut memType = <ptr ast:Type>(member'value)
+
+    mut structElem = structelem(fromName, memName, type, memType)
+
+    me.assign(val to, structElem, fname, line)
+
+    structElem.wipe()
+    i++
+    to++
+  /while
+/method
+
+
+method Block.nextlabel() Elem
+  mut ret Elem
+
+  ret'str = <ptr uint8>(mem:zalloc(22))
+  ret'str[0] = "_"[0]
+
+  txt:numtostr(me'unit'cnt, ptr ret'str[1], 255)
+
+  me'unit'cnt++
+
+  ret'type = null
+
+  return ret
+/method
+
+
+method Block.nextvar(type ptr ast:Type,
+                            fname ptr uint8,
+                            line uintptr) Elem
+
+  mut ret = me.ssavar(type)
+
+  if type.isLoc()
+    mut hackStr = refhack(ret, type'retType)
+
+    me.newDecl(false, hackStr, fname, type'retType, line)
+
+    mem:free(hackStr)
+  else
+    me.newDecl(false, ret.value(), fname, type, line)
+  /if
+
+  return ret
+/method
+
+
+method Block.pow(base,exp Elem,
+                        type ptr ast:Type,
+                        fname ptr uint8,
+                        line uintptr) Elem
+
+  mut ret = me.nextvar(type, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+  me'stmts.add("math$__forkpow(")
+  me'stmts.add(base.value())
+  me'stmts.add(", ")
+  me'stmts.add(exp.value())
+  me'stmts.add(")")
+  me'stmts.addLine(";")
+
+  return ret
+/method
+
+
+method Block.quest(elem Elem,
+                          type ptr ast:Type,
+                          fname ptr uint8,
+                          line uintptr) Elem
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  mut ret = me.nextvar(type, fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+  me'stmts.add(elem.value())
+  me'stmts.addLine(" != (void*) 0;")
+
+  return ret
+/method
+
+
+method Block.ref(elem Elem,
+                        origType ptr ast:Type,
+                        fname ptr uint8,
+                        line uintptr) Elem
+
+  mut ret = me.ssavar(null)
+  mut hackStr = refhack(ret, origType)
+
+  me.newDecl(false, hackStr, fname, origType, line)
+
+  mem:free(hackStr)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.add("= &")
+  me'stmts.add(elem.value())
+  me'stmts.addLine(";")
+
+  return ret
+/method
+
+
+method Block.ssavar(type ptr ast:Type) Elem
+  mut ret Elem
+
+  ret'str = <ptr uint8>(mem:zalloc(22))
+  ret'str[0] = "_"[0]
+
+  txt:numtostr(me'unit'cnt, ptr ret'str[1], 21)
+
+  me'unit'cnt++
+
+  ret'type = type
+
+  return ret
+/method
+
+
+method Block.str(value ptr uint8,
+                        destType ptr ast:Type,
+                        fname ptr uint8,
+                        line uintptr) Elem
+
+  mut ret = me.nextvar(destType, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+  me'stmts.addCStr(value)
+  me'stmts.addLine(";")
+
+  return ret
+/method
+
+
+method Block.structaccess(root ptr ast:PRoot,
+                                 e1,e2 ptr ast:PExpr,
+                                 type ptr ast:Type,
+                                 fname ptr uint8,
+                                 line uintptr) Elem
+
+  mut s = me.expr(e1, root, fname, line)
+
+
+  mut ret = structelem(s.value(), <ptr uint8>(e2'node'value), e1'type, type)
+
+  s.wipe()
+
+  return ret
+/method
+
+
+method Block.unop(op uint16,
+                         destType ptr ast:Type,
+                         op1 Elem,
+                         fname ptr uint8,
+                         line uintptr) Elem
+
+  mut ret = me.nextvar(destType, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+  me'stmts.add(opConv(op))
+  me'stmts.addWord(op1.value())
+  me'stmts.addLine(";")
+
+  return ret
+/method
+
+
+method Block.varcopy(to,from Elem,
+                            deref bool,
+                            fname ptr uint8,
+                            line uintptr)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+
+  if deref
+    me'stmts.add("*")
+  /if
+
+  me'stmts.addWord(to.value())
+  me'stmts.addWord("=")
+  me'stmts.addWord(from.value())
+  me'stmts.addLine(";")
+/method
+
+
+method Block.muldecl(pmuldecl ptr ast:PMulDecl,
+                     root ptr ast:PRoot,
+                     fname ptr uint8)
+
+  mut pnode = <ptr ast:PNode>(pmuldecl)
+
+  if pnode'leaves.len() > 0
+    mut expr = <ptr ast:PExpr>(val pnode'leaves.get(0))
+    mut exprEl = me.expr(expr, root, fname, pnode'begin'line)
+
+    mut len = pmuldecl'syms.len()
+    mut i uintptr = 0
+
+    # Old style C array, way easier this way
+    mut elems = <ptr Elem>(mem:zalloc(len * size(Elem)))
+
+    while i < len
+      mut sym = <ptr ast:PSymbol>(val pmuldecl'syms.get(i))
+      mut type = pnode.findSym(sym'name)
+
+      elems[i] = elem(sym'name, type)
+
+      i++
+    /while
+
+    me.mulassign(elems, exprEl, fname, pnode'begin'line)
+
+    i = 0
+    while i < len
+      elems[i].wipe()
+      i++
+    /while
+
+    exprEl.wipe()
+    mem:free(elems)
+  /if
+/method
+
+
+method Block.declaration(pdecl ptr ast:PDecl,
+                                root ptr ast:PRoot,
+                                fname ptr uint8)
+
+  mut pnode = <ptr ast:PNode>(pdecl)
+
+  if pnode'leaves.len() > 0
+    mut name = pdecl'sym'name
+    mut type = pnode.findSym(name)
+
+    mut id = elem(name, type)
+
+    mut expr = <ptr ast:PExpr>(val pnode'leaves.get(0))
+    mut exprEl = me.expr(expr, root, fname, pnode'begin'line)
+
+    me.assign(id, exprEl, fname, pnode'begin'line)
+
+    exprEl.wipe()
+    id.wipe()
+  /if
+/method
+
+
+method Block.handleAnd(root ptr ast:PRoot,
+                              type ptr ast:Type,
+                              e1,e2 ptr ast:PExpr,
+                              fname ptr uint8,
+                              line uintptr) Elem
+
+  mut ret = me.nextvar(type, fname, line)
+
+  mut el1 = me.expr(e1, root, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("if (!")
+  me'stmts.add(el1.value())
+  me'stmts.add(") goto ")
+
+  mut fail = me.nextlabel()
+
+  me'stmts.add(fail.value())
+  me'stmts.addLine(";")
+
+  mut el2 = me.expr(e2, root, fname, line)
+
+  me.assign(ret, el2, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord("goto")
+
+  mut goOut = me.nextlabel()
+  me'stmts.add(goOut.value())
+  me'stmts.addLine(";")
+
+  me.label(fail, false)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+  me'stmts.addLine("0;")
+
+  me.label(goOut, true)
+
+  fail.wipe()
+  goOut.wipe()
+
+  return ret
+/method
+
+
+method Block.handleDQuest(root ptr ast:PRoot,
+                                 c1,c2 ptr ast:PExpr,
+                                 type ptr ast:Type,
+                                 fname ptr uint8,
+                                 line uintptr) Elem
+
+  mut el1 = me.expr(c1, root, fname, line)
+  mut ret = me.nextvar(type, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("if (")
+  me'stmts.add(el1.value())
+  me'stmts.addLine(" != (void*) 0) {")
+
+  # increase - temporarely - padding
+  me'pad = me'pad + 2
+
+  me.assign(ret, el1, fname, line)
+
+  el1.wipe()
+
+  me'pad = me'pad - 2
+
+  me.padStmts()
+  me'stmts.addLine("} else {")
+
+  # increase - temporarely - padding
+  me'pad = me'pad + 2
+
+  mut el2 = me.expr(c2, root, fname, line)
+
+  me.assign(ret, el2, fname, line)
+
+  el2.wipe()
+
+  me'pad = me'pad - 2
+
+  me.padStmts()
+  me'stmts.addLine("}\n")
+
+  return ret
+/method
+
+
+method Block.handleFn(root ptr ast:PRoot,
+                             pexpr ptr ast:PExpr,
+                             fname ptr uint8,
+                             line uintptr) Elem
+
+
+  mut toCall = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut methCall = toCall'opType == ast:DOT
+
+  mut len = pexpr'node'leaves.len()
+
+  # n params + me + rvo (eventally)
+  mut params = vect:new(len + 1)
+
+  mut callElem Elem
+
+  if methCall
+    mut target = <ptr ast:PExpr>(val toCall'node'leaves.get(0))
+    mut meth = <ptr ast:PExpr>(val toCall'node'leaves.get(1))
+    mut targetType = target'type
+
+    callElem = methelem(<ptr uint8>(meth'node'value), targetType)
+
+    # add me parameter
+
+    mut notPtr = not targetType.isPtr()
+    mut meElem = me.expr(target, root, fname, line)
+
+    if notPtr
+      mut ptrElem = me.ref(meElem, target'type, fname, line)
+      meElem.wipe()
+
+      meElem = ptrElem
+    /if
+
+    params.append(meElem.copy())
+  else
+    callElem = me.expr(toCall, root, fname, line)
+  /if
+
+
+  mut rvo = pexpr'type.isStruct() or pexpr'type'type == ast:TYPE_RECALIAS
+  mut ret Elem
+
+  mem:set(ptr ret, 0, size(Elem))
+
+  # RVO
+  if rvo
+    ret = me.nextvar(pexpr'type, fname, line)
+    mut rvoRet = me.ref(ret, pexpr'type, fname, line)
+    params.append(rvoRet.copy())
+  /if
+
+  mut memTypes = toCall'type.isPtr() \
+                  => toCall'type'retType'members \
+                  || toCall'type'members
+
+  mut i uintptr = 1
+
+  while i < len
+    mut type = <ptr ast:Type>(memTypes.getAt(i - 1)'value)
+    mut param = <ptr ast:PExpr>(val pexpr'node'leaves.get(i))
+
+    mut paramExpr = me.exprWithOptimizedType(param, root, type, fname, line)
+    params.append(paramExpr.copy())
+
+    i++
+  /while
+
+  mut wantsRet = not rvo and (pexpr'type? and pexpr'type'type != ast:TYPE_EMPTY)
+
+  if wantsRet
+    ret = me.nextvar(pexpr'type, fname, line)
+  /if
+
+  me.fncall(callElem.value(), wantsRet => ptr ret || null, pexpr'type, params, fname, line)
+
+  callElem.wipe()
+
+  return ret
+/method
+
+
+method Block.handleMulAssign(exprs ptr ast:PExpr,
+                                    from Elem,
+                                    root ptr ast:PRoot,
+                                    fname ptr uint8,
+                                    line uintptr)
+
+  mut pnode = <ptr ast:PNode>(exprs)
+
+  mut len = pnode'leaves.len()
+  mut i uintptr = 0
+
+  mut elems = <ptr Elem>(mem:zalloc(len * size(Elem)))
+
+  while i < len
+    mut member = <ptr ast:PExpr>(val pnode'leaves.get(i))
+
+    elems[i] = me.expr(member, root, fname, line)
+
+    i++
+  /while
+
+  me.mulassign(elems, from, fname, pnode'begin'line)
+
+  i = 0
+  while i < len
+    elems[i].wipe()
+    i++
+  /while
+
+/method
+
+
+method Block.handleOr(root ptr ast:PRoot,
+                             type ptr ast:Type,
+                             e1,e2 ptr ast:PExpr,
+                             fname ptr uint8,
+                             line uintptr) Elem
+
+  mut ret = me.nextvar(type, fname, line)
+
+  mut el1 = me.expr(e1, root, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("if (")
+  me'stmts.add(el1.value())
+  me'stmts.add(") goto ")
+
+  mut succ = me.nextlabel()
+
+  me'stmts.add(succ.value())
+  me'stmts.addLine(";")
+
+  mut el2 = me.expr(e2, root, fname, line)
+
+  me.assign(ret, el2, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord("goto")
+
+  mut goOut = me.nextlabel()
+  me'stmts.add(goOut.value())
+  me'stmts.addLine(";")
+
+  me.label(succ, false)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addWord(ret.value())
+  me'stmts.addWord("=")
+  me'stmts.addLine("1;")
+
+  me.label(goOut, true)
+
+  succ.wipe()
+  goOut.wipe()
+
+  return ret
+/method
+
+
+method Block.handleShortcircuit(root ptr ast:PRoot,
+                                       op uint16,
+                                       type ptr ast:Type,
+                                       e1,e2 ptr ast:PExpr,
+                                       fname ptr uint8,
+                                       line uintptr) Elem
+
+  if op == ast:AND
+    return me.handleAnd(root, type, e1, e2, fname, line)
+  /if
+
+  return me.handleOr(root, type, e1, e2, fname, line)
+/method
+
+
+method Block.handleStructLiteral(root ptr ast:PRoot,
+                                        lit ptr ast:PExpr,
+                                        type ptr ast:Type,
+                                        fname ptr uint8,
+                                        line uintptr) Elem
+
+  type = type ?? lit'type
+
+  mut ret = me.nextvar(type, fname, line)
+  mut members = type'members
+
+  mut len = lit'node'leaves.len()
+  mut i uintptr = 0
+
+  while i < len
+    mut param = <ptr ast:PExpr>(val lit'node'leaves.get(i))
+    mut paramExpr = me.expr(param, root, fname, line)
+    mut memberName = <ptr uint8>(members.getAt(i)'key)
+
+    mut member = structelem(ret.value(), memberName, type, param'type)
+
+    me.assign(member, paramExpr, fname, line)
+
+    member.wipe()
+    i++
+  /while
+
+  return ret
+/method
+
+
+method Block.handleTern(root ptr ast:PRoot,
+                               condEx,c1,c2 ptr ast:PExpr,
+                               type ptr ast:Type,
+                               fname ptr uint8,
+                               line uintptr) Elem
+
+  mut cond = me.expr(condEx, root, fname, line)
+  mut ret = me.nextvar(type, fname, line)
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.add("if (")
+  me'stmts.add(cond.value())
+  me'stmts.addLine(") {")
+
+  cond.wipe()
+
+  # increase - temporarely - padding
+  me.incPad()
+
+  mut el1 = me.expr(c1, root, fname, line)
+
+  me.assign(ret, el1, fname, line)
+
+  el1.wipe()
+
+  me.decPad()
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addLine("} else {")
+
+  # increase - temporarely - padding
+  me.incPad()
+
+  mut el2 = me.expr(c2, root, fname, line)
+
+  me.assign(ret, el2, fname, line)
+
+  el2.wipe()
+
+  me.decPad()
+
+  me.padStmts()
+  me'stmts.addDebugLine(fname, line)
+
+  me.padStmts()
+  me'stmts.addLine("}\n")
+
+  return ret
+/method
+
+
+method Block.exprWithOptimizedType(pexpr ptr ast:PExpr,
+                                          root ptr ast:PRoot,
+                                          destType ptr ast:Type,
+                                          fname ptr uint8,
+                                          line uintptr) Elem
+
+  mut value = pexpr'node'value
+
+  if pexpr'opType == ast:ASSIGN
+    mut to Elem = {null, null} # ensure segfault if used
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    mut from = me.expr(e2, root, fname, line)
+
+    if e1'opType == ast:OCURLY
+      me.handleMulAssign(e1, from, root, fname, line)
+    else
+      to = me.expr(e1, root, fname, line)
+
+      me.assign(to, from, fname, line)
+    /if
+
+    from.wipe()
+    return to
+  /if
+
+  if pexpr'opType == ast:NUMBER
+    return intelem(value, pexpr'type)
+  /if
+
+  if pexpr'opType == ast:STRING
+    return me.str(<ptr uint8>(value), pexpr'type, fname, line)
+  /if
+
+  if pexpr'opType == ast:ID
+
+    mut name = <ptr uint8>(value)
+    mut modName ptr uint8 = root'moduleName? => root'moduleName'name || null
+    mut fDecl = root'node'syms.get(name) \
+                ?? (root'pmodule? => root'pmodule.findDecl(name) || null)
+
+    if     fDecl? \
+       and modName? \
+       and not fDecl'declOnly \
+       and <ptr ast:PNode>(pexpr).findSym(name) == fDecl'type
+
+      return modelem(modName, name, pexpr'type)
+    else
+      return elem(name, pexpr'type)
+    /if
+  /if
+
+  if pexpr'opType == ast:ME
+    return elem("me", pexpr'type)
+  /if
+
+  if pexpr'opType == ast:NULL
+    return elem("(void*) 0", pexpr'type)
+  /if
+
+  if pexpr'opType == ast:TRUE or pexpr'opType == ast:FALSE
+    return boolelem(pexpr'opType == ast:TRUE, pexpr'type)
+  /if
+
+  if pexpr'opType == ast:COLON
+    mut modName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
+    mut name = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
+
+    return modelem(modName, name, pexpr'type)
+  /if
+
+  if pexpr'opType == ast:APOS
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    return me.structaccess(root, e1, e2, pexpr'type, fname, line)
+  /if
+
+  if pexpr'opType == ast:SIZE
+    return sizeelem(pexpr'sizeType, pexpr'type)
+  /if
+
+  if pexpr'opType == ast:CAST
+    mut tocast = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut expr = me.expr(tocast, root, fname, line)
+
+    mut ret = me.castexpr(expr, pexpr'type, fname, line)
+
+    expr.wipe()
+
+    return ret
+  /if
+
+  if pexpr'opType == ast:OPAR
+    return me.handleFn(root, pexpr, fname, line)
+  /if
+
+  if pexpr'opType == ast:OBRAC
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    mut from = me.expr(e1, root, fname, line)
+    mut index = me.expr(e2, root, fname, line)
+
+    mut ret = me.access(from, index, e1'type, fname, line)
+
+    from.wipe()
+    index.wipe()
+
+    return ret
+  /if
+
+  if pexpr'opType == ast:OCURLY
+    return me.handleStructLiteral(root, pexpr, destType, fname, line)
+  /if
+
+  if pexpr'opType == ast:DQUEST
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    return me.handleDQuest(root, e1, e2, pexpr'type, fname, line)
+  /if
+
+  if pexpr'opType == ast:FATARROW
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+    mut e3 = <ptr ast:PExpr>(val pexpr'node'leaves.get(2))
+
+    return me.handleTern(root, e1, e2, e3, pexpr'type, fname, line)
+  /if
+
+  if pexpr'opType == ast:DEC
+    mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    mut el = me.expr(e, root, fname, line)
+
+    me.dec(el, fname, line)
+
+    return el
+  /if
+
+  if pexpr'opType == ast:INC
+    mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    mut el = me.expr(e, root, fname, line)
+
+    me.inc(el, fname, line)
+
+    return el
+  /if
+
+  if pexpr'opType == ast:QUEST
+    mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    mut el = me.expr(e, root, fname, line)
+
+    mut ret = me.quest(el, pexpr'type, fname, line)
+
+    el.wipe()
+
+    return ret
+  /if
+
+  if pexpr'opType == ast:PTR
+    mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    mut el = me.expr(e, root, fname, line)
+
+    mut ret = me.ref(el, e'type, fname, line)
+
+    el.wipe()
+
+    return ret
+  /if
+
+  if pexpr'opType == ast:VAL
+    mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    mut el = me.expr(e, root, fname, line)
+
+    mut ret = deref(el, e'type)
+
+    el.wipe()
+
+    return ret
+  /if
+
+  if isBinOp(pexpr'opType) or pexpr'opType == ast:MINUS
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    if isShortcircuitOp(pexpr'opType)
+      return me.handleShortcircuit(root, pexpr'opType, pexpr'type, e1, e2, fname, line)
+    /if
+
+    mut el1 = me.expr(e1, root, fname, line)
+    mut el2 = me.expr(e2, root, fname, line)
+
+    mut ret = me.binop(pexpr'opType, pexpr'type, el1, el2, fname, line)
+
+    el1.wipe()
+    el2.wipe()
+
+    return ret
+  /if
+
+  #assume prefix unary now
+
+  mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut el = me.expr(e, root, fname, line)
+
+  mut ret = me.unop(pexpr'opType, pexpr'type, el, fname, line)
+
+  el.wipe()
+
+  return ret
+/method
+
+
+method Block.expr(pexpr ptr ast:PExpr,
+                         root ptr ast:PRoot,
+                         fname ptr uint8,
+                         line uintptr) Elem
+
+  return me.exprWithOptimizedType(pexpr, root, null, fname, line)
+/method

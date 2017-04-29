@@ -1,0 +1,307 @@
+#  libctrans, Fork to C transpiler library
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ctrans
+
+
+import ast
+import mem
+import proc
+import tty
+
+
+method Transl.globDotExpr(pexpr ptr ast:PExpr)
+
+  mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+  mut targetType = e1'type
+
+  if targetType.isPtr()
+    targetType = targetType'retType
+  /if
+
+  mut typeName = symMod(targetType'moduleName, targetType'name)
+  mut methName = <ptr uint8>(e2'node'value)
+
+  me'vars.addMethSym(typeName, methName)
+
+  mem:free(typeName)
+/method
+
+
+
+method Transl.globExpr(root ptr ast:PRoot, pexpr ptr ast:PExpr)
+
+  mut value = pexpr'node'value
+
+  if pexpr'opType == ast:NUMBER
+    me'vars.addInt(value)
+
+    return
+  /if
+
+  if pexpr'opType == ast:STRING
+    me'vars.addCStr(<ptr uint8>(value))
+    return
+  /if
+
+  if pexpr'opType == ast:ID
+
+    mut name = <ptr uint8>(value)
+    mut modName ptr uint8 = root'moduleName? => root'moduleName'name || null
+    mut fDecl = root'node'syms.get(name)
+
+    if fDecl? and not fDecl'declOnly and <ptr ast:PNode>(pexpr).findSym(name) == fDecl'type
+      me'vars.addSymName(modName, name)
+    else
+      me'vars.add(name)
+    /if
+
+    return
+  /if
+
+
+  if pexpr'opType == ast:NULL
+    me'vars.add("(void*) 0")
+
+    return
+  /if
+
+  if pexpr'opType == ast:TRUE
+    me'vars.add("1")
+
+    return
+  /if
+
+  if pexpr'opType == ast:FALSE
+    me'vars.add("0")
+
+    return
+  /if
+
+  if pexpr'opType == ast:COLON
+    mut modName = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(0))'value)
+    mut name = <ptr uint8>(<ptr ast:PNode>(val pexpr'node'leaves.get(1))'value)
+
+    me'vars.addSymName(modName, name)
+
+    return
+  /if
+
+  if pexpr'opType == ast:APOS
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    me.globExpr(root, e1)
+
+    me'vars.add((e1'type? and e1'type'type == ast:TYPE_PTR) => "->" || ".")
+
+    me'vars.add(<ptr uint8>(e2'node'value))
+
+    return
+  /if
+
+  if pexpr'opType == ast:SIZE
+      me'vars.add("sizeof(")
+      me.wrapType(me'vars, pexpr'sizeType, -1)
+      me'vars.add(")")
+
+      return
+  /if
+
+  if pexpr'opType == ast:CAST
+    mut expr = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    me'vars.add("((")
+    me.wrapType(me'vars, pexpr'type, -1)
+    me'vars.add(") ")
+
+    me.globExpr(root, expr)
+
+    me'vars.add(")")
+
+    return
+  /if
+
+  if pexpr'opType == ast:OPAR
+    mut toCall = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut methCall = toCall'opType == ast:DOT
+
+    if methCall
+      me.globDotExpr(toCall)
+    else
+      me.globExpr(root, toCall)
+    /if
+
+    me'vars.add("(")
+
+    mut len = pexpr'node'leaves.len()
+
+    # add me parameter
+    if methCall
+      mut target = <ptr ast:PExpr>(val toCall'node'leaves.get(0))
+      mut notPtr = not target'type.isPtr()
+
+      if notPtr
+        me'vars.add("&(")
+      /if
+
+      me.globExpr(root, target)
+
+      if notPtr
+        me'vars.add(")")
+      /if
+
+      if len > 1
+        me'vars.addWord(",")
+      /if
+    /if
+
+    mut i uintptr = 1
+
+    while i < len
+      mut param = <ptr ast:PExpr>(val pexpr'node'leaves.get(i))
+
+      if i > 1
+        me'vars.addWord(",")
+      /if
+
+      me.globExpr(root, param)
+      i++
+    /while
+
+    me'vars.add(")")
+
+    return
+  /if
+
+  if pexpr'opType == ast:OBRAC
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    me'vars.add("(")
+
+    me.globExpr(root, e1)
+
+    me'vars.add(")[")
+
+    me.globExpr(root, e2)
+
+    me'vars.add("]")
+
+    return
+  /if
+
+  if pexpr'opType == ast:DQUEST
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    me'vars.add("(")
+
+    me.globExpr(root, e1)
+
+    me'vars.add(" != (void*)0) ? (")
+
+    me.globExpr(root, e1)
+
+    me'vars.add(") : (")
+
+    me.globExpr(root, e2)
+
+    me'vars.add(")")
+
+    return
+  /if
+
+  if pexpr'opType == ast:FATARROW
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+    mut e3 = <ptr ast:PExpr>(val pexpr'node'leaves.get(2))
+
+    me'vars.add("(")
+
+    me.globExpr(root, e1)
+
+    me'vars.add(") ? (")
+
+    me.globExpr(root, e2)
+
+    me'vars.add(") : (")
+
+    me.globExpr(root, e3)
+
+    me'vars.add(")")
+
+    return
+  /if
+
+  if pexpr'opType == ast:DEC
+    mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    me'vars.add("--")
+
+    me.globExpr(root, e)
+    return
+  /if
+
+  if pexpr'opType == ast:INC
+    mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    me'vars.add("++")
+
+    me.globExpr(root, e)
+    return
+  /if
+
+  if pexpr'opType == ast:QUEST
+    mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+
+    me'vars.add("(")
+    me.globExpr(root, e)
+
+    me'vars.add(" != (void*) 0)")
+
+    return
+  /if
+
+  if isBinOp(pexpr'opType) or pexpr'opType == ast:MINUS
+    mut e1 = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+    mut e2 = <ptr ast:PExpr>(val pexpr'node'leaves.get(1))
+
+    if pexpr'opType == ast:POW
+      me'vars.add("math$__forkpow(")
+      me.globExpr(root, e1)
+      me'vars.add(", ")
+      me.globExpr(root, e2)
+      me'vars.add(")")
+
+      return
+    /if
+
+    me'vars.add("(")
+    me.globExpr(root, e1)
+    me'vars.addChar(32)
+    me'vars.add(opConv(pexpr'opType))
+    me'vars.addChar(32)
+    me.globExpr(root, e2)
+    me'vars.add(")")
+
+    return
+  /if
+
+  #assume prefix unary now
+
+  mut e = <ptr ast:PExpr>(val pexpr'node'leaves.get(0))
+  me'vars.add(opConv(pexpr'opType))
+  me'vars.add("(")
+  me.globExpr(root, e)
+  me'vars.add(")")
+
+/method

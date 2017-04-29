@@ -1,0 +1,386 @@
+#  libctrans, Fork to C transpiler library
+#  Copyright (C) Marco Cilloni <marco.cilloni@yahoo.com> 2015, 2016
+#
+#  This Source Code Form is subject to the terms of the Mozilla Public
+#  License, v. 2.0. If a copy of the MPL was not distributed with this
+#  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#  Exhibit B is not attached; this software is compatible with the
+#  licenses expressed under Section 1.12 of the MPL v2.
+
+
+module ctrans
+
+
+import ast
+import mem
+import proc
+import txt
+import tty
+
+
+# LRStr: represents a string, but with left and right separated.
+alias LRStr struct(
+  left,right ptr txt:Charstash,
+  unit ptr Transl,
+  pad intptr
+)
+
+
+# LRStr functions
+
+func lrNew(unit ptr Transl, pad intptr) LRStr
+  mut ret LRStr
+
+  ret'left  = txt:newCs(20)
+  ret'right = txt:newCs(20)
+  ret'unit = unit
+  ret'pad = pad
+
+  return ret
+/func
+
+
+# LRStr methods
+
+method LRStr.addFuncType(type ptr ast:Type, methTarget ptr uint8)
+  mut rvo = type'retType? and type'retType.isStruct()
+
+  if rvo
+    me.addType(null, null, false)
+  else
+    me.addType(type'retType, null, false)
+  /if
+
+  mut paramsCs = txt:newCs(30)
+
+  mut i uintptr = 0
+  mut len = type'members.len()
+  mut empty = len == 0
+
+  paramsCs.add("(")
+
+  if methTarget?
+    empty = false
+
+    paramsCs.add(methTarget)
+    paramsCs.add("* me")
+
+    if len > 0 or rvo
+      paramsCs.add(", ")
+    /if
+  /if
+
+  # RVO
+  if rvo
+    empty = false
+
+    #me'unit.genCsym(paramsCs, null, null, "*_rvoOut", type'retType, -1, false)
+    # MEGAHACK around C compiler: pass RVO as void.
+    paramsCs.add("void *_rvoHack")
+  /if
+
+  while i < len
+    if i != 0 or rvo
+      paramsCs.addWord(",")
+    /if
+
+    mut pair = type'members.getAt(i)
+    me'unit.genCsym(paramsCs, null, null, <ptr uint8>(pair'key), \
+                       <ptr ast:Type>(pair'value), -1, false)
+    i++
+  /while
+
+  if empty
+    paramsCs.add("void")
+  /if
+
+  paramsCs.add(")")
+
+  mut params = txt:unwrapCs(paramsCs)
+
+  me'right.prepend(params)
+
+  mem:free(params)
+/method
+
+
+method LRStr.addPtrType(type ptr ast:Type)
+  mut tofn = type'retType'type == ast:TYPE_FUNC
+
+  me.addType(type'retType, null, false)
+
+  if tofn
+    me'left.add("(")
+  /if
+
+  if type'type == ast:TYPE_PTR
+    me'left.add("*")
+  /if
+
+  if tofn
+    me'right.prepend(")")
+  /if
+
+  if type'type == ast:TYPE_LOC
+    me'right.prepend("]")
+    me'right.prependInt(type'itemCount)
+    me'right.prepend("[")
+  /if
+/method
+
+
+method LRStr.addStructBody(type ptr ast:Type)
+  mut doPad = me'pad > 0
+  mut cs = me'left
+
+  cs.add("{")
+
+  if doPad
+    cs.addChar(10)
+  /if
+
+  mut i uintptr = 0
+  mut len = type'members.len()
+
+  while i < len
+    mut pair = type'members.getAt(i)
+
+    if doPad
+      cs.addPad(me'pad + 2)
+    else
+      cs.add(" ")
+    /if
+
+    me'unit.genCsym(cs, null, null, <ptr uint8>(pair'key), \
+                     <ptr ast:Type>(pair'value), \
+                     doPad => me'pad + 2 || -1, \
+                     false)
+    cs.add(";")
+
+    if doPad
+      cs.addChar(10)
+    /if
+
+    i++
+  /while
+
+  if doPad
+    cs.addPad(me'pad)
+  /if
+
+  cs.add(" }")
+/method
+
+
+method LRStr.addStructType(type ptr ast:Type)
+  me'left.addWord("struct")
+
+  if type'name?
+    me'left.addSymName(type'moduleName, type'name)
+  /if
+
+  me'left.add(" ")
+
+  me.addStructBody(type)
+
+  me'left.add(" ")
+/method
+
+
+method LRStr.syntetizeStructType(type ptr ast:Type)
+  mut cnt = me'unit'cnt
+
+  me'unit'cnt++
+
+  mut len = txt:strlen(me'unit'modName ?? "")
+
+  mut name = <ptr uint8>(mem:zalloc(29 + len))
+  mem:copy(name, "_struct", 7)
+
+  txt:numtostr(cnt, name + 7, 21)
+
+  mut newLen = txt:strlen(name)
+
+  if me'unit'modName?
+    mem:copy(name + newLen, "_", 1)
+    mem:copy(name + newLen + 1, me'unit'modName, len)
+  /if
+
+  mut typeBodyCs = txt:newCs(30)
+
+  me'unit.genCsym(typeBodyCs, null, null, name, type, -1, true)
+
+  mut typeBody = txt:unwrapCs(typeBodyCs)
+
+  me'unit.typedef(name, typeBody, true)
+
+  mem:free(typeBody)
+
+  me'left.add(name)
+  me'left.add(" ")
+
+  mem:free(name)
+/method
+
+
+method LRStr.addType(type ptr ast:Type, methTarget ptr uint8, tdef bool)
+
+  if not type? or type'type == ast:TYPE_EMPTY
+    me'left.add("void ")
+    return
+  /if
+
+  if not tdef \
+     and type'name? \
+     and (type'type == ast:TYPE_STRUCT or type'type == ast:TYPE_FUNC)
+
+    me'left.addSymName(type'moduleName, type'name)
+    me'left.add(" ")
+    return
+  /if
+
+  if type'type == ast:TYPE_BOOL
+    me'left.add("_Bool ")
+  else
+    if type'type == ast:TYPE_DATA or type'type == ast:TYPE_NULL
+      me'left.add("void *")
+    else
+      if type'type == ast:TYPE_FUNC
+        me.addFuncType(type, methTarget)
+      else
+        if type'type == ast:TYPE_INT
+          if not type'isSigned
+            me'left.add("u")
+          /if
+
+          me'left.add("int")
+          me'left.addInt(type'typeSize * 8)
+          me'left.add("_t ")
+        else
+          if type'type == ast:TYPE_LOC or type'type == ast:TYPE_PTR
+            me.addPtrType(type)
+          else
+            if type'type == ast:TYPE_RECALIAS
+              me'left.add("struct ")
+              me'left.addSymName(type'moduleName, type'name)
+              me'left.add(" ")
+            else
+              if tdef
+                me.addStructType(type)
+              else
+                me.syntetizeStructType(type)
+              /if
+            /if
+          /if
+        /if
+      /if
+    /if
+  /if
+/method
+
+
+method LRStr.addSymName(typeName,moduleName,name ptr uint8,
+                        type ptr ast:Type,
+                        tdf bool)
+
+  me.addType(type, typeName, tdf)
+
+  if typeName?
+    me'left.addMethSym(typeName, name)
+  else
+    me'left.addSymName(moduleName, name)
+  /if
+/method
+
+
+# Charstash support methods.
+
+method txt:Charstash.addMethSym(typeName,name ptr uint8)
+  me.add(typeName)
+  me.add("$$")
+  me.add(name)
+/method
+
+
+method txt:Charstash.addSymName(modName,name ptr uint8)
+  if modName?
+    me.add(modName)
+    me.add("$")
+  /if
+
+  me.add(name)
+/method
+
+
+# Remember: dumpLr also frees the LRStr.
+method txt:Charstash.dumpLr(lr LRStr)
+  mut left = txt:unwrapCs(lr'left)
+  me.add(left)
+  mem:free(left)
+
+  mut right = txt:unwrapCs(lr'right)
+  me.add(right)
+  mem:free(right)
+/method
+
+
+method Transl.genCsym(cs ptr txt:Charstash,
+                             typeName,moduleName,name ptr uint8,
+                             type ptr ast:Type,
+                             pad intptr,
+                             tdf bool)
+
+  mut lr = lrNew(me, pad)
+  lr.addSymName(typeName, moduleName, name, type, tdf)
+
+  cs.dumpLr(lr)
+/method
+
+
+method Transl.translSym(moduleName ptr uint8,
+                               pdecl ptr ast:PDecl,
+                               dinfo ptr ast:DeclInfo) ptr uint8
+
+  mut cs = txt:newCs(30)
+  mut name = pdecl'sym'name
+
+  # big hack for int main(int argc, char *argv[])
+  if     not moduleName? \
+     and txt:strequals(name, "main") \
+     and dinfo'declType == ast:PFUNCTION
+
+    cs.add("int main(int argc, char *argv[])")
+  else
+    mut typeName ptr uint8 = null
+
+    if dinfo'declType == ast:PMETHOD
+      typeName = symMod(pdecl'methodTypeModule, pdecl'methodType)
+    /if
+
+    me.genCsym(cs, typeName, moduleName, name, dinfo'type, -1, false)
+
+    mem:free(typeName)
+  /if
+
+  return txt:unwrapCs(cs)
+/method
+
+
+method Transl.wrapType(cs ptr txt:Charstash,
+                              type ptr ast:Type,
+                              pad intptr)
+
+  mut lr = lrNew(me, pad)
+  lr.addType(type, null, false)
+  cs.dumpLr(lr)
+/method
+
+
+# support functions
+func symMod(modName,name ptr uint8) ptr uint8
+  mut cs = txt:newCs(10)
+
+  cs.addSymName(modName, name)
+
+  return txt:unwrapCs(cs)
+/func
