@@ -1,9 +1,0 @@
-[submodule "libctrans"]
-	path = libctrans
-	url = git://github.com/forklang/libctrans.git
-[submodule "libfork"]
-	path = libfork
-	url = git://github.com/forklang/libfork.git
-[submodule "libforkparse"]
-	path = libforkparse
-	url = git://github.com/forklang/libforkparse.git
