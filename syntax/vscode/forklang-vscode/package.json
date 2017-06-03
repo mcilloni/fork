@@ -1,0 +1,26 @@
+{
+    "name": "forklang-vscode",
+    "displayName": "forklang-vscode",
+    "description": "Fork support for VS Code (Syntax only)",
+    "version": "0.0.1",
+    "publisher": "mcilloni",
+    "engines": {
+        "vscode": "^1.12.0"
+    },
+    "categories": [
+        "Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "fork",
+            "aliases": ["Fork", "fork"],
+            "extensions": [".fork"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "fork",
+            "scopeName": "source.fork",
+            "path": "./syntaxes/fork.tmLanguage.json"
+        }]
+    }
+}

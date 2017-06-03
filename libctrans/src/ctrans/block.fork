@@ -184,8 +184,8 @@ method Block.incPad()
 
 
 method Block.returnstmt(stmt ptr ast:PNode,
-                               root ptr ast:PRoot,
-                               fname ptr uint8)
+                        root ptr ast:PRoot,
+                        fname ptr uint8)
 
   mut line = stmt'begin'line
 

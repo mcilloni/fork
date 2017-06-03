@@ -4,3 +4,4 @@ examples/*.elf
 examples/*.old
 tests/*.err
 core.*
+syntax/vscode/forklang-vscode/.vscode
