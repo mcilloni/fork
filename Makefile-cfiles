@@ -1,0 +1,11 @@
+UNAME := $(shell uname)
+
+ifeq ($(UNAME), Linux)
+     LDFLAGS += -ldl
+endif
+
+SOURCES := $(shell find libfork libforkparse libctrans -name '*.c')
+
+all:
+	$(CC) -w -O2 -std=c99 -D_POSIX_C_SOURCE=200112L -ldl -o forktree rt.c forktree.c $(SOURCES) $(LDFLAGS)
+	$(CC) -w -O2 -std=c99 -D_POSIX_C_SOURCE=200112L -ldl -o transmod rt.c transmod.c $(SOURCES) $(LDFLAGS)

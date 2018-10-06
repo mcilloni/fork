@@ -1,5 +1,5 @@
 BUILD = $(shell pwd)/../build/
-CFILES = $(BUILD)/cfiles/
+CFILES = $(BUILD)/cfiles/libfork/
 FORDS = $(BUILD)/ford/
 
 ifndef TRNS
@@ -34,6 +34,10 @@ ARNAME = 'libfork.a'
 .PHONY: all clean
 
 all:
+	$(MAKE) transl
+	$(MAKE) cc-ar
+
+transl:
 	mkdir -p $(BUILD)
 	mkdir -p $(FORDS)
 	mkdir -p $(CFILES)
@@ -61,8 +65,11 @@ all:
 	$(TRNSCMD) misc
 	$(TRNSCMD) memutils
 	$(TRNSCMD) args
+	mv $(CFILES)/rt.c $(CFILES)/..
+
+cc-ar:
 	cd $(CFILES) && $(CC) -w -c -g -std=c99 -D_POSIX_C_SOURCE=200112L $(CFILES)/*.c
-	mv $(CFILES)/rt.o $(BUILD)
+	$(CC) -w -c -g -std=c99 -D_POSIX_C_SOURCE=200112L -o $(BUILD)/rt.o $(CFILES)/../rt.c
 	@printf "AR\t\t%s\n" $(ARNAME)
 	@ $(AR) rc $(BUILD)/$(ARNAME) $(CFILES)/*.o
 	@ $(RANLIB) $(BUILD)/$(ARNAME)

@@ -95,25 +95,22 @@ stage:
 	$(MAKE) stage-tools
 
 stage-libctrans:
-	rm -rf $(BUILD)/cfiles
 	$(MAKE) -C $(LIBCTRANS)
 	$(MAKE) libctrans
 
 stage-libfork:
-	rm -rf $(BUILD)/cfiles
 	$(MAKE) -C $(LIBFORK) clean
 	$(MAKE) libfork
 
 stage-libforkparse:
-	rm -rf $(BUILD)/cfiles
 	$(MAKE) -C $(LIBFORKPARSE) clean
 	$(MAKE) libforkparse
 
 stage-tools:
-	FORDPATHS=$(BUILD)/ford $(TRNS) -n forktree -co $(BUILD) $(TOOLSDIR)/forktree
-	$(CC) -w -g -std=c99 -o $(BUILD)/forktree $(BUILD)/forktree.c $(BUILD)/libforkparse.a $(BUILD)/libfork.a $(BUILD)/rt.o
-	FORDPATHS=$(BUILD)/ford $(TRNS) -n transmod -co $(BUILD) $(TOOLSDIR)/transmod
-	$(CC) -w -g -std=c99 -o $(BUILD)/transmod $(BUILD)/transmod.c $(BUILD)/libctrans.a $(BUILD)/libforkparse.a $(BUILD)/libfork.a $(BUILD)/rt.o
+	FORDPATHS=$(BUILD)/ford $(TRNS) -n forktree -co $(BUILD)/cfiles $(TOOLSDIR)/forktree
+	$(CC) -w -g -std=c99 -o $(BUILD)/forktree $(BUILD)/cfiles/forktree.c $(BUILD)/libforkparse.a $(BUILD)/libfork.a $(BUILD)/rt.o
+	FORDPATHS=$(BUILD)/ford $(TRNS) -n transmod -co $(BUILD)/cfiles $(TOOLSDIR)/transmod
+	$(CC) -w -g -std=c99 -o $(BUILD)/transmod $(BUILD)/cfiles/transmod.c $(BUILD)/libctrans.a $(BUILD)/libforkparse.a $(BUILD)/libfork.a $(BUILD)/rt.o
 
 clean:
 	$(MAKE) -C libfork clean
