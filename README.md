@@ -13,8 +13,8 @@ a C file using `libctrans`, creating a `.ford` binary module.
 
 # How to build
 Use _GNU make_ to bootstrap fork.
-You need a precedent release of fork with `transmod` to build this, and it should
-be in your path.
+You need an already existing binary release of fork with `transmod` to build this, and it should
+be in your path (you can otherwise use the TRNS env var to specify which `transmod` the Makefile should use.
 
 `$ make`
 
