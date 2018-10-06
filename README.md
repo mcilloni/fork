@@ -152,4 +152,4 @@ libforkparse.a and libctrans.a are part of the compiler and are generally not ve
 
 # License
 
-The entirety of code in this repository is licensed under MPL 2.0. See `LICENSE` for more info.
+The entirety of code in this repository is licensed under the MPL 2.0. See `LICENSE` for more info.
