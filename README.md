@@ -22,9 +22,9 @@ Fork is a rather low level language imperative, procedural language that provide
         list:deinitAll(ptr kv'list, ptr pair:free)
     /func
     ```
-    The supported control flow blocks are limited to just `if`/`/if` and `while`/`/while`, no more fancy stuff. There is although support for a ternary operator with the syntax `condition => expression || expression`.
-- Statements and expressions are terminated by _newlines_; it's possibile to write multiple-line statements by escaping the newline with `\` (such as in shell scripting or Python).
-- The operator `'` is used to access structure fields, and works pretty much like the operator `.` in Go or Rust, dereferencing if necessary a pointer.
+    The supported control flow blocks are limited to just `if`/`/if` and `while`/`/while`; no fancy stuff. There is although support for a ternary operator with the syntax `condition => expression || expression`.
+- Statements and expressions are terminated by _newlines_; it's possibile to write multiple-line statements by escaping a newline with `\` (such as in shell scripting or Python).
+- The operator `'` is used to access structure fields, and works pretty much like the operator `.` in Go or Rust, dereferencing a pointer when needed.
 - Modules are defined as a collection of files contained in the same directory and marked with a `module <name>` statement. The `:` operator is used to access functions, variables and types belonging to other modules, after importing them with `import`. 
 - It is possible to either define stand-alone functions (using `func`) or methods, which can be attached to any arbitrary in-scope named type (including foreign types):
 
