@@ -117,6 +117,7 @@ clean:
 	rm -rf $(BUILD)
 	rm -rf fork-release
 	rm -f fork-release.txz
+	rm -f fork-cfiles.txz
 
 libfork:
 	$(MAKE) -C $(LIBFORK)
@@ -126,3 +127,11 @@ libforkparse:
 
 libctrans:
 	$(MAKE) FORDPATHS=$(BUILD)/ford -C $(LIBCTRANS)
+
+pack-cout:
+	if test ! -d $(BUILD)/stage3; then $(MAKE); fi; \
+	cp -r $(BUILD)/stage3/cfiles fork-cfiles && \
+	cp Makefile-cfiles fork-cfiles/Makefile && \
+	find fork-cfiles -name "*.o" -delete && \
+	tar cvf - fork-cfiles | xz > fork-cfiles.txz && \
+	rm -rf fork-cfiles
