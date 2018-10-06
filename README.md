@@ -97,6 +97,9 @@ Libfork includes several submodules, which implement fundamental structures and 
 - `txt`: provides string-related functions, such as string concatenation (using heap) and a tokenizer. This module also provides a rudimental string buffer which is widely used thorough the codebase.
 - `vect`: implements a dynamic-expansion vector similar to C++'s `std::vector`, Java `ArrayList` and Rust's `Vec`. Like `list`, this structure only supports `data` pointers and integers.
 
+## Lexer and Parser
+The parser is a simple recursive-descent parser, which uses a lexer to build an AST top-down; parsing an AST and checking its semantical correctness are done in two different, separated steps. It's also simple to use `libforkparse` as a stand-alone library, outside of the compiler.
+
 ## Generated C code
 
 Generated C files are generally unreadable; the code is generated for the sake of simplicity in an _"SSA-like"_ form, which can result in very huge binaries if compiled with `-O0`. This is generally not an issue, given that any decent optimizing compiler (i.e. `gcc`, `clang`, `icc`, `cl.exe`, ..) will elide most if not all of the useless stack allocations and assignments in a release build (i.e., with `-O1` or better). The only mandatory requirement for any C compiler to be used with transmod is to support to dollar signs in identifiers (which are used extensively to scope package functions and methods), which is the case for every relevant compiler (except `tcc` and `pcc`). 
@@ -145,3 +148,8 @@ $ cc -o prog file.o $PATH_TO_LIBFORK/libfork.a $PATH_TO_RT_O/rt.o
 
 Remember to link rt.o: it contains the entry point of a Fork application.
 libforkparse.a and libctrans.a are part of the compiler and are generally not very useful if not hacking on the compiler itself.
+
+
+# License
+
+The entirety of code in this repository is licensed under MPL 2.0. See `LICENSE` for more info.
