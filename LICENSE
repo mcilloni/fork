@@ -1,11 +1,3 @@
-forkc is licensed under the conditions of the Mozilla Public License Version 2
-as reported below.
-The Exhibit B is NOT attached, and the whole codebase can also be seen as compatible with
-the Secondary Licenses specified under section 1.12.
-
-Marco Cilloni
-__________________________________
-
 Mozilla Public License Version 2.0
 ==================================
 
@@ -373,9 +365,3 @@ file in a relevant directory) where a recipient would be likely to look
 for such a notice.
 
 You may add additional accurate notices of copyright ownership.
-
-Exhibit B - "Incompatible With Secondary Licenses" Notice
----------------------------------------------------------
-
-  This Source Code Form is "Incompatible With Secondary Licenses", as
-  defined by the Mozilla Public License, v. 2.0.
