@@ -2,9 +2,12 @@ fork
 ====
 
 
-**fork** is a compiled, low level language that I've developed in my spare time a few years ago (2014~2016) mostly as a toy, and as a way to tinker and learn how parsers and compilers work. This repository contains a rudimental, but functional, self hosting compiler and its runtime/library, which includes several modules implementing basic I/O, containers (such as hashmaps, vectors and treemaps). Almost everything contained in this repository is written in Fork itself, including the runtime and the compiler; there are however a few C files still lingering around, mostly as glue code between fork and `libc`. Sadly, only POSIX-compliant, 64-bit OS work at the moment, due to some unfortunate assumptions present in the code and lack of a Windows implementation for some functions.
+**fork** is a compiled, procedural, imperative language that I've developed in my spare time a few years ago (2014~2016) mostly as a toy, and as a way to tinker and learn how parsers and compilers work.  
 
-This is obviously super experimental, never meant to ever be nothing but a playground for tinkering around, so it might crash horribly, eat your babies and destroy whatever's left of your hopes and dreams.
+This repository contains a rudimental, but functional, self hosting compiler and its runtime/library, which includes several modules implementing basic I/O, containers (such as hashmaps, vectors and treemaps). Almost everything contained in this repository is written in Fork itself, including the runtime and the compiler; there are however a few C files still lingering around, mostly as glue code between fork and `libc`.  
+Sadly, only POSIX-compliant, 64-bit OS work at the moment, due to some unfortunate assumptions present in the code and lack of a Windows implementation for some functions.
+
+This is obviously super experimental, and was never meant to ever be nothing but a playground for tinkering around, so it might crash horribly, eat your babies and destroy whatever's left of your hopes and dreams.
 
 ## The language
 
