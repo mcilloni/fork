@@ -2,16 +2,17 @@ fork
 ====
 
 
-**fork** is a compiled, procedural, imperative language that I've developed in my spare time a few years ago (2014~2016) mostly as a toy, and as a way to tinker and learn how parsers and compilers work.  
+**fork** is a **compiled, procedural, imperative language and toolchain** that I've developed in my spare time a few years ago (2014~2016) mostly as a toy, and as a way to tinker and learn how parsers and compilers work.  
 
-This repository contains a rudimental, but functional, self hosting compiler and its runtime/library, which includes several modules implementing basic I/O, containers (such as hashmaps, vectors and treemaps). Almost everything contained in this repository is written in Fork itself, including the runtime and the compiler; there are however a few C files still lingering around, mostly as glue code between fork and `libc`.  
-Sadly, only POSIX-compliant, 64-bit OS work at the moment, due to some unfortunate assumptions present in the code and lack of a Windows implementation for some functions.
+This repository contains a rudimental, but functioning, __self hosting compiler and its runtime/library__, which includes several modules implementing stuff such as basic I/O, containers (such as hashmaps, vectors and treemaps) and command-line argument parsers. _Almost everything_ contained in this repository is written in Fork itself, including the runtime and the compiler; there are however a few C files still lingering around, mostly as glue code between fork and `libc`.  
+
+Sadly, **only POSIX-compliant, 64-bit operating systems work** at the moment, due to some unfortunate assumptions present in the code and the lack of a Windows implementation for several basic functions.
 
 This is obviously super experimental, and was never meant to ever be nothing but a playground for tinkering around, so it might crash horribly, eat your babies and destroy whatever's left of your hopes and dreams.
 
 ## The language
 
-Fork is a rather low level language imperative, procedural language that provides an experience rather close to C (with which shares the memory model, same ABI and concepts). Given its nature as a hobby and an experiment, its syntax has been designed to feel purposely "different" than other commonly used programming languages:
+Fork is a _"low level"_ statically typed, imperative, procedural language that provides an experience quite close to C (with which shares the memory model, same ABI and concepts). Given its nature as an experiment and a way to learn, its syntax has been designed to feel purposely "different" than other commonly used programming languages:
 
 - Blocks are delimited by `<keyword>` `/<keyword>` identifiers, i.e.,
     ```fork
@@ -64,13 +65,13 @@ Fork is a rather low level language imperative, procedural language that provide
     mut i uintptr = 0
     mut ret = false
     ```
-- Memory is managed manually; no fancy refcounting, GC or borrow-checking is provided.
+- Memory is managed *manually*; no fancy refcounting, GC or borrow-checking is provided.
 - Builtin types consist in signed and unsigned integers (no floating point support has ever been implemented), a boolean type, plus pointers (`ptr T`).  
 `data` is a type that corresponds to C's `void*`, which is handled as a special case by the compiler; every pointer type can be downcasted to `data` implicitely; upcasting is never automatic, and always requires type casting.
 
 ## Implementation
 
-Fork is transpiled to C using `transmod` (see `tools/transmod`), which uses `libforkparse` to parse, verify and translate a module to a C file using `libctrans`.
+Fork is *transpiled to C* using `transmod` (see `tools/transmod`), which uses `libforkparse` to parse, verify and translate a module to a C file using `libctrans`.
 This operation also creates a `.ford` file containing a binary dump of an AST containing the functions, types and variables declared by a module.  
 A `.ford` module must be available to transmod while compiling a module which `import`s it; these are automatically discovered and picked up by transmod using the `FORDPATH` variable.
 
@@ -138,7 +139,7 @@ $ env FORDPATHS=$MY_FORD_PATH transmod -fo $OUT_DIR_FOR_FORDS -co $OUT_DIR_FOR_C
 
 If not specified, the module name is either the one specified by the files of the module itself, or _main_ if this is a main module.
 
-Compile then all the files with a C99 compiler (GCC, ICC and Clang are currently supported):
+Compile then all the files with a **C99 compiler** (GCC, ICC and Clang are currently supported):
 
 ```sh
 $ cc -c -w -g -std=c99 file.c
