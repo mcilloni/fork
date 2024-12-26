@@ -46,6 +46,7 @@ ifndef PKGNAME
 	PKGNAME=$(RELDIRNAME).txz
 endif
 
+CFLAGS = -Wno-incompatible-pointer-types -Wno-implicit-function-declaration -Wno-incompatible-function-pointer-types -w -g -std=c99 -D_POSIX_C_SOURCE=200112L 
 
 .PHONY: all clean package package-base package-cross bootstrap stage1 stage2 \
 	stage3 libfork libforkparse libctrans stage stage-libctrans stage-libfork \
@@ -108,9 +109,9 @@ stage-libforkparse:
 
 stage-tools:
 	FORDPATHS=$(BUILD)/ford $(TRNS) -n forktree -co $(BUILD)/cfiles $(TOOLSDIR)/forktree
-	$(CC) -w -g -std=c99 -o $(BUILD)/forktree $(BUILD)/cfiles/forktree.c $(BUILD)/libforkparse.a $(BUILD)/libfork.a $(BUILD)/rt.o
+	$(CC) $(CFLAGS) -o $(BUILD)/forktree $(BUILD)/cfiles/forktree.c $(BUILD)/libforkparse.a $(BUILD)/libfork.a $(BUILD)/rt.o
 	FORDPATHS=$(BUILD)/ford $(TRNS) -n transmod -co $(BUILD)/cfiles $(TOOLSDIR)/transmod
-	$(CC) -w -g -std=c99 -o $(BUILD)/transmod $(BUILD)/cfiles/transmod.c $(BUILD)/libctrans.a $(BUILD)/libforkparse.a $(BUILD)/libfork.a $(BUILD)/rt.o
+	$(CC) $(CFLAGS) -o $(BUILD)/transmod $(BUILD)/cfiles/transmod.c $(BUILD)/libctrans.a $(BUILD)/libforkparse.a $(BUILD)/libfork.a $(BUILD)/rt.o
 
 clean:
 	$(MAKE) -C libfork clean

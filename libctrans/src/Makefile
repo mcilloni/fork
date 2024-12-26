@@ -32,6 +32,8 @@ ifeq (,$(findstring CYGWIN,$(UNAME)))
 endif
 endif
 
+CFLAGS = -Wno-incompatible-pointer-types -Wno-implicit-function-declaration -Wno-incompatible-function-pointer-types -w -g -std=c99 -D_POSIX_C_SOURCE=200112L 
+
 SONAME = 'libctrans.so'
 ARNAME = 'libctrans.a'
 
@@ -51,7 +53,7 @@ transl:
 	$(TRNSCMD) ctrans
 
 cc-ar:
-	cd $(CFILES) && $(CC) -w -c -g -std=c99 -D_POSIX_C_SOURCE=200112L $(CFILES)/*.c
+	cd $(CFILES) && $(CC) -c $(CFLAGS) $(CFILES)/*.c
 	@printf "AR\t\t%s\n" $(ARNAME)
 	@ $(AR) rc $(BUILD)/$(ARNAME) $(CFILES)/*.o
 	@ $(RANLIB) $(BUILD)/$(ARNAME)
